@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "greenproof-worker"
+    ]
+  },
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "test:unit": "yarn workspaces run test:unit",
+    "test:e2e": "yarn workspaces run test:e2e",
+    "lint": "yarn workspaces run lint",
+    "lint:fix": "yarn workspaces run lint:fix",
+    "start:dev": "yarn workspaces run start:dev",
+    "deploy:pack": "yarn workspaces run deploy:pack",
+    "deploy:heroku": "yarn workspaces run deploy:heroku",
+    "purge": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+  }
+}
