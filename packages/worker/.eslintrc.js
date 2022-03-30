@@ -1,6 +1,6 @@
 module.exports = {
   extends: ['@leocode/eslint-config/node'],
-  ignorePatterns: '**/client/**/*',
+  ignorePatterns: ['.eslintrc.js'],
   parserOptions: {
     project: `${__dirname}/tsconfig.json`,
   },
