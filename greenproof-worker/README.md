@@ -1,1 +1,0 @@
-# greenproof-worker
