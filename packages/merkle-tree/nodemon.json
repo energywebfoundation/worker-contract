@@ -1,0 +1,13 @@
+{
+  "ignore": [
+    "target/*"
+  ],
+  "events": {
+    "restart": "yarn build",
+    "start": "yarn build"
+  },
+  "execMap": {
+    "rb": "ruby",
+    "pde": "processing --sketch={{pwd}} --run"
+  }
+}
