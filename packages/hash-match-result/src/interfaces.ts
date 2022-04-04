@@ -1,4 +1,5 @@
-type Match = Record<string, unknown>;
+
+type Match = Record<string, string | number | boolean | null | undefined | bigint>;
 
 export type MatchingResult = {
     matches: Match[];
