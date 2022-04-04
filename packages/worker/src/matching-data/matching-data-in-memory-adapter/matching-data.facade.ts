@@ -1,5 +1,5 @@
-import { MatchingDataService } from "./matching-data.service";
-import { Reading, Preferences, ReadingQuery } from "./types";
+import type { MatchingDataService } from '../matching-data.service';
+import type { Reading, Preferences, ReadingQuery } from '../types';
 
 export class MatchingDataFacade {
   constructor(private matchingDataService: MatchingDataService) {}

@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
-import { MatchingDataService } from "../matching-data.service";
-import { Preferences, Reading, ReadingQuery } from "../types";
+import { Injectable } from '@nestjs/common';
+import type { MatchingDataService } from '../matching-data.service';
+import type { Preferences, Reading, ReadingQuery } from '../types';
 
 export interface InputData {
   consumptions: Reading[];
@@ -34,7 +34,7 @@ export class MatchingDataInMemoryService implements MatchingDataService {
 
   private async getReadings(
     query: ReadingQuery,
-    dataset: Reading[]
+    dataset: Reading[],
   ): Promise<Reading[]> {
     const readingWithinLowerBound = (reading: Reading): boolean => {
       if (!query.from) {
@@ -61,7 +61,7 @@ export class MatchingDataInMemoryService implements MatchingDataService {
       (reading) =>
         correctDevice(reading) &&
         readingWithinLowerBound(reading) &&
-        readingWithinUpperBound(reading)
+        readingWithinUpperBound(reading),
     );
   }
 }

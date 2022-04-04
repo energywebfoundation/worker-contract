@@ -1,4 +1,4 @@
-import { Preferences, Reading, ReadingQuery } from "./types";
+import type { Preferences, Reading, ReadingQuery } from './types';
 
 export abstract class MatchingDataService {
   public abstract getPreferences(): Promise<Preferences>;

@@ -10,4 +10,9 @@ export interface ReadingQuery {
   to?: Date;
 }
 
-export interface Preferences { }
+export interface Preferences {
+  groupPriority: {
+    id: string;
+    groupPriority: { id: string }[][];
+  }[][];
+}
