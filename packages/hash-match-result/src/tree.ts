@@ -3,17 +3,12 @@ import {createHash} from 'crypto';
 
 import {MerkleTree} from 'merkletreejs';
 import {getConsumptionHash, getGenerationHash, getMatchHash, HASHING_FUNCTION} from './hashes';
+import type {HashMatchingResultFunction, MatchingResult} from './interfaces';
 
-type Match = Record<string, unknown>;
-
-export type MatchingResult = {
-    matches: Match[];
-    leftoverEntities: [Match[], Match[]];
-}
 
 const treeHashFunction = (objectToHash: BinaryLike) => createHash(HASHING_FUNCTION).update(JSON.stringify(objectToHash));
 
-export const hashMatchingResult = (matchingResult: MatchingResult) => {
+export const hashMatchingResult:HashMatchingResultFunction = (matchingResult: MatchingResult) => {
   const leaves = [
     ...matchingResult.matches.map(match => getMatchHash(match)),
     ...matchingResult.leftoverEntities[0].map(leftover => getConsumptionHash(leftover)),

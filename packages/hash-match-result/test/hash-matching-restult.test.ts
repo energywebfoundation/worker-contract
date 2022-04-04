@@ -1,5 +1,5 @@
-import type { MatchingResult} from '../src';
 import {getConsumptionHash, getGenerationHash, getMatchHash, hashMatchingResult} from '../src';
+import type {MatchingResult} from '../src/interfaces';
 
 describe('#hashMatchingResult', () => {
   it('should create merkle tree for matching result', () => {
