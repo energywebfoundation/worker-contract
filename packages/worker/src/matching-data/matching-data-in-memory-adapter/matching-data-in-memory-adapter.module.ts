@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { MatchingDataService } from '../matching-data.service';
 import { MatchingDataInMemoryService } from './matching-data-in-memory.service';
 import { MatchingDataInMemoryFacade } from './matching-data.facade';
 import type { InputData } from './matching-data-in-memory.service';
@@ -22,7 +21,7 @@ export class MatchingDataInMemoryAdapterModule {
           useValue: new MatchingDataInMemoryFacade(matchingDataService),
         },
         {
-          provide: MatchingDataService,
+          provide: MatchingDataInMemoryService,
           useValue: matchingDataService,
         },
       ],

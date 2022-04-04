@@ -1,8 +1,8 @@
-import type { MatchingDataService } from '../matching-data.service';
 import type { Reading, Preferences, ReadingQuery } from '../types';
 import type { MatchingDataFacade } from '../matching-data.facade';
+import type { MatchingDataInMemoryService } from './matching-data-in-memory.service';
 export class MatchingDataInMemoryFacade implements MatchingDataFacade {
-  constructor(private matchingDataService: MatchingDataService) {}
+  constructor(private matchingDataService: MatchingDataInMemoryService) {}
 
   public async getPreferences(): Promise<Preferences> {
     return await this.matchingDataService.getPreferences();

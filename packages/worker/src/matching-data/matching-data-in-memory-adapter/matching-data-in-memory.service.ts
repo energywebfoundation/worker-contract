@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import type { MatchingDataService } from '../matching-data.service';
 import type { Preferences, Reading, ReadingQuery } from '../types';
 
 export interface InputData {
@@ -9,7 +8,7 @@ export interface InputData {
 }
 
 @Injectable()
-export class MatchingDataInMemoryService implements MatchingDataService {
+export class MatchingDataInMemoryService {
   private consumptions: Reading[];
   private generations: Reading[];
   private preferences: Preferences;
