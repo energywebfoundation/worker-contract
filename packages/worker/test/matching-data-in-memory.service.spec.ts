@@ -1,5 +1,4 @@
 import { Test } from '@nestjs/testing';
-import { MatchingDataService } from '../src/matching-data/matching-data.service';
 import { MatchingDataFacade } from '../src/matching-data/matching-data.facade';
 import { MatchingDataInMemoryAdapterModule } from '../src/matching-data/matching-data-in-memory-adapter/matching-data-in-memory-adapter.module';
 import type { InputData } from '../src/matching-data/matching-data-in-memory-adapter/matching-data-in-memory.service';
@@ -98,7 +97,6 @@ const testData: InputData = {
 
 describe('MatchingDataService', () => {
   let matchingDataFacade: MatchingDataFacade;
-  let matchingDataService: MatchingDataService;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -107,7 +105,6 @@ describe('MatchingDataService', () => {
       ],
     }).compile();
 
-    matchingDataService = await moduleRef.resolve<MatchingDataService>(MatchingDataService);
     matchingDataFacade = await moduleRef.resolve<MatchingDataFacade>(MatchingDataFacade);
 
   });
