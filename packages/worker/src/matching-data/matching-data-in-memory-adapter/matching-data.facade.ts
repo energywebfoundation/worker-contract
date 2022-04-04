@@ -1,6 +1,9 @@
+import { Injectable } from '@nestjs/common';
 import type { Reading, Preferences, ReadingQuery } from '../types';
 import type { MatchingDataFacade } from '../matching-data.facade';
-import type { MatchingDataInMemoryService } from './matching-data-in-memory.service';
+import { MatchingDataInMemoryService } from './matching-data-in-memory.service';
+
+@Injectable()
 export class MatchingDataInMemoryFacade implements MatchingDataFacade {
   constructor(private matchingDataService: MatchingDataInMemoryService) {}
 

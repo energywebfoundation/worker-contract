@@ -7,9 +7,6 @@ import { MatchingDataFacade } from '../matching-data.facade';
 @Module({})
 export class MatchingDataInMemoryAdapterModule {
   public static register(input: InputData) {
-
-    const matchingDataService = new MatchingDataInMemoryService(input);
-
     return {
       module: MatchingDataInMemoryAdapterModule,
       imports: [],
@@ -18,11 +15,11 @@ export class MatchingDataInMemoryAdapterModule {
       providers: [
         {
           provide: MatchingDataFacade,
-          useValue: new MatchingDataInMemoryFacade(matchingDataService),
+          useClass: MatchingDataInMemoryFacade,
         },
         {
           provide: MatchingDataInMemoryService,
-          useValue: matchingDataService,
+          useValue: new MatchingDataInMemoryService(input),
         },
       ],
     };
