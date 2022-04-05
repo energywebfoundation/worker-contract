@@ -1,12 +1,12 @@
 import type { Preferences, Reading } from '../matching-data/types';
 import { MatchingDataFacade } from '../matching-data/matching-data.facade';
 import { MatchingResultFacade } from '../matching-result/matching-result.facade';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from './types';
 import { MatchingAlgorithm, MATCHING_ALGO } from './types';
 import { createMerkleTree, hash } from 'greenproof-merkle-tree';
 
-
+@Injectable()
 export class MatchingFacade {
   constructor(
     private matchingDataFacade: MatchingDataFacade,
