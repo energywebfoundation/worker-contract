@@ -6,7 +6,7 @@ import type { MatchingAlgorithm} from './types';
 @Module({})
 export class MatchingModule {
   public static register(options: {
-    dependendencies: unknown[]
+    dependendencies: Function[]
     matchingAlgorithm: MatchingAlgorithm
   }) {
     return {
