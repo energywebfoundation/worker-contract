@@ -10,7 +10,9 @@
     "build": "tsc",
     "clean": "shx rm -rf dist",
     "lint": "eslint \"{src,test}/**/*{.ts,.tsx}\" --quiet",
-    "lint:fix": "yarn lint --fix"
+    "lint:fix": "yarn lint --fix",
+    "test:unit": "jest",
+    "test:e2e": "echo no e2e tests for package"
   },
   "dependencies": {
     "merkletreejs": "0.2.31"

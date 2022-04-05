@@ -2,6 +2,7 @@
   "private": true,
   "workspaces": {
     "packages": [
+      "packages/merkle-tree",
       "packages/worker"
     ]
   },
