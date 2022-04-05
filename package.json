@@ -2,8 +2,8 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "packages/worker",
-      "packages/merkle-tree"
+      "packages/merkle-tree",
+      "packages/worker"
     ]
   },
   "scripts": {
