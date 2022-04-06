@@ -1,0 +1,1 @@
+export { SpreadMatcher } from './SpreadMatcher';
