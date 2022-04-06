@@ -5,7 +5,7 @@ import type { Preferences, Reading, ReadingQuery } from '../types';
 export class MatchingDataMockService {
   private consumptions: Reading[] = [];
   private generations: Reading[] = [];
-  private preferences: Preferences;
+  private preferences!: Preferences;
 
   constructor() {}
 
