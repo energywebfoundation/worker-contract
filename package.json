@@ -3,6 +3,7 @@
   "workspaces": {
     "packages": [
       "packages/merkle-tree",
+      "packages/algorithms",
       "packages/worker"
     ]
   },
