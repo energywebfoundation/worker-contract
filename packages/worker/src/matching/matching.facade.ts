@@ -29,8 +29,8 @@ export class MatchingFacade {
   private createTree(matchingResult: MatchingOutput) {
     const hashes = this.createHashes(matchingResult);
     const merkleTree = createMerkleTree(hashes);
-    const root = merkleTree.tree.getRoot().toString();
-    const leaves = merkleTree.tree.getLeaves().map(leaf => leaf.toString());
+    const root = merkleTree.tree.getHexRoot();
+    const leaves = merkleTree.tree.getHexLeaves();
 
     return {
       rootHash: root,
