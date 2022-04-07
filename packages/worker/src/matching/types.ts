@@ -11,17 +11,17 @@ export interface MatchingInput {
 export interface Match {
   consumerId: string;
   generatorId: string;
-  volume: string;
+  volume: number;
 }
 
 export interface LeftoverConsumption {
   id: string;
-  volume: string;
+  volume: number;
 }
 
 export interface ExcessGeneration {
   id: string;
-  volume: string;
+  volume: number;
 }
 
 export interface MatchingOutput {
