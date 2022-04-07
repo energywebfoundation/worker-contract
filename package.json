@@ -4,7 +4,8 @@
     "packages": [
       "packages/merkle-tree",
       "packages/algorithms",
-      "packages/worker"
+      "packages/worker",
+      "packages/example"
     ]
   },
   "scripts": {
