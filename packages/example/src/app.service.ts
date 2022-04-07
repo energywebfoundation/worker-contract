@@ -7,7 +7,7 @@ export class AppService {
     private matchingFacade: MatchingFacade,
   ) {}
 
-  public async match() {
-    await this.matchingFacade.match(new Date('2022-04-07T09:00:00.000Z'));
+  public async match(timestamp: Date) {
+    await this.matchingFacade.match(timestamp);
   }
 }
