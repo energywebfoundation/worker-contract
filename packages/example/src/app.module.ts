@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MatchingModule, MatchingDataInMemoryAdapterModule, MatchingResultModule, matchingResultLogger } from 'greenproof-worker';
+import { MatchingModule, MatchingDataInMemoryAdapterModule, MatchingResultReceiversAdapterModule, matchingResultLogger } from 'greenproof-worker';
 import { produceData } from './data-producer';
 import { matchingAlgorithm } from './algorithm';
 
@@ -10,7 +10,7 @@ import { matchingAlgorithm } from './algorithm';
     MatchingModule.register({
       dependendencies: [
         MatchingDataInMemoryAdapterModule.register(produceData()),
-        MatchingResultModule.register({
+        MatchingResultReceiversAdapterModule.register({
           receivers: [
             matchingResultLogger,
           ],
