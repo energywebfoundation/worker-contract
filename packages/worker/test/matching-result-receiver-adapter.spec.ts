@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
+import { MatchingResultReceiversAdapterModule } from '../src';
 import { MatchingResultFacade } from '../src/matching-result/matching-result.facade';
-import { MatchingResultModule } from '../src/matching-result/matching-result.module';
 import type { MatchingResult } from '../src/matching-result/types';
 
 describe('Matching result', () => {
@@ -9,7 +9,7 @@ describe('Matching result', () => {
     const receiver2 = jest.fn();
 
     const mod = await Test.createTestingModule({
-      imports: [MatchingResultModule.register({
+      imports: [MatchingResultReceiversAdapterModule.register({
         receivers: [
           receiver1,
           receiver2,
