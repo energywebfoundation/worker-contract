@@ -1,5 +1,4 @@
-import { omit, cloneDeep } from 'lodash';
-import { BigNumber } from '@ethersproject/bignumber';
+import { omit, cloneDeep, minBy } from 'lodash';
 
 export namespace SpreadMatcher {
     /**
@@ -7,7 +6,7 @@ export namespace SpreadMatcher {
      */
     export interface Entity {
         id: string;
-        volume: BigNumber;
+        volume: number;
     }
 
     export interface Params<T extends Entity, P extends Entity> {
@@ -23,7 +22,7 @@ export namespace SpreadMatcher {
     export interface Match<T extends Entity, P extends Entity> {
         /** Volumes are omitted to avoid confusion, though they are expected to be 0 */
         entities: [Omit<T, 'volume'>, Omit<P, 'volume'>];
-        volume: BigNumber;
+        volume: number;
     }
 
     export interface Result<T extends Entity, P extends Entity> {
@@ -52,7 +51,7 @@ export namespace SpreadMatcher {
 
     interface MatchRoundResult<T extends Entity, P extends Entity> {
         entities: Route<T, P>;
-        volume: BigNumber;
+        volume: number;
     }
 
     /**
@@ -132,8 +131,8 @@ export namespace SpreadMatcher {
                 const entity1 = entityMap[0].get(match.entities[0])!;
                 const entity2 = entityMap[1].get(match.entities[1])!;
 
-                entity1.volume = entity1.volume.sub(match.volume);
-                entity2.volume = entity2.volume.sub(match.volume);
+                entity1.volume = entity1.volume - match.volume;
+                entity2.volume = entity2.volume - match.volume;
             });
 
             matchRoundResults.push(roundMatches);
@@ -151,8 +150,8 @@ export namespace SpreadMatcher {
             matches: sumMatches(matchRoundResults.flat()).map(omitMatchVolumes) as Match<T, P>[],
             roundMatches: matchRoundResults,
             leftoverEntities: [
-                data.entityGroups[0].filter((e) => e.volume.gt(0)),
-                data.entityGroups[1].filter((e) => e.volume.gt(0))
+                data.entityGroups[0].filter((e) => e.volume > 0),
+                data.entityGroups[1].filter((e) => e.volume > 0)
             ] as [T[], P[]]
         };
     };
@@ -171,19 +170,19 @@ export namespace SpreadMatcher {
     const sumMatches = <T extends Entity, P extends Entity>(
         matches: Match<T, P>[]
     ): Match<T, P>[] => {
-        const matchMap = new Map<Omit<T, 'volume'>, Map<Omit<P, 'volume'>, BigNumber>>();
+        const matchMap = new Map<Omit<T, 'volume'>, Map<Omit<P, 'volume'>, number>>();
 
         // Insert entities into Map for quick access
         // and sum volumes
         matches.forEach((match) => {
             const entity1Entry =
-                matchMap.get(match.entities[0]) ?? new Map<Omit<P, 'volume'>, BigNumber>();
+                matchMap.get(match.entities[0]) ?? new Map<Omit<P, 'volume'>, number>();
 
             matchMap.set(match.entities[0], entity1Entry);
 
-            const entity2Entry = entity1Entry.get(match.entities[1]) ?? BigNumber.from(0);
+            const entity2Entry = entity1Entry.get(match.entities[1]) ?? 0;
 
-            entity1Entry.set(match.entities[1], entity2Entry.add(match.volume));
+            entity1Entry.set(match.entities[1], entity2Entry + match.volume);
         });
 
         // Unwind Map result
@@ -209,13 +208,13 @@ export namespace SpreadMatcher {
         entities1: RoutedEntity<T, P>[],
         entities2: RoutedEntity<P, T>[]
     ) => {
-        const result = bigNumMinBy([...entities1, ...entities2], (e) =>
-            e.volume.div(e.routes.length)
-        );
+        const result = minBy([...entities1, ...entities2], (e) =>
+            e.volume / e.routes.length
+        )!;
 
         return {
             entity: result,
-            volume: result.volume.div(result.routes.length)
+            volume: Math.floor(result.volume / result.routes.length)
         };
     };
 
@@ -230,7 +229,7 @@ export namespace SpreadMatcher {
             input.entityWithRoutes[1]
         );
 
-        if (toDistribute.volume.eq(0)) {
+        if (toDistribute.volume === 0) {
             const competingEntities = toDistribute.entity.routes;
 
             // We need to check to which group entity to distribute belongs
@@ -239,14 +238,14 @@ export namespace SpreadMatcher {
             // Each competing entity will receive one volume from entity to distribute,
             const entitiesToSatisfy = competingEntities.slice(
                 0,
-                toDistribute.entity.volume.toNumber()
+                toDistribute.entity.volume
             );
 
             const result = entitiesToSatisfy.map((connectedEntity) => ({
                 entities: (isEntityFirst
                     ? [toDistribute.entity, connectedEntity]
                     : [connectedEntity, toDistribute.entity]) as Route<T, P>,
-                volume: BigNumber.from(1)
+                volume: 1
             }));
 
             return result;
@@ -318,7 +317,7 @@ export namespace SpreadMatcher {
         for (let i = 0; i < entitiesLength; i += 1) {
             const entity = entities[i];
 
-            if (entity.volume.eq(0)) {
+            if (entity.volume === 0) {
                 continue;
             }
 
@@ -360,22 +359,6 @@ export namespace SpreadMatcher {
         );
 
         return firstAvailableEntry ?? [];
-    };
-
-    const bigNumMinBy = <T>(collection: T[], cb: (v: T) => BigNumber): T => {
-        let minResult = cb(collection[0]);
-        let minItem = collection[0];
-
-        for (let i = 0; i < collection.length; i += 1) {
-            const currentResult = cb(collection[i]);
-
-            if (currentResult.lt(minResult)) {
-                minItem = collection[i];
-                minResult = currentResult;
-            }
-        }
-
-        return minItem;
     };
 
     const cartesian = <T, P>(arr1: T[], arr2: P[]): [T, P][] => {
