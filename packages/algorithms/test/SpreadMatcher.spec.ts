@@ -1,10 +1,9 @@
-import { BigNumber } from '@ethersproject/bignumber';
 import { SpreadMatcher } from '../src';
 
 describe('spreadMatcher', () => {
   describe('consumer priority', () => {
     it('2 consumers within same group - should distribute evenly between same priority consumers', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -55,7 +54,7 @@ describe('spreadMatcher', () => {
     });
 
     it('2 consumers within same group - should distribute evenly between same priority consumers, regardless of consumptions', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -109,7 +108,7 @@ describe('spreadMatcher', () => {
     });
 
     it('2 consumers within same group - should distribute one more to first consumer when generations are indivisible equally', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -163,7 +162,7 @@ describe('spreadMatcher', () => {
     });
 
     it('3 consumers within same group - should distribute evenly between same priority consumers', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -238,7 +237,7 @@ describe('spreadMatcher', () => {
     });
 
     it('3 consumers within same group - should distribute last indivisible generation (1) to first consumer', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -313,7 +312,7 @@ describe('spreadMatcher', () => {
     });
 
     it('3 consumers within same group - should distribute last indivisible generation (2) from different generators to first consumer', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -393,7 +392,7 @@ describe('spreadMatcher', () => {
     });
 
     it('2 consumers within different groups - should satisfy higher priority group first', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -449,7 +448,7 @@ describe('spreadMatcher', () => {
     });
 
     it('2 consumer priority groups, 2 consumer each - should satisfy higher priority group first', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -539,7 +538,7 @@ describe('spreadMatcher', () => {
 
   describe('generator priority', () => {
     it('2 generators - should distribute evenly between same priority generators', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -578,7 +577,7 @@ describe('spreadMatcher', () => {
     });
 
     it('2 generators - should distribute last indivisible consumption (1) from first generation on list', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -607,7 +606,7 @@ describe('spreadMatcher', () => {
     });
 
     it('3 generators - should distribute evenly between same priority generators', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -661,7 +660,7 @@ describe('spreadMatcher', () => {
     });
 
     it('3 generators - should distribute last indivisible consumption (1) from first generation on list', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -714,7 +713,7 @@ describe('spreadMatcher', () => {
     });
 
     it('3 generators - should distribute last indivisible consumption (2) from first two generations on list', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -767,7 +766,7 @@ describe('spreadMatcher', () => {
     });
 
     it('2 generators and 2 consumers - should distribute evenly between same priority generators', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -811,7 +810,7 @@ describe('spreadMatcher', () => {
     });
 
     it('3 generators and 2 consumers - should distribute evenly between same priority generators', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -868,7 +867,7 @@ describe('spreadMatcher', () => {
     });
 
     it('2 generators and 3 consumers - should distribute evenly between same priority generators', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -938,7 +937,7 @@ describe('spreadMatcher', () => {
 
   describe('leftover consumptions', () => {
     it('should return only leftover consumptions when there are no generations', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -981,7 +980,7 @@ describe('spreadMatcher', () => {
     });
 
     it('should return leftover consumptions when the generations cannot satisfy all consumptions', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             { id: 'consumerA', groupPriority: [[{ id: 'generatorA' }]] },
@@ -1021,7 +1020,7 @@ describe('spreadMatcher', () => {
 
   describe('excess generations', () => {
     it('should return only excess generations when there are no consumptions to satisfy', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             {
@@ -1047,7 +1046,7 @@ describe('spreadMatcher', () => {
     });
 
     it('should return excess generations when the consumptions are satisfied and there are generations left', () => {
-      const result = integerMatcher({
+      const result = SpreadMatcher.spreadMatcher({
         groupPriority: [
           [
             { id: 'consumerA', groupPriority: [[{ id: 'generatorA' }]] },
@@ -1082,8 +1081,8 @@ describe('spreadMatcher', () => {
           ]
         ],
         entityGroups: [
-          [{ id: 'consumerA', volume: BigNumber.from(5), type: 'consumer' }],
-          [{ id: 'generatorA', volume: BigNumber.from(10), type: 'generator' }]
+          [{ id: 'consumerA', volume: 5, type: 'consumer' }],
+          [{ id: 'generatorA', volume: 10, type: 'generator' }]
         ]
       });
 
@@ -1093,7 +1092,7 @@ describe('spreadMatcher', () => {
           { id: 'consumerA', type: 'consumer' },
           { id: 'generatorA', type: 'generator' }
         ],
-        volume: BigNumber.from(5)
+        volume: 5
       });
     });
 
@@ -1107,12 +1106,12 @@ describe('spreadMatcher', () => {
         ],
         entityGroups: [
           [
-            { id: 'consumerA', volume: BigNumber.from(6), type: 'consumer' },
-            { id: 'consumerA', volume: BigNumber.from(6), type: 'battery' }
+            { id: 'consumerA', volume: 6, type: 'consumer' },
+            { id: 'consumerA', volume: 6, type: 'battery' }
           ],
           [
-            { id: 'generatorA', volume: BigNumber.from(10), type: 'generator' },
-            { id: 'generatorA', volume: BigNumber.from(10), type: 'battery' }
+            { id: 'generatorA', volume: 10, type: 'generator' },
+            { id: 'generatorA', volume: 10, type: 'battery' }
           ]
         ]
       });
@@ -1123,28 +1122,28 @@ describe('spreadMatcher', () => {
           { id: 'consumerA', type: 'consumer' },
           { id: 'generatorA', type: 'generator' }
         ],
-        volume: BigNumber.from(3)
+        volume: 3
       });
       expect(result.matches[1]).toEqual({
         entities: [
           { id: 'consumerA', type: 'consumer' },
           { id: 'generatorA', type: 'battery' }
         ],
-        volume: BigNumber.from(3)
+        volume: 3
       });
       expect(result.matches[2]).toEqual({
         entities: [
           { id: 'consumerA', type: 'battery' },
           { id: 'generatorA', type: 'generator' }
         ],
-        volume: BigNumber.from(3)
+        volume: 3
       });
       expect(result.matches[3]).toEqual({
         entities: [
           { id: 'consumerA', type: 'battery' },
           { id: 'generatorA', type: 'battery' }
         ],
-        volume: BigNumber.from(3)
+        volume: 3
       });
     });
   });
@@ -1154,8 +1153,8 @@ describe('spreadMatcher', () => {
       const result = SpreadMatcher.spreadMatcher({
         groupPriority: [[{ id: 'consumerA', groupPriority: [[{ id: 'generatorA' }]] }]],
         entityGroups: [
-          [{ id: 'consumerA', volume: BigNumber.from(50) }],
-          [{ id: 'generatorB', volume: BigNumber.from(30) }]
+          [{ id: 'consumerA', volume: 50 }],
+          [{ id: 'generatorB', volume: 30 }]
         ]
       });
 
@@ -1182,12 +1181,12 @@ describe('spreadMatcher', () => {
       ],
       entityGroups: [
         [
-          { id: 'consumerA', volume: BigNumber.from(10) },
-          { id: 'consumerB', volume: BigNumber.from(10) }
+          { id: 'consumerA', volume: 10 },
+          { id: 'consumerB', volume: 10 }
         ],
         [
-          { id: 'generatorX', volume: BigNumber.from(1) },
-          { id: 'generatorY', volume: BigNumber.from(1) }
+          { id: 'generatorX', volume: 1 },
+          { id: 'generatorY', volume: 1 }
         ]
       ]
     });
@@ -1196,16 +1195,16 @@ describe('spreadMatcher', () => {
 
     expect(result.matches[0]).toEqual({
       entities: [{ id: 'consumerA' }, { id: 'generatorX' }],
-      volume: BigNumber.from(1)
+      volume: 1
     });
     expect(result.matches[1]).toEqual({
       entities: [{ id: 'consumerB' }, { id: 'generatorY' }],
-      volume: BigNumber.from(1)
+      volume: 1
     });
   });
 
   it('Edge case fail - two consumptions with the same id, but one is satisfied during matching', () => {
-    const result = integerMatcher({
+    const result = SpreadMatcher.spreadMatcher({
       groupPriority: [
         [
           {
@@ -1234,44 +1233,3 @@ describe('spreadMatcher', () => {
   });
 });
 
-type Primitive = string | number | boolean | undefined | null;
-type IntegerVolume<T> = {
-  [K in keyof T]: T[K] extends BigNumber
-  ? number
-  : T[K] extends Primitive
-  ? T[K]
-  : IntegerVolume<T[K]>;
-};
-
-const integerMatcher = <T extends SpreadMatcher.Entity, P extends SpreadMatcher.Entity>(
-  params: IntegerVolume<SpreadMatcher.Params<T, P>>
-): IntegerVolume<SpreadMatcher.Result<T, P>> => {
-  const result = SpreadMatcher.spreadMatcher({
-    groupPriority: params.groupPriority,
-    entityGroups: params.entityGroups.map((g) =>
-      g.map((e: any) => ({
-        id: e.id,
-        volume: BigNumber.from(e.volume)
-      }))
-    ) as [SpreadMatcher.Entity[], SpreadMatcher.Entity[]]
-  });
-
-  return {
-    leftoverEntities: result.leftoverEntities.map((g) =>
-      g.map((e) => ({
-        id: e.id,
-        volume: e.volume.toNumber()
-      }))
-    ) as any,
-    matches: result.matches.map((m) => ({
-      ...m,
-      volume: m.volume.toNumber()
-    })) as any,
-    roundMatches: result.roundMatches.map((round) =>
-      round.map((m) => ({
-        ...m,
-        volume: m.volume.toNumber()
-      }))
-    ) as any
-  };
-};
