@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { OverseerModule } from './overseer/overseer.module';
 
 @Module({
-  imports: [OverseerModule],
+  imports: [],
   controllers: [AppController],
   providers: [AppService],
 })

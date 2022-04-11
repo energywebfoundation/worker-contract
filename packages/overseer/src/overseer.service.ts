@@ -3,9 +3,9 @@ import type { JsonRpcProvider } from '@ethersproject/providers';
 import { Injectable } from '@nestjs/common';
 import type { Contract, EventFilter, Wallet } from 'ethers';
 import { ethers } from 'ethers';
-import type { Greeter} from './contract-types';
-import { Greeter__factory } from './contract-types';
-import type { TypedEvent, TypedListener } from './contract-types/common';
+import type { Greeter} from './contracts/types';
+import { Greeter__factory } from './contracts/types';
+import type { TypedEvent, TypedListener } from './contracts/types/common';
 
 interface BlockchainConfig {
   rpcHost: string;

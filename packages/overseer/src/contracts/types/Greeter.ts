@@ -33,35 +33,17 @@ export interface GreeterInterface extends utils.Interface {
   };
 
   getFunction(
-    nameOrSignatureOrTopic:
-      | "dupa"
-      | "dupa()"
-      | "greet"
-      | "greet()"
-      | "setGreeting"
-      | "setGreeting(string)"
+    nameOrSignatureOrTopic: "dupa" | "greet" | "setGreeting"
   ): FunctionFragment;
 
   encodeFunctionData(functionFragment: "dupa", values?: undefined): string;
-  encodeFunctionData(functionFragment: "dupa()", values?: undefined): string;
   encodeFunctionData(functionFragment: "greet", values?: undefined): string;
-  encodeFunctionData(functionFragment: "greet()", values?: undefined): string;
   encodeFunctionData(functionFragment: "setGreeting", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "setGreeting(string)",
-    values: [string]
-  ): string;
 
   decodeFunctionResult(functionFragment: "dupa", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "dupa()", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "greet", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "greet()", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setGreeting",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setGreeting(string)",
     data: BytesLike
   ): Result;
 
@@ -71,9 +53,7 @@ export interface GreeterInterface extends utils.Interface {
   };
 
   getEvent(nameOrSignatureOrTopic: "Dupa"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Dupa(string)"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Greeting"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Greeting(string)"): EventFragment;
 }
 
 export interface DupaEventObject {
@@ -121,24 +101,11 @@ export interface Greeter extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    "dupa()"(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     greet(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    "greet()"(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     setGreeting(
-      _greeting: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    "setGreeting(string)"(
       _greeting: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -148,15 +115,7 @@ export interface Greeter extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  "dupa()"(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   greet(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  "greet()"(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -165,26 +124,12 @@ export interface Greeter extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  "setGreeting(string)"(
-    _greeting: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   callStatic: {
     dupa(overrides?: CallOverrides): Promise<string>;
 
-    "dupa()"(overrides?: CallOverrides): Promise<string>;
-
     greet(overrides?: CallOverrides): Promise<string>;
 
-    "greet()"(overrides?: CallOverrides): Promise<string>;
-
     setGreeting(_greeting: string, overrides?: CallOverrides): Promise<void>;
-
-    "setGreeting(string)"(
-      _greeting: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
   };
 
   filters: {
@@ -200,24 +145,11 @@ export interface Greeter extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    "dupa()"(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     greet(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    "greet()"(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     setGreeting(
-      _greeting: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    "setGreeting(string)"(
       _greeting: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -228,24 +160,11 @@ export interface Greeter extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    "dupa()"(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     greet(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    "greet()"(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     setGreeting(
-      _greeting: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    "setGreeting(string)"(
       _greeting: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
