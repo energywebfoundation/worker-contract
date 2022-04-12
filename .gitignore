@@ -1,6 +1,9 @@
 # compiled output
 /dist
 node_modules
+artifacts
+cache
+
 # Logs
 logs
 *.log
