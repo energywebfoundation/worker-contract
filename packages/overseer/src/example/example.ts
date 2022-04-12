@@ -1,4 +1,4 @@
-import { OverseerConfig, BlockchainConfig, EventListeners } from "../types";
+import type { OverseerConfig, BlockchainConfig, EventListeners } from '../types';
 
 export const localBlockchainConfig: BlockchainConfig = {
   rpcHost: 'http://localhost:8545',
@@ -8,11 +8,11 @@ export const localBlockchainConfig: BlockchainConfig = {
 
 export const exampleListeners: EventListeners = {
   'InterestingEvent' : [(ev: any) => { console.log(ev); }]
-}
+};
 
 export const exampleConfig: OverseerConfig = {
   blockchainConfig: localBlockchainConfig,
   listeners: exampleListeners,
   getLastHandledBlockNumber: () => { return 0; }
-}
+};
 

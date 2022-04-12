@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "yarn build:contract-types && nest build",
+    "build": "yarn build:contract && yarn build:contract-types && nest build",
     "build:contract-types": "npx typechain --target ethers-v5 --out-dir ./src/contracts/types/ './src/contracts/artifacts/contracts/**/*[!dbg].json'",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -19,7 +19,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --passWithNoTests --config ./test/jest-e2e.json",
+    "test:e2e": "yarn test:setup && jest --passWithNoTests --config ./test/jest-e2e.json --forceExit",
     "deploy:local": "npx hardhat run --network localhost src/contracts/scripts/deploy.js",
     "build:contract": "npx hardhat compile",
     "run:blockchain": "npx hardhat node",
