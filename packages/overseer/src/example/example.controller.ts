@@ -1,5 +1,5 @@
-import { Controller, Get } from "@nestjs/common";
-import { OverseerService } from "../overseer.service";
+import { Controller, Get } from '@nestjs/common';
+import { OverseerService } from '../overseer.service';
 
 @Controller('greeter')
 export class OverseerController {
@@ -7,6 +7,6 @@ export class OverseerController {
 
   @Get('/greet')
   async greet() {
-    // await this.overseerService.greet();
+    await this.overseerService.testFunction();
   }
 }

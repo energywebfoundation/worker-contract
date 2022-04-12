@@ -7,7 +7,7 @@ export const localBlockchainConfig: BlockchainConfig = {
 };
 
 export const exampleListeners: EventListeners = {
-  'Greeting' : [(ev: any) => { console.log(ev); }]
+  'InterestingEvent' : [(ev: any) => { console.log(ev); }]
 }
 
 export const exampleConfig: OverseerConfig = {

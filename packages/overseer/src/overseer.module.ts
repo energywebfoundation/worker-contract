@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OverseerController } from './example/example.controller';
 import { OverseerService } from './overseer.service';
-import { OverseerConfig } from './types';
+import type { OverseerConfig } from './types';
 
 @Module({})
 export class OverseerModule {
