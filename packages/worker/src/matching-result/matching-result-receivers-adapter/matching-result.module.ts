@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { MatchingResultFacade } from './matching-result.facade';
+import { MatchingResultReceiversFacade } from './matching-result-receivers.facade';
+import { MatchingResultFacade } from '../matching-result.facade';
 import type { MatchingResultReceiver} from './types';
 import { MATCHING_RESULT_RECEIVERS } from './types';
 
@@ -8,10 +9,10 @@ interface MatchingResultModuleParams {
 }
 
 @Module({})
-export class MatchingResultModule {
+export class MatchingResultReceiversAdapterModule {
   static register(params: MatchingResultModuleParams) {
     return {
-      module: MatchingResultModule,
+      module: MatchingResultReceiversAdapterModule,
       exports: [
         MatchingResultFacade,
       ],
@@ -20,7 +21,10 @@ export class MatchingResultModule {
           provide: MATCHING_RESULT_RECEIVERS,
           useValue: params.receivers,
         },
-        MatchingResultFacade,
+        {
+          provide: MatchingResultFacade,
+          useClass: MatchingResultReceiversFacade,
+        },
       ],
     };
   }

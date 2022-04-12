@@ -1,18 +1,18 @@
-import { Module } from '@nestjs/common';
+import { Module, ModuleMetadata } from '@nestjs/common';
 import { MatchingFacade } from './matching.facade';
 import { MATCHING_ALGO } from './types';
-import type { MatchingAlgorithm} from './types';
+import type { MatchingAlgorithm } from './types';
 
 @Module({})
 export class MatchingModule {
   public static register(options: {
-    dependendencies: Function[]
+    dependendencies: ModuleMetadata['imports'],
     matchingAlgorithm: MatchingAlgorithm
   }) {
     return {
       module: MatchingModule,
       imports: options.dependendencies,
-      provide: [
+      providers: [
         MatchingFacade,
         {
           provide: MATCHING_ALGO,

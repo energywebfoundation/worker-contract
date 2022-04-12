@@ -5,7 +5,8 @@
       "packages/merkle-tree",
       "packages/algorithms",
       "packages/overseer",
-      "packages/worker"
+      "packages/worker",
+      "packages/example"
     ]
   },
   "scripts": {

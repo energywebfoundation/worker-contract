@@ -4,11 +4,8 @@ export interface MatchingResult {
     leaves: string[];
   },
   data: {
-    matches: { consumerId: string; generatorId: string; volume: string }[];
-    leftoverConsumptions: { id: string; volume: string }[];
-    excessGenerations: { id: string; volume: string }[];
+    matches: { consumerId: string; generatorId: string; volume: number }[];
+    leftoverConsumptions: { id: string; volume: number }[];
+    excessGenerations: { id: string; volume: number }[];
   }
 }
-
-export type MatchingResultReceiver = (result: MatchingResult) => Promise<void>;
-export const MATCHING_RESULT_RECEIVERS = Symbol.for('MATCHING_RESULT_RECEIVERS');
