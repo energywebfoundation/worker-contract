@@ -4,6 +4,7 @@
     "packages": [
       "packages/merkle-tree",
       "packages/algorithms",
+      "packages/overseer",
       "packages/worker",
       "packages/example"
     ]
