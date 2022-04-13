@@ -1,6 +1,7 @@
 import type { JsonRpcProvider } from '@ethersproject/providers';
+import type { OnApplicationBootstrap } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
-import type { BaseContract, Wallet } from 'ethers';
+import type { Wallet } from 'ethers';
 import { ethers } from 'ethers';
 import type { SampleContract} from './contracts/types';
 import { SampleContract__factory } from './contracts/types';
@@ -14,19 +15,21 @@ interface BlockchainConfig {
 }
 
 @Injectable()
-export class OverseerService {
+export class OverseerService implements OnApplicationBootstrap {
   private provider: JsonRpcProvider;
   private contract: SampleContract;
   private wallet: Wallet;
 
-  constructor(private config: BlockchainConfig, listeners: EventListeners, getLastHandledBlockNumber: Function) {
+  constructor(private config: BlockchainConfig, private listeners: EventListeners, private getLastHandledBlockNumber: Function) {
     this.provider = new ethers.providers.JsonRpcProvider(this.config.rpcHost);
     this.wallet = new ethers.Wallet(this.config.overseerPrivateKey, this.provider);
     this.contract = SampleContract__factory.connect(this.config.contractAddress, this.provider.getSigner());
     this.contract.connect(this.wallet);
+  }
 
-    this.handleMissedEvents(listeners, getLastHandledBlockNumber);
-    this.registerEventListeners(listeners);
+  onApplicationBootstrap() {
+    this.handleMissedEvents(this.listeners, this.getLastHandledBlockNumber);
+    this.registerEventListeners(this.listeners);
   }
 
   public async testFunction() {
