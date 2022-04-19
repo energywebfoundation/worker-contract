@@ -9,8 +9,14 @@ contract MatchVoting is Ownable {
     /// Match timestamp
     uint public timestamp;
 
+    /// Number of participating workers
+    uint public workersCount;
+
     /// Disables voting option after voting end
     bool public votingEnded;
+
+    /// Winning match result
+    string public winningMatch;
 
     /// List of all match results with at least one vote
     string[] public matches;
@@ -30,11 +36,15 @@ contract MatchVoting is Ownable {
     /// Voting ended, winner is chosen - workers cannot vote anymore
     error VotingAlreadyEnded();
 
+    /// Winning match result did not reach more than a half of total votes
+    error NoConsensusReached();
+
     /// No votes registered
     error NoVotesYet();
 
     constructor(address[] memory workers, uint _timestamp) {
         timestamp = _timestamp;
+        workersCount = workers.length;
 
         for (uint i = 0; i < workers.length; i++) {
             workerToMatchResult[workers[i]] = "NOT VOTED";
@@ -64,13 +74,17 @@ contract MatchVoting is Ownable {
             revert NoVotesYet();
         }
 
-        uint winningVoteCount = 0;
+        uint winningVoteCount;
 
         for (uint i = 0; i < matches.length; i++) {
             if (matchResultToVoteCount[matches[i]] > winningVoteCount) {
                 winningVoteCount = matchResultToVoteCount[matches[i]];
                 winningMatch = matches[i];
             }
+        }
+
+        if(10 * winningVoteCount < 10 * workersCount / 2 ) {
+            revert NoConsensusReached();
         }
 
         votingEnded = true;
