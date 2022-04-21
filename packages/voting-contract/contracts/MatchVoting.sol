@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "hardhat/console.sol";
+import "./Certificate.sol";
 
 contract MatchVoting is Ownable {
     /// Match timestamp
@@ -17,6 +18,9 @@ contract MatchVoting is Ownable {
 
     /// Winning match result
     string public winningMatch;
+
+    /// Winning match result
+    address public certificateContractAddress;
 
     /// List of all match results with at least one vote
     string[] public matches;
@@ -42,8 +46,9 @@ contract MatchVoting is Ownable {
     /// No votes registered
     error NoVotesYet();
 
-    constructor(address[] memory workers, uint _timestamp) {
+    constructor(address[] memory workers, uint _timestamp, address _certificateContractAddress) {
         timestamp = _timestamp;
+        certificateContractAddress = _certificateContractAddress;
         workersCount = workers.length;
 
         for (uint i = 0; i < workers.length; i++) {
@@ -88,6 +93,10 @@ contract MatchVoting is Ownable {
         }
 
         votingEnded = true;
+
+        // To be changed to real certificate issuance
+        ICertificate(certificateContractAddress).mint(winningMatch);
+
         emit WinningMatch(winningMatch, timestamp, winningVoteCount);
 
         return true;
