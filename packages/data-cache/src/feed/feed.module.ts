@@ -12,7 +12,8 @@ import { FeedFacade } from './feed.facade';
     FeedFacade,
   ],
   providers: [
-    { provide: DataSource, useClass: DDHubDataSource }
+    { provide: DataSource, useClass: DDHubDataSource },
+    FeedFacade
   ],
 })
 export class FeedModule {}
