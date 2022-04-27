@@ -4,6 +4,7 @@ import { ApiModule } from './api/api.module';
 import { join } from 'path';
 import { config } from 'dotenv';
 import { SlonikModule } from './database';
+import { getConnectionOptions } from './database/database.utils';
 
 config({ path: join(__dirname, '..', '.env') });
 
@@ -11,7 +12,7 @@ config({ path: join(__dirname, '..', '.env') });
   imports: [
     ApiModule,
     SlonikModule.forRoot({
-      connectionUri: process.env.DATABASE_URL,
+      connectionUri: getConnectionOptions().uri,
     }),
   ],
 })
