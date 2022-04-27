@@ -11,6 +11,13 @@ export class LeftoverGenerationPostgresRepository implements LeftoverGenerationR
     private pool: DatabasePool,
   ) {}
 
+  public async find(): Promise<LeftoverGeneration[]> {
+    const query = sql`SELECT * FROM leftover_generation`;
+    const found = await this.pool.query<LeftoverGeneration>(query);
+
+    return found.rows.map(this.mapEntity);
+  }
+
   public async save(generations: LeftoverGeneration[]): Promise<void> {
     if (generations.length === 0) {
       return;
@@ -41,5 +48,9 @@ export class LeftoverGenerationPostgresRepository implements LeftoverGenerationR
       SELECT *
       FROM ${data}
     `);
+  }
+
+  private mapEntity(match: LeftoverGeneration): LeftoverGeneration {
+    return match;
   }
 }

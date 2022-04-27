@@ -18,7 +18,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "yarn test:setup && jest --passWithNoTests --config ./test/jest-e2e.json --forceExit",
+    "test:setup": "yarn migration:up",
+    "test:e2e": "yarn test:setup && jest --passWithNoTests --config ./test/jest-e2e.js",
     "migration:up": "node db/migrate up",
     "migration:down": "node db/migrate down",
     "migration:create": "node db/migrate create --name"

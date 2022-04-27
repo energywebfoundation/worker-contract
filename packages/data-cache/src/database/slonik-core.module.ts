@@ -15,6 +15,7 @@ import {
   getPoolToken,
   handleRetry,
 } from './common';
+import { DatabaseService } from './database.service';
 import type {
   SlonikModuleAsyncOptions,
   SlonikOptionsFactory,
@@ -45,7 +46,7 @@ export class SlonikCoreModule implements OnApplicationShutdown {
 
     return {
       module: SlonikCoreModule,
-      providers: [poolProvider, slonikOptions],
+      providers: [poolProvider, slonikOptions, DatabaseService],
       exports: [poolProvider],
     };
   }
@@ -76,6 +77,7 @@ export class SlonikCoreModule implements OnApplicationShutdown {
           provide: SLONIK_MODULE_ID,
           useValue: generateString(),
         },
+        DatabaseService,
       ],
       exports: [poolProvider],
     };
