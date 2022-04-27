@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MatchingResult } from '../types';
+import type { MatchingResult } from '../types';
 import { LeftoverConsumptionRepository, LeftoverGenerationRepository, MatchRepository } from './repository/types';
 
 @Injectable()
@@ -11,6 +11,7 @@ export class MatchesFacade {
   ) {}
 
   public async saveMatchingResult(matchResult: MatchingResult): Promise<void> {
+    /** @TODO add transaction */
     await this.matchRepository.save(matchResult.matches);
     await this.leftoverConsumptionRepository.save(matchResult.leftoverConsumption);
     await this.leftoverGenerationRepository.save(matchResult.leftoverGeneration);
