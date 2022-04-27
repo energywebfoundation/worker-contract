@@ -11,6 +11,13 @@ export class MatchPostgresRepository implements MatchRepository {
     private pool: DatabasePool,
   ) {}
 
+  public async find(): Promise<Match[]> {
+    const query = sql`SELECT * FROM match`;
+    const found = await this.pool.query<Match>(query);
+
+    return found.rows.map(this.mapEntity);
+  }
+
   public async save(matches: Match[]): Promise<void> {
     if (matches.length === 0) {
       return;
@@ -47,5 +54,9 @@ export class MatchPostgresRepository implements MatchRepository {
       SELECT *
       FROM ${data}
     `);
+  }
+
+  private mapEntity(match: Match): Match {
+    return match;
   }
 }

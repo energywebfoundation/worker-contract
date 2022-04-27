@@ -11,6 +11,13 @@ export class LeftoverConsumptionPostgresRepository implements LeftoverConsumptio
     private pool: DatabasePool,
   ) {}
 
+  public async find(): Promise<LeftoverConsumption[]> {
+    const query = sql`SELECT * FROM leftover_consumption`;
+    const found = await this.pool.query<LeftoverConsumption>(query);
+
+    return found.rows.map(this.mapEntity);
+  }
+
   public async save(consumptions: LeftoverConsumption[]): Promise<void> {
     if (consumptions.length === 0) {
       return;
@@ -41,5 +48,9 @@ export class LeftoverConsumptionPostgresRepository implements LeftoverConsumptio
       SELECT *
       FROM ${data}
     `);
+  }
+
+  private mapEntity(consumption: LeftoverConsumption): LeftoverConsumption {
+    return consumption;
   }
 }
