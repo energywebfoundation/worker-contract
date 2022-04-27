@@ -1,4 +1,4 @@
-import { LeftoverConsumption, LeftoverGeneration, Match } from '../../types';
+import type { LeftoverConsumption, LeftoverGeneration, Match } from '../../types';
 
 export abstract class MatchRepository {
   abstract save(matches: Match[]): Promise<void>;
