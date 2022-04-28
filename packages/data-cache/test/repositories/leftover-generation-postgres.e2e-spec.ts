@@ -1,11 +1,11 @@
-import { MatchPostgresRepository } from '../../src/matches/repository/match-postgres.repository';
+import { LeftoverGenerationPostgresRepository } from '../../src/matches/repository/leftover-generation-postgres.repository';
 import { bootstrapPostgresRepositoryTest } from '../bootstrap';
 
-describe('MatchPostgresRepository', () => {
-  let repository: MatchPostgresRepository;
+describe('LeftoverGenerationPostgresRepository', () => {
+  let repository: LeftoverGenerationPostgresRepository;
 
   beforeEach(async () => {
-    repository = await bootstrapPostgresRepositoryTest(MatchPostgresRepository);
+    repository = await bootstrapPostgresRepositoryTest(LeftoverGenerationPostgresRepository);
   });
 
   it('should save empty matches', async () => {
@@ -14,11 +14,11 @@ describe('MatchPostgresRepository', () => {
     expect(await repository.find()).toHaveLength(0);
   });
 
-  it('should save multiple match entry', async () => {
+  it('should save multiple leftover generation entry', async () => {
     const input = [
-      match,
-      match,
-      match,
+      generation,
+      generation,
+      generation,
     ];
 
     await repository.save(input);
@@ -28,10 +28,8 @@ describe('MatchPostgresRepository', () => {
   });
 });
 
-const match = {
+const generation = {
   generatorId: '1',
-  consumerId: '1',
-  consumerMetadata: {},
   generatorMetadata: {},
   timestamp: new Date(),
   volume: 1,

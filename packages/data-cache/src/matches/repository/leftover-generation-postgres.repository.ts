@@ -13,7 +13,7 @@ export class LeftoverGenerationPostgresRepository implements LeftoverGenerationR
 
   public async find(): Promise<LeftoverGeneration[]> {
     const query = sql`SELECT * FROM leftover_generation`;
-    const found = await this.pool.query<LeftoverGeneration>(query);
+    const found = await this.pool.query(query);
 
     return found.rows.map(this.mapEntity);
   }
@@ -50,7 +50,12 @@ export class LeftoverGenerationPostgresRepository implements LeftoverGenerationR
     `);
   }
 
-  private mapEntity(match: LeftoverGeneration): LeftoverGeneration {
-    return match;
+  private mapEntity(generation: any): LeftoverGeneration {
+    return {
+      generatorId: generation.generator_id,
+      generatorMetadata: generation.generator_metadata,
+      volume: generation.volume,
+      timestamp: new Date(generation.timestamp),
+    };
   }
 }

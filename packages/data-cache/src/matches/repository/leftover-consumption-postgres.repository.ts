@@ -13,7 +13,7 @@ export class LeftoverConsumptionPostgresRepository implements LeftoverConsumptio
 
   public async find(): Promise<LeftoverConsumption[]> {
     const query = sql`SELECT * FROM leftover_consumption`;
-    const found = await this.pool.query<LeftoverConsumption>(query);
+    const found = await this.pool.query(query);
 
     return found.rows.map(this.mapEntity);
   }
@@ -50,7 +50,12 @@ export class LeftoverConsumptionPostgresRepository implements LeftoverConsumptio
     `);
   }
 
-  private mapEntity(consumption: LeftoverConsumption): LeftoverConsumption {
-    return consumption;
+  private mapEntity(consumption: any): LeftoverConsumption {
+    return {
+      consumerId: consumption.consumer_id,
+      consumerMetadata: consumption.consumer_metadata,
+      timestamp: new Date(consumption.timestamp),
+      volume: consumption.volume,
+    };
   }
 }
