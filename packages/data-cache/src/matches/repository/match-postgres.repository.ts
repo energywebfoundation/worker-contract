@@ -13,7 +13,7 @@ export class MatchPostgresRepository implements MatchRepository {
 
   public async find(): Promise<Match[]> {
     const query = sql`SELECT * FROM match`;
-    const found = await this.pool.query<Match>(query);
+    const found = await this.pool.query(query);
 
     return found.rows.map(this.mapEntity);
   }
@@ -56,7 +56,14 @@ export class MatchPostgresRepository implements MatchRepository {
     `);
   }
 
-  private mapEntity(match: Match): Match {
-    return match;
+  private mapEntity(match: any): Match {
+    return {
+      consumerId: match.consumer_id,
+      consumerMetadata: match.consumer_metadata,
+      generatorId: match.generator_id,
+      generatorMetadata: match.generator_metadata,
+      volume: match.volume,
+      timestamp: new Date(match.timestamp),
+    };
   }
 }

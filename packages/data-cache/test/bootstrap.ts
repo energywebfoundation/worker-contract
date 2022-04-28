@@ -1,6 +1,9 @@
 import type { TestingModule, TestingModuleBuilder } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import type { DynamicModule, ForwardReference, Type } from '@nestjs/common';
+import type { DynamicModule, ForwardReference, Provider, Type } from '@nestjs/common';
+import { SlonikModule } from '../src/database';
+import { getConnectionOptions } from '../src/database/database.utils';
+import { DatabaseService } from '../src/database/database.service';
 
 type ModDef = Type<any> | DynamicModule | Promise<DynamicModule> | ForwardReference;
 
@@ -38,4 +41,18 @@ export const bootstrapFacadeTest = async <T extends Record<string, any>>(
     ...resolveResult,
     stop: async () => await app.close(),
   };
+};
+
+export const bootstrapPostgresRepositoryTest = async <T>(repositoryClass: new (...args: any[]) => T) => {
+  const app = await Test.createTestingModule({
+    imports: [SlonikModule.forRoot({ connectionUri: getConnectionOptions().uri })],
+    providers: [repositoryClass],
+  }).compile();
+
+  const repository = app.get<T>(repositoryClass);
+  const database = app.get(DatabaseService);
+
+  await database.clean();
+
+  return repository;
 };

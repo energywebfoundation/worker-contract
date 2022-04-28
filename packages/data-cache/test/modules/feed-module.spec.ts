@@ -3,7 +3,7 @@ import { FeedFacade } from '../../src/feed/feed.facade';
 import { FeedModuleForUnitTests } from '../../src/feed/feed.module';
 import { MatchesFacade } from '../../src/matches/matches.facade';
 import type { MatchingResult } from '../../src/types';
-import { bootstrapFacadeTest } from '../setup';
+import { bootstrapFacadeTest } from '../bootstrap';
 
 describe('FeedModule', () => {
   let feedFacade: FeedFacade;
