@@ -6,6 +6,7 @@
       "packages/algorithms",
       "packages/overseer",
       "packages/worker",
+      "packages/client-gateway",
       "packages/example"
     ]
   },
