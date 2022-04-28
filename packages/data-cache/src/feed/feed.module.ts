@@ -1,5 +1,6 @@
+import type { DynamicModule} from '@nestjs/common';
 import { Module } from '@nestjs/common';
-import { MatchesModule } from '../matches/matches.module';
+import { MatchesModule, MatchesModuleForUnitTests } from '../matches/matches.module';
 import { DDHubDataSource } from './data/ddhub.data';
 import { DataSource } from './data/types';
 import { FeedFacade } from './feed.facade';
@@ -13,7 +14,26 @@ import { FeedFacade } from './feed.facade';
   ],
   providers: [
     { provide: DataSource, useClass: DDHubDataSource },
-    FeedFacade
+    FeedFacade,
   ],
 })
 export class FeedModule {}
+
+@Module({})
+export class FeedModuleForUnitTests {
+  static register(params: { dataSource: DataSource }): DynamicModule {
+    return {
+      module: FeedModuleForUnitTests,
+      imports: [
+        MatchesModuleForUnitTests,
+      ],
+      exports: [
+        FeedFacade,
+      ],
+      providers: [
+        { provide: DataSource, useValue: params.dataSource },
+        FeedFacade,
+      ],
+    };
+  }
+}

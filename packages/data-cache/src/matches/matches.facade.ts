@@ -16,4 +16,12 @@ export class MatchesFacade {
     await this.leftoverConsumptionRepository.save(matchResult.leftoverConsumption);
     await this.leftoverGenerationRepository.save(matchResult.leftoverGeneration);
   }
+
+  public async getAllResults(): Promise<MatchingResult> {
+    return {
+      leftoverConsumption: await this.leftoverConsumptionRepository.find(),
+      leftoverGeneration: await this.leftoverGenerationRepository.find(),
+      matches: await this.matchRepository.find(),
+    };
+  }
 }
