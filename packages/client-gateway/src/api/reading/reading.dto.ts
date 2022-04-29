@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
+import type { Reading } from '../../data-storage/types';
 
-export class ReadingDTO {
+export class ReadingDTO implements Reading {
   @IsString()
   @IsNotEmpty()
   @ApiProperty({example: 'XYZ001'})

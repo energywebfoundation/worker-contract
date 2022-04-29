@@ -25,8 +25,10 @@
     "@nestjs/core": "8.0.0",
     "@nestjs/platform-express": "8.0.0",
     "@nestjs/swagger": "5.2.1",
+    "axios": "0.27.2",
     "class-transformer": "0.5.1",
     "class-validator": "0.13.2",
+    "dotenv": "16.0.0",
     "nestjs-pino": "2.5.2",
     "pino-http": "7.0.0",
     "reflect-metadata": "0.1.13",
@@ -35,6 +37,7 @@
     "swagger-ui-express": "4.3.0"
   },
   "devDependencies": {
+    "@leocode/eslint-config": "2.0.0",
     "@nestjs/cli": "8.0.0",
     "@nestjs/schematics": "8.0.0",
     "@nestjs/testing": "8.0.0",
@@ -45,7 +48,6 @@
     "@typescript-eslint/eslint-plugin": "4.28.2",
     "@typescript-eslint/parser": "4.28.2",
     "eslint": "7.30.0",
-    "@leocode/eslint-config": "2.0.0",
     "eslint-plugin-prettier": "3.4.0",
     "jest": "27.0.6",
     "supertest": "6.1.3",
