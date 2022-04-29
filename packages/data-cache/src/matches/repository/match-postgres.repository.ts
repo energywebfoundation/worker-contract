@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { DatabaseTransactionConnection} from 'slonik';
 import { DatabasePool, sql } from 'slonik';
 import { InjectPool } from '../../database';
 import type { Match } from '../../types';
@@ -18,7 +19,7 @@ export class MatchPostgresRepository implements MatchRepository {
     return found.rows.map(this.mapEntity);
   }
 
-  public async save(matches: Match[]): Promise<void> {
+  public async save(matches: Match[], tx: DatabaseTransactionConnection | null): Promise<void> {
     if (matches.length === 0) {
       return;
     }
@@ -42,7 +43,7 @@ export class MatchPostgresRepository implements MatchRepository {
       ],
     );
 
-    await this.pool.query(sql`
+    await (tx ?? this.pool).query(sql`
       INSERT INTO match (
         consumer_id,
         generator_id,
