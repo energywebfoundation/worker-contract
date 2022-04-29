@@ -5,7 +5,7 @@ import { TopicService } from './topic.service';
 export class TopicFacade {
   constructor(private topicService: TopicService) {}
 
-  async createTopic({
+  createTopic({
     clientIds,
     topicName,
   }: {
@@ -15,15 +15,15 @@ export class TopicFacade {
     this.topicService.createTopic({ clientIds, topicName });
   }
 
-  async deleteTopic({ topicName }: { topicName: string }) {
+  deleteTopic({ topicName }: { topicName: string }) {
     this.topicService.deleteTopic({ topicName });
   }
 
-  async getTopics() {
+  getTopics() {
     return this.topicService.getTopics();
   }
 
-  async sendMessage({
+  sendMessage({
     message,
     topicName,
   }: {
@@ -33,7 +33,7 @@ export class TopicFacade {
     this.topicService.sendMessage({ message, topicName });
   }
 
-  async getMessages({
+  getMessages({
     clientID,
     topicName,
     from,
@@ -47,7 +47,7 @@ export class TopicFacade {
     return this.topicService.getMessages({ clientID, topicName, to, from });
   }
 
-  async ackMessage({
+  ackMessage({
     clientId,
     messageId,
     topicName,

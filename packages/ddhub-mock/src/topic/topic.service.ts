@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DateTime } from 'luxon';
-import { TopicMessage } from './topic.types';
+import type { TopicMessage } from './topic.types';
 
 @Injectable()
 export class TopicService {
   db: Map<string, Map<string, TopicMessage[]>> = new Map();
 
-  async createTopic({
+  createTopic({
     clientIds,
     topicName,
   }: {
@@ -15,22 +15,25 @@ export class TopicService {
     clientIds: string[];
   }) {
     this.db.set(topicName, new Map());
-    const topic = this.db.get(topicName);
+
+    const topic = this.db.get(topicName)!;
+
     for (const clientId of clientIds) {
       topic.set(clientId, []);
     }
+
     this.db.set(topicName, topic);
   }
 
-  async deleteTopic({ topicName }: { topicName: string }) {
+  deleteTopic({ topicName }: { topicName: string }) {
     this.db.delete(topicName);
   }
 
-  async getTopics() {
+  getTopics() {
     return Array.from(this.db.keys());
   }
 
-  async sendMessage({
+  sendMessage({
     message,
     topicName,
   }: {
@@ -38,6 +41,11 @@ export class TopicService {
     topicName: string;
   }) {
     const topic = this.db.get(topicName);
+
+    if (!topic) {
+      throw new NotFoundException({ message: 'Topic not found' });
+    }
+
     const createdAt = DateTime.now().setZone('UTC').toISO();
     for (const [client, messages] of topic.entries()) {
       const newMessages = [
@@ -49,7 +57,7 @@ export class TopicService {
     this.db.set(topicName, topic);
   }
 
-  async getMessages({
+  getMessages({
     clientID,
     topicName,
     from,
@@ -67,23 +75,30 @@ export class TopicService {
     if (!from && !to) {
       return messages;
     }
+
     return messages.filter(({ createdAt }) => {
+      if (!createdAt) {
+        return false;
+      }
+
+      if (!from && !to) {
+        return true;
+      }
+
       const createdDate = DateTime.fromISO(createdAt);
-      const fromDate = DateTime.fromISO(from);
-      const toDate = DateTime.fromISO(to);
 
       if (from && !to) {
-        return createdDate >= fromDate;
+        return createdDate >= DateTime.fromISO(from);
       }
       if (!from && to) {
-        return createdDate <= toDate;
+        return createdDate <= DateTime.fromISO(to);
       }
 
-      return createdDate >= fromDate && createdDate <= toDate;
+      return createdDate >= DateTime.fromISO(from!) && createdDate <= DateTime.fromISO(to!);
     });
   }
 
-  async ackMessage({
+  ackMessage({
     clientId,
     messageId,
     topicName,
@@ -93,7 +108,15 @@ export class TopicService {
     topicName: string;
   }) {
     const topic = this.db.get(topicName);
+
+    if (!topic) {
+      throw new NotFoundException();
+    }
     const messages = topic.get(clientId);
+
+    if (!messages) {
+      throw new NotFoundException();
+    }
     const newMessages = messages.filter((m) => m.id !== messageId);
     topic.set(clientId, newMessages);
     this.db.set(topicName, topic);

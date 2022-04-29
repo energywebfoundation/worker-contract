@@ -596,6 +596,11 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
+"@leocode/eslint-config@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@leocode/eslint-config/-/eslint-config-2.0.0.tgz#2d7cbc406691645db4bbe60021f64f7d5fcbca88"
+  integrity sha512-59MLF5gCBm6s9XGOuXpLOYT7UGlK0/8ZDGiRM/8H/rTStKJesmTmxgrK1UDZ2w9T6GpaVYVQkHxadNF0o0oQEA==
+
 "@nestjs/cli@^8.0.0":
   version "8.2.5"
   resolved "https://registry.yarnpkg.com/@nestjs/cli/-/cli-8.2.5.tgz#02094177f4eac576d1a559b259d541393e49e0bb"

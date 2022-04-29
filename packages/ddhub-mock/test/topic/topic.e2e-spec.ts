@@ -1,10 +1,11 @@
 import { randomInt, randomUUID } from 'crypto';
-import { CreateTopicDTO } from '../../src/api/topic/dto/createTopic.dto';
-import { SendMessageDTO } from '../../src/api/topic/dto/sendMessage.dto';
-import { GetMessagesDTO } from '../../src/api/topic/dto/getMessages.dto';
+import type { CreateTopicDTO } from '../../src/api/topic/dto/createTopic.dto';
+import type { SendMessageDTO } from '../../src/api/topic/dto/sendMessage.dto';
+import type { GetMessagesDTO } from '../../src/api/topic/dto/getMessages.dto';
 import { DateTime } from 'luxon';
-import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import * as request from 'supertest';
 

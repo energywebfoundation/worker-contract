@@ -15,6 +15,6 @@ export class FileFacade {
   }
 
   async getFile({ fileName }: { fileName: string }) {
-    return this.fileService.getFile({ fileName });
+    return await this.fileService.getFile({ fileName });
   }
 }

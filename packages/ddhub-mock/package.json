@@ -34,6 +34,7 @@
     "swagger-ui-express": "^4.3.0"
   },
   "devDependencies": {
+    "@leocode/eslint-config": "^2.0.0",
     "@nestjs/cli": "^8.0.0",
     "@nestjs/schematics": "^8.0.0",
     "@nestjs/testing": "^8.0.0",

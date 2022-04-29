@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
-import { FileUploadDTO } from '../../src/api/file/dto/fileUpload.dto';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { FileUploadDTO } from '../../src/api/file/dto/fileUpload.dto';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 
 describe('FILE', () => {
