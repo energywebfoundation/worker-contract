@@ -37,7 +37,14 @@ const createDataSource = (data: MatchingResult): DataSource => {
 
 const matchResult: MatchingResult = {
   matches: [
-    { consumerId: 'c1', generatorId: 'g1', generatorMetadata: { g1: true }, consumerMetadata: { c1: true }, timestamp: new Date(), volume: 1 },
+    {
+      consumerId: 'c1',
+      generatorId: 'g1',
+      generatorMetadata: { g1: true },
+      consumerMetadata: { c1: true },
+      timestamp: new Date(),
+      volume: 1,
+    },
   ],
   leftoverConsumption: [
     { consumerId: 'c1', consumerMetadata: { c1: true }, timestamp: new Date(), volume: 1 },

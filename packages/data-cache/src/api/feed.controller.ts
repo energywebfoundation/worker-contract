@@ -8,12 +8,10 @@ export class FeedController {
     private feedFacade: FeedFacade,
   ) {}
 
-  /** @TODO how overseer will know this endpoint address? */
   @Post('/match-result')
   public async feedMatchResult(
     @Body() result: FeedMatchResultRequest,
   ): Promise<void> {
-    /** @TODO make it non-blocking */
-    await this.feedFacade.feedMatches(result.rootHash)
+    await this.feedFacade.feedMatches(result.rootHash);
   }
 }
