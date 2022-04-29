@@ -64,10 +64,10 @@ export class OverseerService implements OnApplicationBootstrap {
 
   private async getUnhandledEvents(lastBlockNumber: number, eventNames: string[]) {
     this.logger.info('Getting unhandled events.');
-    const allEvents = [];
+    const allEvents: any[] = [];
 
     await Promise.all(eventNames.map(async (eventName) => {
-      const eventsFilter = this.contract.filters[eventName]();
+      const eventsFilter = (this.contract.filters as any)[eventName]();
       const events = await this.contract.queryFilter(eventsFilter, lastBlockNumber);
       allEvents.push(...events);
     }));
@@ -81,7 +81,7 @@ export class OverseerService implements OnApplicationBootstrap {
 
     Object.entries(listenersToRegister).forEach(([eventName, listeners]) => {
       listeners.forEach(listener => {
-        this.contract.on(eventName, listener as TypedListener<TypedEvent<any, any>>);
+        this.contract.on(eventName as any, listener as TypedListener<TypedEvent<any, any>>);
       });
     });
 

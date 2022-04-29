@@ -6,7 +6,8 @@
       "packages/algorithms",
       "packages/overseer",
       "packages/worker",
-      "packages/example"
+      "packages/example",
+      "packages/data-cache"
     ]
   },
   "scripts": {
