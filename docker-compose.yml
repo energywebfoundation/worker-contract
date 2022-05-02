@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  worker0:
+    image: greenproof-worker
+    build: 
+      context: .
+      dockerfile: worker.dockerfile
+    ports:
+      - "3030:3030"
+
+  worker1:
+    image: greenproof-worker
+    build: 
+      context: .
+      dockerfile: worker.dockerfile
+    ports:
+      - "3031:3030"
+    
+  worker2:
+    image: greenproof-worker
+    build: 
+      context: .
+      dockerfile: worker.dockerfile
+    ports:
+      - "3032:3030"
+    
+  overseer:
+    image: greenproof-overseer
+    build: 
+      context: .
+      dockerfile: overseer.dockerfile
+    ports:
+      - "3040:3000"
+    depends_on:
+      - blockchain
+    environment:
+      - RPC_HOST=http://blockchain:8545
+
+  blockchain:
+    image: greenproof-blockchain
+    build:
+      context: .
+      dockerfile: blockchain.dockerfile
+    ports:
+      - "8545:8545"
+
