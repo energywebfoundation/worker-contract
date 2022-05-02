@@ -7,7 +7,7 @@ export const useVotingPreview = () => {
   const [votingKey, setVotingKey] = useState('');
   const [matchResult, setMatchResult] = useState('');
   const { callContract, votingContract } = useVotingContract();
-  const { workers } = useWorkerPreview();
+  const { workers, updateNumberOfWorkers, updateWorkers } = useWorkerPreview();
 
   const [voting, setVoting] = useState<{
     ended?: boolean;
@@ -33,6 +33,8 @@ export const useVotingPreview = () => {
     await callContract(() => votingContract.vote(votingKey, matchResult), {
       onSuccess: () => {
         toast('Voted!', { type: 'success' });
+        updateNumberOfWorkers();
+        updateWorkers();
         updateActiveVoting();
       },
       onError: (e) => {

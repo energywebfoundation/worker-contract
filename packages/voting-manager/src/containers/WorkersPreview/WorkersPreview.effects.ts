@@ -35,6 +35,19 @@ export const useWorkerPreview = () => {
     });
   };
 
+  const deleteWorker = async (workerAddress: string) => {
+    await callContract(() => votingContract.removeWorker(workerAddress), {
+      onSuccess: () => {
+        toast('Worker removed!', { type: 'success' });
+        updateNumberOfWorkers();
+        updateWorkers();
+      },
+      onError: (e) => {
+        toast(e.data?.message ?? e.message, { type: 'error' });
+      },
+    });
+  };
+
   useEffect(() => {
     updateNumberOfWorkers();
     updateWorkers();
@@ -45,6 +58,9 @@ export const useWorkerPreview = () => {
     workers,
     numberOfWorkers,
     setWorkerAddress,
+    deleteWorker,
     workerAddress,
+    updateNumberOfWorkers,
+    updateWorkers,
   };
 };

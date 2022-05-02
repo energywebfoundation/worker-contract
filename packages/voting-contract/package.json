@@ -1,5 +1,6 @@
 {
   "name": "voting-contract",
+  "version": "0.1.0",
   "scripts": {
     "test": "npx hardhat test",
     "build": "npx hardhat compile",

@@ -7,6 +7,7 @@
       "packages/overseer",
       "packages/worker",
       "packages/example",
+      "packages/voting-contract",
       "packages/voting-manager",
       "packages/data-cache"
     ]

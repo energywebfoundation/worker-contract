@@ -18,6 +18,7 @@ const WorkersPreview = ({}) => {
   const {
     workers,
     addWorker,
+    deleteWorker,
     setWorkerAddress,
     workerAddress,
     numberOfWorkers,
@@ -55,7 +56,7 @@ const WorkersPreview = ({}) => {
             <ListItem
               key={worker}
               secondaryAction={
-                <IconButton edge='end'>
+                <IconButton edge='end' onClick={() => deleteWorker(worker)} >
                   <DeleteIcon />
                 </IconButton>
               }
