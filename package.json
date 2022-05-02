@@ -5,7 +5,8 @@
       "packages/merkle-tree",
       "packages/algorithms",
       "packages/worker",
-      "packages/example"
+      "packages/example",
+      "packages/voting-manager"
     ]
   },
   "scripts": {
