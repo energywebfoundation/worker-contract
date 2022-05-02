@@ -13483,7 +13483,7 @@ pino-http@6.6.0:
     pino "^7.5.0"
     pino-std-serializers "^5.0.0"
 
-pino-sentry@^0.11.0:
+pino-sentry@0.11.0:
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/pino-sentry/-/pino-sentry-0.11.0.tgz#d0d9f9e98c063d5371d1180d62e784b9276f6d81"
   integrity sha512-2Vzk73Zqf+93X2EgQpvNZKPk6NB5KQmKnKr0RTMOfbzUP5hjeqx6R/19wY8U3OezI0c0IQEGbxnKOyyCi4PZTw==
