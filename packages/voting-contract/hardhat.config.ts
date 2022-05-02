@@ -6,7 +6,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import '@nomiclabs/hardhat-ethers'
+import "@nomiclabs/hardhat-ethers";
 import path from "path";
 
 dotenv.config();
@@ -30,7 +30,7 @@ const config: HardhatUserConfig = {
   networks: {
     ganache: {
       url: "http://localhost:8545",
-    }
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
-    outDir: path.join(process.cwd(), '..', 'voting-manager', 'src', 'typechain'),
+    outDir: path.join(__dirname, "..", "voting-manager", "src", "typechain"),
   },
 };
 

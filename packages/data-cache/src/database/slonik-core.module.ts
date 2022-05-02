@@ -90,7 +90,7 @@ export class SlonikCoreModule implements OnApplicationShutdown {
       // The result of pool.end() is a promise that is resolved when all connections are ended.
       // Note: pool.end() does not terminate active connections/ transactions.
       await pool?.end();
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(e?.message);
     }
   }
