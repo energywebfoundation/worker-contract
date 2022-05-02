@@ -20,7 +20,7 @@ export const useAccount = () => {
     } else {
       setBalance(BigNumber.from(0));
     }
-  }, [accounts?.[0], provider]);
+  }, [provider, accounts]);
 
   useEffect(() => {
     getBalance();

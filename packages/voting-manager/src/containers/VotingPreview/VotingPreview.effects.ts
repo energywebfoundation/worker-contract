@@ -27,7 +27,7 @@ export const useVotingPreview = () => {
       ),
     );
     setVoting({ ...voting, workersToVote });
-  }, [votingContract, votingKey]);
+  }, [votingContract, votingKey, workers]);
 
   const vote = async (matchResult: string) => {
     await callContract(() => votingContract.vote(votingKey, matchResult), {
