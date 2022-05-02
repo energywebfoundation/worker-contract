@@ -4,25 +4,18 @@ import { FeedModuleForUnitTests } from '../../src/feed/feed.module';
 import { MatchesFacade } from '../../src/matches/matches.facade';
 import type { MatchingResult } from '../../src/types';
 import { bootstrapFacadeTest } from '../bootstrap';
+import { runFeedModuleTests, feedModuleMatchResult } from './feed-module-tests';
 
-describe('FeedModule', () => {
-  let feedFacade: FeedFacade;
-  let matchesFacade: MatchesFacade;
-
-  it('should save results returned from data source into Match Module', async () => {
-    ({ feedFacade, matchesFacade } = await bootstrapFacadeTest(
+runFeedModuleTests({
+  beforeEach: async () => {
+    return await bootstrapFacadeTest(
       FeedModuleForUnitTests.register({
-        dataSource: createDataSource(matchResult),
+        dataSource: createDataSource(feedModuleMatchResult),
       }),
       { feedFacade: FeedFacade, matchesFacade: MatchesFacade },
-    ));
-
-    await feedFacade.feedMatches('randomHash');
-
-    const results = await matchesFacade.getAllResults();
-
-    expect(results).toEqual(matchResult);
-  });
+    );
+  },
+  afterEach: () => {},
 });
 
 const createDataSource = (data: MatchingResult): DataSource => {
@@ -33,23 +26,4 @@ const createDataSource = (data: MatchingResult): DataSource => {
   }
 
   return new DataSourceForUnitTests();
-};
-
-const matchResult: MatchingResult = {
-  matches: [
-    {
-      consumerId: 'c1',
-      generatorId: 'g1',
-      generatorMetadata: { g1: true },
-      consumerMetadata: { c1: true },
-      timestamp: new Date(),
-      volume: 1,
-    },
-  ],
-  leftoverConsumption: [
-    { consumerId: 'c1', consumerMetadata: { c1: true }, timestamp: new Date(), volume: 1 },
-  ],
-  leftoverGeneration: [
-    { generatorId: 'g1', generatorMetadata: { g1: true }, timestamp: new Date(), volume: 1 },
-  ],
 };

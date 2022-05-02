@@ -9,7 +9,7 @@ describe('LeftoverConsumptionPostgresRepository', () => {
   });
 
   it('should save empty matches', async () => {
-    await repository.save([]);
+    await repository.save([], null);
 
     expect(await repository.find()).toHaveLength(0);
   });
@@ -21,7 +21,7 @@ describe('LeftoverConsumptionPostgresRepository', () => {
       consumption,
     ];
 
-    await repository.save(input);
+    await repository.save(input, null);
 
     const results = await repository.find();
     expect(results).toEqual(input);
