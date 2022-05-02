@@ -3,10 +3,6 @@
   "workspaces": {
     "packages": [
       "packages/*"
-    ],
-    "nohoist": [
-      "jest",
-      "mocha"
     ]
   },
   "scripts": {
