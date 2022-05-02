@@ -1,5 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import type { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { ClientGatewayModule } from '../src/client-gateway.module';
 
@@ -18,6 +19,6 @@ describe('AppController (e2e)', () => {
   it('/healthcheck (GET)', () => {
     return request(app.getHttpServer())
       .get('/healthcheck')
-      .expect(200)
+      .expect(200);
   });
 });
