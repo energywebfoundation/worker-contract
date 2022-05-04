@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { DatabaseTransactionConnection} from 'slonik';
 import { DatabasePool, sql } from 'slonik';
 import { InjectPool } from '../../database';
 import type { LeftoverConsumption } from '../../types';
@@ -18,7 +19,7 @@ export class LeftoverConsumptionPostgresRepository implements LeftoverConsumptio
     return found.rows.map(this.mapEntity);
   }
 
-  public async save(consumptions: LeftoverConsumption[]): Promise<void> {
+  public async save(consumptions: LeftoverConsumption[], tx: DatabaseTransactionConnection | null): Promise<void> {
     if (consumptions.length === 0) {
       return;
     }
@@ -38,7 +39,7 @@ export class LeftoverConsumptionPostgresRepository implements LeftoverConsumptio
       ],
     );
 
-    await this.pool.query(sql`
+    await (tx ?? this.pool).query(sql`
       INSERT INTO leftover_consumption (
         consumer_id,
         volume,

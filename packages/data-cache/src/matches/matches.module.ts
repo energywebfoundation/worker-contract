@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TransactionModule, TransactionModuleForUnitTests } from '../transaction/transaction.module';
 import { MatchesFacade } from './matches.facade';
 import { LeftoverConsumptionInMemoryRepository } from './repository/leftover-consumption-inmemory.repository';
 import { LeftoverConsumptionPostgresRepository } from './repository/leftover-consumption-postgres.repository';
@@ -9,7 +10,9 @@ import { MatchPostgresRepository } from './repository/match-postgres.repository'
 import { LeftoverConsumptionRepository, LeftoverGenerationRepository, MatchRepository } from './repository/types';
 
 @Module({
-  imports: [],
+  imports: [
+    TransactionModule,
+  ],
   exports: [
     MatchesFacade,
   ],
@@ -23,7 +26,9 @@ import { LeftoverConsumptionRepository, LeftoverGenerationRepository, MatchRepos
 export class MatchesModule {}
 
 @Module({
-  imports: [],
+  imports: [
+    TransactionModuleForUnitTests,
+  ],
   exports: [
     MatchesFacade,
   ],

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { DatabaseTransactionConnection} from 'slonik';
 import { DatabasePool, sql } from 'slonik';
 import { InjectPool } from '../../database';
 import type { LeftoverGeneration } from '../../types';
@@ -18,7 +19,7 @@ export class LeftoverGenerationPostgresRepository implements LeftoverGenerationR
     return found.rows.map(this.mapEntity);
   }
 
-  public async save(generations: LeftoverGeneration[]): Promise<void> {
+  public async save(generations: LeftoverGeneration[], tx: DatabaseTransactionConnection | null): Promise<void> {
     if (generations.length === 0) {
       return;
     }
@@ -38,7 +39,7 @@ export class LeftoverGenerationPostgresRepository implements LeftoverGenerationR
       ],
     );
 
-    await this.pool.query(sql`
+    await (tx ?? this.pool).query(sql`
       INSERT INTO leftover_generation (
         generator_id,
         volume,
