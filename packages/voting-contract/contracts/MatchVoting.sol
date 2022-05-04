@@ -23,14 +23,14 @@ contract MatchVoting is Ownable {
         /// Worker address to match result
         mapping(address => string) workerToMatchResult;
 
+        /// Worker address to voted flag
+        mapping(address => bool) workerToVoted;
+
         /// Match result to total vote count
         mapping(string => uint) matchResultToVoteCount;
 
         /// Disables voting option after voting end
         bool ended;
-
-        /// Disables enrollment of new workers after voting started
-        bool started;
 
         /// Winning match result
         string winningMatch;
@@ -42,17 +42,17 @@ contract MatchVoting is Ownable {
     /// Event emitted after voting ended
     event WinningMatch(string matchInput, string matchResult, uint voteCount);
 
-    /// Worker had already voted for a match result or is not whitelisted
-    error AlreadyVotedOrNotWhitelisted();
+    /// Worker had already voted for a match result
+    error AlreadyVoted();
+
+    /// Sender is not whitelisted
+    error NotWhitelisted();
 
     /// Voting ended, winner is chosen - workers cannot vote anymore
     error VotingAlreadyEnded();
 
     /// Winning match result did not reach more than a half of total votes
     error NoConsensusReached();
-
-    /// No votes registered
-    error NoVotesYet();
 
     constructor(address _certificateContractAddress) {
         certificateContractAddress = _certificateContractAddress;
@@ -65,32 +65,43 @@ contract MatchVoting is Ownable {
             revert VotingAlreadyEnded();
         }
 
-        if (!voting.started) {
-            for (uint i = 0; i < workers.length; i++) {
-                voting.workerToMatchResult[workers[i]] = "NOT VOTED";
+        bool isWhiteListed;
+        for (uint i = 0; i < workers.length; i++) {
+            if (workers[i] == msg.sender) {
+                isWhiteListed = true;
             }
-            voting.started = true;
+        }
+        if (!isWhiteListed) {
+            revert NotWhitelisted();
         }
 
-        if (keccak256(abi.encode(voting.workerToMatchResult[msg.sender])) != keccak256(abi.encode("NOT VOTED"))) {
-            revert AlreadyVotedOrNotWhitelisted();
+        if (voting.workerToVoted[msg.sender]) {
+            revert AlreadyVoted();
         }
 
         voting.workerToMatchResult[msg.sender] = matchResult;
+        voting.workerToVoted[msg.sender] = true;
 
         if (voting.matchResultToVoteCount[matchResult] == 0) {
             voting.matches.push(matchResult);
         }
 
         voting.matchResultToVoteCount[matchResult] += 1;
+
+        bool everyoneVoted = true;
+        for (uint i = 0; i < workers.length; i++) {
+            if (!voting.workerToVoted[workers[i]]) {
+                everyoneVoted = false;
+            }
+        }
+        console.log("everyone voted %s", everyoneVoted);
+        if (everyoneVoted) {
+            getWinningMatch(matchInput);
+        }
     }
 
-    function getWinningMatch(string memory matchInput) external onlyOwner returns (bool success) {
+    function getWinningMatch(string memory matchInput) private returns (bool success) {
         Voting storage voting = matchInputToVoting[matchInput];
-
-        if (voting.matches.length == 0) {
-            revert NoVotesYet();
-        }
 
         uint winningVoteCount;
 
@@ -102,13 +113,14 @@ contract MatchVoting is Ownable {
         }
 
         if (10 * winningVoteCount < 10 * workers.length / 2) {
-            revert NoConsensusReached();
+            return false;
         }
 
         voting.ended = true;
 
-        // To be changed to real certificate issuance
-        // ICertificate(certificateContractAddress).mint(matchInput, voting.winningMatch);
+        if (certificateContractAddress != address(0)) {
+            ICertificate(certificateContractAddress).mint(matchInput, voting.winningMatch);
+        }
 
         emit WinningMatch(matchInput, voting.winningMatch, winningVoteCount);
 
