@@ -1,0 +1,26 @@
+{
+  "topics": [
+    {
+      "name": "generation",
+      "clientIds": [
+        "firstWorker",
+        "secondWorker",
+        "thirdWorker"
+      ]
+    },
+    {
+      "name": "consumption",
+      "clientIds": [
+        "firstWorker",
+        "secondWorker",
+        "thirdWorker"
+      ]
+    },
+    {
+      "name": "results",
+      "clientIds": [
+        "cache"
+      ]
+    }
+  ]
+}
