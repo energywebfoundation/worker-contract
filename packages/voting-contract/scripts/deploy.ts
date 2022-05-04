@@ -4,23 +4,76 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
+import fs from "fs";
+import path from "path";
+
+enum Contract {
+  MatchVoting = "MatchVoting",
+  Certificate = "Certificate",
+}
+
+type DeployedContract = {
+  address?: string;
+  name: Contract;
+};
+
+type ContractToDeploy = {
+  name: Contract;
+  args: any[];
+};
+
+type DeploymentContext = {
+  deployedContracts: DeployedContract[];
+};
+
+const getDeployedContract = (ctx: DeploymentContext, contract: Contract) => {
+  const deployedContract = ctx.deployedContracts.find(
+    (contract) => contract.name === Contract.Certificate
+  );
+
+  if (!deployedContract) {
+    throw new Error(`Contract ${contract} not deployed`);
+  }
+
+  return deployedContract;
+};
+
+const deploymentPlan: ((ctx: DeploymentContext) => ContractToDeploy)[] = [
+  () => ({
+    name: Contract.Certificate,
+    args: [],
+  }),
+  (ctx) => ({
+    name: Contract.MatchVoting,
+    args: [getDeployedContract(ctx, Contract.Certificate).address],
+  }),
+];
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+  const context: DeploymentContext = {
+    deployedContracts: [],
+  };
 
-  // We get the contract to deploy
-  const MatchVoting = await ethers.getContractFactory("MatchVoting");
-  const [owner] = await ethers.getSigners();
-  const matchVoting = await MatchVoting.deploy(owner.address);
+  for (const deployment of deploymentPlan) {
+    const contract = deployment(context);
+    console.log(`Deploying ${contract.name} with args: ${contract.args}`);
 
-  await matchVoting.deployed();
+    const ContractToDeploy = await ethers.getContractFactory(contract.name);
+    const deployedContract = await ContractToDeploy.deploy(...contract.args);
+    await deployedContract.deployed();
 
-  console.log("MatchVoting deployed to:", matchVoting.address);
+    console.log(`${contract.name} deployed to: ${deployedContract.address}`);
+
+    context.deployedContracts.push({
+      name: contract.name,
+      address: deployedContract.address,
+    });
+
+    await fs.writeFileSync(
+      path.join(__dirname, "context.json"),
+      JSON.stringify(context, null, 2)
+    );
+  }
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -21,6 +21,16 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+const getPrivateKey = () => {
+  const privateKey = process.env.PRIVATE_KEY;
+
+  if (!privateKey) {
+    throw new Error("No PRIVATE_KEY env variable set");
+  }
+
+  return privateKey;
+};
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
@@ -30,6 +40,11 @@ const config: HardhatUserConfig = {
   networks: {
     ganache: {
       url: "http://localhost:8545",
+    },
+    volta: {
+      url: "https://volta-rpc.energyweb.org",
+      chainId: 73799,
+      accounts: [getPrivateKey()],
     },
   },
   gasReporter: {
