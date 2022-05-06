@@ -22,7 +22,7 @@ docker compose -f docker-compose.dev.yml up -d
 
 #### 1. Build base image
 ```
-docker build -t greenproofs:latest -f ./docker/base.dockerfile .
+docker build -t greenproofs:latest .
 ```
 
 #### 2. Run all GP parts using docker compose (in prod mode)

@@ -1,42 +1,30 @@
 version: '3.8'
 services:
-  worker0:
-    image: greenproof-worker
-    build: 
-      context: .
-      dockerfile: ./docker/package.dockerfile
-      args:
-        - DIRECTORY=/deployment/packages/example
+  worker-0:
+    image: greenproofs:latest
+    working_dir: /deployment/packages/example
+    command: ["/bin/sh", "-c", "node dist/main"]
     ports:
       - "3000:3030"
 
-  worker1:
-    image: greenproof-worker
-    build: 
-      context: .
-      dockerfile: ./docker/package.dockerfile
-      args:
-        - DIRECTORY=/deployment/packages/example
+  worker-1:
+    image: greenproofs:latest
+    working_dir: /deployment/packages/example
+    command: ["/bin/sh", "-c", "node dist/main"]
     ports:
       - "3001:3030"
     
-  worker2:
-    image: greenproof-worker
-    build: 
-      context: .
-      dockerfile: ./docker/package.dockerfile
-      args:
-        - DIRECTORY=/deployment/packages/example
+  worker-2:
+    image: greenproofs:latest
+    working_dir: /deployment/packages/example
+    command: ["/bin/sh", "-c", "node dist/main"]
     ports:
       - "3002:3030"
     
   overseer:
-    image: greenproof-overseer
-    build: 
-      context: .
-      dockerfile: ./docker/package.dockerfile
-      args:
-        - DIRECTORY=/deployment/packages/overseer
+    image: greenproofs:latest
+    working_dir: /deployment/packages/overseer
+    command: ["/bin/sh", "-c", "node dist/main"]
     restart: on-failure:5
     ports:
       - "3003:3000"
@@ -46,42 +34,32 @@ services:
       - RPC_HOST=http://blockchain:8545
 
   blockchain:
-    image: greenproof-blockchain
-    build:
-      context: .
-      dockerfile: ./docker/blockchain.dockerfile
+    image: greenproofs:latest
+    working_dir: /deployment/packages/overseer
+    command: ["yarn", "run:testnet"]    
     ports:
       - "8545:8545"
   
   ddhub:
-    image: greenproof-ddhubmock
-    build:
-      context: .
-      dockerfile: ./docker/package.dockerfile
-      args:
-        - DIRECTORY=/deployment/packages/ddhub-mock
+    image: greenproofs:latest
+    working_dir: /deployment/packages/ddhub-mock
+    command: ["/bin/sh", "-c", "node dist/main"]
     ports:
       - "3004:3000"
   
   data-cache:
-    image: greenproof-data-cache
-    build:
-      context: .
-      dockerfile: ./docker/package.dockerfile
-      args:
-        - DIRECTORY=/deployment/packages/data-cache
+    image: greenproofs:latest
+    working_dir: /deployment/packages/data-cache
+    command: ["/bin/sh", "-c", "node dist/main"]
     ports:
       - "3005:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/data_cache?sslmode=disable
 
   gateway:
-    image: greenproof-gateway
-    build:
-      context: .
-      dockerfile: ./docker/package.dockerfile
-      args:
-        - DIRECTORY=/deployment/packages/client-gateway
+    image: greenproofs:latest
+    working_dir: /deployment/packages/client-gateway
+    command: ["/bin/sh", "-c", "node dist/main"]
     ports:
       - "3006:3001"
   
@@ -90,8 +68,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=potsgres
+      - POSTGRES_DB=data_cache
+      - POSTGRES_PASSWORD=postgres
 
 networks:
   app:

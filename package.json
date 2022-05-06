@@ -24,8 +24,5 @@
     "purge": "yarn purge:node_modules && yarn purge:dist",
     "purge:dist": "find . -name 'dist' -type d -prune -exec rm -rf '{}' +",
     "purge:node_modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
-
-
-
   }
 }
