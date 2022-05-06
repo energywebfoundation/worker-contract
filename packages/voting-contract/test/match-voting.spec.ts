@@ -77,16 +77,19 @@ describe("MatchVoting", () => {
     await matchVoting
       .connect(worker1)
       .vote(timeframes[0].input, timeframes[0].output);
-    await matchVoting
-      .connect(worker2)
-      .vote(timeframes[0].input, timeframes[0].output);
     expect(
       await matchVoting
-        .connect(worker3)
-        .vote(timeframes[0].input, timeframes[1].output)
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
     )
       .to.emit(matchVoting, "WinningMatch")
       .withArgs(timeframes[0].input, timeframes[0].output, 2);
+
+    await expect(
+      matchVoting
+        .connect(worker3)
+        .vote(timeframes[0].input, timeframes[1].output)
+    ).to.be.revertedWith("VotingAlreadyEnded");
 
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output

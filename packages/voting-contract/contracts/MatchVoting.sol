@@ -88,14 +88,14 @@ contract MatchVoting is Ownable {
 
         voting.matchResultToVoteCount[matchResult] += 1;
 
-        bool everyoneVoted = true;
+        uint numberOfVotes;
         for (uint i = 0; i < workers.length; i++) {
-            if (!voting.workerToVoted[workers[i]]) {
-                everyoneVoted = false;
+            if (voting.workerToVoted[workers[i]]) {
+                numberOfVotes += 1;
             }
         }
-        console.log("everyone voted %s", everyoneVoted);
-        if (everyoneVoted) {
+
+        if (10 * numberOfVotes > 10 * workers.length / 2) {
             getWinningMatch(matchInput);
         }
     }
