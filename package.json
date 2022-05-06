@@ -8,7 +8,8 @@
       "packages/worker",
       "packages/client-gateway",
       "packages/example",
-      "packages/data-cache"
+      "packages/data-cache",
+      "packages/ddhub-mock"
     ]
   },
   "scripts": {
@@ -20,6 +21,11 @@
     "start:dev": "yarn workspaces run start:dev",
     "deploy:pack": "yarn workspaces run deploy:pack",
     "deploy:heroku": "yarn workspaces run deploy:heroku",
-    "purge": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+    "purge": "yarn purge:node_modules && yarn purge:dist",
+    "purge:dist": "find . -name 'dist' -type d -prune -exec rm -rf '{}' +",
+    "purge:node_modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+
+
+
   }
 }

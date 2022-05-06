@@ -16,7 +16,7 @@ export const matchingAlgorithm: MatchingAlgorithm = (input) => {
       generatorId: match.entities[1].id,
       volume: match.volume,
     })),
-    leftoverConsumptions: result.leftoverEntities[0].map(e => ({
+    leftoverConsumptions: result.leftoverEntities[0].map((e: any) => ({
       id: e.id,
       volume: e.volume,
     })),

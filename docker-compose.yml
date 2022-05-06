@@ -4,33 +4,42 @@ services:
     image: greenproof-worker
     build: 
       context: .
-      dockerfile: worker.dockerfile
+      dockerfile: ./docker/package.dockerfile
+      args:
+        - DIRECTORY=/deployment/packages/example
     ports:
-      - "3030:3030"
+      - "3000:3030"
 
   worker1:
     image: greenproof-worker
     build: 
       context: .
-      dockerfile: worker.dockerfile
+      dockerfile: ./docker/package.dockerfile
+      args:
+        - DIRECTORY=/deployment/packages/example
     ports:
-      - "3031:3030"
+      - "3001:3030"
     
   worker2:
     image: greenproof-worker
     build: 
       context: .
-      dockerfile: worker.dockerfile
+      dockerfile: ./docker/package.dockerfile
+      args:
+        - DIRECTORY=/deployment/packages/example
     ports:
-      - "3032:3030"
+      - "3002:3030"
     
   overseer:
     image: greenproof-overseer
     build: 
       context: .
-      dockerfile: overseer.dockerfile
+      dockerfile: ./docker/package.dockerfile
+      args:
+        - DIRECTORY=/deployment/packages/overseer
+    restart: on-failure:5
     ports:
-      - "3040:3000"
+      - "3003:3000"
     depends_on:
       - blockchain
     environment:
@@ -40,7 +49,50 @@ services:
     image: greenproof-blockchain
     build:
       context: .
-      dockerfile: blockchain.dockerfile
+      dockerfile: ./docker/blockchain.dockerfile
     ports:
       - "8545:8545"
+  
+  ddhub:
+    image: greenproof-ddhubmock
+    build:
+      context: .
+      dockerfile: ./docker/package.dockerfile
+      args:
+        - DIRECTORY=/deployment/packages/ddhub-mock
+    ports:
+      - "3004:3000"
+  
+  data-cache:
+    image: greenproof-data-cache
+    build:
+      context: .
+      dockerfile: ./docker/package.dockerfile
+      args:
+        - DIRECTORY=/deployment/packages/data-cache
+    ports:
+      - "3005:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/data_cache?sslmode=disable
+
+  gateway:
+    image: greenproof-gateway
+    build:
+      context: .
+      dockerfile: ./docker/package.dockerfile
+      args:
+        - DIRECTORY=/deployment/packages/client-gateway
+    ports:
+      - "3006:3001"
+  
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=potsgres
+
+networks:
+  app:
 

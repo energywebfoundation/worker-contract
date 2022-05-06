@@ -1,8 +1,4 @@
-FROM node:16
-
-RUN mkdir -p /deployment/
-
-COPY ./ /deployment/
+FROM greenproofs:latest
 
 WORKDIR /deployment/packages/overseer
 
