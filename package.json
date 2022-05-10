@@ -1,4 +1,5 @@
 {
+  "name": "greenproof",
   "private": true,
   "workspaces": {
     "packages": [

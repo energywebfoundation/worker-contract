@@ -1,9 +1,10 @@
 {
   "name": "voting-contract",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "scripts": {
     "prebuild": "rimraf artifacts cache",
     "test": "npx hardhat test",
+    "node:start": "npx hardhat node",
     "test:e2e": "echo \"No tests\"",
     "test:unit": "echo \"No tests\"",
     "build": "npx hardhat compile",
