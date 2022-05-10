@@ -3,12 +3,13 @@ import type { Reading } from '../types';
 import type { DataStorageService } from '../dataStorage.service';
 import axios from 'axios';
 import { PinoLogger } from 'nestjs-pino';
+import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class DDHubService implements DataStorageService {
   private logger = new PinoLogger({renameContext: DDHubService.name});
 
-  constructor(){}
+  constructor(private configService: ConfigService){}
 
   async sendConsumptions(readings: Reading[]): Promise<void> {
     const topic = 'consumptions';
@@ -34,7 +35,7 @@ export class DDHubService implements DataStorageService {
     try {
       await axios.request({
         method: 'post',
-        baseURL: process.env.DDHUB_URL,
+        baseURL: this.configService.get<string>('DDHUB_URL'),
         url: 'message',
         data: {
           message: readings,

@@ -5,6 +5,8 @@
   "author": "",
   "private": true,
   "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "yarn build:contract && yarn build:contract-types && nest build",

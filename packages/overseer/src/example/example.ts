@@ -7,12 +7,12 @@ export const localBlockchainConfig: BlockchainConfig = {
 };
 
 export const exampleListeners: EventListeners = {
-  'InterestingEvent' : [(ev: any) => { console.log(ev); }]
+  InterestingEvent: [(ev: any) => { console.log(ev); }],
 };
 
 export const exampleConfig: OverseerConfig = {
   blockchainConfig: localBlockchainConfig,
   listeners: exampleListeners,
-  getLastHandledBlockNumber: () => { return 0; }
+  getLastHandledBlockNumber: () => { return 0; },
 };
 
