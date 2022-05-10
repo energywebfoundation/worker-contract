@@ -141,7 +141,7 @@ contract MatchVoting is Ownable {
         workers[workerIndex] = workers[workers.length - 1];
         // Delete last element
         delete workers[workers.length - 1];
-        numberOfWorkers = workers.length;
+        numberOfWorkers = numberOfWorkers - 1;
     }
 
     function getWorkerVote(string memory matchInput, address workerAddress) external view onlyOwner returns (string memory matchResult) {

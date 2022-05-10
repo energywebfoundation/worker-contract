@@ -3,12 +3,8 @@
   "workspaces": {
     "packages": [
       "packages/merkle-tree",
-      "packages/algorithms",
-      "packages/overseer",
       "packages/worker",
-      "packages/example",
-      "packages/voting-manager",
-      "packages/data-cache"
+      "packages/*"
     ]
   },
   "scripts": {
