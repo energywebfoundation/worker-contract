@@ -8,7 +8,6 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-ethers";
 import path from "path";
-import { constants } from "ethers";
 
 dotenv.config();
 
@@ -21,16 +20,6 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
-
-const getPrivateKey = () => {
-  const privateKey = process.env.PRIVATE_KEY;
-
-  if (!privateKey) {
-    throw new Error("No PRIVATE_KEY env variable set");
-  }
-
-  return privateKey;
-};
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
