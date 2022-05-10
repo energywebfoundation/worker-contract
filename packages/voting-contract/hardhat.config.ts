@@ -8,6 +8,7 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-ethers";
 import path from "path";
+import { constants } from "ethers";
 
 dotenv.config();
 
@@ -44,7 +45,7 @@ const config: HardhatUserConfig = {
     volta: {
       url: "https://volta-rpc.energyweb.org",
       chainId: 73799,
-      accounts: [getPrivateKey()],
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
   gasReporter: {
