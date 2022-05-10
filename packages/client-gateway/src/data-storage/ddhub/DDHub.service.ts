@@ -14,7 +14,7 @@ export class DDHubService implements DataStorageService {
   async sendConsumptions(readings: Reading[]): Promise<void> {
     const topic = 'consumptions';
 
-    this.logger.info({msg: 'Sending consumptions to DDHub', topic, url: `${process.env.DDHUB_URL}/message`});
+    this.logger.info({msg: 'Sending consumptions to DDHub', topic, url: `${this.configService.get<string>('DDHUB_URL')}/message`});
 
     await this.sendMessageRequest(readings, topic);
 
@@ -24,7 +24,7 @@ export class DDHubService implements DataStorageService {
   async sendGenerations(readings: Reading[]): Promise<void> {
     const topic = 'generations';
 
-    this.logger.info('Sending generations to DDHub', {topic}, {url: `${process.env.DDHUB_URL}/message`});
+    this.logger.info('Sending generations to DDHub', {topic}, {url: `${this.configService.get<string>('DDHUB_URL')}/message`});
 
     await this.sendMessageRequest(readings, topic);
 
