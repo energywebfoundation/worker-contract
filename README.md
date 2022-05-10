@@ -34,3 +34,10 @@ or (without logs)
 ```
 docker compose up -d
 ```
+
+### Deployment
+1. Create personal access token on GitHub: https://github.com/settings/tokens
+2. Run `GH_TOKEN=<your_token> multi-semantic-release --no-ci`
+That command will:
+- Bump the version of all necessary packages (determine the version by conventional commits)
+- Create tags in GitHub repository page
