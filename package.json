@@ -3,13 +3,8 @@
   "workspaces": {
     "packages": [
       "packages/merkle-tree",
-      "packages/algorithms",
-      "packages/overseer",
       "packages/worker",
-      "packages/client-gateway",
-      "packages/example",
-      "packages/data-cache",
-      "packages/ddhub-mock"
+      "packages/*"
     ]
   },
   "scripts": {
