@@ -1,6 +1,7 @@
 {
   "name": "voting-contract",
   "version": "0.0.1",
+  "private": false,
   "scripts": {
     "prebuild": "rimraf artifacts cache",
     "test": "npx hardhat test",

@@ -1,5 +1,5 @@
 module.exports = {
-  branches: "GP-60-Packages-versioning-and-deployment",
+  branches: "master",
   plugins: [
     [
       "@semantic-release/commit-analyzer",
