@@ -11,4 +11,5 @@ module.exports = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
+  maxWorkers: 1,
 };
