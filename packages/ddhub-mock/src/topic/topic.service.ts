@@ -1,11 +1,30 @@
+import type { OnModuleInit } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { readFile } from 'fs/promises';
 import { DateTime } from 'luxon';
-import type { TopicMessage } from './topic.types';
+import { join } from 'path';
+import type { MockConfig, TopicMessage } from './topic.types';
 
 @Injectable()
-export class TopicService {
+export class TopicService implements OnModuleInit {
   db: Map<string, Map<string, TopicMessage[]>> = new Map();
+  logger = new Logger(TopicService.name)
+
+  async onModuleInit() {
+    const configFilePath = join(__dirname, '..', '..');
+    try {
+      const config = await readFile(join(configFilePath, 'mock-config.json'));
+      const { topics } = JSON.parse(config.toString()) as MockConfig;
+      for (const { name, clientIds } of topics) {
+        this.createTopic({ topicName: name, clientIds });
+        this.logger.debug(`Added topic: ${name} with clientIds: ${JSON.stringify(clientIds)}`);
+      }
+    } catch {
+      this.logger.warn('No Mock config found');
+    }
+  }
 
   createTopic({
     clientIds,

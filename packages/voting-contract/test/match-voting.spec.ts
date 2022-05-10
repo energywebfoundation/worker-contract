@@ -9,6 +9,7 @@ describe("MatchVoting", () => {
   let worker3: SignerWithAddress;
   let worker4: SignerWithAddress;
   let worker5: SignerWithAddress;
+  let worker6: SignerWithAddress;
   let MatchVotingContract: ContractFactory;
   let certificateContract: Contract;
 
@@ -20,10 +21,9 @@ describe("MatchVoting", () => {
     { input: "MATCH_INPUT_5", output: "MATCH_OUTPUT_5" },
   ];
 
-  const timestamp = new Date().getTime();
-
   beforeEach(async () => {
-    [, worker1, worker2, worker3, worker4, worker5] = await ethers.getSigners();
+    [, worker1, worker2, worker3, worker4, worker5, worker6] =
+      await ethers.getSigners();
     MatchVotingContract = await ethers.getContractFactory("MatchVoting");
     const CertificateContract = await ethers.getContractFactory("Certificate");
     const certificate = await CertificateContract.deploy();
@@ -37,13 +37,16 @@ describe("MatchVoting", () => {
     await matchVoting.deployed();
     await matchVoting.addWorker(worker1.address);
 
-    await matchVoting
-      .connect(worker1)
-      .vote(timeframes[0].input, timeframes[0].output);
-
-    await expect(matchVoting.getWinningMatch(timeframes[0].input))
+    expect(
+      await matchVoting
+        .connect(worker1)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
       .to.emit(matchVoting, "WinningMatch")
-      .withArgs(timeframes[0].input, timeframes[0].output, 1);
+      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+    ).to.equal(timeframes[0].output);
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
     );
@@ -59,7 +62,7 @@ describe("MatchVoting", () => {
       matchVoting
         .connect(worker1)
         .vote(timeframes[0].input, timeframes[0].output)
-    ).to.be.revertedWith("AlreadyVotedOrNotWhitelisted");
+    ).to.be.revertedWith("NotWhitelisted");
   });
 
   it("should get the winner with the most votes", async () => {
@@ -74,30 +77,23 @@ describe("MatchVoting", () => {
     await matchVoting
       .connect(worker1)
       .vote(timeframes[0].input, timeframes[0].output);
-    await matchVoting
-      .connect(worker2)
-      .vote(timeframes[0].input, timeframes[0].output);
-    await matchVoting
-      .connect(worker3)
-      .vote(timeframes[0].input, timeframes[1].output);
-
-    await expect(matchVoting.getWinningMatch(timeframes[0].input))
+    expect(
+      await matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
       .to.emit(matchVoting, "WinningMatch")
       .withArgs(timeframes[0].input, timeframes[0].output, 2);
+
+    await expect(
+      matchVoting
+        .connect(worker3)
+        .vote(timeframes[0].input, timeframes[1].output)
+    ).to.be.revertedWith("VotingAlreadyEnded");
+
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
     );
-  });
-
-  it("should not allow to get winner if no votes yet", async () => {
-    const matchVoting = await MatchVotingContract.deploy(
-      certificateContract.address
-    );
-    await matchVoting.deployed();
-
-    await expect(
-      matchVoting.getWinningMatch(timeframes[0].input)
-    ).to.be.revertedWith("NoVotesYet");
   });
 
   it("should not reach consensus if winning match has less than 50% of votes ", async () => {
@@ -127,8 +123,22 @@ describe("MatchVoting", () => {
       .connect(worker5)
       .vote(timeframes[0].input, timeframes[3].output);
 
-    await expect(
-      matchVoting.getWinningMatch(timeframes[0].input)
-    ).to.be.revertedWith("NoConsensusReached");
+    // No consensus reached yet
+    expect(await certificateContract.matches(timeframes[0].input)).to.equal("");
+
+    // Consensus reached with additional vote
+    await matchVoting.addWorker(worker6.address);
+
+    expect(
+      await matchVoting
+        .connect(worker6)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+      .to.emit(matchVoting, "WinningMatch")
+      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+
+    expect(await certificateContract.matches(timeframes[0].input)).to.equal(
+      timeframes[0].output
+    );
   });
 });

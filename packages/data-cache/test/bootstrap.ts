@@ -10,7 +10,7 @@ type ModDef = Type<any> | DynamicModule | Promise<DynamicModule> | ForwardRefere
 interface FacadeTestParams {
   providers?: Type<any>[],
   modules?: ModDef[],
-  overrideProviders?: { provide: any; useClass: any }[],
+  overrideProviders?: ({ provide: any; useClass: any } | { provide: any; useValue: any })[],
 }
 
 export const bootstrapFacadeTest = async <T extends Record<string, any>>(
@@ -24,7 +24,11 @@ export const bootstrapFacadeTest = async <T extends Record<string, any>>(
   });
 
   (params.overrideProviders ?? []).forEach((provider) => {
-    module.overrideProvider(provider.provide).useClass(provider.useClass);
+    if ('useClass' in provider) {
+      module.overrideProvider(provider.provide).useClass(provider.useClass);
+    } else {
+      module.overrideProvider(provider.provide).useValue(provider.useValue);
+    }
   });
 
   const app: TestingModule = await module.compile();

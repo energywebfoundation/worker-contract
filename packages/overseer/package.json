@@ -23,6 +23,7 @@
     "deploy:local": "npx hardhat run --network localhost src/contracts/scripts/deploy.js",
     "build:contract": "npx hardhat compile",
     "run:blockchain": "npx hardhat node",
+    "run:testnet": "yarn build:contract && yarn concurrently \"yarn run:blockchain\" \"wait-on tcp:8545 && yarn deploy:local\"",
     "test:setup": "yarn build:contract && yarn build:contract-types && (yarn run:blockchain&) && yarn deploy:local"
   },
   "dependencies": {
@@ -31,7 +32,7 @@
     "@nestjs/platform-express": "8.0.0",
     "ethers": "5.6.4",
     "nestjs-pino": "2.5.2",
-    "pino-http": "6.6.0",
+    "pino-http": "7.0.0",
     "pino-sentry": "0.11.0",
     "reflect-metadata": "0.1.13",
     "rimraf": "3.0.2",
@@ -50,6 +51,7 @@
     "@types/supertest": "2.0.11",
     "@typescript-eslint/eslint-plugin": "5.21.0",
     "@typescript-eslint/parser": "5.21.0",
+    "concurrently": "^7.1.0",
     "eslint": "8.14.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-prettier": "4.0.0",
@@ -61,7 +63,8 @@
     "ts-node": "10.7.0",
     "tsconfig-paths": "3.14.1",
     "typechain": "8.0.0",
-    "typescript": "4.6.4"
+    "typescript": "4.6.4",
+    "wait-on": "^6.0.1"
   },
   "jest": {
     "moduleFileExtensions": [
