@@ -6,6 +6,8 @@ import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from
 import { MatchingAlgorithm, MATCHING_ALGO } from './types';
 import { createMerkleTree, hash } from 'greenproof-merkle-tree';
 import { PinoLogger } from 'nestjs-pino';
+import type { MatchingInput } from './types';
+import type { FullMatchingResult} from './types';
 
 @Injectable()
 export class MatchingFacade {
@@ -18,7 +20,7 @@ export class MatchingFacade {
     private matchingAlgorithm: MatchingAlgorithm,
   ) {}
 
-  public async match(timestamp: Date) {
+  public async match(timestamp: Date): Promise<void> {
     this.logger.info(`Matching data for timestamp: ${timestamp}.`);
 
     const consumptions = await this.matchingDataFacade.getConsumptions({from: timestamp, to: timestamp});

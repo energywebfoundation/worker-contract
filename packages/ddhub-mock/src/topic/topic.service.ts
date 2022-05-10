@@ -7,9 +7,12 @@ import { DateTime } from 'luxon';
 import { join } from 'path';
 import type { MockConfig, TopicMessage } from './topic.types';
 
+type topicName = string;
+type clientId = string;
+
 @Injectable()
 export class TopicService implements OnModuleInit {
-  db: Map<string, Map<string, TopicMessage[]>> = new Map();
+  db: Map<topicName, Map<clientId, TopicMessage[]>> = new Map();
   logger = new Logger(TopicService.name)
 
   async onModuleInit() {

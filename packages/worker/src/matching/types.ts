@@ -30,4 +30,10 @@ export interface MatchingOutput {
   excessGenerations: ExcessGeneration[];
 }
 
+export interface FullMatchingResult {
+  matchingResult: MatchingOutput;
+  rootHash: string;
+  leaves: string[];
+}
+
 export type MatchingAlgorithm = (input: MatchingInput) => MatchingOutput;

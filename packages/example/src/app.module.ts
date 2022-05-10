@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MatchingModule, MatchingDataInMemoryAdapterModule, MatchingResultReceiversAdapterModule, matchingResultLogger } from 'greenproof-worker';
-import { produceData } from './data-producer';
+import { MatchingModule, MatchingResultReceiversAdapterModule, matchingResultLogger, MatchingDataDDHubAdapterModule, matchingResultDDHubSender } from 'greenproof-worker';
 import { matchingAlgorithm } from './algorithm';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     MatchingModule.register({
       dependendencies: [
-        MatchingDataInMemoryAdapterModule.register(produceData()),
+        MatchingDataDDHubAdapterModule.register(),
         MatchingResultReceiversAdapterModule.register({
           receivers: [
             matchingResultLogger,
+            matchingResultDDHubSender,
           ],
         }),
       ],
