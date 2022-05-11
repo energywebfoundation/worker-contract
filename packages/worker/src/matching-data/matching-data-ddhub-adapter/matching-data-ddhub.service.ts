@@ -65,7 +65,7 @@ export class MatchingDataDDHubService {
   }
 
   private async acknowledge(messageIds: string[], topic: string): Promise<void> {
-    this.logger.info(`Acknowledging retrieval of following messages to DDHub: ${messageIds}`, );
+    this.logger.info(`Acknowledging retrieval of following messages to DDHub: ${messageIds}`);
 
     await Promise.all(messageIds.map(async (messageId) => {
       try {
