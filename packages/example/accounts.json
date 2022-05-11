@@ -1,0 +1,14 @@
+{
+  "worker-1": {
+    "address": "0x25dFF145582ea213490F92588e92C7cc8A3B2218",
+    "privateKey": "fd055324f73fb2cf5657f3160cd502ea40523029f3845bc8114839e0703e185d"
+  },
+  "worker-2": {
+    "address": "0x9a31Eb94C52D9501Be0DFcF8Aca8c4dAe6Dc8230",
+    "privateKey": "cf4a7c38fae38420c1690c6d5fa13d2f90afdeed608535bbc623aa60bbd9b3be"
+  },
+  "worker-3": {
+    "address": "0x8714B2354E040f50f31F5cB672Cd13756e11424A",
+    "privateKey": "0d46b75f3a5f6b24cd3541dca9dde84442d411e1b10392f0fce0bcb93a9bd2ee"
+  }
+}
