@@ -10,7 +10,7 @@ services:
       - "3000:3030"
     environment:
       - BLOCKCHAIN_ADDRESS=firstWorker
-      - DDHUB_URL=http://ddhub:3004
+      - DDHUB_URL=http://ddhub:3000
     depends_on:
       - ddhub
 
@@ -24,7 +24,7 @@ services:
       - "3001:3030"
     environment:
       - BLOCKCHAIN_ADDRESS=secondWorker
-      - DDHUB_URL=http://ddhub:3004
+      - DDHUB_URL=http://ddhub:3000
     depends_on:
       - ddhub
 
@@ -38,7 +38,7 @@ services:
       - "3002:3030"
     environment:
       - BLOCKCHAIN_ADDRESS=thirdWorker
-      - DDHUB_URL=http://ddhub:3004
+      - DDHUB_URL=http://ddhub:3000
     depends_on:
       - ddhub
 
@@ -73,11 +73,7 @@ services:
     command: ["yarn", "start:dev"]
     ports:
       - "3004:3000"
-    networks:
-      - app
-    expose:
-      - "3000"
-      - "3004"
+
   data-cache:
     image: node:16-alpine
     working_dir: /deployment/packages/data-cache
