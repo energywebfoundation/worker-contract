@@ -3,6 +3,10 @@ import axios from 'axios';
 import { PinoLogger } from 'nestjs-pino';
 import type { Preferences, Reading, ReadingQuery } from '../types';
 
+interface ReadingMessage extends Reading {
+  id: string;
+}
+
 @Injectable()
 export class MatchingDataDDHubService {
   private logger = new PinoLogger({renameContext: MatchingDataDDHubService.name});
@@ -44,6 +48,21 @@ export class MatchingDataDDHubService {
     return readings;
   }
 
+  public async processData(query: ReadingQuery, match: Function) {
+    const consumptions = await this.getConsumptionsMessages(query);
+    const generations = await this.getGenerationsMessages(query);
+    const preferences = await this.getPreferences();
+
+    await match(consumptions, generations, preferences);
+
+    const uniqueConsumptionMessageIds = [...new Set(consumptions.map(reading => reading.id))];
+    const uniqueGenerationMessageIds = [...new Set(consumptions.map(reading => reading.id))];
+
+    await this.acknowledge(uniqueConsumptionMessageIds, 'consumption');
+    await this.acknowledge(uniqueGenerationMessageIds, 'generation');
+
+  }
+
   private async getReadings(query: ReadingQuery, topic: 'consumption' | 'generation'): Promise<Reading[]> {
     const { data } = await axios.request({
       method: 'get',
@@ -55,12 +74,38 @@ export class MatchingDataDDHubService {
         // NOTE: disregarding to / from for now
       },
     });
+    return data.messages;
+  }
 
-    // TODO: acknowledge somewhere else
-    // Acknowledging works well here for keeping ddhub context contained,
-    // but it does nothing for failure recovery -
-    // the messages will get acknowledged but might fail during later steps (matching or receiving)
-    await this.acknowledge(data.messages.map((m: any) => m.id), topic);
+  public async getConsumptionsMessages(query: ReadingQuery): Promise<ReadingMessage[]> {
+    this.logger.info(`Getting consumptions from DDHub for query: ${JSON.stringify(query)}`);
+
+    const readings = await this.getReadingsMessages(query, 'consumption');
+
+    this.logger.info(`Received ${readings.length} consumptions from DDHub`);
+    return readings;
+  }
+
+  public async getGenerationsMessages(query: ReadingQuery): Promise<ReadingMessage[]> {
+    this.logger.info(`Getting generations from DDHub for query: ${JSON.stringify(query)}`);
+
+    const readings = await this.getReadingsMessages(query, 'generation');
+
+    this.logger.info(`Received ${readings.length} generations from DDHub`);
+    return readings;
+  }
+
+  private async getReadingsMessages(query: ReadingQuery, topic: 'consumption' | 'generation'): Promise<ReadingMessage[]> {
+    const { data } = await axios.request({
+      method: 'get',
+      baseURL: process.env.DDHUB_URL,
+      url: 'message',
+      params: {
+        clientID: process.env.BLOCKCHAIN_ADDRESS,
+        topicName: topic,
+        // NOTE: disregarding to / from for now
+      },
+    });
     return data.messages;
   }
 

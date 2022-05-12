@@ -18,4 +18,8 @@ export class MatchingDataDDHubFacade implements MatchingDataFacade {
   public async getGenerations(query: ReadingQuery): Promise<Reading[]> {
     return await this.dataService.getGenerations(query);
   }
+
+  public async processData(query: ReadingQuery, match: Function): Promise<void> {
+    await this.dataService.processData(query, match);
+  }
 }

@@ -21,21 +21,21 @@ export class MatchingFacade {
   ) {}
 
   public async match(timestamp: Date): Promise<void> {
-    this.logger.info(`Matching data for timestamp: ${timestamp}.`);
+    await this.matchingDataFacade.processData({from: timestamp, to: timestamp}, this.matching);
+  }
 
-    const consumptions = await this.matchingDataFacade.getConsumptions({from: timestamp, to: timestamp});
-    const generations = await this.matchingDataFacade.getGenerations({from: timestamp, to: timestamp});
-    const preferences = await this.matchingDataFacade.getPreferences();
+  private matching = async (consumptions: Reading[], generations: Reading[], preferences: Preferences) => {
+    this.logger.info('Matching data.');
 
     if (consumptions.length === 0 && generations.length === 0) {
-      this.logger.info(`Matching for timestamp: ${timestamp} omitted (no consumptions and generations during timeframe).`);
+      this.logger.info('Matching omitted (no consumptions and generations during timeframe).');
       return;
     }
 
     const matchingResult = this.matchingAlgorithm({consumptions, generations, preferences});
     const merkleTree = this.createTree(matchingResult);
 
-    this.logger.info(`Sending matching data for timestamp: ${timestamp}.`);
+    this.logger.info('Sending matching data.');
     await this.matchingResultFacade.receiveMatchingResult({tree: merkleTree, data: matchingResult});
 
     try {
@@ -46,8 +46,8 @@ export class MatchingFacade {
       this.logger.info(`Error occured during voting: ${error}`);
     }
 
-    this.logger.info(`Matching for timestamp: ${timestamp} complete.`);
-  }
+    this.logger.info('Matching for timestamp complete.');
+  };
 
   private createTree(matchingResult: MatchingOutput) {
     this.logger.info('Creating merkle tree.');

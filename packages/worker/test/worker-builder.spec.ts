@@ -1,4 +1,7 @@
 import { WorkerBuilder } from '../src';
+const mockGetConsumptions = async () => [{ deviceId: 'c1', volume: 100, timestamp: new Date(0) }];
+const mockGetGenerations = async () => [{ deviceId: 'g1', volume: 100, timestamp: new Date(0) }];
+const mockGetPreferences = async () => ({ groupPriority: [[{ id: 'c1', groupPriority: [[{ id: 'g1' }]]}]]});
 
 describe('WorkerBuilder', () => {
   it('properly matches using data source and result source', async () => {
@@ -16,9 +19,16 @@ describe('WorkerBuilder', () => {
         };
       })
       .setDataSource({
-        getConsumptions: async () => [{ deviceId: 'c1', volume: 100, timestamp: new Date(0) }],
-        getGenerations: async () => [{ deviceId: 'g1', volume: 100, timestamp: new Date(0) }],
-        getPreferences: async () => ({ groupPriority: [[{ id: 'c1', groupPriority: [[{ id: 'g1' }]]}]]}),
+        getConsumptions: mockGetConsumptions,
+        getGenerations: mockGetGenerations,
+        getPreferences: mockGetPreferences,
+        processData: async (query, match) => {
+          const consumptions = await mockGetConsumptions();
+          const generations = await mockGetGenerations();
+          const preferences = await mockGetPreferences();
+
+          await match(consumptions, generations, preferences);
+        },
       })
       .setResultSource({
         receiveMatchingResult,

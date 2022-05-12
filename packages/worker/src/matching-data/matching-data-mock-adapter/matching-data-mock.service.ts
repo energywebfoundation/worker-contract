@@ -42,6 +42,14 @@ export class MatchingDataMockService {
     this.generations.push(...readings);
   }
 
+  public async processData(query: ReadingQuery, match: Function): Promise<void> {
+    const consumptions = this.getConsumptions(query);
+    const generations = this.getGenerations(query);
+    const preferences = this.getPreferences();
+
+    await match(consumptions, generations, preferences);
+  }
+
   private async getReadings(
     query: ReadingQuery,
     dataset: Reading[],
