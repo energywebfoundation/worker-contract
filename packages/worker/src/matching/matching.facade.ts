@@ -6,7 +6,7 @@ import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from
 import { MatchingAlgorithm, MATCHING_ALGO } from './types';
 import { createMerkleTree, hash } from 'greenproof-merkle-tree';
 import { PinoLogger } from 'nestjs-pino';
-import { VotingFacade } from 'src/voting/voting.facade';
+import { VotingFacade } from '../voting/voting.facade';
 
 @Injectable()
 export class MatchingFacade {
