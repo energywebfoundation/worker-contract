@@ -1,4 +1,4 @@
-import type { Reading } from 'greenproof-worker';
+import type { Reading } from '@energyweb/greenproof-worker';
 
 const randomVolume = () => Math.floor(Math.random() * 300);
 const minToMs = (min: number) => min * 60 * 1000;

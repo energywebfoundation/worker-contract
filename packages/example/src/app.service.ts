@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MatchingFacade } from 'greenproof-worker';
+import { MatchingFacade } from '@energyweb/greenproof-worker';
 
 @Injectable()
 export class AppService {

@@ -1,5 +1,5 @@
 {
-  "name": "voting-contract",
+  "name": "@energyweb/greenproof-voting-contract",
   "version": "0.1.0",
   "scripts": {
     "prebuild": "rimraf artifacts cache",
