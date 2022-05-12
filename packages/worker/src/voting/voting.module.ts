@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import type { BlockchainConfig } from './types';
+import type { BlockchainConfig} from './types';
+import { VotingService } from './voting-service/voting.service';
 import { VotingFacade } from './voting.facade';
-import { VotingService } from './voting.service';
+import { BlockchainVotingService } from './voting-service/blockchain-voting.service';
 
 @Module({})
 export class VotingModule {
@@ -12,7 +13,7 @@ export class VotingModule {
         VotingFacade,
         {
           provide: VotingService,
-          useValue: new VotingService({...config}),
+          useValue: new BlockchainVotingService({...config}),
         },
       ],
       exports: [VotingFacade],

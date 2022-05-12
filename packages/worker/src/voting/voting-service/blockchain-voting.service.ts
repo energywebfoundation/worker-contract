@@ -2,14 +2,15 @@ import { Injectable } from '@nestjs/common';
 import type { JsonRpcProvider } from '@ethersproject/providers';
 import type { Wallet } from 'ethers';
 import { ethers } from 'ethers';
-import type { MatchVoting } from './typechain/contracts/MatchVoting';
-import { MatchVoting__factory } from './typechain/factories/contracts/MatchVoting__factory';
+import type { MatchVoting } from '../typechain/contracts/MatchVoting';
+import { MatchVoting__factory } from '../typechain/factories/contracts/MatchVoting__factory';
 import type { MatchingInput, MatchingOutput, SerializedMerkleTree } from 'src';
 import { hash } from 'greenproof-merkle-tree';
-import { BlockchainConfig } from './types';
+import { BlockchainConfig } from '../types';
+import type { VotingService } from './voting.service';
 
 @Injectable()
-export class VotingService {
+export class BlockchainVotingService implements VotingService{
   private provider: JsonRpcProvider;
   private contract: MatchVoting;
   private wallet: Wallet;
