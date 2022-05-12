@@ -34,3 +34,8 @@ or (without logs)
 ```
 docker compose up -d
 ```
+
+### Deployment
+
+1. Create personal access token on GitHub: https://github.com/settings/tokens
+2. Run `GH_TOKEN=<your_token> yarn multi-semantic-release --no-ci`
