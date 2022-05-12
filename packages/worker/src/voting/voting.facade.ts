@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { MatchingInput, SerializedMerkleTree, MatchingOutput } from 'src';
+import type { MatchingInput, SerializedMerkleTree, MatchingOutput } from '../matching/types';
 import { VotingService } from './voting-service/voting.service';
 
 @Injectable()
