@@ -37,3 +37,8 @@ export interface FullMatchingResult {
 }
 
 export type MatchingAlgorithm = (input: MatchingInput) => MatchingOutput;
+
+export interface SerializedMerkleTree {
+  rootHash: string;
+  leaves: string[];
+}
