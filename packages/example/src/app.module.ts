@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MatchingModule, MatchingDataInMemoryAdapterModule, MatchingResultReceiversAdapterModule, matchingResultLogger } from 'greenproof-worker';
+import { MatchingModule, MatchingDataInMemoryAdapterModule, MatchingResultReceiversAdapterModule, matchingResultLogger } from '@energyweb/greenproof-worker';
 import { produceData } from './data-producer';
 import { matchingAlgorithm } from './algorithm';
 
