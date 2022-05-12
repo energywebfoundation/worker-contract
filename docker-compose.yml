@@ -47,29 +47,12 @@ services:
     ports:
       - "3004:3000"
   
-  data-cache:
-    image: greenproofs:latest
-    working_dir: /deployment/packages/data-cache
-    command: ["/bin/sh", "-c", "node dist/main"]
-    ports:
-      - "3005:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/data_cache?sslmode=disable
-
   gateway:
     image: greenproofs:latest
     working_dir: /deployment/packages/client-gateway
     command: ["/bin/sh", "-c", "node dist/main"]
     ports:
       - "3006:3001"
-  
-  db:
-    image: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=data_cache
-      - POSTGRES_PASSWORD=postgres
 
 networks:
   app:
