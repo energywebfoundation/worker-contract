@@ -31,6 +31,11 @@ const config: HardhatUserConfig = {
     ganache: {
       url: "http://localhost:8545",
     },
+    volta: {
+      url: "https://volta-rpc.energyweb.org",
+      chainId: 73799,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
