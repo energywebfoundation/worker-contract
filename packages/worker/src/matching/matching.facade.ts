@@ -27,13 +27,25 @@ export class MatchingFacade {
     const generations = await this.matchingDataFacade.getGenerations({from: timestamp, to: timestamp});
     const preferences = await this.matchingDataFacade.getPreferences();
 
+    if (consumptions.length === 0 && generations.length === 0) {
+      this.logger.info(`Matching for timestamp: ${timestamp} omitted (no consumptions and generations during timeframe).`);
+      return;
+    }
+
     const matchingResult = this.matchingAlgorithm({consumptions, generations, preferences});
     const merkleTree = this.createTree(matchingResult);
 
     this.logger.info(`Sending matching data for timestamp: ${timestamp}.`);
     await this.matchingResultFacade.receiveMatchingResult({tree: merkleTree, data: matchingResult});
 
-    this.votingFacade.vote({consumptions, generations, preferences}, {merkleTree, matchingResult});
+    try {
+      this.logger.info('Sending vote for match result.');
+      this.votingFacade.vote({consumptions, generations, preferences}, {merkleTree, matchingResult});
+      this.logger.info('Vote sent.');
+    } catch (error) {
+      this.logger.info(`Error occured during voting: ${error}`);
+    }
+
     this.logger.info(`Matching for timestamp: ${timestamp} complete.`);
   }
 
