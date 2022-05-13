@@ -4,8 +4,8 @@ import { AppService } from './app.service';
 import { MatchingModule, MatchingResultReceiversAdapterModule, matchingResultLogger, MatchingDataDDHubAdapterModule, matchingResultDDHubSender, VotingModule } from 'greenproof-worker';
 import { matchingAlgorithm } from './algorithm';
 import { ScheduleModule } from '@nestjs/schedule';
-const { join } = require('path');
-const { config } = require('dotenv');
+import { join } from 'path';
+import { config } from 'dotenv';
 
 config({ path: join(__dirname, '..', '.env') });
 
