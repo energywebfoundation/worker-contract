@@ -1,7 +1,7 @@
 import { ContractTransaction, ethers } from 'ethers';
 import { useCallback, useMemo } from 'react';
 import { VOTING_CONTRACT_ADDRESS } from './voting-contract';
-import { MatchVoting, MatchVoting__factory } from '../typechain';
+import { MatchVoting, MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
 import { getSelectedConnector } from '@web3-react/core';
 import { MetaMaskConnector, useMetaMaskConnector } from './connectors';
 

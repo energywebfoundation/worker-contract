@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { OverseerController } from './example/example.controller';
 import { OverseerService } from './overseer.service';
 import type { OverseerConfig } from './types';
 import { LoggerModule } from 'nestjs-pino';
@@ -14,9 +13,7 @@ export class OverseerModule {
       imports: [
         LoggerModule.forRoot(),
       ],
-      controllers: [
-        OverseerController,
-      ],
+      controllers: [],
       providers: [
         {
           provide: OverseerService,
