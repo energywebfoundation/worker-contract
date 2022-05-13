@@ -6,7 +6,7 @@ import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
 import type { MatchVoting} from '@energyweb/greenproof-voting-contract';
 import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
-import type { TypedEvent, TypedListener } from './contracts/types/common';
+import type { TypedEvent, TypedListener } from '@energyweb/greenproof-voting-contract';
 import { EventListeners } from './types';
 
 
