@@ -9,7 +9,7 @@ services:
     ports:
       - "3000:3030"
     environment:
-      - BLOCKCHAIN_ADDRESS=firstWorker
+      - WORKER_BLOCKCHAIN_ADDRESS=firstWorker
       - DDHUB_URL=http://ddhub:3000
     depends_on:
       - ddhub
@@ -23,7 +23,7 @@ services:
     ports:
       - "3001:3030"
     environment:
-      - BLOCKCHAIN_ADDRESS=secondWorker
+      - WORKER_BLOCKCHAIN_ADDRESS=secondWorker
       - DDHUB_URL=http://ddhub:3000
     depends_on:
       - ddhub
@@ -37,7 +37,7 @@ services:
     ports:
       - "3002:3030"
     environment:
-      - BLOCKCHAIN_ADDRESS=thirdWorker
+      - WORKER_BLOCKCHAIN_ADDRESS=thirdWorker
       - DDHUB_URL=http://ddhub:3000
     depends_on:
       - ddhub

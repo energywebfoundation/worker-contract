@@ -14,7 +14,7 @@ const port = process.env.PORT || 3000;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   await app.listen(port);
-  console.log(`${process.env.BLOCKCHAIN_ADDRESS} started on port ${port}`);
+  console.log(`${process.env.WORKER_BLOCKCHAIN_ADDRESS} started on port ${port}`);
 }
 bootstrap();
 

@@ -21,7 +21,7 @@ export class MatchingDataDDHubService {
       baseURL: process.env.DDHUB_URL,
       url: 'message',
       params: {
-        clientID: process.env.BLOCKCHAIN_ADDRESS,
+        clientID: process.env.WORKER_BLOCKCHAIN_ADDRESS,
         topicName: 'preferences',
       },
     });
@@ -69,7 +69,7 @@ export class MatchingDataDDHubService {
       baseURL: process.env.DDHUB_URL,
       url: 'message',
       params: {
-        clientID: process.env.BLOCKCHAIN_ADDRESS,
+        clientID: process.env.WORKER_BLOCKCHAIN_ADDRESS,
         topicName: topic,
         // NOTE: disregarding to / from for now
       },
@@ -101,7 +101,7 @@ export class MatchingDataDDHubService {
       baseURL: process.env.DDHUB_URL,
       url: 'message',
       params: {
-        clientID: process.env.BLOCKCHAIN_ADDRESS,
+        clientID: process.env.WORKER_BLOCKCHAIN_ADDRESS,
         topicName: topic,
         // NOTE: disregarding to / from for now
       },
@@ -119,7 +119,7 @@ export class MatchingDataDDHubService {
           baseURL: process.env.DDHUB_URL,
           url: 'message/ack',
           data: {
-            clientId: process.env.BLOCKCHAIN_ADDRESS,
+            clientId: process.env.WORKER_BLOCKCHAIN_ADDRESS,
             topicName: topic,
             messageId,
           },
