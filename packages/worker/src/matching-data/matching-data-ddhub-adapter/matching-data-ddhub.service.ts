@@ -26,7 +26,7 @@ export class MatchingDataDDHubService {
       },
     });
 
-    this.logger.info(`Matching preferences received: ${data}`);
+    this.logger.info(`Matching preferences received: ${JSON.stringify(data)}`);
     return data ? data : { groupPriority: [] };
   }
 
