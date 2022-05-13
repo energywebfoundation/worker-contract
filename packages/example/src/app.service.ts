@@ -8,7 +8,7 @@ export class AppService {
     private matchingFacade: MatchingFacade,
   ) {}
 
-  @Cron(CronExpression.EVERY_5_SECONDS)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   public async match(timestamp: Date) {
     await this.matchingFacade.match(timestamp);
   }
