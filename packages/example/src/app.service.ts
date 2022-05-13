@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { MatchingFacade } from 'greenproof-worker';
+import { MatchingFacade } from '@energyweb/greenproof-worker';
 
 @Injectable()
 export class AppService {

@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import type { Reading, ReadingQuery} from 'greenproof-worker';
-import { WorkerBuilder } from 'greenproof-worker';
+import type { Reading, ReadingQuery} from '@energyweb/greenproof-worker';
+import { WorkerBuilder } from '@energyweb/greenproof-worker';
 import { matchingAlgorithm } from './algorithm';
 import { AppModule } from './app.module';
 import { produceData } from './data-producer';

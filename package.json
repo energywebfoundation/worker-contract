@@ -1,4 +1,5 @@
 {
+  "name": "greenproof-sdk",
   "private": true,
   "workspaces": {
     "packages": [
@@ -10,6 +11,7 @@
     ]
   },
   "scripts": {
+    "prepare": "husky install",
     "build": "yarn workspaces run build",
     "test:unit": "yarn workspaces run test:unit",
     "test:e2e": "yarn workspaces run test:e2e",
@@ -20,6 +22,13 @@
     "deploy:heroku": "yarn workspaces run deploy:heroku",
     "purge": "yarn purge:node_modules && yarn purge:dist",
     "purge:dist": "find . -name 'dist' -type d -prune -exec rm -rf '{}' +",
-    "purge:node_modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+    "purge:node_modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "release": "yarn multi-semantic-release --no-ci"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "16.2.4",
+    "@commitlint/config-conventional": "16.2.4",
+    "@qiwi/multi-semantic-release": "6.3.0",
+    "husky": "8.0.1"
   }
 }

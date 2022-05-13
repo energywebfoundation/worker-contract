@@ -4,7 +4,7 @@ import { MatchingResultFacade } from '../matching-result/matching-result.facade'
 import { Inject, Injectable } from '@nestjs/common';
 import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from './types';
 import { MatchingAlgorithm, MATCHING_ALGO } from './types';
-import { createMerkleTree, hash } from 'greenproof-merkle-tree';
+import { createMerkleTree, hash } from '@energyweb/greenproof-merkle-tree';
 import { PinoLogger } from 'nestjs-pino';
 import { VotingFacade } from '../voting/voting.facade';
 

@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 import type { MatchVoting } from '../typechain/contracts/MatchVoting';
 import { MatchVoting__factory } from '../typechain/factories/contracts/MatchVoting__factory';
 import type { MatchingInput, MatchingOutput, SerializedMerkleTree } from '../../matching/types';
-import { hash } from 'greenproof-merkle-tree';
+import { hash } from '@energyweb/greenproof-merkle-tree';
 import { BlockchainConfig } from '../types';
 import type { VotingService } from './voting.service';
 

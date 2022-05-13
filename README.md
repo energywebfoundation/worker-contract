@@ -34,3 +34,9 @@ or (without logs)
 ```
 docker compose up -d
 ```
+
+### Deployment
+
+1. Create personal access token on GitHub: https://github.com/settings/tokens
+2. Set this token as `GH_TOKEN` env variable (or just prefix command below with `GH_TOKEN=xxxxx [...]`)
+2. Run `yarn release`

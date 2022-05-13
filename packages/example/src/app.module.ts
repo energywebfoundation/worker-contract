@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MatchingModule, MatchingResultReceiversAdapterModule, matchingResultLogger, MatchingDataDDHubAdapterModule, matchingResultDDHubSender, VotingModule } from 'greenproof-worker';
+import { MatchingModule, MatchingResultReceiversAdapterModule, matchingResultLogger, MatchingDataDDHubAdapterModule, matchingResultDDHubSender, VotingModule } from '@energyweb/greenproof-worker';
 import { matchingAlgorithm } from './algorithm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
