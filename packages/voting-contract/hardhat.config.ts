@@ -45,7 +45,7 @@ const config: HardhatUserConfig = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
-    outDir: path.join(__dirname, "..", "voting-manager", "src", "typechain"),
+    outDir: path.join(__dirname, "src"),
   },
 };
 
