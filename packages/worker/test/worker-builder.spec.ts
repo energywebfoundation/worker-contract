@@ -1,4 +1,7 @@
 import { WorkerBuilder } from '../src';
+const mockGetConsumptions = async () => [{ deviceId: 'c1', volume: 100, timestamp: new Date(0) }];
+const mockGetGenerations = async () => [{ deviceId: 'g1', volume: 100, timestamp: new Date(0) }];
+const mockGetPreferences = async () => ({ groupPriority: [[{ id: 'c1', groupPriority: [[{ id: 'g1' }]]}]]});
 
 describe('WorkerBuilder', () => {
   it('properly matches using data source and result source', async () => {
@@ -16,13 +19,21 @@ describe('WorkerBuilder', () => {
         };
       })
       .setDataSource({
-        getConsumptions: async () => [{ deviceId: 'c1', volume: 100, timestamp: new Date(0) }],
-        getGenerations: async () => [{ deviceId: 'g1', volume: 100, timestamp: new Date(0) }],
-        getPreferences: async () => ({ groupPriority: [[{ id: 'c1', groupPriority: [[{ id: 'g1' }]]}]]}),
+        getConsumptions: mockGetConsumptions,
+        getGenerations: mockGetGenerations,
+        getPreferences: mockGetPreferences,
+        processData: async (query, match) => {
+          const consumptions = await mockGetConsumptions();
+          const generations = await mockGetGenerations();
+          const preferences = await mockGetPreferences();
+
+          await match(consumptions, generations, preferences);
+        },
       })
       .setResultSource({
         receiveMatchingResult,
       })
+      .setVotingModule({rpcHost: 'http://localhost:8545', contractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3', workerPrivateKey: '0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba'})
       .compile();
 
     await matchingFacade.match(new Date('2022-04-01T01:00:00.000Z'));

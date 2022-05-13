@@ -24,11 +24,15 @@
     "@nestjs/common": "8.0.0",
     "@nestjs/core": "8.0.0",
     "@nestjs/platform-express": "8.0.0",
+    "@nestjs/schedule": "1.1.0",
+    "dotenv": "16.0.1",
+    "ethers": "5.6.4",
     "algorithms": "*",
     "@energyweb/greenproof-worker": "*",
     "reflect-metadata": "0.1.13",
     "rimraf": "3.0.2",
-    "rxjs": "7.2.0"
+    "rxjs": "7.2.0",
+    "@energyweb/greenproof-voting-contract": "*"
   },
   "devDependencies": {
     "@leocode/eslint-config": "2.0.0",
@@ -49,6 +53,7 @@
     "ts-loader": "9.2.3",
     "ts-node": "10.7.0",
     "tsconfig-paths": "3.14.1",
+    "typechain": "8.0.0",
     "typescript": "4.6.4"
   },
   "jest": {
