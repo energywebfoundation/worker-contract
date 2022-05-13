@@ -23,7 +23,8 @@
     "purge": "yarn purge:node_modules && yarn purge:dist",
     "purge:dist": "find . -name 'dist' -type d -prune -exec rm -rf '{}' +",
     "purge:node_modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
-    "release": "yarn multi-semantic-release --no-ci"
+    "release": "yarn build && yarn multi-semantic-release --no-ci --dry-run",
+    "release:ci": "yarn build && yarn multi-semantic-release --dry-run"
   },
   "devDependencies": {
     "@commitlint/cli": "16.2.4",
