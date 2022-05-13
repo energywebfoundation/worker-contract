@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-worker",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "axios": "0.27.2",
     "ethers": "5.6.4",
     "@energyweb/greenproof-merkle-tree": "1.0.0",
-    "@energyweb/greenproof-voting-contract": "*",
+    "@energyweb/greenproof-voting-contract": "1.0.1",
     "nestjs-pino": "2.5.2",
     "pino-http": "7.0.0",
     "reflect-metadata": "0.1.13",

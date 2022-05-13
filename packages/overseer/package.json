@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-overseer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -28,7 +28,7 @@
     "@nestjs/core": "8.0.0",
     "@nestjs/platform-express": "8.0.0",
     "dotenv": "16.0.1",
-    "@energyweb/greenproof-voting-contract": "*",
+    "@energyweb/greenproof-voting-contract": "1.0.1",
     "ethers": "5.6.4",
     "nestjs-pino": "2.5.2",
     "pino-http": "7.0.0",
