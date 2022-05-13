@@ -4,8 +4,8 @@ import { Injectable } from '@nestjs/common';
 import type { Wallet } from 'ethers';
 import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
-import type { SampleContract} from './contracts/types';
-import { SampleContract__factory } from './contracts/types';
+import type { MatchVoting} from '@energyweb/greenproof-voting-contract';
+import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
 import type { TypedEvent, TypedListener } from './contracts/types/common';
 import { EventListeners } from './types';
 
@@ -19,7 +19,7 @@ interface BlockchainConfig {
 @Injectable()
 export class OverseerService implements OnApplicationBootstrap {
   private provider: JsonRpcProvider;
-  private contract: SampleContract;
+  private contract: MatchVoting;
   private wallet: Wallet;
   private logger = new PinoLogger({});
 
@@ -28,21 +28,13 @@ export class OverseerService implements OnApplicationBootstrap {
 
     this.provider = new ethers.providers.JsonRpcProvider(this.config.rpcHost);
     this.wallet = new ethers.Wallet(this.config.overseerPrivateKey, this.provider);
-    this.contract = SampleContract__factory.connect(this.config.contractAddress, this.provider.getSigner());
+    this.contract = MatchVoting__factory.connect(this.config.contractAddress, this.provider.getSigner());
     this.contract.connect(this.wallet);
   }
 
   onApplicationBootstrap() {
     this.handleMissedEvents(this.listeners, this.getLastHandledBlockNumber);
     this.registerEventListeners(this.listeners);
-  }
-
-  public async testFunction() {
-    this.logger.info('testFunction called.');
-
-    await this.contract.interestingFunction();
-
-    this.logger.info('testFunction call finished.');
   }
 
   private async handleMissedEvents(listeners: EventListeners, getLastHandledBlockNumber:Function) {
