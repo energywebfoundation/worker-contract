@@ -1,4 +1,5 @@
-import { Module, ModuleMetadata } from '@nestjs/common';
+import type { ModuleMetadata } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MatchingFacade } from './matching.facade';
 import { MATCHING_ALGO } from './types';
 import type { MatchingAlgorithm } from './types';

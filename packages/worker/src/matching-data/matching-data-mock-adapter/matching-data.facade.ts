@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Reading, Preferences, ReadingQuery } from '../types';
+import type { Reading, Preferences, ReadingQuery, MatchCallback } from '../types';
 import type { MatchingDataFacade } from '../matching-data.facade';
 import { MatchingDataMockService } from './matching-data-mock.service';
 
@@ -17,5 +17,9 @@ export class MatchingDataMockFacade implements MatchingDataFacade {
 
   public async getGenerations(query: ReadingQuery): Promise<Reading[]> {
     return await this.matchingDataService.getGenerations(query);
+  }
+
+  public async processData(query: ReadingQuery, match: MatchCallback): Promise<void> {
+    return await this.matchingDataService.processData(query, match);
   }
 }

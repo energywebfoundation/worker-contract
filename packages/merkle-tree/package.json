@@ -1,10 +1,10 @@
 {
-  "name": "greenproof-merkle-tree",
-  "version": "0.0.1",
-  "private": true,
+  "name": "@energyweb/greenproof-merkle-tree",
+  "version": "0.1.0",
   "license": "MIT",
   "author": "EnergyWeb DevHub GmbH;",
   "main": "dist/js/src/index.js",
+  "types": "dist/js/src/index.d.ts",
   "scripts": {
     "prebuild": "yarn clean",
     "build": "tsc",

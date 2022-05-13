@@ -1,9 +1,8 @@
 {
-  "name": "overseer",
-  "version": "0.0.1",
+  "name": "@energyweb/greenproof-overseer",
+  "version": "0.1.0",
   "description": "",
   "author": "",
-  "private": true,
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -53,7 +52,7 @@
     "@types/supertest": "2.0.11",
     "@typescript-eslint/eslint-plugin": "5.21.0",
     "@typescript-eslint/parser": "5.21.0",
-    "concurrently": "^7.1.0",
+    "concurrently": "7.1.0",
     "eslint": "8.14.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-prettier": "4.0.0",
@@ -66,7 +65,7 @@
     "tsconfig-paths": "3.14.1",
     "typechain": "8.0.0",
     "typescript": "4.6.4",
-    "wait-on": "^6.0.1"
+    "wait-on": "6.0.1"
   },
   "jest": {
     "moduleFileExtensions": [

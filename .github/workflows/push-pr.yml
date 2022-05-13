@@ -1,0 +1,11 @@
+name: Push/PR
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: ['*']
+
+jobs:
+  build-test:
+    uses: ./.github/workflows/build-test.part.yml
