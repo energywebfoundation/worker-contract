@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { MatchingDataFacade } from '../matching-data.facade';
-import type { Preferences, Reading, ReadingQuery } from '../types';
+import type { Preferences, Reading, ReadingQuery, MatchCallback } from '../types';
 import { MatchingDataDDHubService } from './matching-data-ddhub.service';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class MatchingDataDDHubFacade implements MatchingDataFacade {
     return await this.dataService.getGenerations(query);
   }
 
-  public async processData(query: ReadingQuery, match: Function): Promise<void> {
+  public async processData(query: ReadingQuery, match: MatchCallback): Promise<void> {
     await this.dataService.processData(query, match);
   }
 }

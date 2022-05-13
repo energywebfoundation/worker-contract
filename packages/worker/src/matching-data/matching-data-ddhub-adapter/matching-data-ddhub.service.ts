@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { PinoLogger } from 'nestjs-pino';
-import type { Preferences, Reading, ReadingQuery } from '../types';
+import type { Preferences, Reading, ReadingQuery, MatchCallback } from '../types';
 
 interface ReadingMessage extends Reading {
   id: string;
@@ -48,7 +48,7 @@ export class MatchingDataDDHubService {
     return readings;
   }
 
-  public async processData(query: ReadingQuery, match: Function) {
+  public async processData(query: ReadingQuery, match: MatchCallback) {
     const consumptions = await this.getConsumptionsMessages(query);
     const generations = await this.getGenerationsMessages(query);
     const preferences = await this.getPreferences();

@@ -7,5 +7,5 @@ export abstract class MatchingDataFacade {
 
   public abstract getGenerations(query: ReadingQuery): Promise<Reading[]>;
 
-  public abstract processData(query: ReadingQuery, match: Function): Promise<void>;
+  public abstract processData(query: ReadingQuery, match: (consumptions: Reading[], generations: Reading[], preferences: Preferences) => Promise<void>): Promise<void>;
 }

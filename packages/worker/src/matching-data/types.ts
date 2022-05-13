@@ -16,3 +16,5 @@ export interface Preferences {
     groupPriority: { id: string }[][];
   }[][];
 }
+
+export type MatchCallback = (consumptions: Reading[], generations: Reading[], preferences: Preferences) => Promise<void>;
