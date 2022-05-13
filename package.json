@@ -1,15 +1,13 @@
 {
   "name": "greenproof-sdk",
   "private": true,
-  "workspaces": {
-    "packages": [
-      "packages/merkle-tree",
-      "packages/voting-contract",
-      "packages/voting-manager",
-      "packages/worker",
-      "packages/*"
-    ]
-  },
+  "workspaces": [
+    "packages/merkle-tree",
+    "packages/voting-contract",
+    "packages/voting-manager",
+    "packages/worker",
+    "packages/*"
+  ],
   "scripts": {
     "prepare": "husky install",
     "build": "yarn workspaces run build",
