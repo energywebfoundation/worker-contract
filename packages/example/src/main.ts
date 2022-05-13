@@ -4,11 +4,17 @@ import { WorkerBuilder } from '@energyweb/greenproof-worker';
 import { matchingAlgorithm } from './algorithm';
 import { AppModule } from './app.module';
 import { produceData } from './data-producer';
+import { config } from 'dotenv';
+import { join } from 'path';
+
+config({ path: join(__dirname, '..', '.env') });
+const port = process.env.PORT || 3000;
 
 // Launch Nest.js application
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
+  await app.listen(port);
+  console.log(`${process.env.WORKER_BLOCKCHAIN_ADDRESS} started on port ${port}`);
 }
 bootstrap();
 

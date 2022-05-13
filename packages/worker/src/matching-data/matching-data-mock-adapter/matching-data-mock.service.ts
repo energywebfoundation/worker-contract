@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import type { Preferences, Reading, ReadingQuery } from '../types';
+import type { Preferences, Reading, ReadingQuery, MatchCallback } from '../types';
 
 @Injectable()
 export class MatchingDataMockService {
@@ -40,6 +40,14 @@ export class MatchingDataMockService {
 
   public async storeGenerations(readings: Reading[]): Promise<void> {
     this.generations.push(...readings);
+  }
+
+  public async processData(query: ReadingQuery, match: MatchCallback): Promise<void> {
+    const consumptions = await this.getConsumptions(query);
+    const generations = await this.getGenerations(query);
+    const preferences = await this.getPreferences();
+
+    await match(consumptions, generations, preferences);
   }
 
   private async getReadings(

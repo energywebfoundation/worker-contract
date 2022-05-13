@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Preferences, Reading, ReadingQuery } from '../types';
+import type { Preferences, Reading, ReadingQuery, MatchCallback } from '../types';
 
 export interface InputData {
   consumptions: Reading[];
@@ -29,6 +29,14 @@ export class MatchingDataInMemoryService {
 
   public async getGenerations(query: ReadingQuery): Promise<Reading[]> {
     return await this.getReadings(query, this.generations);
+  }
+
+  public async processData(query: ReadingQuery, match: MatchCallback): Promise<void> {
+    const consumptions = await this.getConsumptions(query);
+    const generations = await this.getGenerations(query);
+    const preferences = await this.getPreferences();
+
+    await match(consumptions, generations, preferences);
   }
 
   private async getReadings(
