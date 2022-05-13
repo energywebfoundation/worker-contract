@@ -1,5 +1,5 @@
-import { SpreadMatcher } from 'greenproof-algorithms';
-import type { MatchingAlgorithm } from 'greenproof-worker';
+import { SpreadMatcher } from 'algorithms';
+import type { MatchingAlgorithm } from '@energyweb/greenproof-worker';
 
 export const matchingAlgorithm: MatchingAlgorithm = (input) => {
   const result = SpreadMatcher.spreadMatcher({

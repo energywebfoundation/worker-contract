@@ -4,8 +4,9 @@ import { MatchingResultFacade } from '../matching-result/matching-result.facade'
 import { Inject, Injectable } from '@nestjs/common';
 import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from './types';
 import { MatchingAlgorithm, MATCHING_ALGO } from './types';
-import { createMerkleTree, hash } from 'greenproof-merkle-tree';
+import { createMerkleTree, hash } from '@energyweb/greenproof-merkle-tree';
 import { PinoLogger } from 'nestjs-pino';
+import { VotingFacade } from '../voting/voting.facade';
 
 @Injectable()
 export class MatchingFacade {
@@ -16,23 +17,37 @@ export class MatchingFacade {
     private matchingResultFacade: MatchingResultFacade,
     @Inject(MATCHING_ALGO)
     private matchingAlgorithm: MatchingAlgorithm,
+    private votingFacade: VotingFacade,
   ) {}
 
-  public async match(timestamp: Date) {
-    this.logger.info(`Matching data for timestamp: ${timestamp}.`);
+  public async match(timestamp: Date): Promise<void> {
+    await this.matchingDataFacade.processData({from: timestamp, to: timestamp}, this.matching);
+  }
 
-    const consumptions = await this.matchingDataFacade.getConsumptions({from: timestamp, to: timestamp});
-    const generations = await this.matchingDataFacade.getGenerations({from: timestamp, to: timestamp});
-    const preferences = await this.matchingDataFacade.getPreferences();
+  private matching = async (consumptions: Reading[], generations: Reading[], preferences: Preferences) => {
+    this.logger.info('Matching data.');
+
+    if (consumptions.length === 0 && generations.length === 0) {
+      this.logger.info('Matching omitted (no consumptions and generations during timeframe).');
+      return;
+    }
 
     const matchingResult = this.matchingAlgorithm({consumptions, generations, preferences});
     const merkleTree = this.createTree(matchingResult);
 
-    this.logger.info(`Sending matching data for timestamp: ${timestamp}.`);
+    this.logger.info('Sending matching data.');
     await this.matchingResultFacade.receiveMatchingResult({tree: merkleTree, data: matchingResult});
 
-    this.logger.info(`Matching for timestamp: ${timestamp} complete.`);
-  }
+    try {
+      this.logger.info('Sending vote for match result.');
+      this.votingFacade.vote({consumptions, generations, preferences}, {merkleTree, matchingResult});
+      this.logger.info('Vote sent.');
+    } catch (error) {
+      this.logger.info(`Error occured during voting: ${error}`);
+    }
+
+    this.logger.info('Matching for timestamp complete.');
+  };
 
   private createTree(matchingResult: MatchingOutput) {
     this.logger.info('Creating merkle tree.');
