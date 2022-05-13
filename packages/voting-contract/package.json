@@ -1,12 +1,15 @@
 {
   "name": "@energyweb/greenproof-voting-contract",
   "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "prebuild": "rimraf artifacts cache",
+    "prebuild": "rimraf artifacts cache && rimraf dist && rimraf src",
     "test": "npx hardhat test",
     "test:e2e": "echo \"No tests\"",
     "test:unit": "echo \"No tests\"",
-    "build": "npx hardhat compile",
+    "build": "yarn build:contract && tsc",
+    "build:contract": "npx hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts",
     "deploy:volta": "hardhat run scripts/deploy.ts --network volta"
   },

@@ -6,9 +6,7 @@ import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
 import type { MatchVoting} from '@energyweb/greenproof-voting-contract';
 import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
-import type { TypedEvent, TypedListener } from '@energyweb/greenproof-voting-contract';
 import { EventListeners } from './types';
-
 
 interface BlockchainConfig {
   rpcHost: string;
@@ -73,7 +71,7 @@ export class OverseerService implements OnApplicationBootstrap {
 
     Object.entries(listenersToRegister).forEach(([eventName, listeners]) => {
       listeners.forEach(listener => {
-        this.contract.on(eventName as any, listener as TypedListener<TypedEvent<any, any>>);
+        this.contract.on(eventName as any, listener as any);
       });
     });
 
