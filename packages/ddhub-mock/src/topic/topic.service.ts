@@ -7,13 +7,13 @@ import { DateTime } from 'luxon';
 import { join } from 'path';
 import type { MockConfig, TopicMessage } from './topic.types';
 
-type topicName = string;
-type clientId = string;
+type TopicName = string;
+type ClientId = string;
 
 @Injectable()
 export class TopicService implements OnModuleInit {
-  db: Map<topicName, Map<clientId, TopicMessage[]>> = new Map();
-  logger = new Logger(TopicService.name)
+  db: Map<TopicName, Map<ClientId, TopicMessage[]>> = new Map();
+  logger = new Logger(TopicService.name);
 
   async onModuleInit() {
     const configFilePath = join(__dirname, '..', '..');

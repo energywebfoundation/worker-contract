@@ -7,6 +7,12 @@ interface ReadingMessage extends Reading {
   id: string;
 }
 
+enum Topic {
+  Consumption = 'consumption',
+  Generation = 'generation',
+  Preferences = 'preferences'
+}
+
 @Injectable()
 export class MatchingDataDDHubService {
   private logger = new PinoLogger({renameContext: MatchingDataDDHubService.name});
@@ -22,7 +28,7 @@ export class MatchingDataDDHubService {
       url: 'message',
       params: {
         clientID: process.env.WORKER_BLOCKCHAIN_ADDRESS,
-        topicName: 'preferences',
+        topicName: Topic.Preferences,
       },
     });
 
@@ -33,7 +39,7 @@ export class MatchingDataDDHubService {
   public async getConsumptions(query: ReadingQuery): Promise<Reading[]> {
     this.logger.info(`Getting consumptions from DDHub for query: ${JSON.stringify(query)}`);
 
-    const readings = await this.getReadings(query, 'consumption');
+    const readings = await this.getReadings(query, Topic.Consumption);
 
     this.logger.info(`Received ${readings.length} consumptions from DDHub`);
     return readings;
@@ -42,7 +48,7 @@ export class MatchingDataDDHubService {
   public async getGenerations(query: ReadingQuery): Promise<Reading[]> {
     this.logger.info(`Getting generations from DDHub for query: ${JSON.stringify(query)}`);
 
-    const readings = await this.getReadings(query, 'generation');
+    const readings = await this.getReadings(query, Topic.Generation);
 
     this.logger.info(`Received ${readings.length} generations from DDHub`);
     return readings;
@@ -56,14 +62,13 @@ export class MatchingDataDDHubService {
     await match(consumptions, generations, preferences);
 
     const uniqueConsumptionMessageIds = [...new Set(consumptions.map(reading => reading.id))];
-    const uniqueGenerationMessageIds = [...new Set(consumptions.map(reading => reading.id))];
+    const uniqueGenerationMessageIds = [...new Set(generations.map(reading => reading.id))];
 
-    await this.acknowledge(uniqueConsumptionMessageIds, 'consumption');
-    await this.acknowledge(uniqueGenerationMessageIds, 'generation');
-
+    await this.acknowledge(uniqueConsumptionMessageIds, Topic.Consumption);
+    await this.acknowledge(uniqueGenerationMessageIds, Topic.Generation);
   }
 
-  private async getReadings(query: ReadingQuery, topic: 'consumption' | 'generation'): Promise<Reading[]> {
+  private async getReadings(query: ReadingQuery, topic: Topic.Consumption | Topic.Generation): Promise<Reading[]> {
     const { data } = await axios.request({
       method: 'get',
       baseURL: process.env.DDHUB_URL,
@@ -80,7 +85,7 @@ export class MatchingDataDDHubService {
   public async getConsumptionsMessages(query: ReadingQuery): Promise<ReadingMessage[]> {
     this.logger.info(`Getting consumptions from DDHub for query: ${JSON.stringify(query)}`);
 
-    const readings = await this.getReadingsMessages(query, 'consumption');
+    const readings = await this.getReadingsMessages(query, Topic.Consumption);
 
     this.logger.info(`Received ${readings.length} consumptions from DDHub`);
     return readings;
@@ -89,13 +94,13 @@ export class MatchingDataDDHubService {
   public async getGenerationsMessages(query: ReadingQuery): Promise<ReadingMessage[]> {
     this.logger.info(`Getting generations from DDHub for query: ${JSON.stringify(query)}`);
 
-    const readings = await this.getReadingsMessages(query, 'generation');
+    const readings = await this.getReadingsMessages(query, Topic.Generation);
 
     this.logger.info(`Received ${readings.length} generations from DDHub`);
     return readings;
   }
 
-  private async getReadingsMessages(query: ReadingQuery, topic: 'consumption' | 'generation'): Promise<ReadingMessage[]> {
+  private async getReadingsMessages(query: ReadingQuery, topic: Topic.Consumption | Topic.Generation): Promise<ReadingMessage[]> {
     const { data } = await axios.request({
       method: 'get',
       baseURL: process.env.DDHUB_URL,
