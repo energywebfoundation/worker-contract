@@ -35,7 +35,7 @@ export const useVotingPreview = () => {
 
   const updateActiveVoting = useCallback(async () => {
     const voting = await votingContract.matchInputToVoting(votingKey);
-    console.log(voting);
+
     const workersToVote = Object.fromEntries(
       await Promise.all(
         workers.map(async (worker) => [

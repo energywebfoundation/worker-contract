@@ -99,7 +99,7 @@ contract MatchVoting is Ownable {
             }
         }
 
-        if(numberOfVotes == 1) {
+        if (numberOfVotes == 1) {
             matchInputs.push(matchInput);
             numberOfMatchInputs += 1;
         }
