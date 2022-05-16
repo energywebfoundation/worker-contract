@@ -5,10 +5,9 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "outDir": "dist",
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "declaration": true,
     "skipLibCheck": true
   },
-  "include": ["./src", "./scripts"],
-  "files": ["./hardhat.config.ts"]
+  "include": ["./src"]
 }

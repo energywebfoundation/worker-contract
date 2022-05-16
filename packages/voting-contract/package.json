@@ -8,7 +8,7 @@
     "test": "npx hardhat test",
     "test:e2e": "echo \"No tests\"",
     "test:unit": "echo \"No tests\"",
-    "build": "yarn build:contract && tsc",
+    "build": "yarn build:contract && tsc -p ./tsconfig.build.json",
     "build:contract": "npx hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts",
     "deploy:volta": "hardhat run scripts/deploy.ts --network volta"
