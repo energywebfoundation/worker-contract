@@ -5,12 +5,14 @@ import {
   Card,
   CardActions,
   CardContent,
+  InputLabel,
   List,
   ListItem,
   ListSubheader,
   TextField,
   Typography,
 } from '@mui/material';
+import CreatableSelect from 'react-select/creatable';
 import { useVotingPreview } from './VotingPreview.effects';
 import { formatBoolean } from '../../logic/value-formatters';
 
@@ -23,17 +25,19 @@ const VotingPreview = ({}) => {
     workers,
     setMatchResult,
     matchResult,
+    votingKeys,
   } = useVotingPreview();
+
   return (
-    <Card>
+    <Card id='#voting-preview'>
       <CardContent>
         <Box mb={2}>
-          <TextField
-            size='small'
-            fullWidth
-            label='Voting key'
-            value={votingKey}
-            onChange={(event) => setVotingKey(event.target.value)}
+          <InputLabel shrink>Voting key</InputLabel>
+          <CreatableSelect
+            menuPortalTarget={document.body}
+            value={{ value: votingKey, label: votingKey }}
+            options={votingKeys.map((key) => ({ value: key, label: key }))}
+            onChange={(newValue) => setVotingKey(newValue?.value ?? '')}
           />
         </Box>
         {votingKey && (

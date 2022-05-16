@@ -8,6 +8,8 @@ export const useVotingPreview = () => {
   const [matchResult, setMatchResult] = useState('');
   const { callContract, votingContract } = useVotingContract();
   const { workers, updateNumberOfWorkers, updateWorkers } = useWorkerPreview();
+  const [numberOfVotings, setNumberOfVotings] = useState(0);
+  const [votingKeys, setVotingKeys] = useState<string[]>([]);
 
   const [voting, setVoting] = useState<{
     ended?: boolean;
@@ -16,8 +18,24 @@ export const useVotingPreview = () => {
     workersToVote?: Record<string, string>;
   }>({});
 
+  const updateNumberOfVotings = useCallback(async () => {
+    const numberOfMatchInputs = await votingContract.numberOfMatchInputs();
+    setNumberOfVotings(numberOfMatchInputs.toNumber());
+  }, [votingContract]);
+
+  const updateVotingKeys = useCallback(async () => {
+    const votingKeys = await Promise.all(
+      new Array(numberOfVotings)
+        .fill(0)
+        .map(async (_, index) => await votingContract.matchInputs(index)),
+    );
+
+    setVotingKeys(votingKeys);
+  }, [numberOfVotings, votingContract]);
+
   const updateActiveVoting = useCallback(async () => {
     const voting = await votingContract.matchInputToVoting(votingKey);
+
     const workersToVote = Object.fromEntries(
       await Promise.all(
         workers.map(async (worker) => [
@@ -34,6 +52,7 @@ export const useVotingPreview = () => {
       onSuccess: () => {
         toast('Voted!', { type: 'success' });
         updateNumberOfWorkers();
+        updateNumberOfVotings();
         updateWorkers();
         updateActiveVoting();
       },
@@ -47,6 +66,14 @@ export const useVotingPreview = () => {
     updateActiveVoting();
   }, [updateActiveVoting]);
 
+  useEffect(() => {
+    updateNumberOfVotings();
+  }, [updateNumberOfVotings]);
+
+  useEffect(() => {
+    updateVotingKeys();
+  }, [updateVotingKeys]);
+
   return {
     vote,
     setVotingKey,
@@ -55,5 +82,6 @@ export const useVotingPreview = () => {
     votingKey,
     matchResult,
     setMatchResult,
+    votingKeys,
   };
 };
