@@ -16,6 +16,10 @@ contract MatchVoting is Ownable {
 
     mapping(address => uint) public workerToIndex;
 
+    string[] public matchInputs;
+
+    uint public numberOfMatchInputs;
+
     struct Voting {
         /// List of all match results with at least one vote
         string[] matches;
@@ -93,6 +97,11 @@ contract MatchVoting is Ownable {
             if (voting.workerToVoted[workers[i]]) {
                 numberOfVotes += 1;
             }
+        }
+
+        if(numberOfVotes == 1) {
+            matchInputs.push(matchInput);
+            numberOfMatchInputs += 1;
         }
 
         if (10 * numberOfVotes > 10 * workers.length / 2) {
