@@ -1,5 +1,5 @@
 import type { JsonRpcProvider } from '@ethersproject/providers';
-import type { OnApplicationBootstrap } from '@nestjs/common';
+import type { OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import type { Wallet } from 'ethers';
 import { ethers } from 'ethers';
@@ -15,13 +15,18 @@ interface BlockchainConfig {
 }
 
 @Injectable()
-export class OverseerService implements OnApplicationBootstrap {
+export class OverseerService implements OnApplicationBootstrap, OnApplicationShutdown {
   private provider: JsonRpcProvider;
   private contract: MatchVoting;
   private wallet: Wallet;
   private logger = new PinoLogger({});
 
-  constructor(private config: BlockchainConfig, private listeners: EventListeners, private getLastHandledBlockNumber: Function) {
+  constructor(
+    private config: BlockchainConfig,
+    private listeners: EventListeners,
+    private getLastHandledBlockNumber: () => Promise<number>,
+    private saveLastHandledBlockNumber: (blockNumber: number) => Promise<void>) {
+
     this.logger.setContext(OverseerService.name);
 
     this.provider = new ethers.providers.JsonRpcProvider(this.config.rpcHost);
@@ -30,9 +35,17 @@ export class OverseerService implements OnApplicationBootstrap {
     this.contract.connect(this.wallet);
   }
 
-  onApplicationBootstrap() {
-    this.handleMissedEvents(this.listeners, this.getLastHandledBlockNumber);
-    this.registerEventListeners(this.listeners);
+  async onApplicationBootstrap() {
+    await this.handleMissedEvents(this.listeners, this.getLastHandledBlockNumber);
+    await this.registerEventListeners(this.listeners);
+  }
+
+  onApplicationShutdown() {
+    Object.entries(this.listeners).forEach(([eventName, listeners]) => {
+      listeners.forEach(listener => {
+        this.contract.off(eventName as any, listener as any);
+      });
+    });
   }
 
   private async handleMissedEvents(listeners: EventListeners, getLastHandledBlockNumber:Function) {
@@ -44,7 +57,7 @@ export class OverseerService implements OnApplicationBootstrap {
     events.forEach(event => {
       if (event.event) {
         listeners[event.event].forEach(listener => {
-          listener(event.args);
+          listener(...event.args);
         });
       }
     });
@@ -66,12 +79,24 @@ export class OverseerService implements OnApplicationBootstrap {
     return allEvents;
   }
 
-  private registerEventListeners(listenersToRegister: EventListeners) {
+  private async registerEventListeners(listenersToRegister: EventListeners) {
     this.logger.info(`Registering event listeners: ${Object.keys(listenersToRegister)}`);
+
+    const startBlockNumber = await this.provider.getBlockNumber();
 
     Object.entries(listenersToRegister).forEach(([eventName, listeners]) => {
       listeners.forEach(listener => {
-        this.contract.on(eventName as any, listener as any);
+        this.contract.on(eventName as any, async (...ev) => {
+        // Explanation on blockNumber shenanigans:
+        // https://github.com/ethers-io/ethers.js/issues/1504#issuecomment-826140461
+          const blockNumber = ev[ev.length - 1].blockNumber;
+          if (blockNumber <= startBlockNumber) {
+            return;
+          }
+          await this.saveLastHandledBlockNumber(blockNumber);
+          listener(...ev);
+        });
+
       });
     });
 
