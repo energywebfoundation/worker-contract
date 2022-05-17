@@ -17,7 +17,7 @@ export class OverseerModule {
       providers: [
         {
           provide: OverseerService,
-          useValue: new OverseerService(params.blockchainConfig, params.listeners, params.getLastHandledBlockNumber),
+          useValue: new OverseerService(params.blockchainConfig, params.listeners, params.getLastHandledBlockNumber, params.saveLastHandledBlockNumber),
         },
       ],
     };

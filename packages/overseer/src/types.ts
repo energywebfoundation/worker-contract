@@ -9,7 +9,6 @@ export type EventListeners = Record<string, Function[]>;
 export interface OverseerConfig {
   blockchainConfig: BlockchainConfig;
   listeners: EventListeners;
-  getLastHandledBlockNumber: Function;
+  getLastHandledBlockNumber: () => Promise<number>;
+  saveLastHandledBlockNumber: (blockNumber: number) => Promise<void>;
 }
-
-
