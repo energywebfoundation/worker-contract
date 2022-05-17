@@ -1,9 +1,11 @@
 import type { EventListeners } from './types';
 import * as fs from 'fs';
+import { join } from 'path';
+
+// Note: leaving this as example
 
 export const listeners: EventListeners = {
   WinningMatch: [(...ev: any) => {
-    // Note: leaving this as example
     const [matchInput, matchResult, voteCount] = ev;
     console.log({matchInput});
     console.log({matchResult});
@@ -12,7 +14,8 @@ export const listeners: EventListeners = {
 };
 
 export async function getLastHandledBlockNumber(): Promise<number> {
-  const path = __dirname + '/last_block.txt';
+  const path = join(__dirname, 'last_block.txt');
+
   if (fs.existsSync(path)) {
     const lastBlockNumber = fs.readFileSync(path, 'utf-8');
     return parseInt(lastBlockNumber, 10);
@@ -21,5 +24,5 @@ export async function getLastHandledBlockNumber(): Promise<number> {
 }
 
 export async function saveLastHandledBlockNumber(blockNumber: number): Promise<void> {
-  fs.writeFileSync(__dirname + '/last_block.txt', blockNumber.toString());
+  fs.writeFileSync(join(__dirname, 'last_block.txt'), blockNumber.toString());
 }

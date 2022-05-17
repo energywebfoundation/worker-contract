@@ -37,7 +37,7 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
 
   async onApplicationBootstrap() {
     await this.handleMissedEvents(this.listeners, this.getLastHandledBlockNumber);
-    this.registerEventListeners(this.listeners);
+    await this.registerEventListeners(this.listeners);
   }
 
   onApplicationShutdown() {
@@ -86,8 +86,9 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
 
     Object.entries(listenersToRegister).forEach(([eventName, listeners]) => {
       listeners.forEach(listener => {
-
         this.contract.on(eventName as any, async (...ev) => {
+        // Explanation on blockNumber shenanigans:
+        // https://github.com/ethers-io/ethers.js/issues/1504#issuecomment-826140461
           const blockNumber = ev[ev.length - 1].blockNumber;
           if (blockNumber <= startBlockNumber) {
             return;
