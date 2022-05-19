@@ -28,6 +28,10 @@ export class BlockchainVotingService implements VotingService{
     const inputHash = hash(JSON.stringify(matchingInput), 'MATCHING_INPUT');
 
     this.logger.info(`Voting for input hash: ${inputHash}`);
+
+    this.logger.debug(`Voting input: ${JSON.stringify(matchingInput)}`);
+    this.logger.debug(`Matching result: ${JSON.stringify(matchingResult)}`);
+
     await this.contract.vote(inputHash, JSON.stringify(matchingResult.merkleTree));
     this.logger.info(`Vote for ${inputHash} sent.`);
   }
