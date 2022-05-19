@@ -59,7 +59,8 @@ export class MatchingDataDDHubService {
     const generations = await this.getGenerationsMessages(query);
     const preferences = await this.getPreferences();
 
-    await match(consumptions, generations, preferences);
+    // @TODO: remove deletion of id property once DDHub mock is fixed
+    await match(consumptions.map((c: any) => { delete c.id; return c; }), generations.map((g: any) => { delete g.id; return g; }), preferences);
 
     const uniqueConsumptionMessageIds = [...new Set(consumptions.map(reading => reading.id))];
     const uniqueGenerationMessageIds = [...new Set(generations.map(reading => reading.id))];
