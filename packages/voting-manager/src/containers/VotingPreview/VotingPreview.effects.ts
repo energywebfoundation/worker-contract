@@ -6,7 +6,8 @@ import { useWorkerPreview } from '../WorkersPreview/WorkersPreview.effects';
 export const useVotingPreview = () => {
   const [votingKey, setVotingKey] = useState('');
   const [matchResult, setMatchResult] = useState('');
-  const { callContract, votingContract } = useVotingContract();
+  const { callContract, votingContract, getContractProperty } =
+    useVotingContract();
   const { workers, updateNumberOfWorkers, updateWorkers } = useWorkerPreview();
   const [numberOfVotings, setNumberOfVotings] = useState(0);
   const [votingKeys, setVotingKeys] = useState<string[]>([]);
@@ -19,60 +20,85 @@ export const useVotingPreview = () => {
   }>({});
 
   const updateNumberOfVotings = useCallback(async () => {
-    const numberOfMatchInputs = await votingContract.numberOfMatchInputs();
-    setNumberOfVotings(numberOfMatchInputs.toNumber());
-  }, [votingContract]);
+    if (votingContract) {
+      const numberOfMatchInputs = await getContractProperty(
+        async () => await votingContract.numberOfMatchInputs(),
+      );
+      setNumberOfVotings(numberOfMatchInputs.toNumber());
+    }
+  }, [getContractProperty, votingContract]);
 
   const updateVotingKeys = useCallback(async () => {
-    const votingKeys = await Promise.all(
-      new Array(numberOfVotings)
-        .fill(0)
-        .map(async (_, index) => await votingContract.matchInputs(index)),
-    );
+    if (votingContract) {
+      const votingKeys = await Promise.all(
+        new Array(numberOfVotings)
+          .fill(0)
+          .map(
+            async (_, index) =>
+              await getContractProperty(
+                async () => await votingContract.matchInputs(index),
+              ),
+          ),
+      );
 
-    setVotingKeys(votingKeys);
-  }, [numberOfVotings, votingContract]);
+      setVotingKeys(votingKeys);
+    }
+  }, [getContractProperty, numberOfVotings, votingContract]);
 
   const updateActiveVoting = useCallback(async () => {
-    const voting = await votingContract.matchInputToVoting(votingKey);
+    if (votingContract) {
+      const voting = await getContractProperty(
+        async () => await votingContract.matchInputToVoting(votingKey),
+      );
 
-    const workersToVote = Object.fromEntries(
-      await Promise.all(
-        workers.map(async (worker) => [
-          worker,
-          await votingContract.getWorkerVote(votingKey, worker),
-        ]),
-      ),
-    );
-    setVoting({ ...voting, workersToVote });
-  }, [votingContract, votingKey, workers]);
+      const workersToVote = Object.fromEntries(
+        await Promise.all(
+          workers.map(async (worker) => [
+            worker,
+            await getContractProperty(
+              async () => await votingContract.getWorkerVote(votingKey, worker),
+            ),
+          ]),
+        ),
+      );
+      setVoting({ ...voting, workersToVote });
+    }
+  }, [getContractProperty, votingContract, votingKey, workers]);
 
   const vote = async (matchResult: string) => {
-    await callContract(() => votingContract.vote(votingKey, matchResult), {
-      onSuccess: () => {
-        toast('Voted!', { type: 'success' });
-        updateNumberOfWorkers();
-        updateNumberOfVotings();
-        updateWorkers();
-        updateActiveVoting();
-      },
-      onError: (e) => {
-        toast(e.data?.message ?? e.message, { type: 'error' });
-      },
-    });
+    if (votingContract) {
+      await callContract(() => votingContract.vote(votingKey, matchResult), {
+        onSuccess: () => {
+          toast('Voted!', { type: 'success' });
+          updateNumberOfWorkers();
+          updateNumberOfVotings();
+          updateWorkers();
+          updateActiveVoting();
+        },
+        onError: (e) => {
+          toast(e.data?.message ?? e.message, { type: 'error' });
+        },
+      });
+    }
   };
 
   useEffect(() => {
-    updateActiveVoting();
-  }, [updateActiveVoting]);
+    if (votingContract) {
+      updateActiveVoting();
+    }
+  }, [votingContract, updateActiveVoting]);
 
   useEffect(() => {
-    updateNumberOfVotings();
-  }, [updateNumberOfVotings]);
+    if (votingContract) {
+      updateNumberOfVotings();
+    }
+  }, [votingContract, updateNumberOfVotings]);
 
   useEffect(() => {
-    updateVotingKeys();
-  }, [updateVotingKeys]);
+    if (votingContract) {
+      updateVotingKeys();
+    }
+  }, [votingContract, updateVotingKeys]);
 
   return {
     vote,
