@@ -53,9 +53,11 @@ export const useVotingContract = () => {
     ) => {
       try {
         const transaction = await callFn();
+        console.debug(`${callFn} resulted in transaction ${transaction.hash}`);
         await transaction.wait(1);
         onSuccess?.();
       } catch (e) {
+        console.debug(`${callFn} thrown: ${JSON.stringify(e)}`);
         onError?.(e as JSONRPCError);
       }
     },
@@ -80,7 +82,7 @@ export const useVotingContract = () => {
         return result;
       } catch (e) {
         onError?.(e as JSONRPCError);
-        console.debug(`${callFn} returned ${e}`);
+        console.debug(`${callFn} thrown: ${e}`);
         throw e;
       }
     },
