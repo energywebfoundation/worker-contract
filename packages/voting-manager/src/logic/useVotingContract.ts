@@ -1,5 +1,5 @@
 import { ContractTransaction, ethers } from 'ethers';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VOTING_CONTRACT_ADDRESS } from './voting-contract';
 import {
   MatchVoting,
@@ -25,6 +25,7 @@ export const useVotingContract = () => {
   ]);
   const provider = useSelectedProvider(MetaMaskConnector);
   const { library } = useSelectedWeb3React(MetaMaskConnector, provider);
+  const [isLoading, setLoading] = useState(false);
 
   const votingContract = useMemo(() => {
     if (library) {
@@ -51,6 +52,7 @@ export const useVotingContract = () => {
         onError?: (e: JSONRPCError) => Promise<void> | void;
       } = {},
     ) => {
+      setLoading(true);
       try {
         const transaction = await callFn();
         console.debug(`${callFn} resulted in transaction ${transaction.hash}`);
@@ -59,6 +61,8 @@ export const useVotingContract = () => {
       } catch (e) {
         console.debug(`${callFn} thrown: ${JSON.stringify(e)}`);
         onError?.(e as JSONRPCError);
+      } finally {
+        setLoading(false);
       }
     },
     [],
@@ -93,5 +97,6 @@ export const useVotingContract = () => {
     callContract,
     votingContract,
     getContractProperty,
+    isLoading,
   };
 };

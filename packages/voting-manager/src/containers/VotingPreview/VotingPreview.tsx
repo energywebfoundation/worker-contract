@@ -1,10 +1,12 @@
 import React, { FormEvent } from 'react';
 import {
+  Backdrop,
   Box,
   Button,
   Card,
   CardActions,
   CardContent,
+  CircularProgress,
   InputLabel,
   List,
   ListItem,
@@ -26,10 +28,14 @@ const VotingPreview = ({}) => {
     setMatchResult,
     matchResult,
     votingKeys,
+    isLoading,
   } = useVotingPreview();
 
   return (
-    <Card id='#voting-preview'>
+    <Card id='#voting-preview' sx={{ position: 'relative' }}>
+      <Backdrop sx={{ position: 'absolute', zIndex: 2 }} open={isLoading}>
+        <CircularProgress color='inherit' />
+      </Backdrop>
       <CardContent>
         <Box mb={2}>
           <InputLabel shrink>Voting key</InputLabel>

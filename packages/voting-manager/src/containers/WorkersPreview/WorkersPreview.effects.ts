@@ -6,7 +6,7 @@ export const useWorkerPreview = () => {
   const [workers, setWorkers] = useState<string[]>([]);
   const [workerAddress, setWorkerAddress] = useState<string>('');
   const [numberOfWorkers, setNumberOfWorkers] = useState(0);
-  const { votingContract, callContract, getContractProperty } = useVotingContract();
+  const { isLoading, votingContract, callContract, getContractProperty } = useVotingContract();
 
   const updateNumberOfWorkers = useCallback(async () => {
     if (votingContract) {
@@ -72,5 +72,6 @@ export const useWorkerPreview = () => {
     workerAddress,
     updateNumberOfWorkers,
     updateWorkers,
+    isLoading,
   };
 };

@@ -6,7 +6,7 @@ import { useWorkerPreview } from '../WorkersPreview/WorkersPreview.effects';
 export const useVotingPreview = () => {
   const [votingKey, setVotingKey] = useState('');
   const [matchResult, setMatchResult] = useState('');
-  const { callContract, votingContract, getContractProperty } =
+  const { callContract, isLoading, votingContract, getContractProperty } =
     useVotingContract();
   const { workers, updateNumberOfWorkers, updateWorkers } = useWorkerPreview();
   const [numberOfVotings, setNumberOfVotings] = useState(0);
@@ -109,5 +109,6 @@ export const useVotingPreview = () => {
     matchResult,
     setMatchResult,
     votingKeys,
+    isLoading,
   };
 };

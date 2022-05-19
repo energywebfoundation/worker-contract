@@ -1,9 +1,10 @@
 import React, { FormEvent } from 'react';
 import {
+  Backdrop,
   Box,
   Button,
   Card,
-  CardContent,
+  CardContent, CircularProgress,
   IconButton,
   List,
   ListItem,
@@ -22,10 +23,14 @@ const WorkersPreview = ({}) => {
     setWorkerAddress,
     workerAddress,
     numberOfWorkers,
+    isLoading,
   } = useWorkerPreview();
 
   return (
-    <Card>
+    <Card sx={{ position: 'relative' }}>
+      <Backdrop sx={{ position: 'absolute', zIndex: 2 }} open={isLoading}>
+        <CircularProgress color='inherit' />
+      </Backdrop>
       <CardContent>
         <Box
           mb={2}
@@ -54,7 +59,7 @@ const WorkersPreview = ({}) => {
         <List>
           {workers.map((worker, index) => (
             <ListItem
-              key={worker}
+              key={`${worker}-${index}`}
               secondaryAction={
                 <IconButton edge='end' onClick={() => deleteWorker(worker)} >
                   <DeleteIcon />
