@@ -3,8 +3,10 @@ import axios from 'axios';
 import { PinoLogger } from 'nestjs-pino';
 import type { Preferences, Reading, ReadingQuery, MatchCallback } from '../types';
 
-interface ReadingMessage extends Reading {
+interface ReadingMessage {
   id: string;
+  createdAt: Date;
+  payload: Reading;
 }
 
 enum Topic {
@@ -59,7 +61,7 @@ export class MatchingDataDDHubService {
     const generations = await this.getGenerationsMessages(query);
     const preferences = await this.getPreferences();
 
-    await match(consumptions, generations, preferences);
+    await match(consumptions.map(c => c.payload), generations.map(g => g.payload), preferences);
 
     const uniqueConsumptionMessageIds = [...new Set(consumptions.map(reading => reading.id))];
     const uniqueGenerationMessageIds = [...new Set(generations.map(reading => reading.id))];

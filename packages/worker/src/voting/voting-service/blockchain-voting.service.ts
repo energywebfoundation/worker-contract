@@ -8,12 +8,14 @@ import type { MatchingInput, MatchingOutput, SerializedMerkleTree } from '../../
 import { hash } from '@energyweb/greenproof-merkle-tree';
 import { BlockchainConfig } from '../types';
 import type { VotingService } from './voting.service';
+import { PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class BlockchainVotingService implements VotingService{
   private provider: JsonRpcProvider;
   private contract: MatchVoting;
   private wallet: Wallet;
+  private logger = new PinoLogger({renameContext: BlockchainVotingService.name });
 
   constructor(private readonly config: BlockchainConfig) {
     this.provider = new ethers.providers.JsonRpcProvider(this.config.rpcHost);
@@ -23,6 +25,14 @@ export class BlockchainVotingService implements VotingService{
   }
 
   public async vote(matchingInput: MatchingInput, matchingResult: {merkleTree: SerializedMerkleTree, matchingResult: MatchingOutput}) {
-    await this.contract.vote(hash(JSON.stringify(matchingInput), 'MATCHING_INPUT'), JSON.stringify(matchingResult.merkleTree));
+    const inputHash = hash(JSON.stringify(matchingInput), 'MATCHING_INPUT');
+
+    this.logger.info(`Voting for input hash: ${inputHash}`);
+
+    this.logger.debug(`Voting input: ${JSON.stringify(matchingInput)}`);
+    this.logger.debug(`Matching result: ${JSON.stringify(matchingResult)}`);
+
+    await this.contract.vote(inputHash, JSON.stringify(matchingResult.merkleTree));
+    this.logger.info(`Vote for ${inputHash} sent.`);
   }
 }
