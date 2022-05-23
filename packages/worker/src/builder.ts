@@ -3,12 +3,9 @@ import { Module } from '@nestjs/common';
 import { MatchingResultFacade } from './matching-result';
 import { MatchingDataFacade } from './matching-data';
 import type { MatchingAlgorithm} from '.';
-import { VotingFacade} from '.';
 import { MatchingFacade} from '.';
 import { MatchingModule } from '.';
 import { NestFactory } from '@nestjs/core';
-import { VotingServiceForTests } from './voting/voting-service/voting-for-tests.service';
-import { VotingService } from './voting/voting-service/voting.service';
 
 type NestModuleType = Type<any> | DynamicModule | Promise<DynamicModule> | ForwardReference;
 
@@ -62,23 +59,6 @@ export class WorkerBuilder {
     return this;
   }
 
-  public setVotingModule(config: {rpcHost: string, contractAddress: string, workerPrivateKey: string}): WorkerBuilder {
-    @Module({
-      providers: [
-        { provide: VotingService,
-          useClass: VotingServiceForTests,
-        },
-        VotingFacade,
-      ],
-      exports: [VotingFacade],
-    })
-    class VotingModule {}
-
-    this.votingModule = VotingModule;
-
-    return this;
-  }
-
   public async compile(): Promise<MatchingFacade> {
     if (!this.dataModule) {
       throw new Error('Data module/source not set');
@@ -92,17 +72,12 @@ export class WorkerBuilder {
       throw new Error('Matching algorithm not set');
     }
 
-    if (!this.votingModule) {
-      throw new Error('Voting module not set');
-    }
-
     @Module({
       imports: [
         MatchingModule.register({
           dependendencies: [
             this.dataModule,
             this.resultModule,
-            this.votingModule,
           ],
           matchingAlgorithm: this.matchingAlgorithm,
         }),
