@@ -12,15 +12,15 @@ Currently deployed contracts:
 Commit SHA: `cd529a93f59fcf4d0c2a6d7d26e9a4058d0b73a8`
 ```json
 {
-  "deployedContracts": [
-    {
-      "name": "Certificate",
-      "address": "0x998abeb3E57409262aE5b751f60747921B33613E"
-    },
-    {
-      "name": "MatchVoting",
-      "address": "0x70e0bA845a1A0F2DA3359C97E0285013525FFC49"
-    }
-  ]
+   "deployedContracts": [
+      {
+         "name": "Certificate",
+         "address": "0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf"
+      },
+      {
+         "name": "MatchVoting",
+         "address": "0x9d4454B023096f34B160D6B654540c56A1F81688"
+      }
+   ]
 }
 ```
