@@ -6,6 +6,7 @@ import { VotingManager } from '../components/VotingManager';
 import { useStatus } from '../logic/useStatus';
 import { backgroundGradient } from '../common/styling/theme';
 import AccountInfo from '../components/AccountInfo';
+import ContractInfo from '../components/ContractInfo';
 
 export const Index = () => {
   const { canPerformActions } = useStatus();
@@ -42,6 +43,14 @@ export const Index = () => {
               </CardContent>
             </Card>
           </Grid>
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <ContractInfo />
+              </CardContent>
+            </Card>
+          </Grid>
+
           <Grid item xs={12}>
             {canPerformActions && <VotingManager />}
           </Grid>
