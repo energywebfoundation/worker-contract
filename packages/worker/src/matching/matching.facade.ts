@@ -6,7 +6,6 @@ import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from
 import { MatchingAlgorithm, MATCHING_ALGO } from './types';
 import { createMerkleTree, hash } from '@energyweb/greenproof-merkle-tree';
 import { PinoLogger } from 'nestjs-pino';
-import { VotingFacade } from '../voting/voting.facade';
 
 @Injectable()
 export class MatchingFacade {
@@ -17,14 +16,13 @@ export class MatchingFacade {
     private matchingResultFacade: MatchingResultFacade,
     @Inject(MATCHING_ALGO)
     private matchingAlgorithm: MatchingAlgorithm,
-    private votingFacade: VotingFacade,
   ) {}
 
   public async match(timestamp: Date): Promise<void> {
-    await this.matchingDataFacade.processData({from: timestamp, to: timestamp}, this.matching);
+    await this.matchingDataFacade.processData({ from: timestamp, to: timestamp }, this.matching(timestamp));
   }
 
-  private matching = async (consumptions: Reading[], generations: Reading[], preferences: Preferences) => {
+  private matching = (timestamp: Date) => async (consumptions: Reading[], generations: Reading[], preferences: Preferences) => {
     this.logger.info('Matching data.');
 
     if (consumptions.length === 0 && generations.length === 0) {
@@ -36,17 +34,16 @@ export class MatchingFacade {
     const merkleTree = this.createTree(matchingResult);
 
     this.logger.info('Sending matching data.');
-    await this.matchingResultFacade.receiveMatchingResult({tree: merkleTree, data: matchingResult});
 
-    try {
-      this.logger.info('Sending vote for match result.');
-      this.votingFacade.vote({consumptions, generations, preferences}, {merkleTree, matchingResult});
-      this.logger.info('Vote sent.');
-    } catch (error) {
-      this.logger.info(`Error occured during voting: ${error}`);
-    }
+    await this.matchingResultFacade.receiveMatchingResult({
+      timestamp,
+      tree: merkleTree,
+      data: {
+        ...matchingResult,
+      },
+    }, { consumptions, generations, preferences });
 
-    this.logger.info('Matching for timestamp complete.');
+    this.logger.info(`Matching for timestamp ${timestamp.toISOString()} complete.`);
   };
 
   private createTree(matchingResult: MatchingOutput) {

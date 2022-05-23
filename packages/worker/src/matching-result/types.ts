@@ -1,4 +1,5 @@
 export interface MatchingResult {
+  timestamp: Date;
   tree: {
     rootHash: string;
     leaves: string[];

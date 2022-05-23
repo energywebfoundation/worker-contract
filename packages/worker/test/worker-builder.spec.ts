@@ -33,12 +33,18 @@ describe('WorkerBuilder', () => {
       .setResultSource({
         receiveMatchingResult,
       })
-      .setVotingModule({rpcHost: 'http://localhost:8545', contractAddress: '0x5fbdb2315678afecb367f032d93f642f64180aa3', workerPrivateKey: '0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba'})
       .compile();
 
     await matchingFacade.match(new Date('2022-04-01T01:00:00.000Z'));
 
+    const matchingInput = {
+      consumptions: await mockGetConsumptions(),
+      generations: await mockGetGenerations(),
+      preferences: await mockGetPreferences(),
+    };
+
     expect(receiveMatchingResult).toBeCalledWith({
+      timestamp: expect.any(Date),
       tree: {
         rootHash: expect.any(String),
         leaves: [
@@ -54,6 +60,6 @@ describe('WorkerBuilder', () => {
           volume: 100,
         }],
       },
-    });
+    }, matchingInput);
   });
 });
