@@ -1,7 +1,6 @@
 {
   "name": "@energyweb/greenproof-voting-manager",
-  "version": "1.0.2",
-  "private": true,
+  "version": "1.0.4",
   "scripts": {
     "replace-vars": "node substitute-vars.js",
     "start:prod": "yarn replace-vars && serve build",
