@@ -1,6 +1,6 @@
-import React from "react";
-import { Typography } from "@mui/material";
-import { useVotingContract } from "../logic/useVotingContract";
+import React from 'react';
+import { Typography } from '@mui/material';
+import { useVotingContract } from '../logic/useVotingContract';
 
 const ContractInfo = () => {
   const { votingContract } = useVotingContract();
