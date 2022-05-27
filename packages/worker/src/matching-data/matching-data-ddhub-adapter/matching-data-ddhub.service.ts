@@ -61,7 +61,7 @@ export class MatchingDataDDHubService {
     const generations = await this.getGenerationsMessages(query);
     const preferences = await this.getPreferences();
 
-    await match(consumptions.map(c => c.payload), generations.map(g => g.payload), preferences);
+    await match(consumptions.flatMap(c => c.payload), generations.flatMap(g => g.payload), preferences);
 
     const uniqueConsumptionMessageIds = [...new Set(consumptions.map(reading => reading.id))];
     const uniqueGenerationMessageIds = [...new Set(generations.map(reading => reading.id))];
