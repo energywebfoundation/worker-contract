@@ -35,7 +35,7 @@ export class MatchingDataDDHubService {
     });
 
     this.logger.info(`Matching preferences received: ${JSON.stringify(data)}`);
-    return data ? data : { groupPriority: [] };
+    return data.messages ? { groupPriority: data.messages } : { groupPriority: [] };
   }
 
   public async getConsumptions(query: ReadingQuery): Promise<Reading[]> {
