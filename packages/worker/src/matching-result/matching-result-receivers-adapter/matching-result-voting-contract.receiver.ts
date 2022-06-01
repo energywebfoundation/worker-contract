@@ -15,7 +15,6 @@ export const matchingResultVotingContractSender =
       const provider = new ethers.providers.JsonRpcProvider(config.rpcHost);
       const wallet = new ethers.Wallet(config.workerPrivateKey, provider);
       const contract = MatchVoting__factory.connect(config.contractAddress, provider.getSigner());
-      contract.connect(wallet);
 
       const inputHash = hash(JSON.stringify(input), 'MATCHING_INPUT');
 
@@ -25,7 +24,7 @@ export const matchingResultVotingContractSender =
       console.debug(`Voting input: ${JSON.stringify(input)}`);
       console.debug(`Matching result: ${JSON.stringify(result)}`);
 
-      await contract.vote(inputHash, result.tree.rootHash);
+      await contract.connect(wallet).vote(inputHash, result.tree.rootHash);
 
       console.debug(`Vote for ${inputHash} sent.`);
     };
