@@ -1,0 +1,14 @@
+{
+  "name": "docs",
+  "version": "1.0.0",
+  "description": "Documentation for green-proof sdk",
+  "license": "MIT",
+  "scripts": {
+    "build": "./build.sh",
+    "test:unit": "echo No unit tests.",
+    "test:e2e": "echo No e2e tests."
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^9.1.2"
+  }
+}
