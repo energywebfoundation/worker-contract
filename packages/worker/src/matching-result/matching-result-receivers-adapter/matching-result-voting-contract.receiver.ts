@@ -24,7 +24,7 @@ export const matchingResultVotingContractSender =
       console.debug(`Voting input: ${JSON.stringify(input)}`);
       console.debug(`Matching result: ${JSON.stringify(result)}`);
 
-      await contract.connect(wallet).vote(inputHash, result.tree.rootHash);
+      await contract.connect(wallet).vote(inputHash, result.tree.rootHash, { gasLimit: 1000000 });
 
       console.debug(`Vote for ${inputHash} sent.`);
     };
