@@ -141,4 +141,6 @@ describe("MatchVoting", () => {
       timeframes[0].output
     );
   });
+
+  it("should not be able to add same worker twice");
 });
