@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import type { Wallet } from 'ethers';
 import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
-import type { MatchVoting} from '@energyweb/greenproof-voting-contract';
+import type { MatchVoting } from '@energyweb/greenproof-voting-contract';
 import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
 import { EventListeners } from './types';
 
@@ -48,7 +48,7 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
     });
   }
 
-  private async handleMissedEvents(listeners: EventListeners, getLastHandledBlockNumber:Function) {
+  private async handleMissedEvents(listeners: EventListeners, getLastHandledBlockNumber: Function) {
     this.logger.info('Handling events missed while the app was down.');
 
     const lastBlockNumber = await getLastHandledBlockNumber();
@@ -87,8 +87,8 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
     Object.entries(listenersToRegister).forEach(([eventName, listeners]) => {
       listeners.forEach(listener => {
         this.contract.on(eventName as any, async (event) => {
-        // Explanation on blockNumber shenanigans:
-        // https://github.com/ethers-io/ethers.js/issues/1504#issuecomment-826140461
+          // Explanation on blockNumber shenanigans:
+          // https://github.com/ethers-io/ethers.js/issues/1504#issuecomment-826140461
           const blockNumber = event[event.length - 1].blockNumber;
           if (blockNumber <= startBlockNumber) {
             return;

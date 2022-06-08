@@ -1,4 +1,4 @@
-import type {Event} from 'ethers';
+import type { Event } from 'ethers';
 
 export interface BlockchainConfig {
   rpcHost: string;
