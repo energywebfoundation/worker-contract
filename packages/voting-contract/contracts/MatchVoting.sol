@@ -18,8 +18,6 @@ contract MatchVoting is Ownable {
 
     string[] public matchInputs;
 
-    uint256 public numberOfMatchInputs;
-
     struct Voting {
         /// Input match
         string matchInput;
@@ -71,6 +69,7 @@ contract MatchVoting is Ownable {
         Voting storage voting = matchInputToVoting[matchInput];
         if (bytes(voting.matchInput).length == 0) {
             voting.matchInput = matchInput;
+            matchInputs.push(matchInput);
         }
 
         if (voting.ended) {
@@ -100,19 +99,6 @@ contract MatchVoting is Ownable {
 
         voting.matchResultToVoteCount[matchResult] += 1;
 
-        uint256 numberOfVotes;
-        // @todo if there are a lot of workers it make sence to track numberOfVotes in Voting
-        for (uint256 i = 0; i < workers.length; i++) {
-            if (voting.workerToVoted[workers[i]]) {
-                numberOfVotes += 1;
-            }
-        }
-
-        if (numberOfVotes == 1) {
-            matchInputs.push(matchInput); // are match inputs unique?
-            numberOfMatchInputs += 1;
-        }
-
         if (
             voting.matchResultToVoteCount[matchResult] >
             voting.winningMatchVoteCount
@@ -134,6 +120,10 @@ contract MatchVoting is Ownable {
         returns (string memory)
     {
         return matchInputToVoting[matchInput].winningMatch;
+    }
+
+    function numberOfMatchInputs() public view returns (uint256) {
+        return matchInputs.length;
     }
 
     function addWorker(address workerAddress) external onlyOwner {
