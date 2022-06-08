@@ -12,6 +12,7 @@ describe("MatchVoting", () => {
   let worker6: SignerWithAddress;
   let MatchVotingContract: ContractFactory;
   let certificateContract: Contract;
+  let matchVoting: Contract;
 
   const timeframes = [
     { input: "MATCH_INPUT_1", output: "MATCH_OUTPUT_1" },
@@ -28,13 +29,11 @@ describe("MatchVoting", () => {
     const CertificateContract = await ethers.getContractFactory("Certificate");
     const certificate = await CertificateContract.deploy();
     certificateContract = await certificate.deployed();
+    matchVoting = await MatchVotingContract.deploy(certificateContract.address);
+    await matchVoting.deployed();
   });
 
   it("should allow to vote whitelisted worker", async () => {
-    const matchVoting = await MatchVotingContract.deploy(
-      certificateContract.address
-    );
-    await matchVoting.deployed();
     await matchVoting.addWorker(worker1.address);
 
     expect(
@@ -53,11 +52,6 @@ describe("MatchVoting", () => {
   });
 
   it("should not allow to vote not whitelisted worker", async () => {
-    const matchVoting = await MatchVotingContract.deploy(
-      certificateContract.address
-    );
-    await matchVoting.deployed();
-
     await expect(
       matchVoting
         .connect(worker1)
@@ -66,10 +60,6 @@ describe("MatchVoting", () => {
   });
 
   it("should get the winner with the most votes", async () => {
-    const matchVoting = await MatchVotingContract.deploy(
-      certificateContract.address
-    );
-    await matchVoting.deployed();
     await matchVoting.addWorker(worker1.address);
     await matchVoting.addWorker(worker2.address);
     await matchVoting.addWorker(worker3.address);
@@ -98,10 +88,6 @@ describe("MatchVoting", () => {
   });
 
   it("should not reach consensus if winning match has less than 50% of votes ", async () => {
-    const matchVoting = await MatchVotingContract.deploy(
-      certificateContract.address
-    );
-    await matchVoting.deployed();
     await matchVoting.addWorker(worker1.address);
     await matchVoting.addWorker(worker2.address);
     await matchVoting.addWorker(worker3.address);
@@ -143,5 +129,11 @@ describe("MatchVoting", () => {
     );
   });
 
-  it("should not be able to add same worker twice");
+  it("should not be able to add same worker twice", async () => {
+    await matchVoting.addWorker(worker1.address);
+
+    expect(matchVoting.addWorker(worker1.address)).to.be.revertedWith(
+      "WorkerAlreadyAdded"
+    );
+  });
 });

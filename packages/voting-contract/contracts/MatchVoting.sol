@@ -59,6 +59,12 @@ contract MatchVoting is Ownable {
     /// Winning match result did not reach more than a half of total votes
     error NoConsensusReached(); // not-emitted
 
+    /// Worker has been added already
+    error WorkerAlreadyAdded();
+
+    /// Worker has not been added yet
+    error WorkerWasNotAdded();
+
     constructor(address _certificateContractAddress) {
         certificateContractAddress = _certificateContractAddress;
     }
@@ -127,11 +133,8 @@ contract MatchVoting is Ownable {
     }
 
     function addWorker(address workerAddress) external onlyOwner {
-        if (
-            workerToIndex[workerAddress] < workers.length &&
-            workers[workerToIndex[workerAddress]] == address(0)
-        ) {
-            return;
+        if (isWorker(workerAddress)) {
+            revert WorkerAlreadyAdded();
         }
         workerToIndex[workerAddress] = workers.length;
         workers.push(workerAddress);
@@ -139,6 +142,9 @@ contract MatchVoting is Ownable {
     }
 
     function removeWorker(address workerAddress) external onlyOwner {
+        if (!isWorker(workerAddress)) {
+            revert WorkerWasNotAdded();
+        }
         uint256 workerIndex = workerToIndex[workerAddress];
         // Delete the worker
         delete workers[workerIndex];
@@ -174,5 +180,11 @@ contract MatchVoting is Ownable {
             voting.winningMatch,
             voting.winningMatchVoteCount
         );
+    }
+
+    function isWorker(address workerAddress) public view returns (bool) {
+        return
+            workerToIndex[workerAddress] != 0 ||
+            (workers.length > 0 && workers[0] == workerAddress);
     }
 }
