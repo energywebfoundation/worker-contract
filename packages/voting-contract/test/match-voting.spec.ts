@@ -94,6 +94,7 @@ describe("MatchVoting", () => {
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
     );
+    expect(await matchVoting.numberOfMatchInputs()).to.equal(1);
   });
 
   it("should not reach consensus if winning match has less than 50% of votes ", async () => {
