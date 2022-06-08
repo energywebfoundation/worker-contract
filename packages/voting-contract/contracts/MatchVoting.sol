@@ -44,9 +44,9 @@ contract MatchVoting is Ownable {
 
     /// Event emitted after voting ended
     event WinningMatch(
-        string matchInput, // to index to enable filtering
-        string matchResult,
-        uint256 voteCount
+        string indexed matchInput,
+        string indexed matchResult,
+        uint256 indexed voteCount
     );
 
     /// Worker had already voted for a match result
