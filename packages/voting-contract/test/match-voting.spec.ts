@@ -120,6 +120,33 @@ describe("MatchVoting", () => {
     );
   });
 
+  it("consensus can be reached with vast majority", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+    await matchVoting.addWorker(worker4.address);
+    await matchVoting.addWorker(worker5.address);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+    await matchVoting
+      .connect(worker2)
+      .vote(timeframes[0].input, timeframes[0].output);
+    expect(
+      await matchVoting
+        .connect(worker5)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+      .to.emit(matchVoting, "WinningMatch")
+      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+
+    // Consensus has been reached
+    expect(await certificateContract.matches(timeframes[0].input)).to.equal(
+      timeframes[0].output
+    );
+  });
+
   it("should not be able to add same worker twice", async () => {
     await matchVoting.addWorker(worker1.address);
 
