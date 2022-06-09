@@ -154,4 +154,28 @@ describe("MatchVoting", () => {
       "WorkerAlreadyAdded"
     );
   });
+
+  it("consensus should not be reached when votes are divided equally", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+    await matchVoting.addWorker(worker4.address);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+    await matchVoting
+      .connect(worker2)
+      .vote(timeframes[0].input, timeframes[0].output);
+    await matchVoting
+      .connect(worker3)
+      .vote(timeframes[0].input, timeframes[1].output);
+    expect(
+      await matchVoting
+        .connect(worker4)
+        .vote(timeframes[0].input, timeframes[1].output)
+    )
+      .to.emit(matchVoting, "VotingRestarted")
+      .withArgs(timeframes[0].input);
+  });
 });
