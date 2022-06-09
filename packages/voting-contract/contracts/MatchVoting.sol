@@ -35,6 +35,10 @@ contract MatchVoting is Ownable {
         string winningMatch;
         /// Number of votes for winning match
         uint256 winningMatchVoteCount;
+        /// If none of the match results gets more votes then the others
+        bool noConsensus;
+        /// Number of votes in this voting
+        uint256 numberOfVotes;
     }
 
     /// Worker address to match result
@@ -57,7 +61,7 @@ contract MatchVoting is Ownable {
     error VotingAlreadyEnded();
 
     /// Winning match result did not reach more than a half of total votes
-    error NoConsensusReached(); // not-emitted
+    error NoConsensusReached();
 
     /// Worker has been added already
     error WorkerAlreadyAdded();
@@ -98,6 +102,7 @@ contract MatchVoting is Ownable {
 
         voting.workerToMatchResult[msg.sender] = matchResult;
         voting.workerToVoted[msg.sender] = true;
+        voting.numberOfVotes += 1;
 
         if (voting.matchResultToVoteCount[matchResult] == 0) {
             voting.matches.push(matchResult);
@@ -106,6 +111,11 @@ contract MatchVoting is Ownable {
         voting.matchResultToVoteCount[matchResult] += 1;
 
         if (
+            voting.matchResultToVoteCount[matchResult] ==
+            voting.winningMatchVoteCount
+        ) {
+            voting.noConsensus = true;
+        } else if (
             voting.matchResultToVoteCount[matchResult] >
             voting.winningMatchVoteCount
         ) {
@@ -113,10 +123,15 @@ contract MatchVoting is Ownable {
                 matchResult
             ];
             voting.winningMatch = matchResult;
+            voting.noConsensus = false;
 
-            if (2 * voting.winningMatchVoteCount >= numberOfWorkers) {
+            if (voting.winningMatchVoteCount >= majority()) {
                 completeVoting(voting);
             }
+        }
+
+        if (voting.numberOfVotes == numberOfWorkers) {
+            completeVoting(voting);
         }
     }
 
@@ -166,6 +181,9 @@ contract MatchVoting is Ownable {
     }
 
     function completeVoting(Voting storage voting) private {
+        if (voting.noConsensus) {
+            revert NoConsensusReached();
+        }
         voting.ended = true;
 
         if (certificateContractAddress != address(0)) {
@@ -186,5 +204,10 @@ contract MatchVoting is Ownable {
         return
             workerToIndex[workerAddress] != 0 ||
             (workers.length > 0 && workers[0] == workerAddress);
+    }
+
+    /// @notice Number of votes sufficient to determine match winner
+    function majority() public view returns (uint256) {
+        return (workers.length / 2) + 1;
     }
 }
