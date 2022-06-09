@@ -87,7 +87,7 @@ describe("MatchVoting", () => {
     expect(await matchVoting.numberOfMatchInputs()).to.equal(1);
   });
 
-  it("should not reach consensus if winning match has less than 50% of votes ", async () => {
+  it("consensus can be reached with simple majority", async () => {
     await matchVoting.addWorker(worker1.address);
     await matchVoting.addWorker(worker2.address);
     await matchVoting.addWorker(worker3.address);
@@ -106,24 +106,15 @@ describe("MatchVoting", () => {
     await matchVoting
       .connect(worker4)
       .vote(timeframes[0].input, timeframes[2].output);
-    await matchVoting
-      .connect(worker5)
-      .vote(timeframes[0].input, timeframes[3].output);
-
-    // No consensus reached yet
-    expect(await certificateContract.matches(timeframes[0].input)).to.equal("");
-
-    // Consensus reached with additional vote
-    await matchVoting.addWorker(worker6.address);
-
     expect(
       await matchVoting
-        .connect(worker6)
-        .vote(timeframes[0].input, timeframes[0].output)
+        .connect(worker5)
+        .vote(timeframes[0].input, timeframes[3].output)
     )
       .to.emit(matchVoting, "WinningMatch")
       .withArgs(timeframes[0].input, timeframes[0].output, 2);
 
+    // Consensus has been reached
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
     );
