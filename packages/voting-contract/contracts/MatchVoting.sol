@@ -51,6 +51,9 @@ contract MatchVoting is Ownable {
         uint256 indexed voteCount
     );
 
+    /// Winning match result did not reach more than a half of total votes
+    event VotingRestarted(string matchInput);
+
     /// Worker had already voted for a match result
     error AlreadyVoted();
 
@@ -59,9 +62,6 @@ contract MatchVoting is Ownable {
 
     /// Voting ended, winner is chosen - workers cannot vote anymore
     error VotingAlreadyEnded();
-
-    /// Winning match result did not reach more than a half of total votes
-    error NoConsensusReached();
 
     /// Worker has been added already
     error WorkerAlreadyAdded();
@@ -182,9 +182,9 @@ contract MatchVoting is Ownable {
 
     function completeVoting(Voting storage voting) private {
         if (voting.noConsensus) {
-            revert NoConsensusReached();
+            restartVoting(voting);
+            return;
         }
-        voting.ended = true;
 
         if (certificateContractAddress != address(0)) {
             ICertificate(certificateContractAddress).mint(
@@ -198,6 +198,7 @@ contract MatchVoting is Ownable {
             voting.winningMatch,
             voting.winningMatchVoteCount
         );
+        voting.ended = true;
     }
 
     function isWorker(address workerAddress) public view returns (bool) {
@@ -209,5 +210,23 @@ contract MatchVoting is Ownable {
     /// @notice Number of votes sufficient to determine match winner
     function majority() public view returns (uint256) {
         return (workers.length / 2) + 1;
+    }
+
+    function restartVoting(Voting storage voting) private {
+        delete voting.matches;
+        for (uint256 i = 0; i < workers.length; i++) {
+            voting.matchResultToVoteCount[
+                voting.workerToMatchResult[workers[i]]
+            ] = 0;
+            voting.workerToVoted[workers[i]] = false;
+            voting.workerToMatchResult[workers[i]] = "";
+        }
+        voting.ended = false;
+        voting.winningMatch = "";
+        voting.winningMatchVoteCount = 0;
+        voting.noConsensus = false;
+        voting.numberOfVotes = 0;
+
+        emit VotingRestarted(voting.matchInput);
     }
 }
