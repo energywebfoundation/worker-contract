@@ -170,6 +170,7 @@ describe("MatchVoting", () => {
     await matchVoting
       .connect(worker3)
       .vote(timeframes[0].input, timeframes[1].output);
+
     expect(
       await matchVoting
         .connect(worker4)
@@ -177,5 +178,17 @@ describe("MatchVoting", () => {
     )
       .to.emit(matchVoting, "VotingRestarted")
       .withArgs(timeframes[0].input);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+    await matchVoting
+      .connect(worker2)
+      .vote(timeframes[0].input, timeframes[0].output);
+    expect(
+      await matchVoting
+        .connect(worker3)
+        .vote(timeframes[0].input, timeframes[0].output)
+    ).to.emit(matchVoting, "WinngingMatch");
   });
 });

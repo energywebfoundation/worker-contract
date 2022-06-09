@@ -201,6 +201,7 @@ contract MatchVoting is Ownable {
         voting.ended = true;
     }
 
+    /// @notice Check if this account allowed to vote
     function isWorker(address workerAddress) public view returns (bool) {
         return
             workerToIndex[workerAddress] != 0 ||
@@ -212,6 +213,7 @@ contract MatchVoting is Ownable {
         return (workers.length / 2) + 1;
     }
 
+    /// @notice When consensus is not reached voting is restarted
     function restartVoting(Voting storage voting) private {
         delete voting.matches;
         for (uint256 i = 0; i < workers.length; i++) {
