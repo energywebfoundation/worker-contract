@@ -76,6 +76,10 @@ contract MatchVoting is Ownable {
     function vote(string memory matchInput, string memory matchResult)
         external
     {
+        if (!isWorker(msg.sender)) {
+            revert NotWhitelisted();
+        }
+
         Voting storage voting = matchInputToVoting[matchInput];
         if (bytes(voting.matchInput).length == 0) {
             voting.matchInput = matchInput;
@@ -84,16 +88,6 @@ contract MatchVoting is Ownable {
 
         if (voting.ended) {
             revert VotingAlreadyEnded();
-        }
-
-        bool isWhiteListed;
-        for (uint256 i = 0; i < workers.length; i++) {
-            if (workers[i] == msg.sender) {
-                isWhiteListed = true;
-            }
-        }
-        if (!isWhiteListed) {
-            revert NotWhitelisted();
         }
 
         if (voting.workerToVoted[msg.sender]) {
