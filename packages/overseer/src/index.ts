@@ -10,4 +10,4 @@ export async function start(config: OverseerConfig, port: number) {
   console.log(`Overseer listening on port ${port}.`);
 }
 
-export type { OverseerConfig } from './types';
+export * from './types';
