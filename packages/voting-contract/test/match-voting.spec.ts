@@ -1,7 +1,10 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, ContractFactory } from "ethers";
-import { expect } from "chai";
+import chai, { expect } from "chai";
+import { solidity } from "ethereum-waffle";
+
+chai.use(solidity);
 
 describe("MatchVoting", () => {
   let worker1: SignerWithAddress;
@@ -42,7 +45,7 @@ describe("MatchVoting", () => {
         .vote(timeframes[0].input, timeframes[0].output)
     )
       .to.emit(matchVoting, "WinningMatch")
-      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+      .withArgs(timeframes[0].input, timeframes[0].output, 1);
     expect(
       await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
     ).to.equal(timeframes[0].output);
@@ -139,7 +142,7 @@ describe("MatchVoting", () => {
         .vote(timeframes[0].input, timeframes[0].output)
     )
       .to.emit(matchVoting, "WinningMatch")
-      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+      .withArgs(timeframes[0].input, timeframes[0].output, 3);
 
     // Consensus has been reached
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
@@ -155,7 +158,7 @@ describe("MatchVoting", () => {
     );
   });
 
-  it("consensus should not be reached when votes are divided equally", async () => {
+  it("consensus should not be reached when votes are divided evenly", async () => {
     await matchVoting.addWorker(worker1.address);
     await matchVoting.addWorker(worker2.address);
     await matchVoting.addWorker(worker3.address);
