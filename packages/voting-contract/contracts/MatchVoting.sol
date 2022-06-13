@@ -73,6 +73,8 @@ contract MatchVoting is Ownable {
         certificateContractAddress = _certificateContractAddress;
     }
 
+    /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
+    /// When consensus is not reached the voting is restarted
     function vote(string memory matchInput, string memory matchResult)
         external
     {
