@@ -24,7 +24,7 @@
     "run:testnet": "yarn build:contract && yarn concurrently \"yarn run:blockchain\" \"wait-on tcp:8545 && yarn deploy:local\""
   },
   "dependencies": {
-    "@nestjs/common": "8.0.0",
+    "@nestjs/common": "8.0.7",
     "@nestjs/core": "8.0.0",
     "@nestjs/platform-express": "8.0.0",
     "dotenv": "16.0.1",
