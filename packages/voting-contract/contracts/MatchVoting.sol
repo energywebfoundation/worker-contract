@@ -5,12 +5,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "hardhat/console.sol";
 import "./Certificate.sol";
+import "./RewardVoting.sol";
 
 contract MatchVoting is Ownable {
     /// Certificate minting contract address
     address public certificateContractAddress;
+    /// Address of voting reward contract
+    address rewardVotingAddress;
 
-    address[] public workers;
+    address payable[] public workers;
 
     uint256 public numberOfWorkers;
 
@@ -69,11 +72,15 @@ contract MatchVoting is Ownable {
     /// Worker has not been added yet
     error WorkerWasNotAdded();
 
-    constructor(address _certificateContractAddress) {
+    constructor(
+        address _certificateContractAddress,
+        address _rewardVotingAddress
+    ) {
         certificateContractAddress = _certificateContractAddress;
+        rewardVotingAddress = _rewardVotingAddress;
     }
 
-    /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
+    // @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
     function vote(string memory matchInput, string memory matchResult)
         external
@@ -143,7 +150,7 @@ contract MatchVoting is Ownable {
         return matchInputs.length;
     }
 
-    function addWorker(address workerAddress) external onlyOwner {
+    function addWorker(address payable workerAddress) external onlyOwner {
         if (isWorker(workerAddress)) {
             revert WorkerAlreadyAdded();
         }
@@ -152,16 +159,17 @@ contract MatchVoting is Ownable {
         numberOfWorkers = workers.length;
     }
 
-    function removeWorker(address workerAddress) external onlyOwner {
-        if (!isWorker(workerAddress)) {
+    function removeWorker(address workerToRemove) external onlyOwner {
+        if (!isWorker(workerToRemove)) {
             revert WorkerWasNotAdded();
         }
-        uint256 workerIndex = workerToIndex[workerAddress];
+        uint256 workerIndex = workerToIndex[workerToRemove];
         // Delete the worker
         delete workers[workerIndex];
-        // @todo change index of this worker
         // Copy last element to fill the missing place in array
-        workers[workerIndex] = workers[workers.length - 1];
+        address payable workerToMove = workers[workers.length - 1];
+        workers[workerIndex] = workerToMove;
+        workerToIndex[workerToMove] = workerIndex;
         // Delete last element
         delete workers[workers.length - 1];
         numberOfWorkers = numberOfWorkers - 1;
@@ -195,6 +203,7 @@ contract MatchVoting is Ownable {
             voting.winningMatchVoteCount
         );
         voting.ended = true;
+        IRewardVoting(rewardVotingAddress).reward(winners(voting.matchInput));
     }
 
     /// @notice Check if this account allowed to vote
@@ -202,6 +211,30 @@ contract MatchVoting is Ownable {
         return
             workerToIndex[workerAddress] != 0 ||
             (workers.length > 0 && workers[0] == workerAddress);
+    }
+
+    /// @notice Workers who voted for winning result
+    function winners(string memory matchInput)
+        public
+        view
+        returns (address payable[] memory _winners)
+    {
+        Voting storage voting = matchInputToVoting[matchInput];
+        _winners = new address payable[](voting.winningMatchVoteCount);
+        uint256 winnerCount = 0;
+        for (uint256 i = 0; i < workers.length; i++) {
+            address payable worker = workers[i];
+            if (
+                voting.workerToVoted[worker] &&
+                compareStrings(
+                    voting.workerToMatchResult[worker],
+                    voting.winningMatch
+                )
+            ) {
+                _winners[winnerCount] = worker;
+                winnerCount++;
+            }
+        }
     }
 
     /// @notice Number of votes sufficient to determine match winner
@@ -226,5 +259,14 @@ contract MatchVoting is Ownable {
         voting.numberOfVotes = 0;
 
         emit VotingRestarted(voting.matchInput);
+    }
+
+    function compareStrings(string memory a, string memory b)
+        private
+        pure
+        returns (bool)
+    {
+        return (keccak256(abi.encodePacked((a))) ==
+            keccak256(abi.encodePacked((b))));
     }
 }
