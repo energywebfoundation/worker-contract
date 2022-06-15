@@ -154,9 +154,9 @@ contract MatchVoting is Ownable {
         if (isWorker(workerAddress)) {
             revert WorkerAlreadyAdded();
         }
-        workerToIndex[workerAddress] = workers.length;
+        workerToIndex[workerAddress] = numberOfWorkers;
         workers.push(workerAddress);
-        numberOfWorkers = workers.length;
+        numberOfWorkers = numberOfWorkers + 1;
     }
 
     function removeWorker(address workerToRemove) external onlyOwner {
@@ -165,11 +165,11 @@ contract MatchVoting is Ownable {
         }
         uint256 workerIndex = workerToIndex[workerToRemove];
         // Copy last element to fill the missing place in array
-        address payable workerToMove = workers[workers.length - 1];
+        address payable workerToMove = workers[numberOfWorkers - 1];
         workers[workerIndex] = workerToMove;
         workerToIndex[workerToMove] = workerIndex;
         // Delete last element
-        delete workers[workers.length - 1];
+        delete workers[numberOfWorkers - 1];
         numberOfWorkers = numberOfWorkers - 1;
     }
 
@@ -208,7 +208,7 @@ contract MatchVoting is Ownable {
     function isWorker(address workerAddress) public view returns (bool) {
         return
             workerToIndex[workerAddress] != 0 ||
-            (workers.length > 0 && workers[0] == workerAddress);
+            (numberOfWorkers > 0 && workers[0] == workerAddress);
     }
 
     /// @notice Workers who voted for winning result
@@ -220,7 +220,7 @@ contract MatchVoting is Ownable {
         Voting storage voting = matchInputToVoting[matchInput];
         _winners = new address payable[](voting.winningMatchVoteCount);
         uint256 winnerCount = 0;
-        for (uint256 i = 0; i < workers.length; i++) {
+        for (uint256 i = 0; i < numberOfWorkers; i++) {
             address payable worker = workers[i];
             if (
                 voting.workerToVoted[worker] &&
@@ -237,13 +237,13 @@ contract MatchVoting is Ownable {
 
     /// @notice Number of votes sufficient to determine match winner
     function majority() public view returns (uint256) {
-        return (workers.length / 2) + 1;
+        return (numberOfWorkers / 2) + 1;
     }
 
     /// @notice When consensus is not reached voting is restarted
     function restartVoting(Voting storage voting) private {
         delete voting.matches;
-        for (uint256 i = 0; i < workers.length; i++) {
+        for (uint256 i = 0; i < numberOfWorkers; i++) {
             voting.matchResultToVoteCount[
                 voting.workerToMatchResult[workers[i]]
             ] = 0;
