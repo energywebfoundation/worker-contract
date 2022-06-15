@@ -1,11 +1,21 @@
 import { WorkerBuilder } from '../src';
-const mockGetConsumptions = async () => [{ deviceId: 'c1', volume: 100, timestamp: new Date(0) }];
-const mockGetGenerations = async () => [{ deviceId: 'g1', volume: 100, timestamp: new Date(0) }];
-const mockGetPreferences = async () => ({ groupPriority: [[{ id: 'c1', groupPriority: [[{ id: 'g1' }]]}]]});
+
+const mockConsumptions = [{ deviceId: 'c1', volume: 100 }];
+const mockGenerations = [{ deviceId: 'g1', volume: 100 }];
+const mockPreferences = { groupPriority: [[{ id: 'c1', groupPriority: [[{ id: 'g1' }]]}]]};
+const mockTimestamp = new Date('2022-04-01T01:00:00.000Z');
 
 describe('WorkerBuilder', () => {
   it('properly matches using data source and result source', async () => {
     const receiveMatchingResult = jest.fn();
+
+    const matchingInput = {
+      consumptions: mockConsumptions,
+      generations: mockGenerations,
+      preferences: mockPreferences,
+      timestamp: mockTimestamp,
+    };
+
     const matchingFacade = await new WorkerBuilder()
       .setMatchingAlgorithm((input) => {
         return {
@@ -19,15 +29,8 @@ describe('WorkerBuilder', () => {
         };
       })
       .setDataSource({
-        getConsumptions: mockGetConsumptions,
-        getGenerations: mockGetGenerations,
-        getPreferences: mockGetPreferences,
-        processData: async (query, match) => {
-          const consumptions = await mockGetConsumptions();
-          const generations = await mockGetGenerations();
-          const preferences = await mockGetPreferences();
-
-          await match(consumptions, generations, preferences);
+        async withMatchingInput(cb) {
+          return await cb(matchingInput);
         },
       })
       .setResultSource({
@@ -35,13 +38,7 @@ describe('WorkerBuilder', () => {
       })
       .compile();
 
-    await matchingFacade.match(new Date('2022-04-01T01:00:00.000Z'));
-
-    const matchingInput = {
-      consumptions: await mockGetConsumptions(),
-      generations: await mockGetGenerations(),
-      preferences: await mockGetPreferences(),
-    };
+    await matchingFacade.match();
 
     expect(receiveMatchingResult).toBeCalledWith({
       timestamp: expect.any(Date),

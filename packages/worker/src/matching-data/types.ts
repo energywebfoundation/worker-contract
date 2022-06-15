@@ -1,13 +1,6 @@
 export interface Reading {
   deviceId: string;
-  timestamp: Date;
   volume: number;
-}
-
-export interface ReadingQuery {
-  deviceIds?: string[];
-  from?: Date;
-  to?: Date;
 }
 
 export interface Preferences {
@@ -17,4 +10,11 @@ export interface Preferences {
   }[][];
 }
 
-export type MatchCallback = (consumptions: Reading[], generations: Reading[], preferences: Preferences) => Promise<void>;
+export interface MatchingInput {
+  generations: Reading[];
+  consumptions: Reading[];
+  preferences: Preferences;
+  timestamp: Date;
+}
+
+export type MatchCallback = (input: MatchingInput) => Promise<void>;

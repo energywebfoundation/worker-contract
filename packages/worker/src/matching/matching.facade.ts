@@ -1,4 +1,3 @@
-import type { Preferences, Reading } from '../matching-data/types';
 import { MatchingDataFacade } from '../matching-data/matching-data.facade';
 import { MatchingResultFacade } from '../matching-result/matching-result.facade';
 import { Inject, Injectable } from '@nestjs/common';
@@ -6,6 +5,7 @@ import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from
 import { MatchingAlgorithm, MATCHING_ALGO } from './types';
 import { createMerkleTree, hash } from '@energyweb/greenproof-merkle-tree';
 import { PinoLogger } from 'nestjs-pino';
+import type { MatchingInput } from '../matching-data';
 
 @Injectable()
 export class MatchingFacade {
@@ -18,33 +18,40 @@ export class MatchingFacade {
     private matchingAlgorithm: MatchingAlgorithm,
   ) {}
 
-  public async match(timestamp: Date): Promise<void> {
-    await this.matchingDataFacade.processData({ from: timestamp, to: timestamp }, this.matching(timestamp));
+  public async match(): Promise<void> {
+    await this.matchingDataFacade.withMatchingInput(async (input) => {
+      if (!input) {
+        this.logger.info('No input found');
+        return;
+      }
+
+      await this.matching(input);
+    });
   }
 
-  private matching = (timestamp: Date) => async (consumptions: Reading[], generations: Reading[], preferences: Preferences) => {
+  private async matching(input: MatchingInput): Promise<void> {
     this.logger.info('Matching data.');
 
-    if (consumptions.length === 0 && generations.length === 0) {
+    if (input.consumptions.length === 0 && input.generations.length === 0) {
       this.logger.info('Matching omitted (no consumptions and generations during timeframe).');
       return;
     }
 
-    const matchingResult = this.matchingAlgorithm({consumptions, generations, preferences});
+    const matchingResult = this.matchingAlgorithm(input);
     const merkleTree = this.createTree(matchingResult);
 
     this.logger.info('Sending matching data.');
 
     await this.matchingResultFacade.receiveMatchingResult({
-      timestamp,
+      timestamp: input.timestamp,
       tree: merkleTree,
       data: {
         ...matchingResult,
       },
-    }, { consumptions, generations, preferences });
+    }, input);
 
-    this.logger.info(`Matching for timestamp ${timestamp.toISOString()} complete.`);
-  };
+    this.logger.info(`Matching for timestamp ${input.timestamp.toISOString()} complete.`);
+  }
 
   private createTree(matchingResult: MatchingOutput) {
     this.logger.info('Creating merkle tree.');

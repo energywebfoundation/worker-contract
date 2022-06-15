@@ -1,4 +1,4 @@
-import type { MatchingInput } from '../../matching/types';
+import type { MatchingInput } from '../../matching-data';
 import type { MatchingResult } from '../types';
 
 export type MatchingResultReceiver = (result: MatchingResult, input: MatchingInput) => Promise<void>;
