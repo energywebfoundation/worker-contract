@@ -24,6 +24,7 @@ contract RewardFixed is Ownable, IRewardVoting {
     }
 
     constructor(uint256 _rewardAmount) {
+        require(_rewardAmount > 0, "Reward amount should be positive");
         rewardAmount = _rewardAmount;
     }
 
