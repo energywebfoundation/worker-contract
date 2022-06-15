@@ -4,8 +4,8 @@ import { MATCHING_RESULT_RECEIVERS } from './types';
 import type { MatchingResultFacade } from '../matching-result.facade';
 import type { MatchingResult } from '../types';
 import { PinoLogger } from 'nestjs-pino';
-import type { MatchingInput } from '../../matching/types';
 import deepClone from 'deep-clone';
+import type { MatchingInput } from '../../matching-data';
 
 @Injectable()
 export class MatchingResultReceiversFacade implements MatchingResultFacade {

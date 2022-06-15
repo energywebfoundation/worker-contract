@@ -1,12 +1,6 @@
-import type { Reading, Preferences } from '../matching-data/types';
+import type { MatchingInput } from '../matching-data';
 
 export const MATCHING_ALGO = Symbol.for('MATCHING_ALGO');
-
-export interface MatchingInput {
-  consumptions: Reading[];
-  generations: Reading[];
-  preferences: Preferences;
-}
 
 export interface Match {
   consumerId: string;
