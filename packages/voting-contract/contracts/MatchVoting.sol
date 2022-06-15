@@ -164,8 +164,6 @@ contract MatchVoting is Ownable {
             revert WorkerWasNotAdded();
         }
         uint256 workerIndex = workerToIndex[workerToRemove];
-        // Delete the worker
-        delete workers[workerIndex];
         // Copy last element to fill the missing place in array
         address payable workerToMove = workers[workers.length - 1];
         workers[workerIndex] = workerToMove;
