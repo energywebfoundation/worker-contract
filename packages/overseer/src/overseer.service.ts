@@ -86,10 +86,12 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
 
     Object.entries(listenersToRegister).forEach(([eventName, listeners]) => {
       listeners.forEach(listener => {
-        this.contract.on(eventName as any, async (event) => {
-          // Explanation on blockNumber shenanigans:
-          // https://github.com/ethers-io/ethers.js/issues/1504#issuecomment-826140461
-          const blockNumber = event[event.length - 1].blockNumber;
+        // Arguments is the array with event args followed by whole event.
+        // In order to get the whole event we have to get the last item in the array
+        this.contract.on(eventName as any, async (argsWithEvent) => {
+          const event = argsWithEvent[argsWithEvent.length - 1];
+          const blockNumber = event.blockNumber;
+
           if (blockNumber <= startBlockNumber) {
             return;
           }
