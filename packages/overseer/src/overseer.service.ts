@@ -88,7 +88,7 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
       listeners.forEach(listener => {
         // Arguments is the array with event args followed by whole event.
         // In order to get the whole event we have to get the last item in the array
-        this.contract.on(eventName as any, async (argsWithEvent) => {
+        this.contract.on(eventName as any, async (...argsWithEvent) => {
           const event = argsWithEvent[argsWithEvent.length - 1];
           const blockNumber = event.blockNumber;
 
