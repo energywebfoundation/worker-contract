@@ -109,7 +109,10 @@ contract MatchVoting is Ownable {
             revert NotWhitelisted();
         }
         Voting storage voting = matchInputToVoting[matchInput];
-
+        if (voting.status == Status.Active && isExpired(voting)) {
+            cancelVoting(voting);
+            emit VotingExpired(matchInput);
+        }
         if (voting.status == Status.Completed) {
             revert VotingAlreadyEnded();
         }

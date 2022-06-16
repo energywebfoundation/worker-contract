@@ -272,7 +272,7 @@ describe("MatchVoting", () => {
     );
   });
 
-  it("votings which exceeded time limit should be canceled", async () => {
+  it("voting which exceeded time limit can be canceled", async () => {
     await matchVoting.addWorker(worker1.address);
     await matchVoting.addWorker(worker2.address);
     await matchVoting.addWorker(worker3.address);
@@ -293,6 +293,33 @@ describe("MatchVoting", () => {
     await expect(
       matchVoting
         .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    ).to.emit(matchVoting, "WinningMatch");
+  });
+
+  it("voting which exceeded time limit must not be completed", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+
+    await timeTravel(2 * timeLimit);
+
+    // voting canceled and restarted
+    await expect(
+      matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+      .to.emit(matchVoting, "VotingExpired")
+      .withArgs(timeframes[0].input);
+
+    await expect(
+      matchVoting
+        .connect(worker1)
         .vote(timeframes[0].input, timeframes[0].output)
     ).to.emit(matchVoting, "WinningMatch");
   });
