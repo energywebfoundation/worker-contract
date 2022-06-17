@@ -283,7 +283,7 @@ describe("MatchVoting", () => {
 
     await timeTravel(2 * timeLimit);
 
-    await expect(matchVoting.cancelLongrunningVotings())
+    await expect(matchVoting.cancelExpiredVotings())
       .to.emit(matchVoting, "VotingExpired")
       .withArgs(timeframes[0].input);
 
@@ -322,5 +322,21 @@ describe("MatchVoting", () => {
         .connect(worker1)
         .vote(timeframes[0].input, timeframes[0].output)
     ).to.emit(matchVoting, "WinningMatch");
+  });
+
+  it("voting can not be cancelled by non owner", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+
+    await timeTravel(2 * timeLimit);
+
+    await expect(
+      matchVoting.connect(worker2).cancelExpiredVotings()
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 });
