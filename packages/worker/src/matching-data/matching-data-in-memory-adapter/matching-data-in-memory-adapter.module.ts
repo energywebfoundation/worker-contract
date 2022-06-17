@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MatchingDataInMemoryService } from './matching-data-in-memory.service';
 import { MatchingDataInMemoryFacade } from './matching-data.facade';
-import type { InputData } from './matching-data-in-memory.service';
 import { MatchingDataFacade } from '../matching-data.facade';
+import type { MatchingInput } from '../types';
 
 @Module({})
 export class MatchingDataInMemoryAdapterModule {
-  public static register(input: InputData) {
+  public static register(input: MatchingInput) {
     return {
       module: MatchingDataInMemoryAdapterModule,
       imports: [],

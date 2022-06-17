@@ -34,6 +34,7 @@ describe('Matching result', () => {
     };
 
     const matchInput: MatchingInput = {
+      timestamp: new Date(),
       consumptions: [],
       generations: [],
       preferences: { groupPriority: [] },
