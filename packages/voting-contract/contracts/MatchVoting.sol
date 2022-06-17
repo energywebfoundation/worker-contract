@@ -285,7 +285,7 @@ contract MatchVoting is Ownable {
     }
 
     /// @notice Cancels votings that takes longer than time limit
-    function cancelLongrunningVotings() public onlyOwner {
+    function cancelExpiredVotings() public onlyOwner {
         for (uint256 i = 0; i < matchInputs.length; i++) {
             Voting storage voting = matchInputToVoting[matchInputs[i]];
             if (voting.status == Status.Active && isExpired(voting)) {
