@@ -21,6 +21,19 @@ contract MatchVoting is Ownable {
 
     string[] public matchInputs;
 
+    mapping(string => uint256) matchInputToIndex;
+
+    uint256 public timeLimit;
+
+    enum Status {
+        /// Not started or canceled
+        NotActive,
+        /// Worker can vote
+        Active,
+        /// Winner match is determined
+        Completed
+    }
+
     struct Voting {
         /// Input match
         string matchInput;
@@ -32,8 +45,8 @@ contract MatchVoting is Ownable {
         mapping(address => bool) workerToVoted;
         /// Match result to total vote count
         mapping(string => uint256) matchResultToVoteCount;
-        /// Disables voting option after voting end
-        bool ended;
+        /// To decide which actions are currently applicable to voting
+        Status status;
         /// Winning match result
         string winningMatch;
         /// Number of votes for winning match
@@ -42,6 +55,8 @@ contract MatchVoting is Ownable {
         bool noConsensus;
         /// Number of votes in this voting
         uint256 numberOfVotes;
+        ///Timestamp of first voting
+        uint256 start;
     }
 
     /// Worker address to match result
@@ -54,8 +69,11 @@ contract MatchVoting is Ownable {
         uint256 indexed voteCount
     );
 
-    /// Winning match result did not reach more than a half of total votes
-    event VotingRestarted(string matchInput);
+    /// Winning match result can not be determined
+    event NoConsensusReached(string indexed matchInput);
+
+    /// Voting lasts more then time limit
+    event VotingExpired(string indexed matchInput);
 
     /// Worker had already voted for a match result
     error AlreadyVoted();
@@ -74,13 +92,15 @@ contract MatchVoting is Ownable {
 
     constructor(
         address _certificateContractAddress,
-        address _rewardVotingAddress
+        address _rewardVotingAddress,
+        uint256 _timeLimit
     ) {
         certificateContractAddress = _certificateContractAddress;
         rewardVotingAddress = _rewardVotingAddress;
+        timeLimit = _timeLimit;
     }
 
-    // @notice Increases number of votes given for matchResult. Winner is determined by simple majority
+    /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
     function vote(string memory matchInput, string memory matchResult)
         external
@@ -88,15 +108,17 @@ contract MatchVoting is Ownable {
         if (!isWorker(msg.sender)) {
             revert NotWhitelisted();
         }
-
         Voting storage voting = matchInputToVoting[matchInput];
-        if (bytes(voting.matchInput).length == 0) {
-            voting.matchInput = matchInput;
-            matchInputs.push(matchInput);
+        if (voting.status == Status.Active && isExpired(voting)) {
+            cancelVoting(voting);
+            emit VotingExpired(matchInput);
+        }
+        if (voting.status == Status.Completed) {
+            revert VotingAlreadyEnded();
         }
 
-        if (voting.ended) {
-            revert VotingAlreadyEnded();
+        if (voting.status == Status.NotActive) {
+            startVoting(matchInput);
         }
 
         if (voting.workerToVoted[msg.sender]) {
@@ -184,7 +206,8 @@ contract MatchVoting is Ownable {
 
     function completeVoting(Voting storage voting) private {
         if (voting.noConsensus) {
-            restartVoting(voting);
+            cancelVoting(voting);
+            emit NoConsensusReached(voting.matchInput);
             return;
         }
 
@@ -200,7 +223,7 @@ contract MatchVoting is Ownable {
             voting.winningMatch,
             voting.winningMatchVoteCount
         );
-        voting.ended = true;
+        voting.status = Status.Completed;
         IRewardVoting(rewardVotingAddress).reward(winners(voting.matchInput));
     }
 
@@ -240,8 +263,40 @@ contract MatchVoting is Ownable {
         return (numberOfWorkers / 2) + 1;
     }
 
-    /// @notice When consensus is not reached voting is restarted
-    function restartVoting(Voting storage voting) private {
+    function startVoting(string memory matchInput) private {
+        Voting storage voting = matchInputToVoting[matchInput];
+        voting.matchInput = matchInput;
+        voting.start = block.timestamp;
+        voting.status = Status.Active;
+
+        if (
+            matchInputToIndex[matchInput] == 0 &&
+            (matchInputs.length == 0 ||
+                (matchInputs.length > 0 &&
+                    !compareStrings(matchInputs[0], matchInput)))
+        ) {
+            matchInputToIndex[matchInput] = matchInputs.length;
+            matchInputs.push(matchInput);
+        }
+    }
+
+    function isExpired(Voting storage voting) private view returns (bool) {
+        return voting.start + timeLimit < block.timestamp;
+    }
+
+    /// @notice Cancels votings that takes longer than time limit
+    function cancelExpiredVotings() public onlyOwner {
+        for (uint256 i = 0; i < matchInputs.length; i++) {
+            Voting storage voting = matchInputToVoting[matchInputs[i]];
+            if (voting.status == Status.Active && isExpired(voting)) {
+                emit VotingExpired(matchInputs[i]);
+                cancelVoting(voting);
+            }
+        }
+    }
+
+    /// @notice Deletes voting results
+    function cancelVoting(Voting storage voting) private {
         delete voting.matches;
         for (uint256 i = 0; i < numberOfWorkers; i++) {
             voting.matchResultToVoteCount[
@@ -250,13 +305,12 @@ contract MatchVoting is Ownable {
             voting.workerToVoted[workers[i]] = false;
             voting.workerToMatchResult[workers[i]] = "";
         }
-        voting.ended = false;
+        voting.status = Status.NotActive;
         voting.winningMatch = "";
         voting.winningMatchVoteCount = 0;
         voting.noConsensus = false;
         voting.numberOfVotes = 0;
-
-        emit VotingRestarted(voting.matchInput);
+        voting.start = 0;
     }
 
     function compareStrings(string memory a, string memory b)
