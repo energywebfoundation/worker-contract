@@ -1,12 +1,16 @@
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, ContractFactory, utils } from "ethers";
 import chai, { expect } from "chai";
 import { solidity } from "ethereum-waffle";
-import { formatEther } from "ethers/lib/utils";
 
 chai.use(solidity);
 const { parseEther } = utils;
+
+const timeTravel = async (seconds: number) => {
+  await network.provider.send("evm_increaseTime", [seconds]);
+  await network.provider.send("evm_mine", []);
+};
 
 describe("MatchVoting", () => {
   let worker1: SignerWithAddress;
@@ -21,6 +25,7 @@ describe("MatchVoting", () => {
   let rewardVoting: Contract;
   let matchVoting: Contract;
   const rewardAmount = parseEther("1");
+  const timeLimit = 15 * 60;
 
   const timeframes = [
     { input: "MATCH_INPUT_1", output: "MATCH_OUTPUT_1" },
@@ -42,7 +47,8 @@ describe("MatchVoting", () => {
     await rewardVoting.deployed();
     matchVoting = await MatchVotingContract.deploy(
       certificateContract.address,
-      rewardVoting.address
+      rewardVoting.address,
+      timeLimit
     );
     await matchVoting.deployed();
     await rewardVoting.setMatchVoting(matchVoting.address);
@@ -219,7 +225,7 @@ describe("MatchVoting", () => {
         .connect(worker4)
         .vote(timeframes[0].input, timeframes[1].output)
     )
-      .to.emit(matchVoting, "VotingRestarted")
+      .to.emit(matchVoting, "NoConsensusReached")
       .withArgs(timeframes[0].input);
 
     await matchVoting
@@ -264,5 +270,73 @@ describe("MatchVoting", () => {
     expect(
       balancesAfter.every((b, i) => b.eq(balancesBefore[i].add(rewardAmount)))
     );
+  });
+
+  it("voting which exceeded time limit can be canceled", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+
+    await timeTravel(2 * timeLimit);
+
+    await expect(matchVoting.cancelExpiredVotings())
+      .to.emit(matchVoting, "VotingExpired")
+      .withArgs(timeframes[0].input);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+    await expect(
+      matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    ).to.emit(matchVoting, "WinningMatch");
+  });
+
+  it("voting which exceeded time limit must not be completed", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+
+    await timeTravel(2 * timeLimit);
+
+    // voting canceled and restarted
+    await expect(
+      matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+      .to.emit(matchVoting, "VotingExpired")
+      .withArgs(timeframes[0].input);
+
+    await expect(
+      matchVoting
+        .connect(worker1)
+        .vote(timeframes[0].input, timeframes[0].output)
+    ).to.emit(matchVoting, "WinningMatch");
+  });
+
+  it("voting can not be cancelled by non owner", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
+
+    await timeTravel(2 * timeLimit);
+
+    await expect(
+      matchVoting.connect(worker2).cancelExpiredVotings()
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 });
