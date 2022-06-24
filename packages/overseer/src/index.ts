@@ -11,3 +11,5 @@ export async function start(config: OverseerConfig, port: number) {
 }
 
 export * from './types';
+
+export * from './overseer.module';
