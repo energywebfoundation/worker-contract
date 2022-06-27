@@ -12,6 +12,7 @@ System_Boundary(participant1, "System Participant") {
 }
 
 Person(gov, "Governance Body", "Creates communication schema")
+Person(gov_1, "Governance Body", "Adds eligible worker voters")
 
 System_Boundary(worker_node1, "Decentralized Worker") {
   Container(communication1, "Communication Layer", "Decrypt Message using DID auth" )
@@ -58,5 +59,7 @@ Rel(ddhub, communication3, "uses", "mTLS")
 
 Rel(votingContract, nft, "Generate on-chain proof")
 Rel_R(votingContract, cache, "Consensus reached event")
+Rel_R(gov_1, votingContract, "Eligible voters")
+Lay_L(votingContract, gov_1)
 
 @enduml
