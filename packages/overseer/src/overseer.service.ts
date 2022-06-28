@@ -48,6 +48,10 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
     });
   }
 
+  public async cancelExpiredVotings(): Promise<void> {
+    await this.contract.cancelExpiredVotings();
+  }
+
   private async handleMissedEvents(listeners: EventListeners, getLastHandledBlockNumber: Function) {
     this.logger.info('Handling events missed while the app was down.');
 
