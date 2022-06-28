@@ -61,7 +61,7 @@
     "zustand": "3.6.9"
   },
   "devDependencies": {
-    "@energyweb/greenproof-voting-contract": "1.0.1",
+    "@energyweb/greenproof-voting-contract": "1.0.2",
     "@typescript-eslint/eslint-plugin": "5.21.0",
     "@typescript-eslint/parser": "5.21.0",
     "eslint": "8.14.0",
@@ -69,6 +69,6 @@
     "eslint-plugin-react-hooks": "4.5.0"
   },
   "peerDependencies": {
-    "@energyweb/greenproof-voting-contract": "1.0.1"
+    "@energyweb/greenproof-voting-contract": "1.0.2"
   }
 }
