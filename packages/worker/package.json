@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@energyweb/greenproof-merkle-tree": "1.0.1",
-    "@energyweb/greenproof-voting-contract": "1.0.1",
+    "@energyweb/greenproof-voting-contract": "1.0.2",
     "@leocode/eslint-config": "2.0.0",
     "@nestjs/cli": "8.0.0",
     "@nestjs/schematics": "8.0.0",
@@ -55,7 +55,7 @@
   },
   "peerDependencies": {
     "@energyweb/greenproof-merkle-tree": "1.0.1",
-    "@energyweb/greenproof-voting-contract": "1.0.1"
+    "@energyweb/greenproof-voting-contract": "1.0.2"
   },
   "jest": {
     "moduleFileExtensions": [
