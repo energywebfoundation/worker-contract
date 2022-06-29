@@ -1,4 +1,4 @@
-import type { MatchingInput } from './types';
+import type { MatchingInput } from '../types';
 
 export abstract class MatchingDataFacade {
   public abstract withMatchingInput<T>(
