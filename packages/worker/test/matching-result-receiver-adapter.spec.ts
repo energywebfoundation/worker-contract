@@ -1,8 +1,7 @@
 import { Test } from '@nestjs/testing';
-import type { MatchingInput} from '../src';
 import { MatchingResultReceiversAdapterModule } from '../src';
 import { MatchingResultFacade } from '../src/matching-result/matching-result.facade';
-import type { MatchingResult } from '../src/matching-result/types';
+import type { MatchingResult } from '../src/types';
 
 describe('Matching result', () => {
   it('moves results to all receivers', async () => {
@@ -24,7 +23,7 @@ describe('Matching result', () => {
       timestamp: new Date(),
       data: {
         matches: [],
-        excessGenerations: [],
+        leftoverGenerations: [],
         leftoverConsumptions: [],
       },
       tree: {
@@ -33,7 +32,7 @@ describe('Matching result', () => {
       },
     };
 
-    const matchInput: MatchingInput = {
+    const matchInput = {
       timestamp: new Date(),
       consumptions: [],
       generations: [],

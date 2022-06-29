@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { MatchingDataInMemoryService } from './matching-data-in-memory.service';
 import { MatchingDataInMemoryFacade } from './matching-data.facade';
 import { MatchingDataFacade } from '../matching-data.facade';
-import type { MatchingInput } from '../types';
+import type { MatchingInput } from '../../types';
 
 @Module({})
 export class MatchingDataInMemoryAdapterModule {

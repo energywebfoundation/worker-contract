@@ -1,5 +1,4 @@
-import type { MatchingInput } from '../matching-data';
-import type { MatchingResult } from './types';
+import type { MatchingInput, MatchingResult } from '../types';
 
 export abstract class MatchingResultFacade {
   public abstract receiveMatchingResult(
