@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MatchingInput } from '../types';
+import { MatchingInput } from '../../types';
 
 @Injectable()
 export class MatchingDataInMemoryService {

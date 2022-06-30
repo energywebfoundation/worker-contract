@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { MatchingInput } from '../types';
+import type { MatchingInput } from '../../types';
 import type { MatchingDataFacade } from '../matching-data.facade';
 import { MatchingDataMockService } from './matching-data-mock.service';
 

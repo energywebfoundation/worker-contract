@@ -2,10 +2,10 @@ import type { DynamicModule, ForwardReference, Type } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { MatchingResultFacade } from './matching-result';
 import { MatchingDataFacade } from './matching-data';
-import type { MatchingAlgorithm} from '.';
 import { MatchingFacade} from '.';
 import { MatchingModule } from '.';
 import { NestFactory } from '@nestjs/core';
+import type { MatchingAlgorithm } from './types';
 
 type NestModuleType = Type<any> | DynamicModule | Promise<DynamicModule> | ForwardReference;
 
