@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import type { MatchingInput } from '../types';
+import type { MatchingInput } from '../../types';
 
 @Injectable()
 export class MatchingDataMockService {

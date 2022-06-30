@@ -1,11 +1,11 @@
 import { MatchingDataFacade } from '../matching-data/matching-data.facade';
 import { MatchingResultFacade } from '../matching-result/matching-result.facade';
 import { Inject, Injectable } from '@nestjs/common';
-import type { ExcessGeneration, LeftoverConsumption, Match, MatchingOutput} from './types';
-import { MatchingAlgorithm, MATCHING_ALGO } from './types';
+import { MATCHING_ALGO } from './types';
 import { createMerkleTree, hash } from '@energyweb/greenproof-merkle-tree';
 import { PinoLogger } from 'nestjs-pino';
-import type { MatchingInput } from '../matching-data';
+import { MatchingAlgorithm} from '../types';
+import type { MatchingInput, MatchingOutput} from '../types';
 
 @Injectable()
 export class MatchingFacade {
@@ -31,11 +31,6 @@ export class MatchingFacade {
 
   private async matching(input: MatchingInput): Promise<void> {
     this.logger.info('Matching data.');
-
-    if (input.consumptions.length === 0 && input.generations.length === 0) {
-      this.logger.info('Matching omitted (no consumptions and generations during timeframe).');
-      return;
-    }
 
     const matchingResult = this.matchingAlgorithm(input);
     const merkleTree = this.createTree(matchingResult);
@@ -71,17 +66,19 @@ export class MatchingFacade {
   private createHashes(matchingResult: MatchingOutput): string[] {
     this.logger.info('Creating hashes.');
 
-    const hashMatch = (match: Match) => hash(JSON.stringify(match), 'MATCH');
-    const hashGeneration = (generation: ExcessGeneration) => hash(JSON.stringify(generation), 'EXCESS_GENERATION');
-    const hashConsumption = (consumption: LeftoverConsumption) => hash(JSON.stringify(consumption), 'LEFTOVER_CONSUMPTION');
-
-    const matchesHashes = matchingResult.matches.map(hashMatch);
+    const matchesHashes = matchingResult.matches.map(
+      m => hash(JSON.stringify(m), 'MATCH'),
+    );
     this.logger.info('Match hashes created.');
 
-    const excessGenerationHashes = matchingResult.excessGenerations.map(hashGeneration);
+    const excessGenerationHashes = matchingResult.leftoverGenerations.map(
+      g => hash(JSON.stringify(g), 'LEFTOVER_GENERATION'),
+    );
     this.logger.info('Excess generation hashes created.');
 
-    const leftoverConsumptionMatches = matchingResult.leftoverConsumptions.map(hashConsumption);
+    const leftoverConsumptionMatches = matchingResult.leftoverConsumptions.map(
+      c => hash(JSON.stringify(c), 'LEFTOVER_CONSUMPTION'),
+    );
     this.logger.info('Leftover consumption hashes created.');
 
     return [...matchesHashes, ...excessGenerationHashes, ...leftoverConsumptionMatches];

@@ -19,11 +19,11 @@ describe('WorkerBuilder', () => {
     const matchingFacade = await new WorkerBuilder()
       .setMatchingAlgorithm((input) => {
         return {
-          excessGenerations: [],
+          leftoverGenerations: [],
           leftoverConsumptions: [],
           matches: [{
-            consumerId: input.consumptions[0].deviceId,
-            generatorId: input.generations[0].deviceId,
+            consumerId: (input as any).consumptions[0].deviceId,
+            generatorId: (input as any).generations[0].deviceId,
             volume: 100,
           }],
         };
@@ -49,7 +49,7 @@ describe('WorkerBuilder', () => {
         ],
       },
       data: {
-        excessGenerations: [],
+        leftoverGenerations: [],
         leftoverConsumptions: [],
         matches: [{
           consumerId: 'c1',

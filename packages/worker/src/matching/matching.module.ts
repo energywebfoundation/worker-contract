@@ -1,8 +1,8 @@
 import type { ModuleMetadata } from '@nestjs/common';
 import { Module } from '@nestjs/common';
+import type { MatchingAlgorithm } from '../types';
 import { MatchingFacade } from './matching.facade';
 import { MATCHING_ALGO } from './types';
-import type { MatchingAlgorithm } from './types';
 
 @Module({})
 export class MatchingModule {

@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { MatchingInput} from '../types';
+import { MatchingInput } from '../../types';
 import { MatchingDataMockService } from './matching-data-mock.service';
 
 @Controller('matching-data')
