@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-worker",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -30,7 +30,7 @@
     "rxjs": "7.2.0"
   },
   "devDependencies": {
-    "@energyweb/greenproof-merkle-tree": "1.0.1",
+    "@energyweb/greenproof-merkle-tree": "1.0.2",
     "@energyweb/greenproof-voting-contract": "1.0.2",
     "@leocode/eslint-config": "2.0.0",
     "@nestjs/cli": "8.0.0",
