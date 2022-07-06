@@ -38,8 +38,7 @@ export class GreenProofWorker {
   port: number;
 
   constructor(config: WorkerConfig) {
-    const { privateKey, rpcUrl, votingContractAddress, port } =
-      this.validateConfig(config);
+    const { privateKey, rpcUrl, votingContractAddress, port } = this.validateConfig(config);
     const provider = new providers.JsonRpcProvider(rpcUrl);
     const signer = new Wallet(privateKey, provider);
     this.votingContract = MatchVoting__factory.connect(
@@ -55,6 +54,9 @@ export class GreenProofWorker {
     if (error) {
       console.error('Validation of worker config failed');
       throw error;
+    }
+    if (!value) {
+      throw new Error('No configuration specified');
     }
     return value;
   }
