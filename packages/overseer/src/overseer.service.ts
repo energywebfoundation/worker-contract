@@ -2,11 +2,13 @@ import type { JsonRpcProvider } from '@ethersproject/providers';
 import type { OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import type { Wallet } from 'ethers';
+import { BigNumber } from 'ethers';
 import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
 import type { MatchVoting } from '@energyweb/greenproof-voting-contract';
 import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
-import { EventListeners } from './types';
+import {EventEmitter2} from '@nestjs/event-emitter';
+import { ContractEvent, parseEventArgs, WinningMatchEvent } from './events';
 
 interface BlockchainConfig {
   rpcHost: string;
@@ -23,9 +25,10 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
 
   constructor(
     private config: BlockchainConfig,
-    private listeners: EventListeners,
     private getLastHandledBlockNumber: () => Promise<number>,
-    private saveLastHandledBlockNumber: (blockNumber: number) => Promise<void>) {
+    private saveLastHandledBlockNumber: (blockNumber: number) => Promise<void>,
+    private eventEmitter: EventEmitter2,
+  ) {
 
     this.logger.setContext(OverseerService.name);
 
@@ -36,76 +39,78 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
   }
 
   async onApplicationBootstrap() {
-    await this.handleMissedEvents(this.listeners, this.getLastHandledBlockNumber);
-    await this.registerEventListeners(this.listeners);
+    // @Note: event listeners (EventEmitter2) are registered on onApplicationBootstrap, we need to handle it after it
+    setTimeout(() => {
+      this.handleMissedEvents(this.getLastHandledBlockNumber);
+      this.registerEventListeners();
+    }, 5000);
   }
 
   onApplicationShutdown() {
-    Object.entries(this.listeners).forEach(([eventName, listeners]) => {
-      listeners.forEach(listener => {
-        this.contract.off(eventName as any, listener as any);
-      });
-    });
+    this.contract.off(this.contract.filters.WinningMatch(), this.handleWinningMatchEvent);
   }
 
   public async cancelExpiredVotings(): Promise<void> {
     await this.contract.cancelExpiredVotings();
   }
 
-  private async handleMissedEvents(listeners: EventListeners, getLastHandledBlockNumber: Function) {
+  private async handleMissedEvents(getLastHandledBlockNumber: Function) {
     this.logger.info('Handling events missed while the app was down.');
 
     const lastBlockNumber = await getLastHandledBlockNumber();
-    const eventNames = Object.keys(listeners);
-    const events = await this.getUnhandledEvents(lastBlockNumber, eventNames);
-    events.forEach(event => {
-      if (event.event) {
-        listeners[event.event].forEach(listener => {
-          listener(event);
-        });
-      }
-    });
+    const winningMatchEvents = await this.getUnhandledWinningMatchEvents(lastBlockNumber);
 
-    this.logger.info('Handling missed events completed.');
+    winningMatchEvents.forEach(this.emitEvent.bind(this));
+
+    this.logger.info('Publishing missed events completed.');
   }
 
-  private async getUnhandledEvents(lastBlockNumber: number, eventNames: string[]) {
+  private async getUnhandledWinningMatchEvents(lastBlockNumber: number) {
     this.logger.info('Getting unhandled events.');
-    const allEvents: any[] = [];
 
-    await Promise.all(eventNames.map(async (eventName) => {
-      const eventsFilter = (this.contract.filters as any)[eventName]();
-      const events = await this.contract.queryFilter(eventsFilter, lastBlockNumber);
-      allEvents.push(...events);
-    }));
+    const eventsFilter = this.contract.filters.WinningMatch();
+    const events = await this.contract.queryFilter(eventsFilter, lastBlockNumber);
 
-    this.logger.info(`Got ${allEvents.length} unhandled events.`);
-    return allEvents;
+    this.logger.info(`Got ${events.length} unhandled events.`);
+    return events;
   }
 
-  private async registerEventListeners(listenersToRegister: EventListeners) {
-    this.logger.info(`Registering event listeners: ${Object.keys(listenersToRegister)}`);
+  private async registerEventListeners() {
+    this.logger.info('Registering event listeners.');
 
-    const startBlockNumber = await this.provider.getBlockNumber();
 
-    Object.entries(listenersToRegister).forEach(([eventName, listeners]) => {
-      listeners.forEach(listener => {
-        // Arguments is the array with event args followed by whole event.
-        // In order to get the whole event we have to get the last item in the array
-        this.contract.on(eventName as any, async (...argsWithEvent) => {
-          const event = argsWithEvent[argsWithEvent.length - 1];
-          const blockNumber = event.blockNumber;
-
-          if (blockNumber <= startBlockNumber) {
-            return;
-          }
-          await this.saveLastHandledBlockNumber(blockNumber);
-          listener(event);
-        });
-
-      });
+    this.contract.on(this.contract.filters.WinningMatch(), (...ev) => {
+      this.handleWinningMatchEvent(...ev);
     });
 
     this.logger.info('Registering event listeners completed.');
+  }
+
+  private async handleWinningMatchEvent(...argsWithEvent: any) {
+    const lastHandledBlockNumber = await this.getLastHandledBlockNumber();
+    // Arguments is the array with event args followed by whole event.
+    // In order to get the whole event we have to get the last item in the array
+    const event = argsWithEvent[argsWithEvent.length - 1];
+    const blockNumber = event.blockNumber;
+
+    if (blockNumber <= lastHandledBlockNumber) {
+      return;
+    }
+
+    this.emitEvent(event);
+    await this.saveLastHandledBlockNumber(blockNumber);
+  }
+
+  private emitEvent(event: any) {
+    const {matchInput, matchResult, voteCount } = parseEventArgs(event.args as any);
+
+    const eventToPublish = new WinningMatchEvent({
+      transactionHash: event.transactionHash,
+      matchInput,
+      matchResult,
+      voteCount: BigNumber.from(voteCount).toNumber(),
+    });
+
+    this.eventEmitter.emit(ContractEvent.WinningMatch, eventToPublish);
   }
 }
