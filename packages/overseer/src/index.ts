@@ -13,11 +13,7 @@ export class OverseerDefaultModule {
       module: OverseerDefaultModule,
       imports: [
         OverseerModule.register(config),
-        EventEmitterModule.forRoot({
-          wildcard: true,
-          delimiter: '.',
-          newListener: true,
-        }),
+        EventEmitterModule.forRoot(),
       ],
     };
   }

@@ -9,7 +9,7 @@ export interface WinningMatchEventPayload {
   voteCount: number;
 }
 
-export const parseEventArgs = (eventArguments: Record<string, string>) =>
+export const parseEventArgs = (eventArguments: Record<string, string>): any =>
   Object.fromEntries(Object.entries(eventArguments).filter(
     ([k]) => !Number.isInteger(Number.parseInt(k, 10)),
   ));

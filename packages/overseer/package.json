@@ -66,7 +66,9 @@
     "wait-on": "6.0.1"
   },
   "peerDependencies": {
-    "@energyweb/greenproof-voting-contract": "1.0.2"
+    "@energyweb/greenproof-voting-contract": "1.0.2",
+    "@nestjs/event-emitter": "1.1.1"
+
   },
   "jest": {
     "moduleFileExtensions": [
