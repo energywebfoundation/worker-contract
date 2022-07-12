@@ -4,12 +4,11 @@ import type { OverseerConfig } from './types';
 import { LoggerModule } from 'nestjs-pino';
 import { OverseerController } from './overseer.controller';
 import { OverseerFacade } from './overseer.facade';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Global()
 @Module({})
 export class OverseerModule {
-
-
   public static register(params: OverseerConfig) {
     return {
       module: OverseerModule,
@@ -20,7 +19,10 @@ export class OverseerModule {
       providers: [
         {
           provide: OverseerService,
-          useValue: new OverseerService(params.blockchainConfig, params.listeners, params.getLastHandledBlockNumber, params.saveLastHandledBlockNumber),
+          useFactory: (eventEmitter: EventEmitter2) => {
+            return new OverseerService(params.blockchainConfig, params.getLastHandledBlockNumber, params.saveLastHandledBlockNumber, eventEmitter);
+          },
+          inject: [EventEmitter2],
         },
         OverseerFacade,
       ],
