@@ -1,32 +1,22 @@
-import type { EventListeners } from './types';
 import * as fs from 'fs';
 import { join } from 'path';
+import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { ContractEvent, WinningMatchEvent } from './events';
 
 /*
 Note: leaving this as example
  */
 
-// Blockchain event arguments are stored in array indexed both by incremented numbers and strings
-// e.g. Array [ '0': 'firstArg', '1': 'secondArg', 'firstKey': 'firstArg', 'secondKey': 'secondArg' ]
-// We can filter out the number indexed keys and construct the object from the rest to parse the args.
-const parseEventArgs = (eventArguments: Record<string, string>) =>
-  Object.fromEntries(Object.entries(eventArguments).filter(
-    ([k]) => !Number.isInteger(Number.parseInt(k, 10)),
-  ));
+@Injectable()
+export class ContractEventsListener {
 
-export const listeners: EventListeners = {
-  WinningMatch: [(event) => {
-    if (!event.args) {
-      console.debug(`No event arguments in event: ${event.event}`);
-      return;
-    }
+  @OnEvent(ContractEvent.WinningMatch)
+  public async handleWinningMatchEvent(ev: WinningMatchEvent) {
+    console.log(ev);
+  }
+}
 
-    const { matchInput, matchResult, voteCount } = parseEventArgs(event.args);
-    console.log({ matchInput });
-    console.log({ matchResult });
-    console.log({ voteCount });
-  }],
-};
 
 export async function getLastHandledBlockNumber(): Promise<number> {
   const path = join(__dirname, 'last_block.txt');
