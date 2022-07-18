@@ -2,7 +2,8 @@ import { ethers, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, ContractFactory, utils } from "ethers";
 import chai, { expect } from "chai";
-import { solidity } from "ethereum-waffle";
+import { deployMockContract, MockContract, solidity } from "ethereum-waffle";
+import { claimManagerABI } from "./utils/claimManager_abi";
 
 chai.use(solidity);
 const { parseEther } = utils;
@@ -13,6 +14,7 @@ const timeTravel = async (seconds: number) => {
 };
 
 describe("MatchVoting", () => {
+  let owner: SignerWithAddress;
   let worker1: SignerWithAddress;
   let worker2: SignerWithAddress;
   let worker3: SignerWithAddress;
@@ -20,12 +22,19 @@ describe("MatchVoting", () => {
   let worker5: SignerWithAddress;
   let worker6: SignerWithAddress;
   let faucet: SignerWithAddress;
+  let notEnrolledWorker: SignerWithAddress;
   let MatchVotingContract: ContractFactory;
+  let claimManagerMocked: MockContract;
+
   let certificateContract: Contract;
   let rewardVoting: Contract;
   let matchVoting: Contract;
   const rewardAmount = parseEther("1");
   const timeLimit = 15 * 60;
+  const workerRoleDef = utils.namehash(
+    "worker.roles.greenproof.apps.energyweb.iam.ewc"
+  );
+  const defaultRoleVersion = 1;
 
   const timeframes = [
     { input: "MATCH_INPUT_1", output: "MATCH_OUTPUT_1" },
@@ -36,8 +45,18 @@ describe("MatchVoting", () => {
   ];
 
   beforeEach(async () => {
-    [, faucet, worker1, worker2, worker3, worker4, worker5, worker6] =
-      await ethers.getSigners();
+    [
+      ,
+      faucet,
+      worker1,
+      worker2,
+      worker3,
+      worker4,
+      worker5,
+      worker6,
+      notEnrolledWorker,
+      owner,
+    ] = await ethers.getSigners();
     MatchVotingContract = await ethers.getContractFactory("MatchVoting");
     const CertificateContract = await ethers.getContractFactory("Certificate");
     const certificate = await CertificateContract.deploy();
@@ -45,10 +64,34 @@ describe("MatchVoting", () => {
     const RewardVotingFactory = await ethers.getContractFactory("RewardFixed");
     rewardVoting = await RewardVotingFactory.deploy(rewardAmount);
     await rewardVoting.deployed();
+
+    //  Mocking claimManager
+    claimManagerMocked = await deployMockContract(owner, claimManagerABI);
+
+    //  Granting worker role for workers in mocked claimManager
+    const allowedWorkers = [
+      worker1,
+      worker2,
+      worker3,
+      worker4,
+      worker5,
+      worker6,
+    ];
+
+    await Promise.all(
+      allowedWorkers.map(async (currentWorker, index) => {
+        await claimManagerMocked.mock.hasRole
+          .withArgs(currentWorker.address, workerRoleDef, defaultRoleVersion)
+          .returns(true);
+      })
+    );
+
     matchVoting = await MatchVotingContract.deploy(
       certificateContract.address,
       rewardVoting.address,
-      timeLimit
+      timeLimit,
+      claimManagerMocked.address,
+      workerRoleDef
     );
     await matchVoting.deployed();
     await rewardVoting.setMatchVoting(matchVoting.address);
@@ -79,6 +122,16 @@ describe("MatchVoting", () => {
         .connect(worker1)
         .vote(timeframes[0].input, timeframes[0].output)
     ).to.be.revertedWith("NotWhitelisted");
+  });
+
+  it("should not register a non enrolled worker", async () => {
+    await claimManagerMocked.mock.hasRole
+      .withArgs(notEnrolledWorker.address, workerRoleDef, defaultRoleVersion)
+      .returns(false);
+
+    await expect(
+      matchVoting.addWorker(notEnrolledWorker.address)
+    ).to.be.revertedWith("Access denied: not enrolled as worker");
   });
 
   it("should get the winner with the most votes", async () => {
