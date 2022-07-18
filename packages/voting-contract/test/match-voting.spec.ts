@@ -31,9 +31,7 @@ describe("MatchVoting", () => {
   let matchVoting: Contract;
   const rewardAmount = parseEther("1");
   const timeLimit = 15 * 60;
-  const workerRoleDef = utils.namehash(
-    "worker.roles.greenproof.apps.energyweb.iam.ewc"
-  );
+  const workerRoleDef = utils.namehash("worker.roles.247.apps.qb.iam.ewc");
   const defaultRoleVersion = 1;
 
   const timeframes = [
