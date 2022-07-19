@@ -33,6 +33,26 @@ contract Issuer is Ownable, ERC1155 {
             isRevoked
         );
         mintedProofs[lastProofIndex] = greenProof;
+
         ERC1155._mint(receiver, productType, amount, data);
+    }
+
+    function getProof(uint256 proofIndex) external view returns(IGreenProof.Proof memory proof){
+        proof = mintedProofs[proofIndex];
+    }
+
+    function revokeProof(uint256 proofIndex) external onlyRevoker {
+        require(mintedProofs[proofIndex].isRevoked == false, "already revoked proof");
+        //TO-DO: check that we are not allowed to revoke retired proofs 
+        require(mintedProofs[proofIndex].isRetired == false, "Not allowed on retired proofs");
+        //TO-DO: revoke the proof
+        mintedProofs[proofIndex].isRevoked = true;
+    }
+
+    function retireProof(address from, uint256 proofIndex) external {
+        require(mintedProofs[proofIndex].isRevoked == false, "proof revoked");
+        require(mintedProofs[proofIndex].isRetired == false, "Proof already retired");
+        require(_msgSender() == from || ERC1155.isApprovedForAll(from, _msgSender()), "Not allowed to retire");
+        _burn(from, mintedProofs[proofIndex].productType, mintedProofs[proofIndex].volume);
     }
 }
