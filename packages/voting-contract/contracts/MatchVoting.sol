@@ -7,13 +7,19 @@ import "hardhat/console.sol";
 import "./Certificate.sol";
 import "./RewardVoting.sol";
 
+import "../libs/LibRoles.sol";
+
 contract MatchVoting is Ownable {
+    using RolesLibrary for address;
+
     /// Certificate minting contract address
     address public certificateContractAddress;
     /// Address of voting reward contract
     address rewardVotingAddress;
 
     address payable[] public workers;
+
+    address claimManagerAddress;
 
     uint256 public numberOfWorkers;
 
@@ -24,6 +30,8 @@ contract MatchVoting is Ownable {
     mapping(string => uint256) matchInputToIndex;
 
     uint256 public timeLimit;
+
+    bytes32 private workerRole;
 
     enum Status {
         /// Not started or canceled
@@ -62,6 +70,12 @@ contract MatchVoting is Ownable {
     /// Worker address to match result
     mapping(string => Voting) public matchInputToVoting;
 
+    modifier onlyEnrolledWorkers(address _worker) {
+        require(_worker.isWorker(claimManagerAddress, workerRole),
+        "Access denied: not enrolled as worker");
+        _;
+    }
+
     /// Event emitted after voting ended
     event WinningMatch(
         string indexed matchInput,
@@ -93,11 +107,15 @@ contract MatchVoting is Ownable {
     constructor(
         address _certificateContractAddress,
         address _rewardVotingAddress,
-        uint256 _timeLimit
+        uint256 _timeLimit,
+        address _claimManagerAddress,
+        bytes32 _workerRole
     ) {
         certificateContractAddress = _certificateContractAddress;
         rewardVotingAddress = _rewardVotingAddress;
         timeLimit = _timeLimit;
+        claimManagerAddress = _claimManagerAddress;
+        workerRole = _workerRole;
     }
 
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
@@ -172,7 +190,7 @@ contract MatchVoting is Ownable {
         return matchInputs.length;
     }
 
-    function addWorker(address payable workerAddress) external onlyOwner {
+    function addWorker(address payable workerAddress) external onlyOwner onlyEnrolledWorkers(workerAddress) {
         if (isWorker(workerAddress)) {
             revert WorkerAlreadyAdded();
         }
@@ -185,6 +203,8 @@ contract MatchVoting is Ownable {
         if (!isWorker(workerToRemove)) {
             revert WorkerWasNotAdded();
         }
+        require(workerToRemove.isWorker(claimManagerAddress, workerRole) == false,
+        "Not allowed: still enrolled as worker");
         uint256 workerIndex = workerToIndex[workerToRemove];
         // Copy last element to fill the missing place in array
         address payable workerToMove = workers[numberOfWorkers - 1];
