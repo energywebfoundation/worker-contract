@@ -22,6 +22,7 @@ describe("MatchVoting", () => {
   let worker5: SignerWithAddress;
   let worker6: SignerWithAddress;
   let faucet: SignerWithAddress;
+  let toRemoveWorker: SignerWithAddress;
   let notEnrolledWorker: SignerWithAddress;
   let MatchVotingContract: ContractFactory;
   let claimManagerMocked: MockContract;
@@ -44,7 +45,7 @@ describe("MatchVoting", () => {
 
   beforeEach(async () => {
     [
-      ,
+      owner,
       faucet,
       worker1,
       worker2,
@@ -53,7 +54,7 @@ describe("MatchVoting", () => {
       worker5,
       worker6,
       notEnrolledWorker,
-      owner,
+      toRemoveWorker,
     ] = await ethers.getSigners();
     MatchVotingContract = await ethers.getContractFactory("MatchVoting");
     const CertificateContract = await ethers.getContractFactory("Certificate");
@@ -74,10 +75,11 @@ describe("MatchVoting", () => {
       worker4,
       worker5,
       worker6,
+      toRemoveWorker,
     ];
 
     await Promise.all(
-      allowedWorkers.map(async (currentWorker, index) => {
+      allowedWorkers.map(async (currentWorker) => {
         await claimManagerMocked.mock.hasRole
           .withArgs(currentWorker.address, workerRoleDef, defaultRoleVersion)
           .returns(true);
@@ -130,6 +132,19 @@ describe("MatchVoting", () => {
     await expect(
       matchVoting.addWorker(notEnrolledWorker.address)
     ).to.be.revertedWith("Access denied: not enrolled as worker");
+  });
+
+  it("should not allow an enrolled worker to unregister", async () => {
+    await claimManagerMocked.mock.hasRole
+      .withArgs(toRemoveWorker.address, workerRoleDef, defaultRoleVersion)
+      .returns(true);
+
+    // Register a worker
+    await matchVoting.connect(owner).addWorker(toRemoveWorker.address);
+
+    await expect(
+      matchVoting.connect(owner).removeWorker(toRemoveWorker.address)
+    ).to.be.revertedWith("Not allowed: still enrolled as worker");
   });
 
   it("should get the winner with the most votes", async () => {
