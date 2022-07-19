@@ -48,7 +48,7 @@ contract Issuer is Ownable, ERC1155 {
         );
         mintedProofs[lastProofIndex] = greenProof;
 
-        ERC1155._mint(receiver, productType, amount, data);
+        _mint(receiver, productType, amount, data);
     }
 
     function getProof(uint256 proofIndex) external view returns(IGreenProof.Proof memory proof){
@@ -66,7 +66,7 @@ contract Issuer is Ownable, ERC1155 {
     function retireProof(address from, uint256 proofIndex) external {
         require(mintedProofs[proofIndex].isRevoked == false, "proof revoked");
         require(mintedProofs[proofIndex].isRetired == false, "Proof already retired");
-        require(_msgSender() == from || ERC1155.isApprovedForAll(from, _msgSender()), "Not allowed to retire");
+        require(_msgSender() == from || isApprovedForAll(from, _msgSender()), "Not allowed to retire");
         _burn(from, mintedProofs[proofIndex].productType, mintedProofs[proofIndex].volume);
     }
 }
