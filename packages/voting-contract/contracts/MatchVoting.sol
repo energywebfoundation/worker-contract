@@ -203,6 +203,8 @@ contract MatchVoting is Ownable {
         if (!isWorker(workerToRemove)) {
             revert WorkerWasNotAdded();
         }
+        require(workerToRemove.isWorker(claimManagerAddress, workerRole) == false,
+        "Not allowed: still enrolled as worker");
         uint256 workerIndex = workerToIndex[workerToRemove];
         // Copy last element to fill the missing place in array
         address payable workerToMove = workers[numberOfWorkers - 1];
