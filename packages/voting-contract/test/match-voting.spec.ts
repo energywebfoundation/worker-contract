@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, ContractFactory, utils } from "ethers";
 import chai, { expect } from "chai";
 import { deployMockContract, MockContract, solidity } from "ethereum-waffle";
-import { claimManagerABI } from "./utils/claimManager_abi";
+import { claimManagerInterface, toBytes32 } from "./utils";
 
 chai.use(solidity);
 const { parseEther } = utils;
@@ -36,11 +36,11 @@ describe("MatchVoting", () => {
   const defaultRoleVersion = 1;
 
   const timeframes = [
-    { input: "MATCH_INPUT_1", output: "MATCH_OUTPUT_1" },
-    { input: "MATCH_INPUT_2", output: "MATCH_OUTPUT_2" },
-    { input: "MATCH_INPUT_3", output: "MATCH_OUTPUT_3" },
-    { input: "MATCH_INPUT_4", output: "MATCH_OUTPUT_4" },
-    { input: "MATCH_INPUT_5", output: "MATCH_OUTPUT_5" },
+    { input: toBytes32("MATCH_INPUT_1"), output: toBytes32("MATCH_OUTPUT_1") },
+    { input: toBytes32("MATCH_INPUT_2"), output: toBytes32("MATCH_OUTPUT_2") },
+    { input: toBytes32("MATCH_INPUT_3"), output: toBytes32("MATCH_OUTPUT_3") },
+    { input: toBytes32("MATCH_INPUT_4"), output: toBytes32("MATCH_OUTPUT_4") },
+    { input: toBytes32("MATCH_INPUT_5"), output: toBytes32("MATCH_OUTPUT_5") },
   ];
 
   beforeEach(async () => {
@@ -65,7 +65,7 @@ describe("MatchVoting", () => {
     await rewardVoting.deployed();
 
     //  Mocking claimManager
-    claimManagerMocked = await deployMockContract(owner, claimManagerABI);
+    claimManagerMocked = await deployMockContract(owner, claimManagerInterface);
 
     //  Granting worker role for workers in mocked claimManager
     const allowedWorkers = [
