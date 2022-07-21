@@ -1,9 +1,24 @@
-import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { expect, use } from "chai";
+import { ethers, userConfig } from "hardhat";
+import { ContractFactory, Contract  } from "ethers";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
-import { expect } from "chai";
-import { ethers } from "hardhat";
+import { Fixture, solidity, loadFixture, MockProvider } from "ethereum-waffle";
+import { MockContract, deployMockContract } from "@ethereum-waffle/mock-contract";
+import { roleManagerInterface } from "./utils"
+use(solidity);
+
+let issuerContrcat: Contract;
+let IssuerFactory: ContractFactory;
 
 describe("GreenProofs test", function () {
+
+    beforeEach(async () => {
+        IssuerFactory = await ethers.getContractFactory("Issuer");
+        issuerContrcat = await IssuerFactory.deploy("");
+
+        /** Mocking ClaimManager */
+    });
+
     describe("Proof issuance", () => {
         it("Authorized issuer can issue proofs", async () => {
             //TO-DO: check that authorized issuer can issue proof
