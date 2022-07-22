@@ -102,6 +102,10 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
   }
 
   private emitEvent(event: any) {
+    if (!event?.args) {
+      return;
+    }
+
     const {matchInput, matchResult, voteCount } = parseEventArgs(event.args as any);
 
     const eventToPublish = new WinningMatchEvent({
