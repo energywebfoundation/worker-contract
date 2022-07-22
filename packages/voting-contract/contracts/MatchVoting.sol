@@ -25,9 +25,9 @@ contract MatchVoting is Ownable {
 
     mapping(address => uint256) public workerToIndex;
 
-    bytes32[] public matchInputs;
+    string[] public matchInputs;
 
-    mapping(bytes32 => uint256) matchInputToIndex;
+    mapping(string => uint256) matchInputToIndex;
 
     uint256 public timeLimit;
 
@@ -44,19 +44,19 @@ contract MatchVoting is Ownable {
 
     struct Voting {
         /// Input match
-        bytes32 matchInput;
+        string matchInput;
         /// List of all match results with at least one vote
-        bytes32[] matches;
+        string[] matches;
         /// Worker address to match result
-        mapping(address => bytes32) workerToMatchResult;
+        mapping(address => string) workerToMatchResult;
         /// Worker address to voted flag
         mapping(address => bool) workerToVoted;
         /// Match result to total vote count
-        mapping(bytes32 => uint256) matchResultToVoteCount;
+        mapping(string => uint256) matchResultToVoteCount;
         /// To decide which actions are currently applicable to voting
         Status status;
         /// Winning match result
-        bytes32 winningMatch;
+        string winningMatch;
         /// Number of votes for winning match
         uint256 winningMatchVoteCount;
         /// If none of the match results gets more votes then the others
@@ -68,7 +68,7 @@ contract MatchVoting is Ownable {
     }
 
     /// Worker address to match result
-    mapping(bytes32 => Voting) public matchInputToVoting;
+    mapping(string => Voting) public matchInputToVoting;
 
     modifier onlyEnrolledWorkers(address _worker) {
         require(_worker.isWorker(claimManagerAddress, workerRole),
@@ -78,16 +78,16 @@ contract MatchVoting is Ownable {
 
     /// Event emitted after voting ended
     event WinningMatch(
-        bytes32 indexed matchInput,
-        bytes32 indexed matchResult,
+        string indexed matchInput,
+        string indexed matchResult,
         uint256 indexed voteCount
     );
 
     /// Winning match result can not be determined
-    event NoConsensusReached(bytes32 indexed matchInput);
+    event NoConsensusReached(string indexed matchInput);
 
     /// Voting lasts more then time limit
-    event VotingExpired(bytes32 indexed matchInput);
+    event VotingExpired(string indexed matchInput);
 
     /// Worker had already voted for a match result
     error AlreadyVoted();
@@ -120,7 +120,7 @@ contract MatchVoting is Ownable {
 
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
-    function vote(bytes32 matchInput, bytes32 matchResult)
+    function vote(string memory matchInput, string memory matchResult)
         external
     {
         if (!isWorker(msg.sender)) {
@@ -178,10 +178,10 @@ contract MatchVoting is Ownable {
         }
     }
 
-    function getWinningMatch(bytes32 matchInput)
+    function getWinningMatch(string memory matchInput)
         public
         view
-        returns (bytes32)
+        returns (string memory)
     {
         return matchInputToVoting[matchInput].winningMatch;
     }
@@ -215,10 +215,10 @@ contract MatchVoting is Ownable {
         numberOfWorkers = numberOfWorkers - 1;
     }
 
-    function getWorkerVote(bytes32 matchInput, address workerAddress)
+    function getWorkerVote(string memory matchInput, address workerAddress)
         external
         view
-        returns (bytes32 matchResult)
+        returns (string memory matchResult)
     {
         return
             matchInputToVoting[matchInput].workerToMatchResult[workerAddress];
@@ -255,7 +255,7 @@ contract MatchVoting is Ownable {
     }
 
     /// @notice Workers who voted for winning result
-    function winners(bytes32 matchInput)
+    function winners(string memory matchInput)
         public
         view
         returns (address payable[] memory _winners)
@@ -265,9 +265,11 @@ contract MatchVoting is Ownable {
         uint256 winnerCount = 0;
         for (uint256 i = 0; i < numberOfWorkers; i++) {
             address payable worker = workers[i];
+            bytes32 hashedMatchResult = keccak256(abi.encodePacked(voting.workerToMatchResult[worker]));
             if (
                 voting.workerToVoted[worker] &&
-                (voting.workerToMatchResult[worker] == voting.winningMatch)
+                    keccak256(abi.encodePacked(hashedMatchResult)) ==
+                    keccak256(abi.encodePacked(voting.winningMatch))
             ) {
                 _winners[winnerCount] = worker;
                 winnerCount++;
@@ -275,12 +277,13 @@ contract MatchVoting is Ownable {
         }
     }
 
+
     /// @notice Number of votes sufficient to determine match winner
     function majority() public view returns (uint256) {
         return (numberOfWorkers / 2) + 1;
     }
 
-    function startVoting(bytes32 matchInput) private {
+    function startVoting(string memory matchInput) private {
         Voting storage voting = matchInputToVoting[matchInput];
         voting.matchInput = matchInput;
         voting.start = block.timestamp;
@@ -290,7 +293,7 @@ contract MatchVoting is Ownable {
             matchInputToIndex[matchInput] == 0 &&
             (matchInputs.length == 0 ||
                 (matchInputs.length > 0 &&
-                    (matchInputs[0] != matchInput)))
+                    !compareStrings(matchInputs[0], matchInput)))
         ) {
             matchInputToIndex[matchInput] = matchInputs.length;
             matchInputs.push(matchInput);
@@ -328,5 +331,14 @@ contract MatchVoting is Ownable {
         voting.noConsensus = false;
         voting.numberOfVotes = 0;
         voting.start = 0;
+    }
+
+     function compareStrings(string memory a, string memory b)
+        private
+        pure
+        returns (bool)
+    {
+        return (keccak256(abi.encodePacked((a))) ==
+            keccak256(abi.encodePacked((b))));
     }
 }
