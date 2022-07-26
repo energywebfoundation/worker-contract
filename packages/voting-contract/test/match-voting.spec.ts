@@ -339,4 +339,28 @@ describe("MatchVoting", () => {
       matchVoting.connect(worker2).cancelExpiredVotings()
     ).to.be.revertedWith("Ownable: caller is not the owner");
   });
+
+  it.only("should allow to remove workers and add it again", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    expect(await matchVoting.isWorker(worker1.address)).to.equal(true);
+    expect(await matchVoting.isWorker(worker2.address)).to.equal(true);
+    expect(await matchVoting.isWorker(worker3.address)).to.equal(true);
+
+    await matchVoting.removeWorker(worker1.address);
+    await matchVoting.removeWorker(worker2.address);
+    await matchVoting.removeWorker(worker3.address);
+    expect(await matchVoting.isWorker(worker1.address)).to.equal(false);
+    expect(await matchVoting.isWorker(worker2.address)).to.equal(false);
+    expect(await matchVoting.isWorker(worker3.address)).to.equal(false);
+
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+    expect(await matchVoting.isWorker(worker1.address)).to.equal(true);
+    expect(await matchVoting.isWorker(worker2.address)).to.equal(true);
+    expect(await matchVoting.isWorker(worker3.address)).to.equal(true);
+  });
 });

@@ -1,7 +1,7 @@
 # Voting contract
 
 ### Usage
-1. Run local node using `yarn node:start`
+1. Run local node using `npx hardhard node`
 2. Build package using `yarn build`
 3. Run tests using `yarn test`. Test command automatically rebuilds the project.
 4. Deploy contract using `yarn deploy`
