@@ -1484,6 +1484,13 @@
   resolved "https://registry.yarnpkg.com/@emotion/weak-memoize/-/weak-memoize-0.2.5.tgz#8eed982e2ee6f7f4e44c253e12962980791efd46"
   integrity sha512-6U71C2Wp7r5XtFtQzYrW5iKFT67OixrSxjI4MptCHzdSVlgabczzqLe0ZSgnub/5Kp4hSbpDB1tMytZY9pwxxA==
 
+"@energyweb/greenproof-merkle-tree@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@energyweb/greenproof-merkle-tree/-/greenproof-merkle-tree-1.0.1.tgz#a4c043d8f7542efc8b27df9fb0a4d9d3ee982fa2"
+  integrity sha512-YghOyMdWc5wVfQX3Greasf9W6Cea9wb+0Ijd/9SEhWtkSLfDDKdNkhhUFQWz3KiEK+EJAtZYPrsfrSfBDE8dcA==
+  dependencies:
+    merkletreejs "0.2.31"
+
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
   resolved "https://registry.yarnpkg.com/@ensdomains/ens/-/ens-0.4.5.tgz#e0aebc005afdc066447c6e22feb4eda89a5edbfc"

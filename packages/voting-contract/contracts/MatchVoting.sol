@@ -185,13 +185,19 @@ contract MatchVoting is Ownable {
         if (!isWorker(workerToRemove)) {
             revert WorkerWasNotAdded();
         }
-        uint256 workerIndex = workerToIndex[workerToRemove];
-        // Copy last element to fill the missing place in array
-        address payable workerToMove = workers[numberOfWorkers - 1];
-        workers[workerIndex] = workerToMove;
-        workerToIndex[workerToMove] = workerIndex;
+
+        if (numberOfWorkers == 1) {
+            delete workerToIndex[workerToRemove];
+        } else {
+            uint256 workerIndex = workerToIndex[workerToRemove];
+            // Copy last element to fill the missing place in array
+            address payable workerToMove = workers[numberOfWorkers - 1];
+            workers[workerIndex] = workerToMove;
+            workerToIndex[workerToMove] = workerIndex;
+        }
+
         // Delete last element
-        delete workers[numberOfWorkers - 1];
+        workers.pop();
         numberOfWorkers = numberOfWorkers - 1;
     }
 
