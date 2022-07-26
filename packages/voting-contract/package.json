@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-voting-contract",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
