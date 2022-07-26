@@ -71,8 +71,10 @@ contract MatchVoting is Ownable {
     mapping(string => Voting) public matchInputToVoting;
 
     modifier onlyEnrolledWorkers(address _worker) {
-        require(_worker.isWorker(claimManagerAddress, workerRole),
-        "Access denied: not enrolled as worker");
+        require(
+            _worker.isWorker(claimManagerAddress, workerRole),
+            "Access denied: not enrolled as worker"
+        );
         _;
     }
 
@@ -190,7 +192,11 @@ contract MatchVoting is Ownable {
         return matchInputs.length;
     }
 
-    function addWorker(address payable workerAddress) external onlyOwner onlyEnrolledWorkers(workerAddress) {
+    function addWorker(address payable workerAddress)
+        external
+        onlyOwner
+        onlyEnrolledWorkers(workerAddress)
+    {
         if (isWorker(workerAddress)) {
             revert WorkerAlreadyAdded();
         }
@@ -203,15 +209,21 @@ contract MatchVoting is Ownable {
         if (!isWorker(workerToRemove)) {
             revert WorkerWasNotAdded();
         }
-        require(workerToRemove.isWorker(claimManagerAddress, workerRole) == false,
-        "Not allowed: still enrolled as worker");
-        uint256 workerIndex = workerToIndex[workerToRemove];
-        // Copy last element to fill the missing place in array
-        address payable workerToMove = workers[numberOfWorkers - 1];
-        workers[workerIndex] = workerToMove;
-        workerToIndex[workerToMove] = workerIndex;
-        // Delete last element
-        delete workers[numberOfWorkers - 1];
+        require(
+            workerToRemove.isWorker(claimManagerAddress, workerRole) == false,
+            "Not allowed: still enrolled as worker"
+        );
+
+        if (numberOfWorkers > 1) {
+            uint256 workerIndex = workerToIndex[workerToRemove];
+            // Copy last element to fill the missing place in array
+            address payable workerToMove = workers[numberOfWorkers - 1];
+            workers[workerIndex] = workerToMove;
+            workerToIndex[workerToMove] = workerIndex;
+        }
+
+        delete workerToIndex[workerToRemove];
+        workers.pop();
         numberOfWorkers = numberOfWorkers - 1;
     }
 
