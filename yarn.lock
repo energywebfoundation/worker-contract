@@ -3908,7 +3908,7 @@
   dependencies:
     "antlr4ts" "^0.5.0-alpha.4"
 
-"@solidity-parser/parser@^0.14.2":
+"@solidity-parser/parser@^0.14.2", "@solidity-parser/parser@^0.14.3":
   "integrity" "sha512-29g2SZ29HtsqA58pLCtopI1P/cPy5/UAzlcAXO6T/CNJimG6yA8kx4NaseMyJULiC+TEs02Y9/yeHzClqoA0hw=="
   "resolved" "https://registry.npmjs.org/@solidity-parser/parser/-/parser-0.14.3.tgz"
   "version" "0.14.3"
@@ -9804,6 +9804,11 @@
   "resolved" "https://registry.npmjs.org/emoji-regex/-/emoji-regex-10.1.0.tgz"
   "version" "10.1.0"
 
+"emoji-regex@^10.1.0":
+  "integrity" "sha512-xAEnNCT3w2Tg6MA7ly6QqYJvEoY1tm9iIjJ3yMKK9JPlWuRHAMoe5iETwQnx3M9TVbFMfsrBgWKR+IsmswwNjg=="
+  "resolved" "https://registry.npmjs.org/emoji-regex/-/emoji-regex-10.1.0.tgz"
+  "version" "10.1.0"
+
 "emoji-regex@^7.0.1":
   "integrity" "sha512-CwBLREIQ7LvYFB0WyRvwhq5N5qPhc6PMjD6bYggFlI5YyDgl+0vxq5VHbMOFqLg7hfWzmu8T5Z1QofhmTIhItA=="
   "resolved" "https://registry.npmjs.org/emoji-regex/-/emoji-regex-7.0.3.tgz"
@@ -12598,6 +12603,8 @@
   "resolved" "file:packages/issuer-contract"
   dependencies:
     "@openzeppelin/contracts" "^4.7.0"
+    "prettier-plugin-solidity" "^1.0.0-dev.23"
+    "typechain" "^8.1.0"
 
 "hardhat@^2.0.0", "hardhat@^2.0.2", "hardhat@^2.0.4", "hardhat@^2.10.0", "hardhat@^2.9.4", "hardhat@^2.9.9":
   "integrity" "sha512-9VUorKvWNyW96qFXkwkpDUSeWND3gOZpm0oJ8l63JQJvWhxyxTJ92BcOrNylOKy9hzNNGdMfM2QWNP80fGOjpA=="
@@ -18248,6 +18255,18 @@
   dependencies:
     "fast-diff" "^1.1.2"
 
+"prettier-plugin-solidity@^1.0.0-dev.23":
+  "integrity" "sha512-440/jZzvtDJcqtoRCQiigo1DYTPAZ85pjNg7gvdd+Lds6QYgID8RyOdygmudzHdFmV2UfENt//A8tzx7iS58GA=="
+  "resolved" "https://registry.npmjs.org/prettier-plugin-solidity/-/prettier-plugin-solidity-1.0.0-dev.23.tgz"
+  "version" "1.0.0-dev.23"
+  dependencies:
+    "@solidity-parser/parser" "^0.14.3"
+    "emoji-regex" "^10.1.0"
+    "escape-string-regexp" "^4.0.0"
+    "semver" "^7.3.7"
+    "solidity-comments-extractor" "^0.0.7"
+    "string-width" "^4.2.3"
+
 "prettier-plugin-solidity@1.0.0-beta.19":
   "integrity" "sha512-xxRQ5ZiiZyUoMFLE9h7HnUDXI/daf1tnmL1msEdcKmyh7ZGQ4YklkYLC71bfBpYU2WruTb5/SFLUaEb3RApg5g=="
   "resolved" "https://registry.npmjs.org/prettier-plugin-solidity/-/prettier-plugin-solidity-1.0.0-beta.19.tgz"
@@ -22076,6 +22095,8 @@
     "ts-essentials" "^7.0.1"
 
 "typechain@^8.1.0":
+  "integrity" "sha512-5jToLgKTjHdI1VKqs/K8BLYy42Sr3o8bV5ojh4MnR9ExHO83cyyUdw+7+vMJCpKXUiVUvARM4qmHTFuyaCMAZQ=="
+  "resolved" "https://registry.npmjs.org/typechain/-/typechain-8.1.0.tgz"
   "version" "8.1.0"
   dependencies:
     "@types/prettier" "^2.1.1"
