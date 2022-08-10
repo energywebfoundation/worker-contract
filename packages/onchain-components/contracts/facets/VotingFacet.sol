@@ -5,22 +5,32 @@ import {LibVoting} from "../libraries/LibVoting.sol";
 import {Ownable} from "@solidstate/contracts/access/ownable/Ownable.sol";
 
 contract MatchVoting is Ownable {
-    /** getStorage: returns a pointer to the storage  */
-    function getStorage() internal pure returns (LibVoting.VotingStorage storage _votingStorage) {
-        _votingStorage = LibVoting._getStorage();
-    }
+
+    /**
+        Allowing library's function calls on address type
+        This improves code reading by writing address.isWorker() and address.isNotWorker()
+        Instead of LibVoting.isWorker(address) and LibVoting.isNotWorker(address)
+    */
+    using LibVoting for address;
+    
+    /**
+        Allowing library's function calls on Voting struct type. 
+        This improves code reading by writing voting.isExpired() or voting.cancelVoting()
+        Instead of LibVoting.isExpired(voting) or LibVoting.cancelVoting(voting) respectively
+    */
+    using LibVoting for LibVoting.Voting;
 
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
     function vote(string memory matchInput, string memory matchResult) external {
-        LibVoting.VotingStorage storage votingStorage = getStorage();
+        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        if (!isWorker(msg.sender)) {
+        if ((msg.sender.isNotWorker())) {
             revert LibVoting.NotWhitelisted();
         }
         LibVoting.Voting storage voting = votingStorage.matchInputToVoting[matchInput];
-        if (voting.status == LibVoting.Status.Active && LibVoting.isExpired(voting)) {
-            LibVoting.cancelVoting(voting);
+        if (voting.status == LibVoting.Status.Active && (voting.isExpired())) {
+            voting.cancelVoting();
             emit LibVoting.VotingExpired(matchInput);
         }
         if (voting.status == LibVoting.Status.Completed) {
@@ -52,27 +62,14 @@ contract MatchVoting is Ownable {
             voting.winningMatch = matchResult;
             voting.noConsensus = false;
 
-            if (voting.winningMatchVoteCount >= majority()) {
-                LibVoting.completeVoting(voting);
+            if (voting.winningMatchVoteCount >= LibVoting.majority()) {
+                voting.completeVoting();
             }
         }
 
         if (voting.numberOfVotes == votingStorage.numberOfWorkers) {
-            LibVoting.completeVoting(voting);
+            voting.completeVoting();
         }
-    }
-
-    /// @notice Check if this account allowed to vote
-    function isWorker(address workerAddress) internal view returns (bool) {
-        LibVoting.VotingStorage storage votingStorage = getStorage();
-        return votingStorage.workerToIndex[workerAddress] != 0 || (votingStorage.numberOfWorkers > 0 && votingStorage.workers[0] == workerAddress);
-    }
-
-    /// @notice Number of votes sufficient to determine match winner
-    function majority() internal view returns (uint256) {
-        LibVoting.VotingStorage storage votingStorage = getStorage();
-
-        return (votingStorage.numberOfWorkers / 2) + 1;
     }
 
     function getWinners(string memory matchInput) external view returns (address payable[] memory _winners) {        

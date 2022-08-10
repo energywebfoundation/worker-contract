@@ -58,7 +58,7 @@ contract Issuer is SolidStateERC1155, Ownable {
         emit LibIssuer.ProofMinted(issuer.lastProofIndex);
     }
 
-    function getProof(uint256 proofID) external returns(IGreenProof.Proof memory proof){
+    function getProof(uint256 proofID) external view returns(IGreenProof.Proof memory proof){
         LibIssuer.IssuerStorage storage issuer = getStorage();
         
         if( proofID > issuer.lastProofIndex) {
