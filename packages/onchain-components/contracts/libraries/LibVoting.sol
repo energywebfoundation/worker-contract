@@ -1,4 +1,4 @@
-//SPDX-Licence-Identifer: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 import {IRewardVoting} from "../interfaces/IRewardVoting.sol";
 
@@ -83,7 +83,7 @@ library LibVoting {
     // Worker has not been added yet
     error WorkerWasNotAdded();
 
-    function _getStorage() internal pure returns (VotingStorage storage _votingStorage) {
+    function getStorage() internal pure returns (VotingStorage storage _votingStorage) {
         bytes32 position = VOTING_STORAGE_POSITION;
 
         assembly {
@@ -97,22 +97,22 @@ library LibVoting {
         address _rewardVotingAddress,
         uint256 _timeLimit
     ) internal {
-        VotingStorage storage _votingStorage = _getStorage();
+        VotingStorage storage _votingStorage = getStorage();
 
         _votingStorage.certificateContractAddress = _certificateContractAddress;
         _votingStorage.rewardVotingAddress = _rewardVotingAddress;
         _votingStorage.timeLimit = _timeLimit;
     }
 
-    /// @notice Number of votes sufficient to determine match winner
+    // @notice Number of votes sufficient to determine match winner
     function majority() internal view returns (uint256) {
-        VotingStorage storage votingStorage = _getStorage();
+        VotingStorage storage votingStorage = getStorage();
 
         return (votingStorage.numberOfWorkers / 2) + 1;
     }
 
     function startVoting(string memory matchInput) internal {
-        VotingStorage storage votingStorage = _getStorage();
+        VotingStorage storage votingStorage = getStorage();
 
         Voting storage voting = votingStorage.matchInputToVoting[matchInput];
         voting.matchInput = matchInput;
@@ -130,8 +130,6 @@ library LibVoting {
     }
 
     function completeVoting(Voting storage voting) internal {
-        VotingStorage storage votingStorage = _getStorage();
-
         if (voting.noConsensus) {
             cancelVoting(voting);
             emit NoConsensusReached(voting.matchInput);
@@ -148,7 +146,7 @@ library LibVoting {
 
     /// @notice Deletes voting results
     function cancelVoting(LibVoting.Voting storage voting) internal {
-        VotingStorage storage votingStorage = _getStorage();
+        VotingStorage storage votingStorage = getStorage();
 
         delete voting.matches;
         for (uint256 i = 0; i < votingStorage.numberOfWorkers; i++) {
@@ -165,7 +163,7 @@ library LibVoting {
     }
 
     function _getWinners(string memory matchInput) internal view returns (address payable[] memory _winners) {
-        VotingStorage storage _votingStorage = _getStorage();
+        VotingStorage storage _votingStorage = getStorage();
 
         Voting storage voting = _votingStorage.matchInputToVoting[matchInput];
 
@@ -185,15 +183,27 @@ library LibVoting {
     }
 
     function registerWinningMatch(string memory matchInput, string memory matchResult) internal {
-        VotingStorage storage votingStorage = _getStorage();
+        VotingStorage storage votingStorage = getStorage();
 
         votingStorage.matches[matchInput] = matchResult;
         emit MatchRegistered(matchInput, matchResult);
     }
 
     function isExpired(Voting storage voting) internal view returns (bool) {
-        VotingStorage storage votingStorage = _getStorage();
+        VotingStorage storage votingStorage = getStorage();
 
         return voting.start + votingStorage.timeLimit < block.timestamp;
+    }
+
+     /// @notice Check if this account allowed to vote
+    function isWorker(address workerAddress) internal view returns (bool) {
+        VotingStorage storage votingStorage = getStorage();
+
+        return votingStorage.workerToIndex[workerAddress] != 0 || (votingStorage.numberOfWorkers > 0 && votingStorage.workers[0] == workerAddress);
+    }
+
+    function isNotWorker(address workerAddress) internal view returns (bool) {
+
+        return isWorker(workerAddress) == false;
     }
 }
