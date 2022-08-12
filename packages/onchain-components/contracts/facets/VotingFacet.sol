@@ -22,7 +22,7 @@ contract MatchVoting is Ownable {
 
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
-    function vote(string memory matchInput, string memory matchResult) external {
+    function vote(string memory matchInput, string memory matchResult, bool isSettlement) external {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if ((msg.sender.isNotWorker())) {
@@ -38,7 +38,7 @@ contract MatchVoting is Ownable {
         }
 
         if (voting.status == LibVoting.Status.NotActive) {
-            LibVoting.startVoting(matchInput);
+            LibVoting.startVoting(matchInput, isSettlement);
         }
 
         if (voting.workerToVoted[msg.sender]) {
