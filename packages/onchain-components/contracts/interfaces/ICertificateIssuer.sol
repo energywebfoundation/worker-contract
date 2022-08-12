@@ -16,5 +16,5 @@ interface ICertificateIssuer {
 
     function getProof(uint256 proofID) external view returns(IGreenProof.Proof memory proof);
     function retireProof(address from, uint256 proofID) external;
-    function requestIssuance(string memory winningMatch) external;
+    function requestIssuance(string memory winningMatch, address recipient) external;
 }

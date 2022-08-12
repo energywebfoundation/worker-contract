@@ -9,6 +9,7 @@ library LibIssuer {
     struct IssuerStorage {
         uint256 lastProofIndex;
         mapping(uint256 => IGreenProof.Proof) mintedProofs;
+        mapping(string => IGreenProof.IssuanceRequest) issuanceRequests;
     }
 
     event ProofMinted(uint256 indexed proofID);

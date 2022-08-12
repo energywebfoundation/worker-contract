@@ -146,7 +146,7 @@ library LibVoting {
         registerWinningMatch(voting.matchInput, voting.winningMatch);
         if (voting.isSettlement) {
             //TO-DO: send an issuanceRequest to the issuerFacet if it is a settlement voting
-            ICertificateIssuer(address(this)).requestIssuance(voting.winningMatch);
+            ICertificateIssuer(address(this)).requestIssuance(voting.winningMatch, address(this)/* TODO: replace with the correct recipientAddress */);
         }
 
         voting.status = Status.Completed;
