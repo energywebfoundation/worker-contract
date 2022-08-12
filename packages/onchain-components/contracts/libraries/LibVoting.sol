@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 import {IRewardVoting} from "../interfaces/IRewardVoting.sol";
+import { ICertificateIssuer } from "../interfaces/ICertificateIssuer.sol";
 
 library LibVoting {
     bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
@@ -28,6 +29,8 @@ library LibVoting {
         Status status;
         // If none of the match results gets more votes then the others
         bool noConsensus;
+        //flag to indicate if teh vote targerts settlement data
+        bool isSettlement;
     }
 
     struct VotingStorage {
@@ -111,13 +114,16 @@ library LibVoting {
         return (votingStorage.numberOfWorkers / 2) + 1;
     }
 
-    function startVoting(string memory matchInput) internal {
+    function startVoting(string memory matchInput, bool isSettlement) internal {
         VotingStorage storage votingStorage = getStorage();
 
         Voting storage voting = votingStorage.matchInputToVoting[matchInput];
         voting.matchInput = matchInput;
         voting.start = block.timestamp;
         voting.status = Status.Active;
+        if (isSettlement) {
+            voting.isSettlement = true;
+        }
 
         if (
             votingStorage.matchInputToIndex[matchInput] == 0 &&
@@ -138,7 +144,10 @@ library LibVoting {
 
         emit WinningMatch(voting.matchInput, voting.winningMatch, voting.winningMatchVoteCount);
         registerWinningMatch(voting.matchInput, voting.winningMatch);
-        //TO-DO: send an issuanceRequest to the issuerFacet
+        if (voting.isSettlement) {
+            //TO-DO: send an issuanceRequest to the issuerFacet if it is a settlement voting
+            ICertificateIssuer(address(this)).requestIssuance(voting.winningMatch);
+        }
 
         voting.status = Status.Completed;
         IRewardVoting(address(this)).reward(_getWinners(voting.matchInput));
