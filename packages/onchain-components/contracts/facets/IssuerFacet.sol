@@ -88,4 +88,17 @@ contract Issuer is SolidStateERC1155, Ownable {
         require(msg.sender == from || isApprovedForAll(from, msg.sender), "Not allowed to retire");
         _burn(from, issuer.mintedProofs[proofID].productType, issuer.mintedProofs[proofID].volume);
     }
+
+    function requestIssuance(string memory winningMatch, address recipient) external {
+        LibIssuer.IssuerStorage storage issuer = getStorage();
+
+        IGreenProof.IssuanceRequest memory newIssuanceRequest = IGreenProof.IssuanceRequest(
+            issuer.lastProofIndex,
+            recipient,
+            winningMatch,
+            IGreenProof.RequestStatus.PENDING
+        );
+
+        issuer.issuanceRequests[winningMatch] = newIssuanceRequest;
+    }
 }

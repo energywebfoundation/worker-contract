@@ -12,4 +12,17 @@ interface IGreenProof {
         uint256 endTime;
         bytes32 producerRef;
     }
+
+    enum RequestStatus {
+        PENDING,
+        REJECTED,
+        ACCEPTED
+    }
+
+    struct IssuanceRequest {
+        uint256 requestID;
+        address recipient;
+        string winningMatch;
+        RequestStatus status;
+    }
 }
