@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
+import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {IRewardVoting} from "../interfaces/IRewardVoting.sol";
-import { IGreenProof } from "../interfaces/IGreenProof.sol";
-
 
 library LibVoting {
     bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
@@ -147,7 +146,10 @@ library LibVoting {
         registerWinningMatch(voting.matchInput, voting.winningMatch);
         if (voting.isSettlement) {
             //TO-DO: send an issuanceRequest to the issuerFacet if it is a settlement voting
-            IGreenProof(address(this)).requestProofIssuance(voting.winningMatch, address(this)/* TODO: replace with the correct recipientAddress */);
+            IGreenProof(address(this)).requestProofIssuance(
+                voting.winningMatch,
+                address(this) /* TODO: replace with the correct recipientAddress */
+            );
         }
 
         voting.status = Status.Completed;
@@ -205,7 +207,7 @@ library LibVoting {
         return voting.start + votingStorage.timeLimit < block.timestamp;
     }
 
-     /// @notice Check if this account allowed to vote
+    /// @notice Check if this account allowed to vote
     function isWorker(address workerAddress) internal view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
 
@@ -213,7 +215,6 @@ library LibVoting {
     }
 
     function isNotWorker(address workerAddress) internal view returns (bool) {
-
         return isWorker(workerAddress) == false;
     }
 }

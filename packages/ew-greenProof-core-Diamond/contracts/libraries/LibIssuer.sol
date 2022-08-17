@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-import { IGreenProof } from "../interfaces/IGreenProof.sol";
+import {IGreenProof} from "../interfaces/IGreenProof.sol";
 
 library LibIssuer {
     bytes32 constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");

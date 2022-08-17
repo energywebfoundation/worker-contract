@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-
-import { LibIssuer } from "../libraries/LibIssuer.sol";
-import { IGreenProof } from "../interfaces/IGreenProof.sol";
-import { Ownable } from "@solidstate/contracts/access/ownable/Ownable.sol";
-import { SolidStateERC1155 } from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
-
+import {LibIssuer} from "../libraries/LibIssuer.sol";
+import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {Ownable} from "@solidstate/contracts/access/ownable/Ownable.sol";
+import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /// @title GreenProof Issuer Module
 /// @author Energyweb Fondation
@@ -14,14 +12,13 @@ import { SolidStateERC1155 } from "@solidstate/contracts/token/ERC1155/SolidStat
 /// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a Gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
 
 contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
-    
-     modifier onlyMinter(){
-    //TO: set a requirement checking for authorized issuer entity
+    modifier onlyMinter() {
+        //TO: set a requirement checking for authorized issuer entity
         _;
     }
 
-    modifier onlyRevoker(){
-    //TO: set a requirement checking for authorized revoker entity
+    modifier onlyRevoker() {
+        //TO: set a requirement checking for authorized revoker entity
         _;
     }
 
@@ -40,10 +37,11 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
         uint256 start,
         uint256 end,
         string memory winningMatch,
-        bytes32 producerRef) external onlyMinter {
+        bytes32 producerRef
+    ) external onlyMinter {
         bool isRevoked = false;
         bool isRetired = false;
-        
+
         LibIssuer.IssuerStorage storage issuer = getStorage();
         uint256 proofID = issuer.issuanceRequests[winningMatch].requestID;
 
@@ -51,25 +49,16 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
             revert LibIssuer.NotValidatedProof(proofID);
         }
 
-        Proof memory greenProof = Proof(
-            isRevoked,
-            isRetired,
-            proofID,
-            productType,
-            amount,
-            start,
-            end,
-            producerRef
-        );
+        Proof memory greenProof = Proof(isRevoked, isRetired, proofID, productType, amount, start, end, producerRef);
         issuer.mintedProofs[proofID] = greenProof;
 
         _mint(receiver, proofID, amount, "");
         emit LibIssuer.ProofMinted(proofID);
     }
 
-    function getProof(uint256 proofID) external override view returns(Proof memory proof){
+    function getProof(uint256 proofID) external view override returns (Proof memory proof) {
         LibIssuer.IssuerStorage storage issuer = getStorage();
-        
+
         if (proofID > issuer.lastProofIndex) {
             revert NonExistingProof(proofID);
         }
@@ -79,11 +68,11 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
     function revokeProof(uint256 proofID) external onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
-        if(proofID > issuer.lastProofIndex) {
+        if (proofID > issuer.lastProofIndex) {
             revert NonExistingProof(proofID);
         }
         require(issuer.mintedProofs[proofID].isRevoked == false, "already revoked proof");
-        //TO-DO: check that we are not allowed to revoke retired proofs 
+        //TO-DO: check that we are not allowed to revoke retired proofs
         require(issuer.mintedProofs[proofID].isRetired == false, "Not allowed on retired proofs");
         //TO-DO: revoke the proof
         issuer.mintedProofs[proofID].isRevoked = true;
@@ -103,7 +92,7 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
 
         require(
             issuer.issuanceRequests[winningMatch].status != RequestStatus.PENDING &&
-            issuer.issuanceRequests[winningMatch].status != RequestStatus.ACCEPTED,
+                issuer.issuanceRequests[winningMatch].status != RequestStatus.ACCEPTED,
             "Request: Already requested proof"
         );
         issuer.lastProofIndex++;
@@ -121,12 +110,13 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
         emit LibIssuer.IssuanceRequested(proofID);
     }
 
-    function validateIssuanceRequest(string memory winningMatch, bytes memory verifiableCredential) external { //TO-DO : pass VC ref
+    function validateIssuanceRequest(string memory winningMatch, bytes memory verifiableCredential) external {
+        //TO-DO : pass VC ref
         LibIssuer.IssuerStorage storage issuer = getStorage();
-        
+
         require(issuer.issuanceRequests[winningMatch].requestID != 0, "Validation: Not a valid match");
         require(issuer.issuanceRequests[winningMatch].status != RequestStatus.ACCEPTED, "validation: Already validated");
-   
+
         issuer.issuanceRequests[winningMatch].status = RequestStatus.ACCEPTED;
         issuer.issuanceRequests[winningMatch].verifiableCredential = verifiableCredential;
         emit LibIssuer.RequestAccepted(issuer.issuanceRequests[winningMatch].requestID);
@@ -137,7 +127,7 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
 
         require(issuer.issuanceRequests[winningMatch].requestID != 0, "Rejection: Not a valid match");
         require(issuer.issuanceRequests[winningMatch].status != RequestStatus.ACCEPTED, "Rejection: Already validated");
-    
+
         issuer.lastProofIndex--;
         issuer.issuanceRequests[winningMatch].status = RequestStatus.REJECTED;
         emit LibIssuer.RequestRejected(issuer.issuanceRequests[winningMatch].requestID);

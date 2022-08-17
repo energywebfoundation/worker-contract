@@ -39,6 +39,8 @@ interface IGreenProof {
     ) external;
 
     function retireProof(address from, uint256 proofID) external;
-    function getProof(uint256 proofID) external view returns(Proof memory proof);
+
+    function getProof(uint256 proofID) external view returns (Proof memory proof);
+
     function requestProofIssuance(string memory winningMatch, address recipient) external;
 }
