@@ -8,6 +8,7 @@ pragma solidity ^0.8.0;
 * Implementation of a diamond.
 /******************************************************************************/
 
+import { LibReward } from "./libraries/LibReward.sol";
 import { LibDiamond } from "./libraries/LibDiamond.sol";
 import { IDiamondCut } from "./interfaces/IDiamondCut.sol";
 
@@ -59,5 +60,14 @@ contract Diamond {
         }
     }
 
-    receive() external payable {}
+    /// @notice Rewards each worker winner by a constant amount set on deployment
+    /// If current balance is insufficient to pay reward, then winner will
+    /// be rewarded after balance is replenished
+        receive() external payable {
+        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
+        
+        if (rewardStorage.rewardQueue.length > 0) {
+            LibReward.payReward();
+        }
+    }
 }
