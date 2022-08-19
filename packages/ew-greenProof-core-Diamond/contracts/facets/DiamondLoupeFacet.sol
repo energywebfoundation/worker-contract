@@ -12,7 +12,7 @@ import { IERC165 } from "../interfaces/IERC165.sol";
 // The functions in DiamondLoupeFacet MUST be added to a diamond.
 // The EIP-2535 Diamond standard requires these functions
 
-contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
+contract DiamondLoupeFacet is IDiamondLoupe {
     // Diamond Loupe Functions
     ////////////////////////////////////////////////////////////////////
     /// These functions are expected to be called frequently by tools.
@@ -154,8 +154,8 @@ contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
     }
 
     // This implements ERC-165.
-    function supportsInterface(bytes4 _interfaceId) external override view returns (bool) {
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        return ds.supportedInterfaces[_interfaceId];
-    }
+    // function supportsInterface(bytes4 _interfaceId) external override view returns (bool) {
+    //     LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+    //     return ds.supportedInterfaces[_interfaceId];
+    // }
 }

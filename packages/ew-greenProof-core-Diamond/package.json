@@ -4,7 +4,8 @@
   "description": "Template for contract projects.",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "voting:test": "npx hardhat test test/votingFacet.spect.js"
   },
   "repository": {
     "type": "git",
