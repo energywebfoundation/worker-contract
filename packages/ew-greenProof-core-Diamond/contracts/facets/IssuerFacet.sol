@@ -11,7 +11,7 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 /// @notice This handles certificates Issuance as Green proofs. Certificates consists on ERC-1155 tokens anchorded to Verfiable Credentials
 /// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a Gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
 
-contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
+contract IssuerFacet is SolidStateERC1155, IGreenProof {
     modifier onlyMinter() {
         //TO: set a requirement checking for authorized issuer entity
         _;

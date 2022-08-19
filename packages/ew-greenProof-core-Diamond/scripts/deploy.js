@@ -3,9 +3,11 @@
 
 const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
 
+
 async function deployDiamond () {
   const accounts = await ethers.getSigners()
   const contractOwner = accounts[0]
+  const rewardAmount = ethers.utils.parseEther("1");
 
   // deploy DiamondCutFacet
   const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
@@ -32,7 +34,9 @@ async function deployDiamond () {
   console.log('Deploying facets')
   const FacetNames = [
     'DiamondLoupeFacet',
-    'OwnershipFacet'
+    'OwnershipFacet',
+    'IssuerFacet',
+    'VotingFacet',
   ]
   const cut = []
   for (const FacetName of FacetNames) {
@@ -54,6 +58,7 @@ async function deployDiamond () {
   let tx
   let receipt
   // call to init function
+  // let functionCall = diamondInit.interface.encodeFunctionData('init', rewardAmount)
   let functionCall = diamondInit.interface.encodeFunctionData('init')
   tx = await diamondCut.diamondCut(cut, diamondInit.address, functionCall)
   console.log('Diamond cut tx: ', tx.hash)

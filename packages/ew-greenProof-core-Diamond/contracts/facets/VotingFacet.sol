@@ -4,7 +4,7 @@ pragma solidity ^0.8.8;
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {Ownable} from "@solidstate/contracts/access/ownable/Ownable.sol";
 
-contract MatchVoting is Ownable {
+contract VotingFacet {
 
     /**
         Allowing library's function calls on address type
