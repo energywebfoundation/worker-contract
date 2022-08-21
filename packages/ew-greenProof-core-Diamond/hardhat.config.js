@@ -1,7 +1,9 @@
 
 /* global ethers task */
 require('@nomiclabs/hardhat-waffle')
+const dotenv = require("dotenv");
 
+dotenv.config()
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task('accounts', 'Prints the list of accounts', async () => {
@@ -20,10 +22,20 @@ task('accounts', 'Prints the list of accounts', async () => {
  */
 module.exports = {
   solidity: '0.8.9',
+  networks: {
+    ganache: {
+      url: "http://localhost:8545",
+    },
+    volta: {
+      url: "https://volta-rpc.energyweb.org",
+      chainId: 73799,
+      accounts: process.env.PRIVATE_KEY ? [ process.env.PRIVATE_KEY ] : [],
+    },
+  },
   settings: {
     optimizer: {
       enabled: true,
       runs: 200
-    }
+    },
   }
 }
