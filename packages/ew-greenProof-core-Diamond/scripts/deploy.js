@@ -1,13 +1,12 @@
 /* global ethers */
 /* eslint prefer-const: "off" */
 
+const { ethers } = require('hardhat')
 const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
 
-
-async function deployDiamond () {
+async function deployDiamond(votingTimeLimit, rewardAmount) {
   const accounts = await ethers.getSigners()
-  const contractOwner = accounts[0]
-  const rewardAmount = ethers.utils.parseEther("1");
+  const contractOwner = accounts[ 0 ]
 
   // deploy DiamondCutFacet
   const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
@@ -17,7 +16,7 @@ async function deployDiamond () {
 
   // deploy Diamond
   const Diamond = await ethers.getContractFactory('Diamond')
-  const diamond = await Diamond.deploy(contractOwner.address, diamondCutFacet.address)
+  const diamond = await Diamond.deploy(contractOwner.address, diamondCutFacet.address, votingTimeLimit, rewardAmount)
   await diamond.deployed()
   console.log('Diamond deployed:', diamond.address)
 
@@ -52,8 +51,8 @@ async function deployDiamond () {
   }
 
   // upgrade diamond with facets
-  console.log('')
-  console.log('Diamond Cut:', cut)
+  console.log('\n **** [DiamondCut] : Adding facets to Diamond\n')
+  console.log('List of Cuts to execute :', cut)
   const diamondCut = await ethers.getContractAt('IDiamondCut', diamond.address)
   let tx
   let receipt
@@ -73,7 +72,8 @@ async function deployDiamond () {
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 if (require.main === module) {
-  deployDiamond()
+  deployDiamond(15 * 60, ethers.utils.parseEther("1"))
+    // deployDiamond()
     .then(() => process.exit(0))
     .catch(error => {
       console.error(error)

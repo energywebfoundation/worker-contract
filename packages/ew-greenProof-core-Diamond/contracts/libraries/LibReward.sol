@@ -9,6 +9,13 @@ library LibReward {
         address payable[] rewardQueue;
     }
 
+    function initRewards(uint256 fixedRewardAmount) internal {
+        RewardStorage storage rs = getStorage();
+
+        require(rs.rewardAmount == 0, "rewardAmount already set");
+        rs.rewardAmount = fixedRewardAmount;
+    }
+
     function payReward() internal {
         RewardStorage storage rs = getStorage();
 
@@ -18,16 +25,16 @@ library LibReward {
         }
     }
 
-    function reward(address payable[] memory winners) internal {
-        RewardStorage storage rs = getStorage();
+    // function reward(address payable[] memory winners) internal {
+    //     RewardStorage storage rs = getStorage();
 
-        for (uint256 i = 0; i < winners.length; i++) {
-            rs.rewardQueue.push(winners[i]);
-        }
-        payReward();
-    }
+    //     for (uint256 i = 0; i < winners.length; i++) {
+    //         rs.rewardQueue.push(winners[i]);
+    //     }
+    //     payReward();
+    // }
 
-    function getStorage() internal view returns (RewardStorage storage rs) {
+    function getStorage() internal pure returns (RewardStorage storage rs) {
         bytes32 position = REWARD_STORAGE_POSITION;
 
         assembly {

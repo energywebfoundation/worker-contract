@@ -12604,7 +12604,6 @@
   dependencies:
     "@openzeppelin/contracts" "^4.7.0"
     "prettier-plugin-solidity" "^1.0.0-dev.23"
-    "typechain" "^8.1.0"
 
 "hardhat@^2.0.0", "hardhat@^2.0.2", "hardhat@^2.0.4", "hardhat@^2.10.0", "hardhat@^2.9.4", "hardhat@^2.9.9":
   "integrity" "sha512-9VUorKvWNyW96qFXkwkpDUSeWND3gOZpm0oJ8l63JQJvWhxyxTJ92BcOrNylOKy9hzNNGdMfM2QWNP80fGOjpA=="

@@ -7,6 +7,9 @@ const { FacetCutAction } = require('../scripts/libraries/diamond.js')
 
 const { assert } = require('chai')
 
+const votingTimeLimit = 15 * 60;
+const rewardAmount = ethers.utils.parseEther("1");
+
 // The diamond example comes with 8 function selectors
 // [cut, loupe, loupe, loupe, loupe, erc165, transferOwnership, owner]
 // This bug manifests if you delete something from the final
@@ -47,7 +50,7 @@ describe('Cache bug test', async () => {
       sel10
     ]
 
-    let diamondAddress = await deployDiamond()
+    let diamondAddress = await deployDiamond(votingTimeLimit, rewardAmount)
     let diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
     diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
     const Test1Facet = await ethers.getContractFactory('Test1Facet')
