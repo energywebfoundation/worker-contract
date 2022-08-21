@@ -68,7 +68,8 @@ async function deployDiamond() {
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 if (require.main === module) {
-  deployDiamond()
+  deployDiamond(15 * 60, ethers.utils.parseEther("1"))
+    // deployDiamond()
     .then(() => process.exit(0))
     .catch((error) => {
       console.error(error);
