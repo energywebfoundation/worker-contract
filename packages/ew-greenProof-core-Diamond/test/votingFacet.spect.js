@@ -53,36 +53,6 @@ describe("VotingFacet", function () {
         { input: "MATCH_INPUT_5", output: "MATCH_OUTPUT_5" },
     ];
 
-    // before(async function () {
-    //     diamondAddress = await deployDiamond(timeLimit, rewardAmount);
-    //     diamondCutFacet = await ethers.getContractAt(
-    //         "DiamondCutFacet",
-    //         diamondAddress
-    //     );
-    //     diamondLoupeFacet = await ethers.getContractAt(
-    //         "DiamondLoupeFacet",
-    //         diamondAddress
-    //     );
-    //     ownershipFacet = await ethers.getContractAt(
-    //         "OwnershipFacet",
-    //         diamondAddress
-    //     );
-    //     issuerFacet = await ethers.getContractAt("IssuerFacet", diamondAddress);
-    //     matchVoting = await ethers.getContractAt("VotingFacet", diamondAddress);
-    //     [
-    //         ,
-    //         faucet,
-    //         worker1,
-    //         worker2,
-    //         worker3,
-    //         worker4,
-    //         worker5,
-    //         worker6,
-    //         nonWorker,
-    //     ] = await ethers.getSigners();
-    //     counter = 0;
-    // });
-
     beforeEach(async () => {
         console.log(`\n`);
         diamondAddress = await deployDiamond(timeLimit, rewardAmount);
