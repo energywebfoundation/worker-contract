@@ -8,11 +8,21 @@ pragma solidity ^0.8.0;
 * Implementation of a diamond.
 /******************************************************************************/
 
+import {LibReward} from "./libraries/LibReward.sol";
+import {LibVoting} from "./libraries/LibVoting.sol";
 import {LibDiamond} from "./libraries/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 
 contract Diamond {
-    constructor(address _contractOwner, address _diamondCutFacet) payable {
+    constructor(
+        address _contractOwner,
+        address _diamondCutFacet,
+        uint256 _votingTimeLimit,
+        uint256 _rewardAmount
+    ) payable {
+        require(_rewardAmount > 0, "Reward amount should be positive");
+        LibVoting.init(_votingTimeLimit);
+        LibReward.initRewards(_rewardAmount);
         LibDiamond.setContractOwner(_contractOwner);
 
         // Add the diamondCut external function from the diamondCutFacet
@@ -54,5 +64,14 @@ contract Diamond {
         }
     }
 
-    receive() external payable {}
+    /// @notice Rewards each worker winner by a constant amount set on deployment
+    /// If current balance is insufficient to pay reward, then winner will
+    /// be rewarded after balance is replenished
+    receive() external payable {
+        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
+
+        if (rewardStorage.rewardQueue.length > 0) {
+            LibReward.payReward();
+        }
+    }
 }
