@@ -20,10 +20,12 @@ describe('DiamondTest', async function () {
   let tx
   let receipt
   let result
-  const addresses = []
+  const addresses = [];
+  const votingTimeLimit = 15 * 60;
+  const rewardAmount = ethers.utils.parseEther("1");
 
   before(async function () {
-    diamondAddress = await deployDiamond()
+    diamondAddress = await deployDiamond(votingTimeLimit, rewardAmount);
     diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
     diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
     ownershipFacet = await ethers.getContractAt('OwnershipFacet', diamondAddress)

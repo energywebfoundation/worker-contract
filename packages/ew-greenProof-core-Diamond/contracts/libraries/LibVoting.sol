@@ -95,15 +95,9 @@ library LibVoting {
     }
 
     // initialize voting parameters at the diamnond construction
-    function init(
-        address _certificateContractAddress,
-        address _rewardVotingAddress,
-        uint256 _timeLimit
-    ) internal {
+    function init(uint256 _timeLimit) internal {
         VotingStorage storage _votingStorage = getStorage();
 
-        _votingStorage.certificateContractAddress = _certificateContractAddress;
-        _votingStorage.rewardVotingAddress = _rewardVotingAddress;
         _votingStorage.timeLimit = _timeLimit;
     }
 
