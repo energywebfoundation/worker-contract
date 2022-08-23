@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { TopicNotConfiguredError } from './errors';
-import { AXIOS_INSTANCE } from './response-type';
 import type {
   Config,
   MessageQuery,
@@ -39,31 +38,58 @@ const schema = z.object({
   privateKey: z.string().trim().min(1),
   ownerNamespace: z.string().trim().min(1),
   ddhubUrl: z.string().trim().min(1),
+  debugModeOn: z.boolean().optional(),
 });
 
 export class DDHubClient {
   readonly #configuration: Config[];
-  readonly #configToChannelMap: Map<string, Config>;
+  readonly #sendChannels: Map<string, Config> = new Map();
+  readonly #receiveChannels: Map<string, Config> = new Map();
+  readonly #uploadChannels: Map<string, Config> = new Map();
+  readonly #downloadChannels: Map<string, Config> = new Map();
   readonly #owner: string;
   readonly #privateKey: string;
+  readonly #ddhubUrl: string;
+  readonly #debugModeOn: boolean = false;
 
   constructor(configuration: {
     config: Config[];
     privateKey: string;
     ownerNamespace: string;
     ddhubUrl: string;
+    debugModeOn?: boolean;
   }) {
-    const { config, ddhubUrl, ownerNamespace, privateKey } =
+    const { config, ddhubUrl, ownerNamespace, privateKey, debugModeOn } =
       schema.parse(configuration);
-    AXIOS_INSTANCE.defaults.baseURL = ddhubUrl;
+
+    this.#ddhubUrl = ddhubUrl;
     this.#configuration = config;
     this.#owner = ownerNamespace;
     this.#privateKey = privateKey;
-    const channelToConfig = new Map<string, Config>();
+    this.#debugModeOn = debugModeOn ?? false;
     for (const c of config) {
-      channelToConfig.set(c.channelName, c);
+      if (c.channelType === 'sub') {
+        this.#receiveChannels.set(c.channelName, c);
+      }
+
+      if (c.channelType === 'pub') {
+        this.#sendChannels.set(c.channelName, c);
+      }
+
+      if (c.channelType === 'download') {
+        this.#downloadChannels.set(c.channelName, c);
+      }
+
+      if (c.channelType === 'upload') {
+        this.#uploadChannels.set(c.channelName, c);
+      }
     }
-    this.#configToChannelMap = channelToConfig;
+  }
+
+  private log(msg: string) {
+    if (this.#debugModeOn) {
+      return console.log(`[${new Date().toISOString()}] --- [DEBUG-DDHUB-CLIENT] --- ${msg}`);
+    }
   }
 
   /**
@@ -71,18 +97,30 @@ export class DDHubClient {
    * Needs to be called before any interactions with DDHUB Client.
    */
   async setup() {
+
     /**
      * Set the private key for Client Gateway
      */
-    await savePrivateKey({ privateKey: this.#privateKey });
+    this.log('Saving private key');
+    await savePrivateKey(
+      { privateKey: this.#privateKey },
+      { baseURL: this.#ddhubUrl },
+    );
+    this.log('Private key saved');
 
     /**
      * Get all topics configured globally for the app owner
      */
-    const { records: topics } = await getTopics({
-      owner: this.#owner,
-      limit: 10,
-    });
+    this.log('Getting all topics for owner namespace');
+    const { records: topics } = await getTopics(
+      {
+        owner: this.#owner,
+        limit: 20,
+      },
+      { baseURL: this.#ddhubUrl },
+    );
+
+    this.log(`Received topics: ${topics.map(({name}) => name).join(' ,')}`);
 
     /**
      * Verify if all topics are configured
@@ -94,7 +132,9 @@ export class DDHubClient {
     );
 
     if (topicsNotFound.length > 0) {
-      throw new TopicNotConfiguredError(topicsNotFound.join(' ,'));
+      throw new TopicNotConfiguredError(
+        topicsNotFound.map(({ topicName }) => topicName).join(' ,'),
+      );
     }
 
     /**
@@ -111,27 +151,39 @@ export class DDHubClient {
       topicName,
     } of this.#configuration) {
       try {
-        await getChannel(channelName);
-        await updateChannel(channelName, {
-          conditions: {
-            ...conditions,
-            topics: [{ owner: this.#owner, topicName }],
+        await getChannel(channelName, { baseURL: this.#ddhubUrl });
+        this.log(`Channel: ${channelName} found, updating channel`);
+        await updateChannel(
+          channelName,
+          {
+            conditions: {
+              ...conditions,
+              topics: [{ owner: this.#owner, topicName }],
+            },
+            payloadEncryption: encrypted,
+            type: channelType,
           },
-          payloadEncryption: encrypted,
-          type: channelType,
-        });
+          { baseURL: this.#ddhubUrl },
+        );
+        this.log(`Updating channel: ${channelName} finished successfully`);
       } catch {
-        await createChannel({
-          conditions: {
-            ...conditions,
-            topics: [{ owner: this.#owner, topicName }],
+        this.log(`Channel: ${channelName} not found, creating channel`);
+        await createChannel(
+          {
+            conditions: {
+              ...conditions,
+              topics: [{ owner: this.#owner, topicName }],
+            },
+            fqcn: channelName,
+            payloadEncryption: encrypted,
+            type: channelType,
           },
-          fqcn: channelName,
-          payloadEncryption: encrypted,
-          type: channelType,
-        });
+          { baseURL: this.#ddhubUrl },
+        );
+        this.log(`Channel: ${channelName} created`);
       }
     }
+    this.log('Setup finished');
   }
 
   /**
@@ -146,20 +198,23 @@ export class DDHubClient {
     clientId,
     from,
   }: Omit<MessageQuery, 'topicName' | 'topicOwner'>) {
-    const { topicName } = this.#configToChannelMap.get(fqcn) ?? {};
+    const { topicName } = this.#receiveChannels.get(fqcn) ?? {};
 
     if (!topicName) {
       throw new Error(`Channel: ${fqcn} not found in configuration`);
     }
 
-    return await getReceivedMessages({
-      fqcn,
-      topicName,
-      topicOwner: this.#owner,
-      amount,
-      clientId,
-      from,
-    });
+    return await getReceivedMessages(
+      {
+        fqcn,
+        topicName,
+        topicOwner: this.#owner,
+        amount,
+        clientId,
+        from,
+      },
+      { baseURL: this.#ddhubUrl },
+    );
   }
 
   /**
@@ -172,21 +227,23 @@ export class DDHubClient {
     payload,
     transactionId,
   }: Pick<SendMessageDto, 'fqcn' | 'payload' | 'transactionId'>) {
-    const { topicName, topicVersion } =
-      this.#configToChannelMap.get(fqcn) ?? {};
+    const { topicName, topicVersion } = this.#sendChannels.get(fqcn) ?? {};
 
     if (!topicName || !topicVersion) {
       throw new Error(`Channel: ${fqcn} not found in configuration`);
     }
 
-    return await sendMessageToDDHub({
-      fqcn,
-      payload,
-      topicName,
-      topicOwner: this.#owner,
-      topicVersion,
-      transactionId,
-    });
+    return await sendMessageToDDHub(
+      {
+        fqcn,
+        payload,
+        topicName,
+        topicOwner: this.#owner,
+        topicVersion,
+        transactionId,
+      },
+      { baseURL: this.#ddhubUrl },
+    );
   }
 
   /**
@@ -199,21 +256,23 @@ export class DDHubClient {
     fqcn,
     transactionId,
   }: Pick<UploadMessageBodyDto, 'file' | 'fqcn' | 'transactionId'>) {
-    const { topicName, topicVersion } =
-      this.#configToChannelMap.get(fqcn) || {};
+    const { topicName, topicVersion } = this.#uploadChannels.get(fqcn) || {};
 
     if (!topicName || !topicVersion) {
       throw new Error(`Channel: ${fqcn} not found in configuration`);
     }
 
-    return await uploadFileToDDHub({
-      file,
-      fqcn,
-      topicName,
-      topicOwner: this.#owner,
-      topicVersion,
-      transactionId,
-    });
+    return await uploadFileToDDHub(
+      {
+        file,
+        fqcn,
+        topicName,
+        topicOwner: this.#owner,
+        topicVersion,
+        transactionId,
+      },
+      { baseURL: this.#ddhubUrl },
+    );
   }
 
   /**

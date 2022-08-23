@@ -1,14 +1,12 @@
 import type { AxiosRequestConfig } from 'axios';
 import axios from 'axios';
 
-export const AXIOS_INSTANCE = axios.create();
-
 export const getWithResponseType = <T>(
   config: AxiosRequestConfig,
   options?: AxiosRequestConfig,
 ): Promise<T> => {
   const source = axios.CancelToken.source();
-  const promise = AXIOS_INSTANCE({
+  const promise = axios({
     ...config,
     ...options,
     cancelToken: source.token,
