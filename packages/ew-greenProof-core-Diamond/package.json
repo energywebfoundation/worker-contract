@@ -6,7 +6,8 @@
   "scripts": {
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
-    "voting:test": "npx hardhat test test/votingFacet.spect.js"
+    "voting:test": "npx hardhat test test/votingFacet.spec.js",
+    "issuer:test": "npx hardhat test test/issuerFacet.spec.js"
   },
   "repository": {
     "type": "git",

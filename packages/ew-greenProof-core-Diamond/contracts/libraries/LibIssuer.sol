@@ -19,6 +19,7 @@ library LibIssuer {
     event RequestRejected(uint256 indexed proofID);
 
     error NotValidatedProof(uint256 proofID);
+    error NonExistingProof(uint256 proofId);
 
     function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {
         bytes32 position = ISSUER_STORAGE_POSITION;
