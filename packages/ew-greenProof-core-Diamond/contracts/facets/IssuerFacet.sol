@@ -3,7 +3,6 @@ pragma solidity ^0.8.8;
 
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
-import {Ownable} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /// @title GreenProof Issuer Module
@@ -21,8 +20,6 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
         //TO: set a requirement checking for authorized revoker entity
         _;
     }
-
-    error NonExistingProof(uint256 proofId);
 
     /** getStorage: returns a pointer to the storage  */
     function getStorage() internal pure returns (LibIssuer.IssuerStorage storage _issuer) {
@@ -60,7 +57,7 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         if (proofID > issuer.lastProofIndex) {
-            revert NonExistingProof(proofID);
+            revert LibIssuer.NonExistingProof(proofID);
         }
         proof = issuer.mintedProofs[proofID];
     }
@@ -69,7 +66,7 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         if (proofID > issuer.lastProofIndex) {
-            revert NonExistingProof(proofID);
+            revert LibIssuer.NonExistingProof(proofID);
         }
         require(issuer.mintedProofs[proofID].isRevoked == false, "already revoked proof");
         //TO-DO: check that we are not allowed to revoke retired proofs
