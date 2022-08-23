@@ -12,15 +12,18 @@ import {LibReward} from "./libraries/LibReward.sol";
 import {LibVoting} from "./libraries/LibVoting.sol";
 import {LibDiamond} from "./libraries/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
+import {LibClaimManager} from "./libraries/LibClaimManager.sol";
 
 contract Diamond {
     constructor(
         address _contractOwner,
         address _diamondCutFacet,
         uint256 _votingTimeLimit,
-        uint256 _rewardAmount
+        uint256 _rewardAmount,
+        address _claimManagerAddress
     ) payable {
         require(_rewardAmount > 0, "Reward amount should be positive");
+        require(_claimManagerAddress != address(0), "Invalid claimManager");
         LibVoting.init(_votingTimeLimit);
         LibReward.initRewards(_rewardAmount);
         LibDiamond.setContractOwner(_contractOwner);
@@ -31,6 +34,13 @@ contract Diamond {
         functionSelectors[0] = IDiamondCut.diamondCut.selector;
         cut[0] = IDiamondCut.FacetCut({facetAddress: _diamondCutFacet, action: IDiamondCut.FacetCutAction.Add, functionSelectors: functionSelectors});
         LibDiamond.diamondCut(cut, address(0), "");
+
+        //Set ClaimManager Address
+        LibClaimManager.init(_claimManagerAddress);
+    }
+
+    function updateClaimManager(address _newaddress) external returns (address oldAddress) {
+        oldAddress = LibClaimManager.setClaimManagerAddress(_newaddress);
     }
 
     // Find facet for function that is called and execute the
