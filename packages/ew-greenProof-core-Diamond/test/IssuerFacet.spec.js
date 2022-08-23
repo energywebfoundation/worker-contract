@@ -9,9 +9,13 @@ const chai = require("chai");
 const { assert, expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
-const { solidity } = require("ethereum-waffle");
 const { deployDiamond } = require("../scripts/deploy");
-
+const {
+  deployMockContract,
+  MockContract,
+  solidity,
+} = require("ethereum-waffle");
+const { claimManagerInterface, toBytes32 } = require("./utils");
 chai.use(solidity);
 
 const timeTravel = async (seconds) => {
@@ -25,7 +29,9 @@ describe("IssuerFacet", function () {
   let diamondLoupeFacet;
   let ownershipFacet;
   let issuerFacet;
+  let claimManagerMocked;
   let tx;
+  let owner;
   let receipt;
   let result;
   const addresses = [];
@@ -34,8 +40,27 @@ describe("IssuerFacet", function () {
   const timeLimit = 15 * 60;
 
   before(async () => {
+    [
+      owner,
+      faucet,
+      worker1,
+      worker2,
+      worker3,
+      worker4,
+      worker5,
+      worker6,
+      notEnrolledWorker,
+      toRemoveWorker,
+    ] = await ethers.getSigners();
     console.log(`\n`);
-    diamondAddress = await deployDiamond(timeLimit, rewardAmount);
+    //  Mocking claimManager
+    claimManagerMocked = await deployMockContract(owner, claimManagerInterface);
+    console.log("mock Contract :: ", claimManagerMocked);
+    diamondAddress = await deployDiamond(
+      timeLimit,
+      rewardAmount,
+      claimManagerMocked.address
+    );
     diamondCutFacet = await ethers.getContractAt(
       "DiamondCutFacet",
       diamondAddress
