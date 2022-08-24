@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
+import {IMinter} from "../interfaces/IMinter.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /// @title GreenProof Issuer Module
@@ -10,9 +12,10 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 /// @notice This handles certificates Issuance as Green proofs. Certificates consists on ERC-1155 tokens anchorded to Verfiable Credentials
 /// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a Gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
 
-contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
+contract IssuerFacet is SolidStateERC1155, IGreenProof {
     modifier onlyMinter() {
         //TO: set a requirement checking for authorized issuer entity
+        require(LibClaimManager.isIssuer(msg.sender, lastRoleVersion), "Access: Not an issuer");
         _;
     }
 
@@ -35,7 +38,7 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
         uint256 end,
         string memory winningMatch,
         bytes32 producerRef
-    ) external onlyMinter {
+    ) external onlyIssuer {
         bool isRevoked = false;
         bool isRetired = false;
 
@@ -107,7 +110,7 @@ contract Issuer is SolidStateERC1155, Ownable, IGreenProof {
         emit LibIssuer.IssuanceRequested(proofID);
     }
 
-    function validateIssuanceRequest(string memory winningMatch, bytes memory verifiableCredential) external {
+    function validateIssuanceRequest(string memory winningMatch, bytes memory verifiableCredential) external onlyValidator {
         //TO-DO : pass VC ref
         LibIssuer.IssuerStorage storage issuer = getStorage();
 

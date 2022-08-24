@@ -4,9 +4,21 @@
 const { ethers } = require('hardhat')
 const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
 
-async function deployDiamond(votingTimeLimit, rewardAmount) {
-  const accounts = await ethers.getSigners()
-  const contractOwner = accounts[ 0 ]
+const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
+const ROLES = {
+  issuer: ethers.utils.namehash("issuer"),
+  revoker: ethers.utils.namehash("issuer"),
+  validator: ethers.utils.namehash("validator"),
+};
+
+async function deployDiamond(
+  votingTimeLimit,
+  rewardAmount,
+  claimManagerAddress,
+  roles
+) {
+  const accounts = await ethers.getSigners();
+  const contractOwner = accounts[0];
 
   // deploy DiamondCutFacet
   const DiamondCutFacet = await ethers.getContractFactory("DiamondCutFacet");
@@ -15,10 +27,21 @@ async function deployDiamond(votingTimeLimit, rewardAmount) {
   console.log("DiamondCutFacet deployed:", diamondCutFacet.address);
 
   // deploy Diamond
-  const Diamond = await ethers.getContractFactory('Diamond')
-  const diamond = await Diamond.deploy(contractOwner.address, diamondCutFacet.address, votingTimeLimit, rewardAmount)
-  await diamond.deployed()
-  console.log('Diamond deployed:', diamond.address)
+  const Diamond = await ethers.getContractFactory("Diamond");
+  const { issuerRole, revokerRole, validatorRole } = roles;
+  console.log(roles);
+  const diamond = await Diamond.deploy(
+    contractOwner.address,
+    diamondCutFacet.address,
+    votingTimeLimit,
+    rewardAmount,
+    claimManagerAddress,
+    issuerRole,
+    revokerRole,
+    validatorRole
+  );
+  await diamond.deployed();
+  console.log("Diamond deployed:", diamond.address);
 
   // deploy DiamondInit
   // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
@@ -75,7 +98,8 @@ if (require.main === module) {
   deployDiamond(
     15 * 60,
     ethers.utils.parseEther("1"),
-    VOLTA_CLAIM_MANAGER_ADDRESS
+    VOLTA_CLAIM_MANAGER_ADDRESS,
+    ROLES
   )
     // deployDiamond()
     .then(() => process.exit(0))

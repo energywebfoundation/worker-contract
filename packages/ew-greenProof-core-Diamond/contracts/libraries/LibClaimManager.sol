@@ -11,6 +11,10 @@ library LibClaimManager {
 
     struct ClaimManagerStorage {
         address claimManagerAddress;
+        bytes32 issuerRole;
+        bytes32 revokerRole;
+        bytes32 validatorRole;
+        mapping(bytes32 => uint256) roleToVersions;
     }
 
     function hasRole(
@@ -27,12 +31,35 @@ library LibClaimManager {
         return IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
     }
 
-    function init(address _claimManagerAddress) internal {
+    function init(
+        address _claimManagerAddress,
+        bytes32 _issuerRole,
+        bytes32 _revokerRole,
+        bytes32 _validatorRole
+    ) internal {
         ClaimManagerStorage storage claimStore = getStorage();
 
         require(claimStore.claimManagerAddress == address(0), "ClaimManager Already initialized");
 
         claimStore.claimManagerAddress = _claimManagerAddress;
+        claimStore.issuerRole = _issuerRole;
+        claimStore.revokerRole = _revokerRole;
+        claimStore.validatorRole = _validatorRole;
+
+        claimStore.roleToVersions[_issuerRole] = 1;
+        claimStore.roleToVersions[_revokerRole] = 1;
+        claimStore.roleToVersions[_validatorRole] = 1;
+    }
+
+    function setRoleVersion(bytes32 _role, uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
+        LibDiamond.enforceIsContractOwner();
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        require(claimStore.roleToVersions[_role] != 0, "Non existing role");
+        require(claimStore.roleToVersions[_role] != _newVersion, "Same version");
+
+        oldRoleVersion = claimStore.roleToVersions[_role];
+        claimStore.roleToVersions[_role] = _newVersion;
     }
 
     function setClaimManagerAddress(address _newAddress) internal returns (address oldAddress) {
@@ -43,6 +70,7 @@ library LibClaimManager {
             revert NotInitializedClaimManager();
         }
         require(_newAddress != address(0), "Invalid contract address");
+        require(claimStore.claimManagerAddress != _newAddress, "Same address");
 
         oldAddress = claimStore.claimManagerAddress;
 
@@ -54,5 +82,11 @@ library LibClaimManager {
         assembly {
             ClaimStore.slot := position
         }
+    }
+
+    function isIssuer(address operator, uint256 roleVersion) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        return hasRole(operator, claimStore.issuerRole, roleVersion);
     }
 }
