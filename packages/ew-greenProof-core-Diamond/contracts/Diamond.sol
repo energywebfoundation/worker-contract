@@ -20,7 +20,10 @@ contract Diamond {
         address _diamondCutFacet,
         uint256 _votingTimeLimit,
         uint256 _rewardAmount,
-        address _claimManagerAddress
+        address _claimManagerAddress,
+        bytes32 issuerRole,
+        bytes32 revokerRole,
+        bytes32 validatorRole
     ) payable {
         require(_rewardAmount > 0, "Reward amount should be positive");
         require(_claimManagerAddress != address(0), "Invalid claimManager");
@@ -35,12 +38,16 @@ contract Diamond {
         cut[0] = IDiamondCut.FacetCut({facetAddress: _diamondCutFacet, action: IDiamondCut.FacetCutAction.Add, functionSelectors: functionSelectors});
         LibDiamond.diamondCut(cut, address(0), "");
 
-        //Set ClaimManager Address
-        LibClaimManager.init(_claimManagerAddress);
+        //Set ClaimManager properties
+        LibClaimManager.init(_claimManagerAddress, issuerRole, revokerRole, validatorRole);
     }
 
     function updateClaimManager(address _newaddress) external returns (address oldAddress) {
         oldAddress = LibClaimManager.setClaimManagerAddress(_newaddress);
+    }
+
+    function updateRoleVersion(bytes32 role, uint256 _newVersion) external returns (uint256 oldVersion) {
+        oldVersion = LibClaimManager.setRoleVersion(role, _newVersion);
     }
 
     // Find facet for function that is called and execute the
