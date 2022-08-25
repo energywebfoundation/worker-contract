@@ -28,4 +28,4 @@ Additional utility facets are provided by the [Diamond-2 reference implementatio
 
 - A dedicated facet is provided with the [OwnershipFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/OwnershipFacet.sol) contract, which handles the implementation of the IEP-173 standard for the Diamond ownership.
 
-- A [DiamondLoupeFacet.sol]() provides all standard [loupe functions](https://dev.to/mudgen/why-loupe-functions-for-diamonds-1kc3) for showing what facets and functions the diamond has.
+- A [DiamondLoupeFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondLoupeFacet.sol) provides all standard [loupe functions](https://dev.to/mudgen/why-loupe-functions-for-diamonds-1kc3) for showing what facets and functions the diamond has.
