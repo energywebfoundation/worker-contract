@@ -1,45 +1,101 @@
-import { DDHubClient } from '../dist';
+import { getExpectedResults } from '../../../../greenproof-quinbrook/packages/e2e/src/algo';
+import { bootstrap } from './config';
 
-(async () => {
-  const client = new DDHubClient({
-    config: [
-      {
-        channelName: 'receive_input',
-        channelType: 'sub',
-        conditions: { roles: ['provider.roles.247.apps.qb.iam.ewc'], dids: [] },
-        encrypted: true,
-        topicName: 'data_provider',
-        topicVersion: '1.0.0',
-      },
-      {
-        channelName: 'send_results',
-        channelType: 'upload',
-        conditions: { roles: ['cache.roles.247.apps.qb.iam.ewc'], dids: [] },
-        encrypted: true,
-        topicName: 'result_provider',
-        topicVersion: '1.0.0',
-      },
-      {
-        channelName: 'receive_battery_state',
-        channelType: 'sub',
-        conditions: { roles: ['worker.roles.247.apps.qb.iam.ewc'], dids: [] },
-        encrypted: true,
-        topicName: 'battery_store',
-        topicVersion: '1.0.0',
-      },
-      {
-        channelName: 'send_battery_state',
-        channelType: 'pub',
-        conditions: { roles: ['worker.roles.247.apps.qb.iam.ewc'], dids: [] },
-        encrypted: true,
-        topicName: 'battery_store',
-        topicVersion: '1.0.0',
-      },
-    ],
-    ownerNamespace: '247.apps.qb.iam.ewc',
-    privateKey: 'fd055324f73fb2cf5657f3160cd502ea40523029f3845bc8114839e0703e185d',
-    ddhubUrl: 'https://qb-ddhub-client-gateway-dev-0.energyweb.org/api/v2/',
-  });
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  await client.setup();
-})();
+async function start() {
+  const { backend, provider, worker, worker_1, worker_2 } = bootstrap();
+
+  try {
+    await Promise.all([
+      worker.setup(),
+      worker_1.setup(),
+      worker_2.setup(),
+      backend.setup(),
+      provider.setup(),
+    ]);
+  } catch (err: any) {
+    console.log(JSON.stringify(err.response.data, null, 2));
+  }
+
+  try {
+    const { input, matchingResult } = getExpectedResults();
+    await provider.sendMessage({
+      fqcn: 'provider.send.input',
+      payload: JSON.stringify(input),
+      transactionId: '1',
+    });
+
+    await Promise.all([
+      async () => {
+        while (true) {
+          const [message] = await worker.getMessages({
+            fqcn: 'worker.receive.input',
+            amount: 1,
+            clientId: '1',
+          });
+          if (message) {
+            console.log(`Worker_0 received message: ${message.payload}`);
+            await worker.sendMessage({
+              fqcn: 'worker.send.result',
+              payload: JSON.stringify({ data: matchingResult }),
+              transactionId: '2',
+            });
+            return;
+          }
+          await delay(100);
+        }
+      },
+      async () => {
+        while (true) {
+          const [message] = await worker_1.getMessages({
+            fqcn: 'worker.receive.input',
+            amount: 1,
+            clientId: '1',
+          });
+          if (message) {
+            console.log(`Worker_0 received message: ${message.payload}`);
+            await worker_1.sendMessage({
+              fqcn: 'worker.send.result',
+              payload: JSON.stringify({ data: matchingResult }),
+              transactionId: '2',
+            });
+            return;
+          }
+          await delay(100);
+        }
+      },
+      async () => {
+        while (true) {
+          const [message] = await worker_2.getMessages({
+            fqcn: 'worker.receive.input',
+            amount: 1,
+            clientId: '1',
+          });
+          if (message) {
+            console.log(`Worker_0 received message: ${message.payload}`);
+            await worker_2.sendMessage({
+              fqcn: 'worker.send.result',
+              payload: JSON.stringify({ data: matchingResult }),
+              transactionId: '2',
+            });
+            return;
+          }
+          await delay(100);
+        }
+      },
+    ]);
+    const messages = await backend.getMessages({
+      fqcn: 'cache.receive.result',
+      amount: 3,
+      clientId: '1',
+    });
+
+    console.log(JSON.stringify(messages));
+  } catch (err: any) {
+    console.log(err);
+    console.log(JSON.stringify(err.response.data));
+  }
+}
+
+start();
