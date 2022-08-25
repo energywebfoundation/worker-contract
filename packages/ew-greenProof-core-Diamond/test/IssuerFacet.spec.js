@@ -58,6 +58,9 @@ const validatorRole = ethers.utils.namehash(
 const revokerRole = ethers.utils.namehash(
   "revoker.roles.greenproof.apps.iam.ewc"
 );
+const workerRole = ethers.utils.namehash(
+  "workerRole.roles.greenproof.apps.iam.ewc"
+);
 const defaultVersion = 1;
 
 describe("IssuerFacet", function () {
@@ -99,6 +102,7 @@ describe("IssuerFacet", function () {
       issuerRole,
       revokerRole,
       validatorRole,
+      workerRole,
     };
 
     diamondAddress = await deployDiamond(

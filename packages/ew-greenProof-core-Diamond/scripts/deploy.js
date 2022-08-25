@@ -9,6 +9,7 @@ const ROLES = {
   issuer: ethers.utils.namehash("issuer"),
   revoker: ethers.utils.namehash("issuer"),
   validator: ethers.utils.namehash("validator"),
+  worker: ethers.utils.namehash("worker"),
 };
 
 async function deployDiamond(
@@ -28,8 +29,8 @@ async function deployDiamond(
 
   // deploy Diamond
   const Diamond = await ethers.getContractFactory("Diamond");
-  const { issuerRole, revokerRole, validatorRole } = roles;
-  console.log(roles);
+  const { issuerRole, revokerRole, validatorRole, workerRole } = roles;
+  console.log("\nRegistered Roles :: ", roles, "\n");
   const diamond = await Diamond.deploy(
     contractOwner.address,
     diamondCutFacet.address,
@@ -38,7 +39,8 @@ async function deployDiamond(
     claimManagerAddress,
     issuerRole,
     revokerRole,
-    validatorRole
+    validatorRole,
+    workerRole
   );
   await diamond.deployed();
   console.log("Diamond deployed:", diamond.address);
@@ -98,7 +100,7 @@ if (require.main === module) {
   deployDiamond(
     15 * 60,
     ethers.utils.parseEther("1"),
-    VOLTA_CLAIM_MANAGER_ADDRESS,
+    VOLTA_CLAIM_MANAGER,
     ROLES
   )
     // deployDiamond()
