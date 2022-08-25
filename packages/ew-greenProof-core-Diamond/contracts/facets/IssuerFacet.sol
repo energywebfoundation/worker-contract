@@ -52,7 +52,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         Proof memory greenProof = Proof(isRevoked, isRetired, proofID, productType, amount, start, end, producerRef);
         issuer.mintedProofs[proofID] = greenProof;
 
-        _mint(receiver, proofID, amount, "");
+        _mint(receiver, proofID, amount, issuer.issuanceRequests[winningMatch].verifiableCredentials);
         emit LibIssuer.ProofMinted(proofID);
     }
 
@@ -110,15 +110,15 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         emit LibIssuer.IssuanceRequested(proofID);
     }
 
-    function validateIssuanceRequest(string memory winningMatch, bytes memory verifiableCredential) external onlyValidator {
+    function validateIssuanceRequest(string memory winningMatch, bytes memory vCredentials) external onlyValidator {
         //TO-DO : pass VC ref
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
-        require(issuer.issuanceRequests[winningMatch].requestID != 0, "Validation: Not a valid match");
+        require(issuer.issuanceRequests[winningMatch].requestID != 0, "Validation not requested");
         require(issuer.issuanceRequests[winningMatch].status != RequestStatus.ACCEPTED, "validation: Already validated");
 
         issuer.issuanceRequests[winningMatch].status = RequestStatus.ACCEPTED;
-        issuer.issuanceRequests[winningMatch].verifiableCredential = verifiableCredential;
+        issuer.issuanceRequests[winningMatch].verifiableCredentials = vCredentials;
         emit LibIssuer.RequestAccepted(issuer.issuanceRequests[winningMatch].requestID);
     }
 
