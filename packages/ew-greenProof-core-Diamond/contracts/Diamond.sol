@@ -23,7 +23,8 @@ contract Diamond {
         address _claimManagerAddress,
         bytes32 issuerRole,
         bytes32 revokerRole,
-        bytes32 validatorRole
+        bytes32 validatorRole,
+        bytes32 workerRole
     ) payable {
         require(_rewardAmount > 0, "Reward amount should be positive");
         require(_claimManagerAddress != address(0), "Invalid claimManager");
@@ -39,7 +40,7 @@ contract Diamond {
         LibDiamond.diamondCut(cut, address(0), "");
 
         //Set ClaimManager properties
-        LibClaimManager.init(_claimManagerAddress, issuerRole, revokerRole, validatorRole);
+        LibClaimManager.init(_claimManagerAddress, issuerRole, revokerRole, validatorRole, workerRole);
     }
 
     function updateClaimManager(address _newaddress) external returns (address oldAddress) {

@@ -5,6 +5,7 @@ import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
+import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 contract VotingFacet is IVoting {
     /**
@@ -20,6 +21,14 @@ contract VotingFacet is IVoting {
         Instead of LibVoting.isExpired(voting) or LibVoting.cancelVoting(voting) respectively
     */
     using LibVoting for LibVoting.Voting;
+
+    modifier onlyEnrolledWorkers(address _operator) {
+        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
+
+        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.workerRole];
+        require(LibClaimManager.isWorker(_operator, lastRoleVersion), "Access denied: not enrolled as worker");
+        _;
+    }
 
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
@@ -98,7 +107,7 @@ contract VotingFacet is IVoting {
         return votingStorage.matchInputs.length;
     }
 
-    function addWorker(address payable workerAddress) external {
+    function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         //AccessControl
         LibDiamond.enforceIsContractOwner();
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
@@ -109,6 +118,31 @@ contract VotingFacet is IVoting {
         votingStorage.workerToIndex[workerAddress] = votingStorage.numberOfWorkers;
         votingStorage.workers.push(workerAddress);
         votingStorage.numberOfWorkers = votingStorage.numberOfWorkers + 1;
+    }
+
+    function removeWorker(address workerToRemove) external {
+        LibDiamond.enforceIsContractOwner();
+        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
+
+        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.workerRole];
+
+        if (LibVoting.isNotWorker(workerToRemove)) {
+            revert LibVoting.WorkerWasNotAdded();
+        }
+        require(LibClaimManager.isWorker(workerToRemove, lastRoleVersion), "Not allowed: still enrolled as worker");
+
+        if (votingStorage.numberOfWorkers > 1) {
+            uint256 workerIndex = votingStorage.workerToIndex[workerToRemove];
+            // Copy last element to fill the missing place in array
+            address payable workerToMove = votingStorage.workers[votingStorage.numberOfWorkers - 1];
+            votingStorage.workers[workerIndex] = workerToMove;
+            votingStorage.workerToIndex[workerToMove] = workerIndex;
+        }
+
+        delete votingStorage.workerToIndex[workerToRemove];
+        votingStorage.workers.pop();
+        votingStorage.numberOfWorkers = votingStorage.numberOfWorkers - 1;
     }
 
     function getMatch(string memory input) external view returns (string memory) {

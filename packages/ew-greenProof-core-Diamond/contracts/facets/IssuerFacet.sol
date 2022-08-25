@@ -20,7 +20,10 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     }
 
     modifier onlyRevoker() {
-        //TO: set a requirement checking for authorized revoker entity
+        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
+
+        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.revokerRole];
+        require(LibClaimManager.isRevoker(msg.sender, lastRoleVersion), "Access: Not enrolled as worker");
         _;
     }
 
