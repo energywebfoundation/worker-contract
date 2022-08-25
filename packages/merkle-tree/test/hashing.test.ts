@@ -149,4 +149,5 @@ describe('#createMerkleTree', () => {
     expect(verify({ proof: tree.getHexProof(fakeConsumptionLeaf), leaf: fakeConsumptionLeaf, root: tree.getHexRoot(), hashFn: hash })).toEqual(false);
     expect(verify({ proof: tree.getHexProof(fakeMatchLeaf), leaf: fakeMatchLeaf, root: tree.getHexRoot(), hashFn: hash })).toEqual(false);
   });
+>>>>>>> 063cb77 (feat(merkle-tree): improve hashing)
 });
