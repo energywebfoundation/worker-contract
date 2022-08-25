@@ -24,7 +24,7 @@ interface IGreenProof {
         uint256 requestID;
         address recipient;
         string winningMatch;
-        bytes verifiableCredential;
+        bytes verifiableCredentials;
         RequestStatus status;
     }
 

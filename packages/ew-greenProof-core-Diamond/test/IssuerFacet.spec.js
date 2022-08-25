@@ -151,8 +151,13 @@ describe("IssuerFacet", function () {
 
   describe("\n** Proof issuance tests **\n", () => {
     it("reverts when we try to validate request before request issuance", async () => {
-      //TO-DO
+      const VC = ethers.utils.namehash("data to validate");
+      await grantRole(validator, validatorRole);
+      expect(
+        issuerFacet.connect(validator).validateIssuanceRequest(winninMatch, VC)
+      ).to.be.revertedWith("Validation not requested");
     });
+
     it("Can send proof issuance requests", async () => {
       const proofId = 1;
       expect(
@@ -160,6 +165,14 @@ describe("IssuerFacet", function () {
           .connect(owner)
           .requestProofIssuance(winninMatch, receiverAddress)
       ).to.emit(issuerFacet, "IssuanceRequested");
+    });
+
+    it("Non Authorized validator cannot validate issuance requests", async () => {
+      const VC = ethers.utils.namehash("data to validate");
+      await revokeRole(validator, validatorRole);
+      expect(
+        issuerFacet.connect(validator).validateIssuanceRequest(winninMatch, VC)
+      ).to.be.revertedWith("Access: Not a validator");
     });
 
     it("Authorized validator can validate issuance requests", async () => {
@@ -205,6 +218,7 @@ describe("IssuerFacet", function () {
             producerRef
           )
       ).to.emit(issuerFacet, "ProofMinted");
+      //TO-DO: verify that the NFT has been correctly issued
     });
   });
 

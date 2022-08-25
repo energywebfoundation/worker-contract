@@ -89,4 +89,10 @@ library LibClaimManager {
 
         return hasRole(operator, claimStore.issuerRole, roleVersion);
     }
+
+    function isValidator(address operator, uint256 roleVersion) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        return hasRole(operator, claimStore.validatorRole, roleVersion);
+    }
 }
