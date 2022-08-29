@@ -31,6 +31,7 @@ const sortObject = (target: Target) => {
  *
  * @param {object} target object containing string, number, boolean or other object containing this values.
  * @remember Other values like functions or arrays will be omitted.
+ * @remember Function compatible with JSON.parse
  * @returns {string} sorted and stringified object
  */
 export const stringify = (
