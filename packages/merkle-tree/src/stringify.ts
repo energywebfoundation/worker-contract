@@ -1,6 +1,22 @@
 interface Target {
-  [k: string]: string | number | boolean | null | undefined | Target
+  [k: string]: string | number | boolean | null | undefined | Target | Target[] | string[] | number[] | boolean[]
 }
+
+const sortArray = (target: string[] | number[] | boolean[] | Target[]) => {
+  const preparedArray = target.map(item => {
+    if (typeof item === 'object') {
+      return stringify(sortObject(item));
+    }
+    return String(item);
+  }).sort();
+  return preparedArray.map(item => {
+    try {
+      return JSON.parse(item) as Target;
+    } catch {
+      return item;
+    }
+  }) as string[] | Target[];
+};
 
 const sortObject = (target: Target) => {
   const keys = Object.keys(target);
@@ -19,8 +35,12 @@ const sortObject = (target: Target) => {
         ) {
           acc[key] = value;
         }
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && !Array.isArray(value)) {
           acc[key] = sortObject(value);
+        }
+
+        if (Array.isArray(value)) {
+          acc[key] = sortArray(value);
         }
       }
       return acc;
