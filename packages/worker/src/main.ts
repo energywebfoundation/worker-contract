@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import type { MatchVoting } from '@energyweb/greenproof-voting-contract';
 import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
-import { createMerkleTree, hash } from '@energyweb/greenproof-merkle-tree';
+import { createMerkleTree, stringify, verify } from '@energyweb/greenproof-merkle-tree';
 import { providers, Wallet } from 'ethers';
 import * as Joi from 'joi';
 
@@ -22,7 +22,8 @@ type WorkerConfig = {
 
 export type MerkleTree = {
   createMerkleTree: typeof createMerkleTree;
-  hash: typeof hash;
+  stringify: typeof stringify;
+  verify: typeof verify;
 };
 
 type Runtime = {
@@ -45,7 +46,7 @@ export class GreenProofWorker {
       votingContractAddress,
       signer,
     );
-    this.merkleTree = { createMerkleTree, hash };
+    this.merkleTree = { createMerkleTree, stringify, verify };
     this.port = port as number;
   }
 

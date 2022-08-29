@@ -1505,13 +1505,6 @@
   resolved "https://registry.npmjs.org/@emotion/weak-memoize/-/weak-memoize-0.2.5.tgz"
   integrity sha512-6U71C2Wp7r5XtFtQzYrW5iKFT67OixrSxjI4MptCHzdSVlgabczzqLe0ZSgnub/5Kp4hSbpDB1tMytZY9pwxxA==
 
-"@energyweb/greenproof-merkle-tree@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@energyweb/greenproof-merkle-tree/-/greenproof-merkle-tree-1.0.2.tgz#3ef42674567faf582f322f9a1fdce22fd5a4eb1d"
-  integrity sha512-dND+SjZ/ZtIHfr+/Qgw8aZQLseXVijToo0Rj7LbWuQQVMlqdxvyCisc4n/f0qzgW2LHlVNiEaCTMcx4yubwKIQ==
-  dependencies:
-    merkletreejs "0.2.31"
-
 "@energyweb/greenproof-voting-contract@1.0.2":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@energyweb/greenproof-voting-contract/-/greenproof-voting-contract-1.0.2.tgz#bb311742a328fa3331e8c981d0ed5eb999e8b19d"
