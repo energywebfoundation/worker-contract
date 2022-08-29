@@ -27,6 +27,12 @@ const sortObject = (target: Target) => {
     }, {} as Target);
 };
 
+/**
+ *
+ * @param {object} target object containing string, number, boolean or other object containing this values.
+ * @remember Other values like functions or arrays will be omitted.
+ * @returns {string} sorted and stringified object
+ */
 export const stringify = (
   target: Target,
 ): string => {
