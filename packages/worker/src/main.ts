@@ -28,26 +28,26 @@ export type MerkleTree = {
 
 type Runtime = {
   merkleTree: MerkleTree;
-  votingContract: MatchVoting;
+  getVotingContract: () => MatchVoting;
 };
 
 type CallBack = (runtime: Runtime) => Promise<void>;
 
 export class GreenProofWorker {
-  votingContract: MatchVoting;
+  private provider: providers.JsonRpcProvider;
+  private privateKey: string;
+  private votingContractAddress: string;
   merkleTree: MerkleTree;
   port: number;
 
   constructor(config: WorkerConfig) {
     const { privateKey, rpcUrl, votingContractAddress, port } = this.validateConfig(config);
-    const provider = new providers.JsonRpcProvider(rpcUrl);
-    const signer = new Wallet(privateKey, provider);
-    this.votingContract = MatchVoting__factory.connect(
-      votingContractAddress,
-      signer,
-    );
+    this.provider = new providers.JsonRpcProvider(rpcUrl);
+    this.privateKey = privateKey;
+    this.votingContractAddress = votingContractAddress;
+
     this.merkleTree = { createMerkleTree, stringify, verify };
-    this.port = port as number;
+    this.port = port ?? 3030;
   }
 
   private validateConfig(config: WorkerConfig) {
@@ -62,12 +62,21 @@ export class GreenProofWorker {
     return value;
   }
 
+  private getContractWithSigner = (): MatchVoting => {
+    const signer = new Wallet(this.privateKey, this.provider);
+    const contract = MatchVoting__factory.connect(
+      this.votingContractAddress,
+      this.provider.getSigner(),
+    );
+    return contract.connect(signer);
+  }
+
   async start(cb: CallBack) {
     const app = await NestFactory.create(AppModule);
     await app.listen(this.port);
     await cb({
       merkleTree: this.merkleTree,
-      votingContract: this.votingContract,
+      getVotingContract: this.getContractWithSigner,
     });
   }
 }
