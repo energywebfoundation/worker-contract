@@ -52,8 +52,9 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
             revert LibIssuer.NotValidatedProof(proofID);
         }
 
-        Proof memory greenProof = Proof(isRevoked, isRetired, proofID, productType, amount, start, end, producerRef);
+        Proof memory greenProof = Proof(isRevoked, isRetired, proofID, block.timestamp, productType, amount, start, end, producerRef);
         issuer.mintedProofs[proofID] = greenProof;
+        issuer.userProofs[receiver].push(greenProof);
 
         _mint(receiver, proofID, amount, issuer.issuanceRequests[winningMatch].verifiableCredentials);
         emit LibIssuer.ProofMinted(proofID);
@@ -70,13 +71,16 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
     function revokeProof(uint256 proofID) external onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = getStorage();
+        uint256 issuanceDate = issuer.mintedProofs[proofID].issuanceDate;
 
         if (proofID > issuer.lastProofIndex) {
             revert LibIssuer.NonExistingProof(proofID);
         }
         require(issuer.mintedProofs[proofID].isRevoked == false, "already revoked proof");
-        //TO-DO: check that we are not allowed to revoke retired proofs
-        require(issuer.mintedProofs[proofID].isRetired == false, "Not allowed on retired proofs");
+        //TO-DO: check that we are not allowed to revoke retired proofs after revocable period
+        if (issuer.mintedProofs[proofID].isRetired && issuanceDate + issuer.revocablePeriod >= block.timestamp) {
+            revert LibIssuer.NonRevokableProof(proofID, issuanceDate, block.timestamp);
+        }
         //TO-DO: revoke the proof
         issuer.mintedProofs[proofID].isRevoked = true;
     }

@@ -9,7 +9,9 @@ library LibIssuer {
 
     struct IssuerStorage {
         uint256 lastProofIndex;
+        uint256 revocablePeriod;
         mapping(uint256 => IGreenProof.Proof) mintedProofs;
+        mapping(address => IGreenProof.Proof[]) userProofs;
         mapping(string => IGreenProof.IssuanceRequest) issuanceRequests;
     }
 
@@ -20,6 +22,7 @@ library LibIssuer {
 
     error NotValidatedProof(uint256 proofID);
     error NonExistingProof(uint256 proofId);
+    error NonRevokableProof(uint256 proofID, uint256 issuanceDate, uint256 revocationDate);
 
     function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {
         bytes32 position = ISSUER_STORAGE_POSITION;
@@ -27,5 +30,11 @@ library LibIssuer {
         assembly {
             _issuerStorage.slot := position
         }
+    }
+
+    function init(uint256 revocablePeriod) internal {
+        IssuerStorage storage issuer = _getStorage();
+        require(issuer.revocablePeriod == 0, "revocable period: already set");
+        issuer.revocablePeriod = revocablePeriod;
     }
 }

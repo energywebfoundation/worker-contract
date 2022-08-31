@@ -10,6 +10,7 @@ pragma solidity ^0.8.0;
 
 import {LibReward} from "./libraries/LibReward.sol";
 import {LibVoting} from "./libraries/LibVoting.sol";
+import {LibIssuer} from "./libraries/LibIssuer.sol";
 import {LibDiamond} from "./libraries/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {LibClaimManager} from "./libraries/LibClaimManager.sol";
@@ -24,11 +25,14 @@ contract Diamond {
         bytes32 issuerRole,
         bytes32 revokerRole,
         bytes32 validatorRole,
-        bytes32 workerRole
+        bytes32 workerRole,
+        uint256 revocablePeriod
     ) payable {
         require(_rewardAmount > 0, "Reward amount should be positive");
         require(_claimManagerAddress != address(0), "Invalid claimManager");
+        require(revocablePeriod > 0, "Invalid revocable period");
         LibVoting.init(_votingTimeLimit);
+        LibIssuer.init(revocablePeriod);
         LibReward.initRewards(_rewardAmount);
         LibDiamond.setContractOwner(_contractOwner);
 
