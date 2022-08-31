@@ -11,6 +11,7 @@ const ROLES = {
   validator: ethers.utils.namehash("validator"),
   worker: ethers.utils.namehash("worker"),
 };
+const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 
 async function deployDiamond(
   votingTimeLimit,
@@ -40,7 +41,8 @@ async function deployDiamond(
     issuerRole,
     revokerRole,
     validatorRole,
-    workerRole
+    workerRole,
+    revocablePeriod
   );
   await diamond.deployed();
   console.log("Diamond deployed:", diamond.address);
@@ -101,7 +103,8 @@ if (require.main === module) {
     15 * 60,
     ethers.utils.parseEther("1"),
     VOLTA_CLAIM_MANAGER,
-    ROLES
+    ROLES,
+    revocablePeriod
   )
     // deployDiamond()
     .then(() => process.exit(0))

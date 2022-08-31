@@ -6,6 +6,7 @@ interface IGreenProof {
         bool isRevoked;
         bool isRetired;
         uint256 index;
+        uint256 issuanceDate;
         uint256 productType;
         uint256 volume;
         uint256 startTime;
