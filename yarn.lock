@@ -17029,7 +17029,31 @@ p-try@^2.0.0:
   resolved "https://registry.yarnpkg.com/p-try/-/p-try-2.2.0.tgz#cb2868540e313d61de58fafbe35ce9004d5540e6"
   integrity sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==
 
-pacote@^11.1.11, pacote@^11.2.6, pacote@^11.3.1, pacote@^11.3.4, pacote@^11.3.5:
+pac-proxy-agent@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/pac-proxy-agent/-/pac-proxy-agent-5.0.0.tgz#b718f76475a6a5415c2efbe256c1c971c84f635e"
+  integrity sha512-CcFG3ZtnxO8McDigozwE3AqAw15zDvGH+OjXO4kzf7IkEKkQ4gxQ+3sdF50WmhQ4P/bVusXcqNE2S3XrNURwzQ==
+  dependencies:
+    "@tootallnate/once" "1"
+    agent-base "6"
+    debug "4"
+    get-uri "3"
+    http-proxy-agent "^4.0.1"
+    https-proxy-agent "5"
+    pac-resolver "^5.0.0"
+    raw-body "^2.2.0"
+    socks-proxy-agent "5"
+
+pac-resolver@^5.0.0:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/pac-resolver/-/pac-resolver-5.0.1.tgz#c91efa3a9af9f669104fa2f51102839d01cde8e7"
+  integrity sha512-cy7u00ko2KVgBAjuhevqpPeHIkCIqPe1v24cydhWjmeuzaBfmUWFCZJ1iAh5TuVzVZoUzXIW7K8sMYOZ84uZ9Q==
+  dependencies:
+    degenerator "^3.0.2"
+    ip "^1.1.5"
+    netmask "^2.0.2"
+
+pacote@^11.1.11, pacote@^11.2.6, pacote@^11.3.0, pacote@^11.3.1, pacote@^11.3.5:
   version "11.3.5"
   resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.3.5.tgz#73cf1fc3772b533f575e39efa96c50be8c3dc9d2"
   integrity sha512-fT375Yczn4zi+6Hkk2TBe1x1sP8FgFsEIZ2/iWaXY2r/NkhDJfxbcn5paz1+RTFCyNf+dPnaoBDJoAxXSU8Bkg==
