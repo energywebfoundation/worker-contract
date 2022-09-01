@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-import {IMinter} from "../interfaces/IMinter.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
@@ -13,8 +12,18 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 /// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a Gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
 
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
-    modifier onlyMinter() {
-        //TO: set a requirement checking for authorized issuer entity
+    modifier onlyValidator() {
+        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
+
+        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.validatorRole];
+        require(LibClaimManager.isValidator(msg.sender, lastRoleVersion), "Access: Not a validator");
+        _;
+    }
+
+    modifier onlyIssuer() {
+        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
+
+        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.issuerRole];
         require(LibClaimManager.isIssuer(msg.sender, lastRoleVersion), "Access: Not an issuer");
         _;
     }
@@ -57,7 +66,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         issuer.userProofs[receiver].push(greenProof);
 
         _mint(receiver, proofID, amount, issuer.issuanceRequests[winningMatch].verifiableCredentials);
-        emit LibIssuer.ProofMinted(proofID);
+        emit LibIssuer.ProofMinted(proofID, amount);
     }
 
     function getProof(uint256 proofID) external view override returns (Proof memory proof) {
@@ -67,6 +76,14 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
             revert LibIssuer.NonExistingProof(proofID);
         }
         proof = issuer.mintedProofs[proofID];
+    }
+
+    function getProofsOf(address userAddress) external view returns (Proof[] memory) {
+        LibIssuer.IssuerStorage storage issuer = getStorage();
+
+        require(issuer.userProofs[userAddress].length != 0, "No proofs for this address");
+
+        return issuer.userProofs[userAddress];
     }
 
     function revokeProof(uint256 proofID) external onlyRevoker {

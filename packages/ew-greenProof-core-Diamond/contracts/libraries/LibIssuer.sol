@@ -15,7 +15,7 @@ library LibIssuer {
         mapping(string => IGreenProof.IssuanceRequest) issuanceRequests;
     }
 
-    event ProofMinted(uint256 indexed proofID);
+    event ProofMinted(uint256 indexed proofID, uint256 indexed volume);
     event IssuanceRequested(uint256 indexed proofID); //TO-DO: Inject event params
     event RequestAccepted(uint256 indexed proofID);
     event RequestRejected(uint256 indexed proofID);

@@ -208,20 +208,21 @@ describe("IssuerFacet", function () {
 
     it("Authorized issuer can issue proofs", async () => {
       await grantRole(minter, issuerRole);
-
-      expect(
-        await issuerFacet
-          .connect(minter)
-          .issueProof(
-            receiverAddress,
-            amount,
-            productType,
-            start,
-            end,
-            winninMatch,
-            producerRef
-          )
-      ).to.emit(issuerFacet, "ProofMinted");
+      let id;
+      let tx;
+      tx = await issuerFacet
+        .connect(minter)
+        .issueProof(
+          receiverAddress,
+          amount,
+          productType,
+          start,
+          end,
+          winninMatch,
+          producerRef
+        );
+      await tx.wait();
+      expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(1, amount);
       //TO-DO: verify that the NFT has been correctly issued
     });
   });
