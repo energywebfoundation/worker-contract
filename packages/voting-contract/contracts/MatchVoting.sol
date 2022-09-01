@@ -81,8 +81,8 @@ contract MatchVoting is Ownable {
     /// Event emitted after voting ended
     event WinningMatch(
         string indexed matchInput,
-        bytes32 indexed matchResult,
-        uint256 indexed voteCount
+        bytes32 matchResult,
+        uint256 voteCount
     );
 
     /// Winning match result can not be determined
@@ -122,9 +122,7 @@ contract MatchVoting is Ownable {
 
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
-    function vote(string memory matchInput, bytes32 matchResult)
-        external
-    {
+    function vote(string memory matchInput, bytes32 matchResult) external {
         if (!isWorker(msg.sender)) {
             revert NotWhitelisted();
         }
@@ -279,14 +277,13 @@ contract MatchVoting is Ownable {
             address payable worker = workers[i];
             if (
                 voting.workerToVoted[worker] &&
-                (voting.workerToMatchResult[worker]) == voting.winningMatch)
-            {
+                (voting.workerToMatchResult[worker]) == voting.winningMatch
+            ) {
                 _winners[winnerCount] = worker;
                 winnerCount++;
             }
         }
     }
-
 
     /// @notice Number of votes sufficient to determine match winner
     function majority() public view returns (uint256) {
@@ -343,7 +340,7 @@ contract MatchVoting is Ownable {
         voting.start = 0;
     }
 
-     function compareStrings(string memory a, string memory b)
+    function compareStrings(string memory a, string memory b)
         private
         pure
         returns (bool)
