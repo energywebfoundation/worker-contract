@@ -7,6 +7,8 @@ import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
+import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
+
 contract VotingFacet is IVoting {
     /**
         Allowing library's function calls on address type
@@ -84,6 +86,14 @@ contract VotingFacet is IVoting {
         if (voting.numberOfVotes == votingStorage.numberOfWorkers) {
             voting.completeVoting();
         }
+    }
+
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external view returns (bool) {
+        return MerkleProof.verify(proof, rootHash, leaf);
     }
 
     function getWinners(string memory matchInput) external view returns (address payable[] memory _winners) {
