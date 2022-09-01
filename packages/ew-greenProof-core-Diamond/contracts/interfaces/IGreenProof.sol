@@ -37,11 +37,16 @@ interface IGreenProof {
         uint256 end,
         string memory winningMatch,
         bytes32 producerRef
-    ) external;
+    ) external returns (uint256);
 
     function retireProof(address from, uint256 proofID) external;
 
     function getProof(uint256 proofID) external view returns (Proof memory proof);
 
     function requestProofIssuance(string memory winningMatch, address recipient) external;
+
+    event ProofMinted(uint256 indexed proofID, uint256 indexed amount);
+    event IssuanceRequested(uint256 indexed proofID);
+    event RequestAccepted(uint256 indexed proofID);
+    event RequestRejected(uint256 indexed proofID);
 }
