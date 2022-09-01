@@ -12,7 +12,7 @@ export const createMerkleTree = (
 
 export const createPreciseProof = (target: Target, hashFn: (...data: string[]) => string) => {
   const sorted = sortObject(target);
-  const leaves = Object.entries(sorted).map(([key, value]) => hashFn(key + JSON.stringify(value)));
+  const leaves = Object.entries(sorted).map(([key, value]) => hashFn(key, JSON.stringify(value)));
   return new MerkleTree(leaves, hashFn, {
     sortLeaves: true,
     sortPairs: true,
