@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "axios": "^0.27.2",
-    "barrelsby": "^2.4.0",
     "zod": "^3.18.0"
   },
   "devDependencies": {
+    "barrelsby": "^2.4.0",
     "orval": "^6.9.6"
   }
 }
