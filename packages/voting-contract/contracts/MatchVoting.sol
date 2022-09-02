@@ -46,17 +46,17 @@ contract MatchVoting is Ownable {
         /// Input match
         string matchInput;
         /// List of all match results with at least one vote
-        bytes32[] matches;
+        string[] matches;
         /// Worker address to match result
-        mapping(address => bytes32) workerToMatchResult;
+        mapping(address => string) workerToMatchResult;
         /// Worker address to voted flag
         mapping(address => bool) workerToVoted;
         /// Match result to total vote count
-        mapping(bytes32 => uint256) matchResultToVoteCount;
+        mapping(string => uint256) matchResultToVoteCount;
         /// To decide which actions are currently applicable to voting
         Status status;
         /// Winning match result
-        bytes32 winningMatch;
+        string winningMatch;
         /// Number of votes for winning match
         uint256 winningMatchVoteCount;
         /// If none of the match results gets more votes then the others
@@ -81,7 +81,7 @@ contract MatchVoting is Ownable {
     /// Event emitted after voting ended
     event WinningMatch(
         string indexed matchInput,
-        bytes32 matchResult,
+        string matchResult,
         uint256 voteCount
     );
 
@@ -122,7 +122,7 @@ contract MatchVoting is Ownable {
 
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
-    function vote(string memory matchInput, bytes32 matchResult) external {
+    function vote(string memory matchInput, string memory matchResult) external {
         if (!isWorker(msg.sender)) {
             revert NotWhitelisted();
         }
@@ -181,7 +181,7 @@ contract MatchVoting is Ownable {
     function getWinningMatch(string memory matchInput)
         public
         view
-        returns (bytes32)
+        returns (string memory)
     {
         return matchInputToVoting[matchInput].winningMatch;
     }
@@ -228,7 +228,7 @@ contract MatchVoting is Ownable {
     function getWorkerVote(string memory matchInput, address workerAddress)
         external
         view
-        returns (bytes32 matchResult)
+        returns (string memory matchResult)
     {
         return
             matchInputToVoting[matchInput].workerToMatchResult[workerAddress];
@@ -277,7 +277,7 @@ contract MatchVoting is Ownable {
             address payable worker = workers[i];
             if (
                 voting.workerToVoted[worker] &&
-                (voting.workerToMatchResult[worker]) == voting.winningMatch
+                (keccak256(bytes(voting.workerToMatchResult[worker]))) == keccak256(bytes(voting.winningMatch))
             ) {
                 _winners[winnerCount] = worker;
                 winnerCount++;

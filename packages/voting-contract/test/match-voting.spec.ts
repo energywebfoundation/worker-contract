@@ -4,6 +4,7 @@ import { Contract, ContractFactory, utils } from "ethers";
 import chai, { expect } from "chai";
 import { deployMockContract, MockContract, solidity } from "ethereum-waffle";
 import { claimManagerInterface, toBytes32 } from "./utils";
+import { createHash } from "crypto";
 
 chai.use(solidity);
 const { parseEther } = utils;
@@ -35,12 +36,15 @@ describe("MatchVoting", () => {
   const workerRoleDef = utils.namehash("worker.roles.247.apps.qb.iam.ewc");
   const defaultRoleVersion = 1;
 
+  const hash = (...data: string[]) =>
+    createHash("sha256").update(data.join("")).digest("hex");
+
   const timeframes = [
-    { input: "MATCH_INPUT_1", output: toBytes32("MATCH_OUTPUT_1") },
-    { input: "MATCH_INPUT_2", output: toBytes32("MATCH_OUTPUT_2") },
-    { input: "MATCH_INPUT_3", output: toBytes32("MATCH_OUTPUT_3") },
-    { input: "MATCH_INPUT_4", output: toBytes32("MATCH_OUTPUT_4") },
-    { input: "MATCH_INPUT_5", output: toBytes32("MATCH_OUTPUT_5") },
+    { input: hash("MATCH_INPUT_1"), output: hash("MATCH_OUTPUT_1") },
+    { input: hash("MATCH_INPUT_2"), output: hash("MATCH_OUTPUT_2") },
+    { input: hash("MATCH_INPUT_3"), output: hash("MATCH_OUTPUT_3") },
+    { input: hash("MATCH_INPUT_4"), output: hash("MATCH_OUTPUT_4") },
+    { input: hash("MATCH_INPUT_5"), output: hash("MATCH_OUTPUT_5") },
   ];
 
   beforeEach(async () => {
