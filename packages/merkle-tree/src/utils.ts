@@ -3,7 +3,7 @@ export const sortArray = <T>(target: NonNullable<T>[]): T[] => {
     if (typeof item === 'object') {
       return JSON.stringify(sortObject(item));
     }
-    return String(item);
+    return JSON.stringify(item);
   }).sort();
   return preparedArray.map(item => {
     try {
@@ -27,11 +27,12 @@ export const sortObject = <T extends Record<string, any>>(target: T): T => {
         if (
           typeof value === 'string' ||
           typeof value === 'number' ||
-          typeof value === 'boolean'
+          typeof value === 'boolean' ||
+          value instanceof Date
         ) {
           acc[key] = value;
         }
-        if (typeof value === 'object' && !Array.isArray(value)) {
+        if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
           acc[key] = sortObject(value);
         }
 
