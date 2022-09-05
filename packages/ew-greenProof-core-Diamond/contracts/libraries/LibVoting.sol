@@ -50,6 +50,13 @@ library LibVoting {
         mapping(string => string) matches;
     }
 
+    struct DataProof {
+        uint256 proofID;
+        bytes32 rootHash;
+        bytes32[] proofPath;
+        bytes32 leaf;
+    }
+
     enum Status {
         /// Not started or canceled
         NotActive,

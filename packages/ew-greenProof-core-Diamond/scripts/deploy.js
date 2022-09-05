@@ -7,7 +7,7 @@ const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
 const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
 const ROLES = {
   issuer: ethers.utils.namehash("issuer"),
-  revoker: ethers.utils.namehash("issuer"),
+  revoker: ethers.utils.namehash("revoker"),
   validator: ethers.utils.namehash("validator"),
   worker: ethers.utils.namehash("worker"),
 };
@@ -23,16 +23,17 @@ async function deployDiamond(
   const contractOwner = accounts[0];
 
   // deploy DiamondCutFacet
-  const DiamondCutFacet = await ethers.getContractFactory("DiamondCutFacet");
-  const diamondCutFacet = await DiamondCutFacet.deploy();
+  const diamondCutFacet = await (
+    await ethers.getContractFactory("DiamondCutFacet")
+  ).deploy();
   await diamondCutFacet.deployed();
   console.log("DiamondCutFacet deployed:", diamondCutFacet.address);
 
   // deploy Diamond
-  const Diamond = await ethers.getContractFactory("Diamond");
   const { issuerRole, revokerRole, validatorRole, workerRole } = roles;
   console.log("\nRegistered Roles :: ", roles, "\n");
-  const diamond = await Diamond.deploy(
+  const DiamondContract = await ethers.getContractFactory("Diamond");
+  const diamond = await DiamondContract.deploy(
     contractOwner.address,
     diamondCutFacet.address,
     votingTimeLimit,
@@ -59,12 +60,12 @@ async function deployDiamond(
   console.log('')
   console.log('Deploying facets')
   const FacetNames = [
-    'DiamondLoupeFacet',
-    'OwnershipFacet',
-    'IssuerFacet',
-    'VotingFacet',
-  ]
-  const cut = []
+    "DiamondLoupeFacet",
+    "OwnershipFacet",
+    "IssuerFacet",
+    "VotingFacet",
+  ];
+  const cut = [];
   for (const FacetName of FacetNames) {
     const Facet = await ethers.getContractFactory(FacetName);
     const facet = await Facet.deploy();
