@@ -1,4 +1,4 @@
 export interface Target {
-  [k: string]: any | any[]
+  [k: string]: string | number | boolean | null | undefined | Date | Target | Target[] | string[] | number[] | boolean[] | Date[]
 }
 
