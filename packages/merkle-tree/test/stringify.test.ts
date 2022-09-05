@@ -14,6 +14,9 @@ describe('Stringify', () => {
     const obj = {
       name: 'object',
       id: 1,
+      bark: () => {
+        console.log('Woof woof');
+      },
       empty: null,
     };
     const s = stringify(obj as any);
