@@ -12,38 +12,23 @@ interface IGreenProof {
         uint256 startTime;
         uint256 endTime;
         bytes32 producerRef;
+        bytes32 merkleRootProof;
     }
 
-    enum RequestStatus {
-        DEFAULT,
-        PENDING,
-        REJECTED,
-        ACCEPTED
-    }
+    function requestProofIssuance(string memory winningMatch, address recipient) external;
 
-    struct IssuanceRequest {
-        uint256 requestID;
-        address recipient;
-        string winningMatch;
-        bytes verifiableCredentials;
-        RequestStatus status;
-    }
+    function validateIssuanceRequest(string memory winningMatch, bytes32 merkleRootProof) external;
 
-    function issueProof(
+    function validateIssuanceRequest(
+        string memory winningMatch,
+        bytes32 merkleRootProof,
         address receiver,
         uint256 amount,
         uint256 productType,
         uint256 start,
         uint256 end,
-        string memory winningMatch,
         bytes32 producerRef
-    ) external returns (uint256);
-
-    function retireProof(address from, uint256 proofID) external;
-
-    function getProof(uint256 proofID) external view returns (Proof memory proof);
-
-    function requestProofIssuance(string memory winningMatch, address recipient) external;
+    ) external;
 
     event ProofMinted(uint256 indexed proofID, uint256 indexed amount);
     event IssuanceRequested(uint256 indexed proofID);
