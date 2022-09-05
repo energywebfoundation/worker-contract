@@ -30,6 +30,7 @@ describe('Stringify', () => {
       props: {
         value: 10,
         bad: false,
+        timestamp: new Date('2022-09-05T14:09:29.260Z'),
         nested: {
           fine: true,
           a: 1,
@@ -37,7 +38,7 @@ describe('Stringify', () => {
       },
     };
     const s = stringify(obj);
-    expect(s === '{"id":1,"name":"object","props":{"bad":false,"nested":{"a":1,"fine":true},"value":10}}').toBe(true);
+    expect(s === '{"id":1,"name":"object","props":{"bad":false,"nested":{"a":1,"fine":true},"timestamp":"2022-09-05T14:09:29.260Z","value":10}}').toBe(true);
   });
 
   it('should stringify objects containing arrays', () => {
