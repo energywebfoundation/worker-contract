@@ -1,4 +1,4 @@
 export interface Target {
-  [k: string]: any | Target | Target[] | any[]
+  [k: string]: any | any[]
 }
 
