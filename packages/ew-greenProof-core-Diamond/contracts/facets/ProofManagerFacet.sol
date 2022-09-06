@@ -3,20 +3,21 @@ pragma solidity ^0.8.8;
 
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofManager} from "../interfaces/IProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {ERC1155BaseInternal, ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 
-contract ProofManagerFacet is ERC1155BaseInternal {
+contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
     modifier onlyRevoker() {
         LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
 
         uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.revokerRole];
-        require(LibClaimManager.isRevoker(msg.sender, lastRoleVersion), "Access: Not enrolled as worker");
+        require(LibClaimManager.isRevoker(msg.sender, lastRoleVersion), "Access: Not enrolled as revoker");
         _;
     }
 
-    function retireProof(address from, uint256 proofID) external {
+    function retireProof(address from, uint256 proofID) external override {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.mintedProofs[proofID].isRevoked == false, "proof revoked");
@@ -26,7 +27,7 @@ contract ProofManagerFacet is ERC1155BaseInternal {
         _burn(from, issuer.mintedProofs[proofID].productType, issuer.mintedProofs[proofID].volume);
     }
 
-    function revokeProof(uint256 proofID) external onlyRevoker {
+    function revokeProof(uint256 proofID) external override onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
         uint256 issuanceDate = issuer.mintedProofs[proofID].issuanceDate;
 
@@ -38,10 +39,10 @@ contract ProofManagerFacet is ERC1155BaseInternal {
             revert LibIssuer.NonRevokableProof(proofID, issuanceDate, block.timestamp);
         }
         issuer.mintedProofs[proofID].isRevoked = true;
-        //TO-DO: emit a revocation event
+        emit ProofRevoked(proofID);
     }
 
-    function getProof(uint256 proofID) external view returns (IGreenProof.Proof memory proof) {
+    function getProof(uint256 proofID) external view override returns (IGreenProof.Proof memory proof) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         if (proofID > issuer.lastProofIndex) {
@@ -50,7 +51,7 @@ contract ProofManagerFacet is ERC1155BaseInternal {
         proof = issuer.mintedProofs[proofID];
     }
 
-    function getProofsOf(address userAddress) external view returns (IGreenProof.Proof[] memory) {
+    function getProofsOf(address userAddress) external view override returns (IGreenProof.Proof[] memory) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.userProofs[userAddress].length != 0, "No proofs for this address");
