@@ -23,11 +23,12 @@ const timeTravel = async (seconds) => {
   await network.provider.send("evm_mine", []);
 };
 
+let issuerFacet;
 let diamondAddress;
+let ownershipFacet;
 let diamondCutFacet;
 let diamondLoupeFacet;
-let ownershipFacet;
-let issuerFacet;
+let proofManagerFacet;
 let tx;
 let owner;
 let receiver;
@@ -62,6 +63,8 @@ const workerRole = ethers.utils.namehash(
   "workerRole.roles.greenproof.apps.iam.ewc"
 );
 const defaultVersion = 1;
+const proofID1 = 1;
+const proofID2 = 2;
 const VC = ethers.utils.namehash("data to validate");
 
 describe("IssuerFacet", function () {
@@ -71,8 +74,8 @@ describe("IssuerFacet", function () {
       validator,
       minter,
       receiver,
-      worker3,
-      worker4,
+      revoker,
+      nonAuthorizedOperator,
       worker5,
       worker6,
       notEnrolledWorker,
@@ -125,6 +128,10 @@ describe("IssuerFacet", function () {
       diamondAddress
     );
     issuerFacet = await ethers.getContractAt("IssuerFacet", diamondAddress);
+    proofManagerFacet = await ethers.getContractAt(
+      "ProofManagerFacet",
+      diamondAddress
+    );
   });
 
   beforeEach(async () => {
@@ -178,7 +185,7 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("Access: Not a validator");
     });
 
-    it("Non authorized issuer cannot issue proofs", async () => {
+    it("Non authorized validator cannot validate nor mint proofs", async () => {
       await revokeRole(validator, validatorRole);
       await expect(
         issuerFacet
@@ -207,7 +214,12 @@ describe("IssuerFacet", function () {
       ).to.emit(issuerFacet, "RequestAccepted");
     });
 
-    it("Authorized issuer can issue proofs", async () => {
+    it("checks that the certified volume is zero before minting", async () => {
+      const amountBeforMint = await issuerFacet.balanceOf(receiverAddress, 2);
+      expect(amountBeforMint).to.equal(0);
+    });
+
+    it("Authorized validator can validate and mint proofs", async () => {
       await grantRole(validator, validatorRole);
       let id;
       let tx;
@@ -218,7 +230,7 @@ describe("IssuerFacet", function () {
           .requestProofIssuance(secondMatch, receiverAddress)
       ).to.emit(issuerFacet, "IssuanceRequested");
 
-      //step 2: validate issuance
+      //step 2: validate issuance request
       tx = await issuerFacet
         .connect(validator)
         [
@@ -235,23 +247,34 @@ describe("IssuerFacet", function () {
         );
       await tx.wait();
       expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(2, amount);
-      //TO-DO: verify that the NFT has been correctly issued
+    });
+
+    it("checks that the certified volume is correct after minting", async () => {
+      const amountMinted = await issuerFacet.balanceOf(receiverAddress, 2);
+      expect(amountMinted).to.equal(amount);
     });
   });
 
   describe("\n** Proof revocation tests **\n", () => {
+    it("should prevent a non authorized entity from revoking non retired proof", async () => {
+      await revokeRole(nonAuthorizedOperator, revokerRole);
+      await expect(
+        proofManagerFacet.connect(nonAuthorizedOperator).revokeProof(proofID1)
+      ).to.be.revertedWith("Access: Not enrolled as revoker");
+    });
+
     it("should allow an authorized entity to revoke non retired proof", async () => {
       //TODO: check that a non retired proof can be revoked
+      await grantRole(revoker, revokerRole);
+      await expect(
+        proofManagerFacet.connect(revoker).revokeProof(proofID1)
+      ).to.emit(proofManagerFacet, "ProofRevoked");
     });
     it("should revert if the proof is already retired", async () => {
       //TODO: check that a non retired proof can be revoked
     });
 
-    it("should prevent a non authorized entity from revoking non retired proof", async () => {
-      //TODO: check that not authorized user cannot revoke a non retired proof
-    });
-
-    it("should prevent authorized revoker from revoking a retired proof", async () => {
+    it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
       //TODO: check thata retired proof cannot be revoked
     });
   });
