@@ -2,15 +2,15 @@
   "deployedContracts": [
     {
       "name": "Certificate",
-      "address": "0xD06a4F984EB74Aa9628a31aF65C08231b85A88A0"
+      "address": "0xf3e7ae396fC52dBf40E4Ad247C73aD87b9Cb412F"
     },
     {
       "name": "RewardFixed",
-      "address": "0xFdc61711448a85b9eBDc229D39ED1ec2d3b24755"
+      "address": "0x0c50Ab02Cb457d91791ee59d4E20174CB1a97540"
     },
     {
       "name": "MatchVoting",
-      "address": "0x6213DFb3DE20809cCf75eF4fE5108556B50f8597"
+      "address": "0x4D142C3fc2F276E9c3aef00E27686a1F532c818b"
     }
   ]
 }

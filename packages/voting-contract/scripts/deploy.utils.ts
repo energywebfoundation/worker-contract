@@ -3,9 +3,8 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-export const workerRole: string = ethers.utils.namehash(
-  "worker.roles.247.apps.qb.iam.ewc"
-);
+const workerRoleVolta = process.env.WORKER_ROLE_VOLTA as string;
+export const workerRole = ethers.utils.namehash(workerRoleVolta);
 const rewardEtherAmount = process.env.REWARD_ETHER_AMOUNT as string;
 export const rewardAmount = ethers.utils.parseEther(rewardEtherAmount);
 export const votingTimeLimit = 15 * 50;
