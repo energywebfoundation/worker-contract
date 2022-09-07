@@ -60,13 +60,19 @@ const deploy = async () => {
 
     for (const deployment of deploymentPlan) {
       const contract = deployment(context);
-      console.log(`Deploying ${contract.name} with args: ${contract.args}`);
+      console.log(
+        `\nDeploying ${contract.name} with args: ${
+          contract.args.length ? contract.args : "No arguments"
+        }`
+      );
 
       const ContractToDeploy = await ethers.getContractFactory(contract.name);
       const deployedContract = await ContractToDeploy.deploy(...contract.args);
       await deployedContract.deployed();
 
-      console.log(`${contract.name} deployed to: ${deployedContract.address}`);
+      console.log(
+        `\x1b[32m${contract.name} deployed to: ${deployedContract.address}\x1b[0m`
+      );
 
       context.deployedContracts.push({
         name: contract.name,
