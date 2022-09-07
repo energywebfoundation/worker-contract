@@ -20,14 +20,6 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         _;
     }
 
-    // modifier onlyIssuer() {
-    //     LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
-
-    //     uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.issuerRole];
-    //     require(LibClaimManager.isIssuer(msg.sender, lastRoleVersion), "Access: Not an issuer");
-    //     _;
-    // }
-
     /** getStorage: returns a pointer to the storage  */
     function getStorage() internal pure returns (LibIssuer.IssuerStorage storage _issuer) {
         _issuer = LibIssuer._getStorage();

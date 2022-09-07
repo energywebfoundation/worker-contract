@@ -15,7 +15,7 @@ const {
   MockContract,
   solidity,
 } = require("ethereum-waffle");
-const { claimManagerInterface, toBytes32 } = require("./utils");
+const { claimManagerInterface, toBytes32, checkProof } = require("./utils");
 chai.use(solidity);
 
 const timeTravel = async (seconds) => {
@@ -253,6 +253,8 @@ describe("IssuerFacet", function () {
       const amountMinted = await issuerFacet.balanceOf(receiverAddress, 2);
       expect(amountMinted).to.equal(amount);
     });
+
+    //TODO: test request rejection
   });
 
   describe("\n** Proof revocation tests **\n", () => {
@@ -272,6 +274,7 @@ describe("IssuerFacet", function () {
     });
     it("should revert if the proof is already retired", async () => {
       //TODO: check that a non retired proof can be revoked
+      checkProof();
     });
 
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
