@@ -9,8 +9,10 @@ import path from "path";
 import {
   Contract,
   workerRole,
+  throwEnvError,
   rewardAmount,
   votingTimeLimit,
+  isEnvConfigured,
   ContractToDeploy,
   DeploymentContext,
   voltaClaimManagerAddress,
@@ -50,36 +52,40 @@ const deploymentPlan: ((ctx: DeploymentContext) => ContractToDeploy)[] = [
   }),
 ];
 
-async function main() {
-  const context: DeploymentContext = {
-    deployedContracts: [],
-  };
+const deploy = async () => {
+  if (isEnvConfigured()) {
+    const context: DeploymentContext = {
+      deployedContracts: [],
+    };
 
-  for (const deployment of deploymentPlan) {
-    const contract = deployment(context);
-    console.log(`Deploying ${contract.name} with args: ${contract.args}`);
+    for (const deployment of deploymentPlan) {
+      const contract = deployment(context);
+      console.log(`Deploying ${contract.name} with args: ${contract.args}`);
 
-    const ContractToDeploy = await ethers.getContractFactory(contract.name);
-    const deployedContract = await ContractToDeploy.deploy(...contract.args);
-    await deployedContract.deployed();
+      const ContractToDeploy = await ethers.getContractFactory(contract.name);
+      const deployedContract = await ContractToDeploy.deploy(...contract.args);
+      await deployedContract.deployed();
 
-    console.log(`${contract.name} deployed to: ${deployedContract.address}`);
+      console.log(`${contract.name} deployed to: ${deployedContract.address}`);
 
-    context.deployedContracts.push({
-      name: contract.name,
-      address: deployedContract.address,
-    });
+      context.deployedContracts.push({
+        name: contract.name,
+        address: deployedContract.address,
+      });
 
-    await fs.writeFileSync(
-      path.join(__dirname, "context.json"),
-      JSON.stringify(context, null, 2)
-    );
+      await fs.writeFileSync(
+        path.join(__dirname, "context.json"),
+        JSON.stringify(context, null, 2)
+      );
+    }
+  } else {
+    throwEnvError();
   }
-}
+};
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-main().catch((error) => {
+deploy().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
