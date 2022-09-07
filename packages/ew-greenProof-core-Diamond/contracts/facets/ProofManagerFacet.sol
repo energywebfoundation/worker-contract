@@ -8,6 +8,8 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {ERC1155BaseInternal, ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 
+import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
+
 contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
     modifier onlyRevoker() {
         LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
@@ -15,6 +17,16 @@ contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
         uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.revokerRole];
         require(LibClaimManager.isRevoker(msg.sender, lastRoleVersion), "Access: Not enrolled as revoker");
         _;
+    }
+
+    function verifyProof(
+        // string memory winningMatch,
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure returns (bool) {
+        //TODO: check that the provided roothash is the same as the one stored onChain
+        return MerkleProof.verify(proof, rootHash, leaf);
     }
 
     function retireProof(address from, uint256 proofID) external override {

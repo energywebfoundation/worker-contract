@@ -12,5 +12,11 @@ interface IProofManager {
 
     function getProofsOf(address userAddress) external view returns (IGreenProof.Proof[] memory);
 
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure returns (bool);
+
     event ProofRevoked(uint256 indexed proofID);
 }
