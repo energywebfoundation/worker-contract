@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-voting-manager",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "scripts": {
     "replace-vars": "node substitute-vars.js",
     "start:prod": "yarn replace-vars && serve build",
@@ -25,50 +25,51 @@
     ]
   },
   "resolutions": {
-    "zustand": "3.6.9"
+    "zustand": "4.1.1"
   },
   "dependencies": {
-    "@emotion/react": "11.9.0",
-    "@emotion/styled": "11.8.1",
-    "@ethersproject/bignumber": "5.6.0",
-    "@ethersproject/units": "5.4.0",
-    "@leocode/eslint-config": "2.0.0",
-    "@mui/icons-material": "5.6.2",
-    "@mui/material": "5.6.3",
-    "@testing-library/jest-dom": "5.14.1",
-    "@testing-library/react": "13.0.0",
-    "@testing-library/user-event": "13.2.1",
-    "@types/jest": "27.4.1",
-    "@types/node": "17.0.31",
-    "@types/react": "18.0.0",
-    "@types/react-dom": "18.0.0",
+    "@emotion/react": "11.10.4",
+    "@emotion/styled": "11.10.4",
+    "@ethersproject/bignumber": "5.7.0",
+    "@ethersproject/units": "5.7.0",
+    "@ethersproject/providers": "5.7.0",
+    "@mui/icons-material": "5.10.3",
+    "@mui/material": "5.10.4",
+    "@testing-library/jest-dom": "5.16.5",
+    "@testing-library/react": "13.4.0",
+    "@testing-library/user-event": "14.4.3",
+    "@types/jest": "29.0.0",
+    "@types/node": "18.7.15",
+    "@types/react": "18.0.18",
+    "@types/react-dom": "18.0.6",
     "@web3-react/core": "8.0.10-beta.0",
     "@web3-react/metamask": "8.0.6-beta.0",
     "@web3-react/network": "8.0.5-beta.0",
     "@web3-react/store": "8.0.5-beta.0",
     "@web3-react/types": "8.0.3-beta.0",
-    "dayjs": "1.11.1",
-    "ethers": "5.6.4",
-    "prettier": "2.5.1",
-    "react": "18.1.0",
-    "react-dom": "18.1.0",
+    "dayjs": "1.11.5",
+    "ethers": "5.7.0",
+    "prettier": "2.7.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-scripts": "5.0.1",
-    "react-select": "5.3.2",
-    "react-toastify": "8.2.0",
-    "serve": "13.0.2",
-    "typescript": "4.6.4",
-    "web-vitals": "2.1.0",
-    "zustand": "3.6.9"
+    "react-select": "5.4.0",
+    "react-toastify": "9.0.8",
+    "serve": "14.0.1",
+    "typescript": "4.8.2",
+    "web-vitals": "3.0.1",
+    "zustand": "4.1.1"
   },
   "devDependencies": {
-    "@energyweb/greenproof-voting-contract": "1.0.2",
-    "@typescript-eslint/eslint-plugin": "5.21.0",
-    "@typescript-eslint/parser": "5.21.0",
+    "@leocode/eslint-config": "2.0.0",
+    "@energyweb/greenproof-voting-contract": "1.0.5",
+    "@typescript-eslint/eslint-plugin": "5.36.2",
+    "@typescript-eslint/parser": "5.36.2",
     "eslint": "8.14.0",
     "eslint-plugin-react": "7.29.4",
-    "eslint-plugin-react-hooks": "4.5.0"
+    "eslint-plugin-react-hooks": "4.6.0"
   },
   "peerDependencies": {
-    "@energyweb/greenproof-voting-contract": "1.0.2"
+    "@energyweb/greenproof-voting-contract": "1.0.5"
   }
 }
