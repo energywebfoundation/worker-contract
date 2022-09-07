@@ -1,0 +1,16 @@
+{
+  "deployedContracts": [
+    {
+      "name": "Certificate",
+      "address": "0xD06a4F984EB74Aa9628a31aF65C08231b85A88A0"
+    },
+    {
+      "name": "RewardFixed",
+      "address": "0xFdc61711448a85b9eBDc229D39ED1ec2d3b24755"
+    },
+    {
+      "name": "MatchVoting",
+      "address": "0x6213DFb3DE20809cCf75eF4fE5108556B50f8597"
+    }
+  ]
+}

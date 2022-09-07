@@ -6,25 +6,16 @@
 import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
-
-enum Contract {
-  MatchVoting = "MatchVoting",
-  Certificate = "Certificate",
-}
-
-type DeployedContract = {
-  address?: string;
-  name: Contract;
-};
-
-type ContractToDeploy = {
-  name: Contract;
-  args: any[];
-};
-
-type DeploymentContext = {
-  deployedContracts: DeployedContract[];
-};
+import {
+  Contract,
+  workerRole,
+  rewardAmount,
+  votingTimeLimit,
+  ContractToDeploy,
+  DeploymentContext,
+  voltaClaimManagerAddress,
+  // eslint-disable-next-line node/no-missing-import
+} from "./deploy.utils";
 
 const getDeployedContract = (ctx: DeploymentContext, contract: Contract) => {
   const deployedContract = ctx.deployedContracts.find(
@@ -43,9 +34,19 @@ const deploymentPlan: ((ctx: DeploymentContext) => ContractToDeploy)[] = [
     name: Contract.Certificate,
     args: [],
   }),
+  () => ({
+    name: Contract.RewardVoting,
+    args: [rewardAmount],
+  }),
   (ctx) => ({
     name: Contract.MatchVoting,
-    args: [getDeployedContract(ctx, Contract.Certificate).address],
+    args: [
+      getDeployedContract(ctx, Contract.Certificate).address,
+      getDeployedContract(ctx, Contract.RewardVoting).address,
+      votingTimeLimit,
+      voltaClaimManagerAddress,
+      workerRole,
+    ],
   }),
 ];
 
