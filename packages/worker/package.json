@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-worker",
-  "version": "6.0.7",
+  "version": "6.0.8",
   "license": "MIT",
   "author": "EnergyWeb DevHub GmbH;",
   "main": "dist/index.js",
@@ -18,8 +18,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@energyweb/greenproof-merkle-tree": "2.0.4",
-    "@energyweb/greenproof-voting-contract": "1.0.5",
+    "@energyweb/greenproof-merkle-tree": "2.0.5",
+    "@energyweb/greenproof-voting-contract": "1.0.6",
     "@nestjs/common": "9.0.11",
     "@nestjs/core": "9.0.11",
     "@nestjs/platform-express": "9.0.11",
