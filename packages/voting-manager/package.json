@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-voting-manager",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "scripts": {
     "replace-vars": "node substitute-vars.js",
     "start:prod": "yarn replace-vars && serve build",
@@ -62,7 +62,7 @@
   },
   "devDependencies": {
     "@leocode/eslint-config": "2.0.0",
-    "@energyweb/greenproof-voting-contract": "1.0.6",
+    "@energyweb/greenproof-voting-contract": "1.0.8",
     "@typescript-eslint/eslint-plugin": "5.36.2",
     "@typescript-eslint/parser": "5.36.2",
     "eslint": "8.14.0",

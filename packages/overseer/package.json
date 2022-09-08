@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-overseer",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -38,7 +38,7 @@
     "rxjs": "7.5.6"
   },
   "devDependencies": {
-    "@energyweb/greenproof-voting-contract": "1.0.6",
+    "@energyweb/greenproof-voting-contract": "1.0.8",
     "@leocode/eslint-config": "2.0.0",
     "@nestjs/cli": "9.1.2",
     "@nestjs/schematics": "9.0.3",
