@@ -192,7 +192,6 @@ contract MatchVoting is Ownable {
 
     function addWorker(address payable workerAddress)
         external
-        onlyOwner
         onlyEnrolledWorkers(workerAddress)
     {
         if (isWorker(workerAddress)) {
