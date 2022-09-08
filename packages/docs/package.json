@@ -1,6 +1,6 @@
 {
   "name": "docs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Documentation for green-proof sdk",
   "license": "MIT",
   "scripts": {
@@ -9,6 +9,6 @@
     "test:e2e": "echo No e2e tests."
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^9.1.2"
+    "@mermaid-js/mermaid-cli": "^9.1.6"
   }
 }
