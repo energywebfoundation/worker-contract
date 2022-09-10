@@ -34,7 +34,7 @@ contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
 
         require(issuer.mintedProofs[proofID].isRevoked == false, "proof revoked");
         require(issuer.mintedProofs[proofID].isRetired == false, "Proof already retired");
-        //TODO: isApprovedForAll --> make sure we are alloaw to delegate certificate management
+        //TODO: isApprovedForAll --> make sure we are allowed to delegate certificate management
         require(msg.sender == from || LibProofManager._isApprovedForAll(from, msg.sender), "Not allowed to retire");
         _burn(from, issuer.mintedProofs[proofID].productType, issuer.mintedProofs[proofID].volume);
     }
