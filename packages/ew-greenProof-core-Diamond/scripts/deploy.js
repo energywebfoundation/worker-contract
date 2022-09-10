@@ -64,6 +64,7 @@ async function deployDiamond(
     "OwnershipFacet",
     "IssuerFacet",
     "VotingFacet",
+    "ProofManagerFacet",
   ];
   const cut = [];
   for (const FacetName of FacetNames) {
