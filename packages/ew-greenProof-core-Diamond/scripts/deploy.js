@@ -86,7 +86,6 @@ async function deployDiamond(
   let tx
   let receipt
   // call to init function
-  // let functionCall = diamondInit.interface.encodeFunctionData('init', rewardAmount)
   let functionCall = diamondInit.interface.encodeFunctionData('init')
   tx = await diamondCut.diamondCut(cut, diamondInit.address, functionCall)
   console.log('Diamond cut tx: ', tx.hash)
@@ -108,7 +107,6 @@ if (require.main === module) {
     ROLES,
     revocablePeriod
   )
-    // deployDiamond()
     .then(() => process.exit(0))
     .catch((error) => {
       console.error(error);

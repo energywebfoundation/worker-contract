@@ -33,7 +33,7 @@ library LibReward {
         payReward();
     }
 
-    function getStorage() internal view returns (RewardStorage storage rs) {
+    function getStorage() internal pure returns (RewardStorage storage rs) {
         bytes32 position = REWARD_STORAGE_POSITION;
 
         assembly {

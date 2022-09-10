@@ -25,17 +25,10 @@ const timeTravel = async (seconds) => {
 
 let issuerFacet;
 let diamondAddress;
-let ownershipFacet;
-let diamondCutFacet;
-let diamondLoupeFacet;
 let proofManagerFacet;
-let tx;
 let owner;
 let receiver;
-let minter;
 let validator;
-let receipt;
-let result;
 let receiverAddress;
 let amount;
 let productType;
@@ -46,9 +39,7 @@ let producerRef;
 let grantRole;
 let revokeRole;
 
-const addresses = [];
 const rewardAmount = parseEther("1");
-const IS_SETTLEMENT = true;
 const timeLimit = 15 * 60;
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
