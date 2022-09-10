@@ -6,7 +6,7 @@ const {
 } = require("../scripts/libraries/diamond");
 
 const chai = require("chai");
-const { assert, expect } = require("chai");
+const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
 const { deployDiamond } = require("../scripts/deploy");
@@ -65,7 +65,7 @@ const workerRole = ethers.utils.namehash(
 const defaultVersion = 1;
 const proofID1 = 1;
 const proofID2 = 2;
-const VC = ethers.utils.namehash("data to validate");
+const VC = ethers.utils.hashMessage("Additional data");
 
 describe("IssuerFacet", function () {
   before(async () => {
@@ -151,7 +151,7 @@ describe("IssuerFacet", function () {
 
   describe("\n** Proof issuance tests **\n", () => {
     it("reverts when we try to validate request before request issuance", async () => {
-      const VC = ethers.utils.namehash("data to validate");
+      // const VC = ethers.utils.namehash("data to validate");
       await grantRole(validator, validatorRole);
       expect(
         issuerFacet

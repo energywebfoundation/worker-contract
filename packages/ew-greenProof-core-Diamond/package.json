@@ -6,6 +6,7 @@
 	"scripts": {
 		"test": "npx hardhat test",
 		"compile": "npx hardhat compile",
+		"issuer:test": "npx hardhat test test/IssuerFacet.spec.js",
 		"voting:test": "npx hardhat test test/votingFacet.spect.js"
 	},
 	"repository": {
@@ -21,11 +22,12 @@
 	"devDependencies": {
 		"@nomiclabs/hardhat-ethers": "^2.0.2",
 		"@nomiclabs/hardhat-waffle": "^2.0.1",
-		"chai": "^4.3.4",
+		"chai": "^4.3.6",
 		"dotenv": "^8.6.0",
 		"ethereum-waffle": "^3.4.0",
 		"ethers": "^5.4.1",
 		"hardhat": "^2.4.1",
+		"mocha": "^10.0.0",
 		"prettier": "^2.3.2",
 		"prettier-plugin-solidity": "^1.0.0-beta.13",
 		"standard": "^16.0.3"

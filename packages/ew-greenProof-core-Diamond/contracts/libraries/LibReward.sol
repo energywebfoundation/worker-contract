@@ -9,6 +9,12 @@ library LibReward {
         address payable[] rewardQueue;
     }
 
+    function initRewards(uint256 _rewardAmount) internal {
+        RewardStorage storage rs = getStorage();
+
+        rs.rewardAmount = _rewardAmount;
+    }
+
     function payReward() internal {
         RewardStorage storage rs = getStorage();
 
