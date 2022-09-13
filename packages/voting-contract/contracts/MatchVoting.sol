@@ -131,9 +131,6 @@ contract MatchVoting is Ownable {
             cancelVoting(voting);
             emit VotingExpired(matchInput);
         }
-        if (voting.status == Status.Completed) {
-            revert VotingAlreadyEnded();
-        }
 
         if (voting.status == Status.NotActive) {
             startVoting(matchInput);
