@@ -218,7 +218,7 @@ describe("IssuerFacet", function () {
 
     it("Authorized validator can validate issuance requests", async () => {
       await grantRole(validator, validatorRole);
-      console.log("Validation data ==> ", VC);
+      console.log("Validation data : proof's rootHash ==> ", VC);
       expect(
         await issuerFacet
           .connect(validator)
@@ -272,8 +272,9 @@ describe("IssuerFacet", function () {
   describe("\n** Proof revocation tests **\n", () => {
 
     it("should successfully verify a proof", async () => {
-      await expect(
-        proofManagerFacet.connect(owner).verifyProof(VC, merkleInfos.proofs[ 0 ].hexLeaf, merkleInfos.proofs[ 0 ].leafProof)
+      expect(
+        // await proofManagerFacet.connect(owner).verifyProof(VC, merkleInfos.proofs[ 0 ].hexLeaf, merkleInfos.proofs[ 0 ].leafProof)
+        await proofManagerFacet.connect(owner).verifyProof(VC, merkleInfos.proofs[ 0 ].hexLeaf, merkleInfos.proofs[ 0 ].leafProof)
       ).to.be.true;
     });
 
