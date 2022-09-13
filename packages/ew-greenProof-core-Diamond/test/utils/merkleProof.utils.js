@@ -1,8 +1,11 @@
 const {
   createMerkleTree,
-  hash,
-  HASHING_FUNCTION,
+  createPreciseProof,
 } = require("@energyweb/greenproof-merkle-tree");
+
+const {createHash} = require('crypto');
+
+const hash = (...data) => createHash('SHA256').update(data.join('')).digest('hex');
 
 const getStringLeaves = (dataObject) => {
   const stringLeaves = [];
@@ -15,30 +18,28 @@ const getStringLeaves = (dataObject) => {
 }
 
 const getMerkleProof = (dataObject) => {
-  const dataLeaves = getStringLeaves(dataObject);
-  const merkle = createMerkleTree(dataLeaves);
-  const hexLeaves = merkle.tree.getHexLeaves();
-  const merkleRoot = merkle.tree.getHexRoot();
+  const merkle = createPreciseProof(dataObject, hash);
+  const hexLeaves = merkle.getHexLeaves()
+  const merkleRoot = merkle.getHexRoot();
 
   const proofs = [];
 
-  dataLeaves.map((leaf, i) => {
-    const leafProof = merkle.tree.getHexProof(leaf);
+  hexLeaves.map((hexleaf, i) => {
 
     proofs.push({
-      leaf,
-      hexLeaf: hexLeaves[i],
-      leafProof
+      leaf: getStringLeaves(dataObject)[i], //human readable piece of data
+      hexLeaf: hexleaf,
+      leafProof: merkle.getHexProof(hexleaf),
     });
   });
 
   console.log("Data : ", dataObject);
+  console.log("RootHash ==> ", merkleRoot);
   console.log("Data proofs ==> ", proofs);
 
   const merkleProof = {
     merkle,
     proofs,
-    dataLeaves,
     hexLeaves,
     merkleRoot
   }
