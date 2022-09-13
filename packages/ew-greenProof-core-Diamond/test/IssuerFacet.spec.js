@@ -15,7 +15,7 @@ const {
   MockContract,
   solidity,
 } = require("ethereum-waffle");
-const { claimManagerInterface, toBytes32, checkProof } = require("./utils");
+const { claimManagerInterface, toBytes32, checkProof, getMerkleProof} = require("./utils");
 chai.use(solidity);
 
 const timeTravel = async (seconds) => {
@@ -38,6 +38,9 @@ let winninMatch;
 let producerRef;
 let grantRole;
 let revokeRole;
+let VC;
+let merkleInfos;
+let testCounter = 0;
 
 const rewardAmount = parseEther("1");
 const timeLimit = 15 * 60;
@@ -56,7 +59,6 @@ const workerRole = ethers.utils.namehash(
 const defaultVersion = 1;
 const proofID1 = 1;
 const proofID2 = 2;
-const VC = ethers.utils.hashMessage("Additional data");
 
 describe("IssuerFacet", function () {
   before(async () => {
@@ -72,7 +74,6 @@ describe("IssuerFacet", function () {
       notEnrolledWorker,
       toRemoveWorker,
     ] = await ethers.getSigners();
-
     console.log(`\n`);
 
     //  Mocking claimManager
@@ -123,9 +124,7 @@ describe("IssuerFacet", function () {
       "ProofManagerFacet",
       diamondAddress
     );
-  });
 
-  beforeEach(async () => {
     receiverAddress = receiver.address;
     amount = 42;
     productType = 1;
@@ -134,6 +133,26 @@ describe("IssuerFacet", function () {
     winninMatch = "MATCH_RESULT_1";
     secondMatch = "MATCH_RESULT_2";
     producerRef = ethers.utils.namehash("energyWeb");
+
+    const data = {
+      receiverAddress,
+      amount,
+      productType,
+      timeFrame: {   
+        start,
+        end,
+      },
+      winninMatch,
+      producerRef,
+      type: "solar",
+      generatorID: 4221
+    }
+    merkleInfos = getMerkleProof(data);
+    VC = merkleInfos.merkleRoot;
+  });
+
+  beforeEach(async () => {
+    console.log(`Test ${++testCounter} :`);
   });
 
   afterEach(async () => {
@@ -177,6 +196,7 @@ describe("IssuerFacet", function () {
     });
 
     it("Non authorized validator cannot validate nor mint proofs", async () => {
+      
       await revokeRole(validator, validatorRole);
       await expect(
         issuerFacet
@@ -198,6 +218,7 @@ describe("IssuerFacet", function () {
 
     it("Authorized validator can validate issuance requests", async () => {
       await grantRole(validator, validatorRole);
+      console.log("Validation data ==> ", VC);
       expect(
         await issuerFacet
           .connect(validator)
@@ -249,6 +270,13 @@ describe("IssuerFacet", function () {
   });
 
   describe("\n** Proof revocation tests **\n", () => {
+
+    it("should successfully verify a proof", async () => {
+      await expect(
+        proofManagerFacet.connect(owner).verifyProof(VC, merkleInfos.proofs[ 0 ].hexLeaf, merkleInfos.proofs[ 0 ].leafProof)
+      ).to.be.true;
+    });
+
     it("should prevent a non authorized entity from revoking non retired proof", async () => {
       await revokeRole(nonAuthorizedOperator, revokerRole);
       await expect(
@@ -265,7 +293,6 @@ describe("IssuerFacet", function () {
     });
     it("should revert if the proof is already retired", async () => {
       //TODO: check that a non retired proof can be revoked
-      checkProof();
     });
 
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
