@@ -1,17 +1,14 @@
-import { createHash } from 'crypto';
-import { createPreciseProof, createMerkleTree, verify } from '../src';
-
-const hash = (...data: string[]) => createHash('SHA256').update(data.join('')).digest('hex');
+import { createPreciseProof, createMerkleTree, verify, hash } from '../src';
 
 type Match = Record<string, string | number>
 
 describe('#createMerkleTree', () => {
   const hashMatch = (match: Match) =>
-    createPreciseProof(match, hash).getHexRoot();
+    createPreciseProof(match).getHexRoot();
   const hashGeneration = (generation: Match) =>
-    createPreciseProof(generation, hash).getHexRoot();
+    createPreciseProof(generation).getHexRoot();
   const hashConsumption = (consumption: Match) =>
-    createPreciseProof(consumption, hash).getHexRoot();
+    createPreciseProof(consumption).getHexRoot();
 
   const createLeavesFromMatchingResult = ({
     matches = [],
@@ -32,13 +29,13 @@ describe('#createMerkleTree', () => {
       matches: [{ id: 1, generationId: 1, volume: 10 }],
     });
 
-    const tree = createMerkleTree([matchLeaf], hash);
+    const tree = createMerkleTree([matchLeaf]);
 
     const proof = tree.getHexProof(matchLeaf);
 
     expect(typeof tree.getHexRoot()).toEqual('string');
     expect(
-      verify({ proof, leaf: matchLeaf, root: tree.getHexRoot(), hashFn: hash }),
+      verify({ proof, leaf: matchLeaf, root: tree.getHexRoot()}),
     ).toEqual(true);
     expect('0x' + tree.getLeaf(0).toString('hex')).toEqual(matchLeaf);
   });
@@ -48,8 +45,8 @@ describe('#createMerkleTree', () => {
       matches: [{ id: 1, generationId: 1, volume: 10 }],
     });
 
-    const firstTree = createMerkleTree(leaves, hash);
-    const secondTree = createMerkleTree(leaves, hash);
+    const firstTree = createMerkleTree(leaves);
+    const secondTree = createMerkleTree(leaves);
 
     expect(firstTree.getHexRoot()).toEqual(secondTree.getHexRoot());
   });
@@ -63,14 +60,13 @@ describe('#createMerkleTree', () => {
         ],
       });
 
-      const tree = createMerkleTree([matchLeaf], hash);
+      const tree = createMerkleTree([matchLeaf]);
 
       expect(
         verify({
           proof: tree.getHexProof(matchLeaf),
           leaf: matchLeaf,
           root: tree.getHexRoot(),
-          hashFn: hash,
         }),
       ).toEqual(true);
     });
@@ -83,14 +79,13 @@ describe('#createMerkleTree', () => {
         matches: [{ id: 2, generationId: 2, volume: 20 }],
       });
 
-      const tree = createMerkleTree([matchLeaf], hash);
+      const tree = createMerkleTree([matchLeaf]);
 
       expect(
         verify({
           proof: tree.getHexProof(otherMatchLeaf),
           leaf: otherMatchLeaf,
           root: tree.getHexRoot(),
-          hashFn: hash,
         }),
       ).toEqual(false);
     });
@@ -102,14 +97,13 @@ describe('#createMerkleTree', () => {
         consumptions: [{ volume: '1' }, { volume: '2' }],
       });
 
-      const tree = createMerkleTree([leaf], hash);
+      const tree = createMerkleTree([leaf]);
 
       expect(
         verify({
           proof: tree.getHexProof(leaf),
           leaf,
           root: tree.getHexRoot(),
-          hashFn: hash,
         }),
       ).toEqual(true);
     });
@@ -122,14 +116,13 @@ describe('#createMerkleTree', () => {
         consumptions: [{ volume: '3' }],
       });
 
-      const tree = createMerkleTree(leaves, hash);
+      const tree = createMerkleTree(leaves);
 
       expect(
         verify({
           proof: tree.getHexProof(otherLeaf),
           leaf: otherLeaf,
           root: tree.getHexRoot(),
-          hashFn: hash,
         }),
       ).toEqual(false);
     });
@@ -141,14 +134,13 @@ describe('#createMerkleTree', () => {
         generations: [{ volume: '1' }, { volume: '2' }],
       });
 
-      const tree = createMerkleTree([leaf], hash);
+      const tree = createMerkleTree([leaf]);
 
       expect(
         verify({
           proof: tree.getHexProof(leaf),
           leaf,
           root: tree.getHexRoot(),
-          hashFn: hash,
         }),
       ).toEqual(true);
     });
@@ -161,14 +153,13 @@ describe('#createMerkleTree', () => {
         generations: [{ volume: '3' }],
       });
 
-      const tree = createMerkleTree(leaves, hash);
+      const tree = createMerkleTree(leaves);
 
       expect(
         verify({
           proof: tree.getHexProof(otherLeaf),
           leaf: otherLeaf,
           root: tree.getHexRoot(),
-          hashFn: hash,
         }),
       ).toEqual(false);
     });
@@ -187,7 +178,7 @@ describe('#createMerkleTree', () => {
         .map((_, index) => ({ generation: index, volume: index * 2 })),
     });
 
-    const tree = createMerkleTree(leaves, hash);
+    const tree = createMerkleTree(leaves);
 
     const correctGenerationLeaf = hashGeneration({
       generation: 50,
@@ -211,7 +202,6 @@ describe('#createMerkleTree', () => {
         proof: tree.getHexProof(correctGenerationLeaf),
         leaf: correctGenerationLeaf,
         root: tree.getHexRoot(),
-        hashFn: hash,
       }),
     ).toEqual(true);
     expect(
@@ -219,7 +209,6 @@ describe('#createMerkleTree', () => {
         proof: tree.getHexProof(correctConsumptionLeaf),
         leaf: correctConsumptionLeaf,
         root: tree.getHexRoot(),
-        hashFn: hash,
       }),
     ).toEqual(true);
     expect(
@@ -227,7 +216,6 @@ describe('#createMerkleTree', () => {
         proof: tree.getHexProof(correctHashLeaf),
         leaf: correctHashLeaf,
         root: tree.getHexRoot(),
-        hashFn: hash,
       }),
     ).toEqual(true);
     expect(
@@ -235,7 +223,6 @@ describe('#createMerkleTree', () => {
         proof: tree.getHexProof(fakeGenerationLeaf),
         leaf: fakeGenerationLeaf,
         root: tree.getHexRoot(),
-        hashFn: hash,
       }),
     ).toEqual(false);
     expect(
@@ -243,7 +230,6 @@ describe('#createMerkleTree', () => {
         proof: tree.getHexProof(fakeConsumptionLeaf),
         leaf: fakeConsumptionLeaf,
         root: tree.getHexRoot(),
-        hashFn: hash,
       }),
     ).toEqual(false);
     expect(
@@ -251,7 +237,6 @@ describe('#createMerkleTree', () => {
         proof: tree.getHexProof(fakeMatchLeaf),
         leaf: fakeMatchLeaf,
         root: tree.getHexRoot(),
-        hashFn: hash,
       }),
     ).toEqual(false);
   });
@@ -263,14 +248,14 @@ describe('Precise Proof', () => {
       generationId: 1,
       volume: 10,
     };
-    const pp = createPreciseProof(target, hash);
+    const pp = createPreciseProof(target);
 
     const rootHash = pp.getHexRoot();
 
     for (const [key, value] of Object.entries(target)) {
-      const leaf = hash(key, JSON.stringify(value));
+      const leaf = hash(key + JSON.stringify(value));
       const proof = pp.getHexProof(leaf);
-      expect(verify({ hashFn: hash, leaf, proof, root: rootHash })).toBe(
+      expect(verify({ leaf, proof, root: rootHash })).toBe(
         true,
       );
     }
