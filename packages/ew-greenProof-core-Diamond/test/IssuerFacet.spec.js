@@ -16,6 +16,7 @@ const {
   solidity,
 } = require("ethereum-waffle");
 const { claimManagerInterface, toBytes32, checkProof, getMerkleProof} = require("./utils");
+const { createMerkleTree, createPreciseProof, hash } = require('@energyweb/greenproof-merkle-tree')
 chai.use(solidity);
 
 const timeTravel = async (seconds) => {
@@ -218,7 +219,6 @@ describe("IssuerFacet", function () {
 
     it("Authorized validator can validate issuance requests", async () => {
       await grantRole(validator, validatorRole);
-      console.log("Validation data ==> ", VC);
       expect(
         await issuerFacet
           .connect(validator)
@@ -271,9 +271,57 @@ describe("IssuerFacet", function () {
 
   describe("\n** Proof revocation tests **\n", () => {
 
+    it("should verify all kinds of proofs", async () => {
+      const arr = [
+        {
+          id: 1,
+          generatorID: 2,
+          volume: 10,
+          consumerID: 500
+        },
+        {
+          id: 2,
+          generatorID: 3,
+          volume: 10,
+          consumerID: 522
+        },
+        {
+          id: 3,
+          generatorID: 4,
+          volume: 10,
+          consumerID: 52
+        },
+        {
+          id: 4,
+          generatorID: 5,
+          volume: 10,
+          consumerID: 53
+        },
+        {
+          id: 5,
+          generatorID: 5,
+          volume: 10,
+          consumerID: 51
+        },
+      ]
+      const leaves = arr.map(item => createPreciseProof(item).getHexRoot())
+      const tree = createMerkleTree(leaves);
+
+      const leaf = leaves[1];
+      const proof = tree.getHexProof(leaf);
+      const root = tree.getHexRoot()
+      expect(await proofManagerFacet.connect(owner).verifyProof(root, leaf, proof)).to.be.true;
+
+      const leafTree = createPreciseProof(arr[1])
+      const leafRoot = leafTree.getHexRoot()
+      const leafLeaf = hash('consumerID' + JSON.stringify(522))
+      const leafProof = leafTree.getHexProof(leafLeaf)
+      expect(await proofManagerFacet.connect(owner).verifyProof(leafRoot, leafLeaf, leafProof)).to.be.true;
+    })
+
     it("should successfully verify a proof", async () => {
-      await expect(
-        proofManagerFacet.connect(owner).verifyProof(VC, merkleInfos.proofs[ 0 ].hexLeaf, merkleInfos.proofs[ 0 ].leafProof)
+      expect(
+        await proofManagerFacet.connect(owner).verifyProof(VC, merkleInfos.proofs[ 0 ].hexLeaf, merkleInfos.proofs[ 0 ].leafProof)
       ).to.be.true;
     });
 
