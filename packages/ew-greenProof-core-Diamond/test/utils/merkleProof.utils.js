@@ -3,10 +3,6 @@ const {
   createPreciseProof,
 } = require("@energyweb/greenproof-merkle-tree");
 
-const {createHash} = require('crypto');
-
-const hash = (...data) => createHash('SHA256').update(data.join('')).digest('hex');
-
 const getStringLeaves = (dataObject) => {
   const stringLeaves = [];
   
@@ -18,7 +14,7 @@ const getStringLeaves = (dataObject) => {
 }
 
 const getMerkleProof = (dataObject) => {
-  const merkle = createPreciseProof(dataObject, hash);
+  const merkle = createPreciseProof(dataObject);
   const hexLeaves = merkle.getHexLeaves()
   const merkleRoot = merkle.getHexRoot();
 
