@@ -219,7 +219,6 @@ describe("IssuerFacet", function () {
 
     it("Authorized validator can validate issuance requests", async () => {
       await grantRole(validator, validatorRole);
-      console.log("Validation data : proof's rootHash ==> ", VC);
       expect(
         await issuerFacet
           .connect(validator)
@@ -270,7 +269,7 @@ describe("IssuerFacet", function () {
     //TODO: test request rejection
   });
 
-  describe.only("\n** Proof revocation tests **\n", () => {
+  describe("\n** Proof revocation tests **\n", () => {
 
     it("should verify all kinds of proofs", async () => {
       const arr = [
@@ -317,7 +316,7 @@ describe("IssuerFacet", function () {
       const leafRoot = leafTree.getHexRoot()
       const leafLeaf = hash('consumerID' + JSON.stringify(522))
       const leafProof = leafTree.getHexProof(leafLeaf)
-      expect(await proofManagerFacet.connect(owner).verifyProof(leaf, leafLeaf, leafProof)).to.be.true;
+      expect(await proofManagerFacet.connect(owner).verifyProof(leafRoot, leafLeaf, leafProof)).to.be.true;
     })
 
     it("should successfully verify a proof", async () => {
