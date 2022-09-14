@@ -21,7 +21,7 @@
 	},
 	"homepage": "https://github.com/mudgen/contracts-starter#readme",
 	"devDependencies": {
-		"@energyweb/greenproof-merkle-tree": "^2.0.5",
+		"@energyweb/greenproof-merkle-tree": "^2.0.6",
 		"@nomiclabs/hardhat-ethers": "^2.0.2",
 		"@nomiclabs/hardhat-waffle": "^2.0.1",
 		"chai": "^4.3.6",
