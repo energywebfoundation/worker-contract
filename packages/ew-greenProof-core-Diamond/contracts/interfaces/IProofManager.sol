@@ -6,7 +6,11 @@ import {IGreenProof} from "./IGreenProof.sol";
 interface IProofManager {
     function revokeProof(uint256 proofID) external;
 
-    function retireProof(address from, uint256 proofID) external;
+    function retireProof(
+        address from,
+        uint256 proofID,
+        uint256 amount
+    ) external;
 
     function getProof(uint256 proofID) external view returns (IGreenProof.Proof memory proof);
 
@@ -19,4 +23,5 @@ interface IProofManager {
     ) external pure returns (bool);
 
     event ProofRevoked(uint256 indexed proofID);
+    event ProofRetired(uint256 indexed proofID, uint256 indexed amount);
 }
