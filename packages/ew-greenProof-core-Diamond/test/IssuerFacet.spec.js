@@ -15,7 +15,7 @@ const {
   MockContract,
   solidity,
 } = require("ethereum-waffle");
-const { claimManagerInterface, toBytes32, checkProof, getMerkleProof} = require("./utils");
+const { claimManagerInterface, toBytes32, checkProof, getMerkleProof } = require("./utils");
 const { createMerkleTree, createPreciseProof, hash } = require('@energyweb/greenproof-merkle-tree')
 chai.use(solidity);
 
@@ -42,6 +42,7 @@ let revokeRole;
 let VC;
 let merkleInfos;
 let testCounter = 0;
+let lastTokenID = 0;
 
 const rewardAmount = parseEther("1");
 const timeLimit = 15 * 60;
@@ -162,7 +163,6 @@ describe("IssuerFacet", function () {
 
   describe("\n** Proof issuance tests **\n", () => {
     it("reverts when we try to validate request before request issuance", async () => {
-      // const VC = ethers.utils.namehash("data to validate");
       await grantRole(validator, validatorRole);
       expect(
         issuerFacet
@@ -218,6 +218,7 @@ describe("IssuerFacet", function () {
     });
 
     it("Authorized validator can validate issuance requests", async () => {
+      lastTokenID++;
       await grantRole(validator, validatorRole);
       expect(
         await issuerFacet
@@ -226,8 +227,9 @@ describe("IssuerFacet", function () {
       ).to.emit(issuerFacet, "RequestAccepted");
     });
 
-    it("checks that the certified volume is zero before minting", async () => {
-      const amountBeforMint = await issuerFacet.balanceOf(receiverAddress, 2);
+    it("checks that the certified generation volume is zero before minting", async () => {
+      lastTokenID++;
+      const amountBeforMint = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
       expect(amountBeforMint).to.equal(0);
     });
 
@@ -258,11 +260,11 @@ describe("IssuerFacet", function () {
           producerRef
         );
       await tx.wait();
-      expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(2, amount);
+      expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, amount);
     });
 
-    it("checks that the certified volume is correct after minting", async () => {
-      const amountMinted = await issuerFacet.balanceOf(receiverAddress, 2);
+    it("checks that the certified generation volume is correct after minting", async () => {
+      const amountMinted = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
       expect(amountMinted).to.equal(amount);
     });
 
@@ -333,14 +335,68 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow an authorized entity to revoke non retired proof", async () => {
-      //TODO: check that a non retired proof can be revoked
       await grantRole(revoker, revokerRole);
       await expect(
         proofManagerFacet.connect(revoker).revokeProof(proofID1)
       ).to.emit(proofManagerFacet, "ProofRevoked");
     });
-    it("should revert if the proof is already retired", async () => {
+
+    it("should reverts if one tries to retire a revoked proof", async () => {
+      await expect(
+        proofManagerFacet.connect(owner).retireProof(owner.address, proofID1, 1)
+      ).to.be.revertedWith("proof revoked");
+    });
+
+    it("should allow proof retirement", async () => {
+      await grantRole(validator, validatorRole);
+      let id;
+      let tx;
+      //step 1: request issuance
+      expect(
+        await issuerFacet
+          .connect(owner)
+          .requestProofIssuance("WinningMatch 3", receiverAddress)
+      ).to.emit(issuerFacet, "IssuanceRequested");
+
+      //step 2: validate issuance request
+      lastTokenID++;
+      tx = await issuerFacet
+        .connect(validator)
+      [
+        "validateIssuanceRequest(string,bytes32,address,uint256,uint256,uint256,uint256,bytes32)"
+      ](
+        "WinningMatch 3",
+        VC,
+        receiverAddress,
+        amount,
+        productType,
+        start,
+        end,
+        producerRef
+      );
+      await tx.wait();
+      expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, amount);
+
+      //step3: retire proof
+      console.log("Retiring certificate ID ", lastTokenID);
+      console.log("Balance Before retiremeent:: ", await issuerFacet.balanceOf(receiverAddress, lastTokenID));
+
+      
+      await expect(
+        proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 21)
+      ).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, 21);
+      
+      const balance1 = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
+      const balance2 = await issuerFacet.balanceOf(receiverAddress, lastTokenID - 1);
+      console.log(`Remaining Balance on certificate ${lastTokenID}:: `, balance1);
+      console.log(`Remaining Balance on certificate ${lastTokenID -1 }:: `, balance2);
+       // expect(amountMinted).to.equal(amount);
+    });
+
+    it("should revert if an already retired proof is is beeing retired", async () => {
       //TODO: check that a non retired proof can be revoked
+      
+      
     });
 
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
