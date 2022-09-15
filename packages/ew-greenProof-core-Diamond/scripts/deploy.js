@@ -6,10 +6,10 @@ const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
 
 const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
 const ROLES = {
-  issuer: ethers.utils.namehash("issuer"),
-  revoker: ethers.utils.namehash("revoker"),
-  validator: ethers.utils.namehash("validator"),
-  worker: ethers.utils.namehash("worker"),
+  issuerRole: ethers.utils.namehash("issuer"),
+  revokerRole: ethers.utils.namehash("revoker"),
+  validatorRole: ethers.utils.namehash("validator"),
+  workerRole: ethers.utils.namehash("worker"),
 };
 const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 
@@ -104,6 +104,7 @@ if (require.main === module) {
     15 * 60,
     ethers.utils.parseEther("1"),
     VOLTA_CLAIM_MANAGER,
+    // claimManagerMocked.address,
     ROLES,
     revocablePeriod
   )
