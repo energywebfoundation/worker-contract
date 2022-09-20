@@ -48,8 +48,13 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         emit LibIssuer.IssuanceRequested(proofID);
     }
 
-    function validateIssuanceRequest(string memory winningMatch, bytes32 merkleRootProof) external onlyValidator {
+    function validateIssuanceRequest(
+        string memory winningMatch,
+        bytes32 merkleRootProof,
+        address receiver
+    ) external onlyValidator {
         LibIssuer._acceptRequest(winningMatch, merkleRootProof);
+        LibIssuer._registerPrivateData(winningMatch, receiver);
     }
 
     function validateIssuanceRequest(

@@ -37,14 +37,13 @@ contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.mintedProofs[proofID].isRevoked == false, "proof revoked");
-        require(issuer.mintedProofs[proofID].isRetired == false, "Proof already retired");
-        require(_balanceOf(from, proofID) >= amount, "Retirement exceeds generation");
+        require(_balanceOf(from, proofID) >= amount, "Insufficient volume owned");
         //TODO: isApprovedForAll --> make sure we are allowed to delegate certificate management
         require(msg.sender == from || LibProofManager._isApprovedForAll(from, msg.sender), "Not allowed to retire");
         // _burn(from, issuer.mintedProofs[proofID].productType, issuer.mintedProofs[proofID].volume);
         _burn(from, proofID, amount);
         //TO-DO emit retirement event
-        emit ProofRetired(proofID, amount);
+        emit ProofRetired(proofID, from, block.timestamp, amount);
     }
 
     function revokeProof(uint256 proofID) external override onlyRevoker {
@@ -55,8 +54,9 @@ contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
             revert LibIssuer.NonExistingProof(proofID);
         }
         require(issuer.mintedProofs[proofID].isRevoked == false, "already revoked proof");
-        if (issuer.mintedProofs[proofID].isRetired && issuanceDate + issuer.revocablePeriod >= block.timestamp) {
-            revert LibIssuer.NonRevokableProof(proofID, issuanceDate, block.timestamp);
+        // if (issuer.mintedProofs[proofID].isRetired && issuanceDate + issuer.revocablePeriod > block.timestamp) {
+        if (issuanceDate + issuer.revocablePeriod < block.timestamp) {
+            revert LibIssuer.NonRevokableProof(proofID, issuanceDate, issuanceDate + issuer.revocablePeriod);
         }
         issuer.mintedProofs[proofID].isRevoked = true;
         emit ProofRevoked(proofID);

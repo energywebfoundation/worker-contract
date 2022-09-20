@@ -23,7 +23,7 @@ library LibIssuer {
 
     error NotValidatedProof(uint256 proofID);
     error NonExistingProof(uint256 proofId);
-    error NonRevokableProof(uint256 proofID, uint256 issuanceDate, uint256 revocationDate);
+    error NonRevokableProof(uint256 proofID, uint256 issuanceDate, uint256 revocableDateLimit);
 
     enum RequestStatus {
         DEFAULT,
@@ -69,6 +69,20 @@ library LibIssuer {
         IssuerStorage storage issuer = _getStorage();
 
         issuer.issuanceRequests[winningMatch].status = status;
+    }
+
+    function _registerPrivateData(string memory winningMatch, address receiver) internal {
+        LibIssuer.IssuerStorage storage issuer = _getStorage();
+        uint256 proofID = issuer.issuanceRequests[winningMatch].requestID;
+        bool isRevoked = false;
+        bool isRetired = false;
+
+        if (issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED) {
+            revert LibIssuer.NotValidatedProof(proofID);
+        }
+
+        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, 0, 0, 0, 0, "", "");
+        issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
     }
 
     /** issueProof : Sends a request issuance of a new proof */
