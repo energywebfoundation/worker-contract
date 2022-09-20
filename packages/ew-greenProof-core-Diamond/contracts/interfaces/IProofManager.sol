@@ -23,5 +23,5 @@ interface IProofManager {
     ) external pure returns (bool);
 
     event ProofRevoked(uint256 indexed proofID);
-    event ProofRetired(uint256 indexed proofID, uint256 indexed amount);
+    event ProofRetired(uint256 indexed proofID, address indexed to, uint256 indexed timestamp, uint256 amount);
 }

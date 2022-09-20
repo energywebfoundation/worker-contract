@@ -17,7 +17,11 @@ interface IGreenProof {
 
     function requestProofIssuance(string memory winningMatch, address recipient) external;
 
-    function validateIssuanceRequest(string memory winningMatch, bytes32 merkleRootProof) external;
+    function validateIssuanceRequest(
+        string memory winningMatch,
+        bytes32 merkleRootProof,
+        address receiver
+    ) external;
 
     function validateIssuanceRequest(
         string memory winningMatch,

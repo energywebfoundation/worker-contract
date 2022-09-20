@@ -13,6 +13,7 @@ const { deployDiamond } = require("../scripts/deploy");
 const {
   deployMockContract,
   MockContract,
+  MockProvider,
   solidity,
 } = require("ethereum-waffle");
 const { claimManagerInterface, toBytes32, checkProof, getMerkleProof } = require("./utils");
@@ -43,9 +44,12 @@ let VC;
 let merkleInfos;
 let testCounter = 0;
 let lastTokenID = 0;
+let provider;
+let lastTimestamp = 0;
 
 const rewardAmount = parseEther("1");
 const timeLimit = 15 * 60;
+const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
 );
@@ -77,6 +81,8 @@ describe("IssuerFacet", function () {
       toRemoveWorker,
     ] = await ethers.getSigners();
     console.log(`\n`);
+
+    provider = ethers.provider;
 
     //  Mocking claimManager
     const claimManagerMocked = await deployMockContract(
@@ -164,10 +170,10 @@ describe("IssuerFacet", function () {
   describe("\n** Proof issuance tests **\n", () => {
     it("reverts when we try to validate request before request issuance", async () => {
       await grantRole(validator, validatorRole);
-      expect(
+      await expect(
         issuerFacet
           .connect(validator)
-          ["validateIssuanceRequest(string,bytes32)"](winninMatch, VC)
+          ["validateIssuanceRequest(string,bytes32,address)"](winninMatch, VC, receiverAddress)
       ).to.be.revertedWith("Validation not requested");
     });
 
@@ -180,7 +186,7 @@ describe("IssuerFacet", function () {
     });
 
     it("Reverts when one re-sends an already requested issuance", async () => {
-      expect(
+      await expect(
         issuerFacet
           .connect(owner)
           .requestProofIssuance(winninMatch, receiverAddress)
@@ -189,10 +195,10 @@ describe("IssuerFacet", function () {
 
     it("Non Authorized validator cannot validate issuance requests", async () => {
       await revokeRole(validator, validatorRole);
-      expect(
+      await expect(
         issuerFacet
           .connect(validator)
-          ["validateIssuanceRequest(string,bytes32)"](winninMatch, VC)
+          ["validateIssuanceRequest(string,bytes32,address)"](winninMatch, VC, receiverAddress)
       ).to.be.revertedWith("Access: Not a validator");
     });
 
@@ -223,7 +229,7 @@ describe("IssuerFacet", function () {
       expect(
         await issuerFacet
           .connect(validator)
-          ["validateIssuanceRequest(string,bytes32)"](winninMatch, VC)
+          ["validateIssuanceRequest(string,bytes32,address)"](winninMatch, VC, receiverAddress)
       ).to.emit(issuerFacet, "RequestAccepted");
     });
 
@@ -334,6 +340,15 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("Access: Not enrolled as revoker");
     });
 
+    it("should prevent revocation of non existing certificates", async () => {
+      await grantRole(revoker, revokerRole);
+
+      const nonExistingCertificateID = 100;
+      await expect(
+        proofManagerFacet.connect(revoker).revokeProof(nonExistingCertificateID)
+      ).to.be.revertedWith(`NonExistingProof(${nonExistingCertificateID})`);
+    });
+
     it("should allow an authorized entity to revoke non retired proof", async () => {
       await grantRole(revoker, revokerRole);
       await expect(
@@ -341,7 +356,14 @@ describe("IssuerFacet", function () {
       ).to.emit(proofManagerFacet, "ProofRevoked");
     });
 
-    it("should reverts if one tries to retire a revoked proof", async () => {
+    it("should prevent dupplicate revocation", async () => {
+      await grantRole(revoker, revokerRole);
+      await expect(
+        proofManagerFacet.connect(revoker).revokeProof(proofID1)
+      ).to.be.revertedWith("already revoked proof");
+    });
+
+    it("should revert if one tries to retire a revoked proof", async () => {
       await expect(
         proofManagerFacet.connect(owner).retireProof(owner.address, proofID1, 1)
       ).to.be.revertedWith("proof revoked");
@@ -378,29 +400,31 @@ describe("IssuerFacet", function () {
       expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, amount);
 
       //step3: retire proof
-      console.log("Retiring certificate ID ", lastTokenID);
-      console.log("Balance Before retiremeent:: ", await issuerFacet.balanceOf(receiverAddress, lastTokenID));
+      tx = await proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 42);
+      await tx.wait();
 
-      
-      await expect(
-        proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 21)
-      ).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, 21);
-      
+      const { timestamp } = await provider.getBlock(tx.blockNumber);
+      lastTimestamp = timestamp;
+      await expect(tx).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, receiverAddress, timestamp, 42);
       const balance1 = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
       const balance2 = await issuerFacet.balanceOf(receiverAddress, lastTokenID - 1);
-      console.log(`Remaining Balance on certificate ${lastTokenID}:: `, balance1);
-      console.log(`Remaining Balance on certificate ${lastTokenID -1 }:: `, balance2);
-       // expect(amountMinted).to.equal(amount);
     });
 
-    it("should revert if an already retired proof is is beeing retired", async () => {
-      //TODO: check that a non retired proof can be revoked
-      
+    it("should revert when retirement amount exceeds owned volume", async () => {
+      await expect(
+        proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 20)
+      ).to.be.revertedWith("Insufficient volume owned");
       
     });
 
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
-      //TODO: check thata retired proof cannot be revoked
+      const proof = await proofManagerFacet.connect(owner).getProof(proofID2);
+      const issuanceDate = Number(proof.issuanceDate.toString());
+      await timeTravel(revocablePeriod);
+      await grantRole(revoker, revokerRole);
+        
+      tx = proofManagerFacet.connect(revoker).revokeProof(proofID2)
+      await expect(tx).to.be.revertedWith(`NonRevokableProof(${proofID2}, ${issuanceDate}, ${issuanceDate + revocablePeriod})`) //emit(proofManagerFacet, "ProofRevoked");
     });
   });
 });
