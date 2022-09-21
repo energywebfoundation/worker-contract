@@ -48,6 +48,12 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         emit LibIssuer.IssuanceRequested(proofID);
     }
 
+    function getIssuanceRequest(string memory winningMatch) external view override returns (LibIssuer.IssuanceRequest memory) {
+        LibIssuer.IssuerStorage storage issuer = getStorage();
+
+        return issuer.issuanceRequests[winningMatch];
+    }
+
     function validateIssuanceRequest(
         string memory winningMatch,
         bytes32 merkleRootProof,
