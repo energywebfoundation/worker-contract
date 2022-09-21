@@ -36,7 +36,6 @@ let merkleInfos;
 let testCounter = 0;
 let lastTokenID = 0;
 let provider;
-let lastTimestamp = 0;
 
 const rewardAmount = parseEther("1");
 const timeLimit = 15 * 60;
@@ -220,12 +219,11 @@ describe("IssuerFacet", function () {
       await grantRole(validator, validatorRole);
       
       //Request issuance
-      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress); // lastTokenID increments;
+      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress);
       expect(tx).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
 
       //Rejection
-      console.log("lastProof ID on rejection -->> ", lastTokenID);
       expect(
         await issuerFacet
           .connect(validator)
@@ -243,12 +241,12 @@ describe("IssuerFacet", function () {
         issuerFacet
           .connect(validator)
           .rejectIssuanceRequest(rejectedMatch)
-      ).to.be.revertedWith("Rejection: Already rejected") //emit(issuerFacet, "RequestRejected");
+      ).to.be.revertedWith("Rejection: Already rejected")
     });
 
     it("Should allow a new request issuance of rejected requests", async () => {
       //Request previously rejected request
-      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress); // lastTokenID increments;
+      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress);
       expect(tx).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
     });
@@ -261,7 +259,7 @@ describe("IssuerFacet", function () {
         issuerFacet
           .connect(validator)
           .rejectIssuanceRequest(rejectedMatch)
-      ).to.be.revertedWith("Access: Not a validator") //emit(issuerFacet, "RequestRejected");
+      ).to.be.revertedWith("Access: Not a validator")
     });
 
     it("Should revert when we try to reject a non existing request", async () => {
@@ -465,7 +463,6 @@ describe("IssuerFacet", function () {
       await tx.wait();
 
       const { timestamp } = await provider.getBlock(tx.blockNumber);
-      lastTimestamp = timestamp;
       await expect(tx).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, receiverAddress, timestamp, 42);
     });
 
@@ -479,10 +476,14 @@ describe("IssuerFacet", function () {
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
       const proof = await proofManagerFacet.connect(owner).getProof(proofID2);
       const issuanceDate = Number(proof.issuanceDate.toString());
+      
+      //forward time to reach end of revocable period
       await timeTravel(revocablePeriod);
       await grantRole(revoker, revokerRole);
         
       tx = proofManagerFacet.connect(revoker).revokeProof(proofID2)
+
+      //The certificate should not be revocable anymore
       await expect(tx).to.be.revertedWith(`NonRevokableProof(${proofID2}, ${issuanceDate}, ${issuanceDate + revocablePeriod})`) //emit(proofManagerFacet, "ProofRevoked");
     });
   });
