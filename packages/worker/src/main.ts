@@ -48,9 +48,9 @@ export class GreenProofWorker {
   private provider: providers.JsonRpcProvider;
   private privateKey: string;
   private votingContractAddress: string;
-  merkleTree: MerkleTree;
-  port: number;
-  _ddhubClient: DDHubClient | null = null;
+  private merkleTree: MerkleTree;
+  private port: number;
+  private _ddhubClient: DDHubClient | null = null;
 
   constructor(config: WorkerConfig) {
     const { privateKey, rpcUrl, votingContractAddress, port } = this.validateConfig(config);
