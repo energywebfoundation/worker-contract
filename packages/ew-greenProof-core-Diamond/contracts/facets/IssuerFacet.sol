@@ -78,9 +78,10 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         emit LibIssuer.ProofMinted(issuer.issuanceRequests[winningMatch].requestID, amount);
     }
 
-    function rejectIssuanceRequest(string memory winningMatch) external {
+    function rejectIssuanceRequest(string memory winningMatch) external onlyValidator {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
+        require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.REJECTED, "Rejection: Already rejected");
         require(issuer.issuanceRequests[winningMatch].requestID != 0, "Rejection: Not a valid match");
         require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED, "Rejection: Already validated");
 

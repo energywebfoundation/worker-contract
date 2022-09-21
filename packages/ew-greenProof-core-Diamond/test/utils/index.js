@@ -44,7 +44,6 @@ const initMockClaimManager = async () => {
 }
 
 module.exports = {
-  toBytes32,
   getMerkleProof,
   initMockClaimManager,
   claimManagerInterface,

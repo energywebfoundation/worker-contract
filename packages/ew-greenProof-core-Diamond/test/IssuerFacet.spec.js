@@ -1,10 +1,3 @@
-const {
-  getSelector,
-  FacetCutAction,
-  removeSelectors,
-  findAddressPositionInFacets,
-} = require("../scripts/libraries/diamond");
-
 const chai = require("chai");
 const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
@@ -12,11 +5,9 @@ const { ethers, network } = require("hardhat");
 const { deployDiamond } = require("../scripts/deploy");
 const {
   deployMockContract,
-  MockContract,
-  MockProvider,
   solidity,
 } = require("ethereum-waffle");
-const { claimManagerInterface, toBytes32, checkProof, getMerkleProof } = require("./utils");
+const { claimManagerInterface, getMerkleProof } = require("./utils");
 const { createMerkleTree, createPreciseProof, hash } = require('@energyweb/greenproof-merkle-tree')
 chai.use(solidity);
 
@@ -140,6 +131,7 @@ describe("IssuerFacet", function () {
     end = 9876543210;
     winninMatch = "MATCH_RESULT_1";
     secondMatch = "MATCH_RESULT_2";
+    rejectedMatch = "MATCH_RESULT_TO_BE_REJECTED";
     producerRef = ethers.utils.namehash("energyWeb");
 
     const data = {
@@ -183,6 +175,7 @@ describe("IssuerFacet", function () {
           .connect(owner)
           .requestProofIssuance(winninMatch, receiverAddress)
       ).to.emit(issuerFacet, "IssuanceRequested");
+      lastTokenID++;
     });
 
     it("Reverts when one re-sends an already requested issuance", async () => {
@@ -223,8 +216,66 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("Access: Not a validator");
     });
 
-    it("Authorized validator can validate issuance requests", async () => {
+    it("validator can reject issuance requests", async () => {
+      await grantRole(validator, validatorRole);
+      
+      //Request issuance
+      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress); // lastTokenID increments;
+      expect(tx).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
+
+      //Rejection
+      console.log("lastProof ID on rejection -->> ", lastTokenID);
+      expect(
+        await issuerFacet
+          .connect(validator)
+          .rejectIssuanceRequest(rejectedMatch)
+      ).to.emit(issuerFacet, "RequestRejected").withArgs(lastTokenID);
+      lastTokenID--;
+
+    });
+
+    it("Should revert when we try to reject an already rejected request", async () => {
+      await grantRole(validator, validatorRole);
+      
+      //Rejection
+      await expect(
+        issuerFacet
+          .connect(validator)
+          .rejectIssuanceRequest(rejectedMatch)
+      ).to.be.revertedWith("Rejection: Already rejected") //emit(issuerFacet, "RequestRejected");
+    });
+
+    it("Should allow a new request issuance of rejected requests", async () => {
+      //Request previously rejected request
+      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress); // lastTokenID increments;
+      expect(tx).to.emit(issuerFacet, "IssuanceRequested");
+      lastTokenID++;
+    });
+
+    it("Should revert when non authorized user tries to reject a request", async () => {
+      await revokeRole(validator, validatorRole);
+      
+      //Rejection
+      await expect(
+        issuerFacet
+          .connect(validator)
+          .rejectIssuanceRequest(rejectedMatch)
+      ).to.be.revertedWith("Access: Not a validator") //emit(issuerFacet, "RequestRejected");
+    });
+
+    it("Should revert when we try to reject a non existing request", async () => {
+      await grantRole(validator, validatorRole);
+      
+      await expect(
+        issuerFacet
+          .connect(validator)
+          .rejectIssuanceRequest("Non existing Request")
+      ).to.be.revertedWith("Rejection: Not a valid match");
+    });
+
+    it("Authorized validator can validate issuance requests", async () => {
+      // lastTokenID++;
       await grantRole(validator, validatorRole);
       expect(
         await issuerFacet
@@ -233,10 +284,21 @@ describe("IssuerFacet", function () {
       ).to.emit(issuerFacet, "RequestAccepted");
     });
 
+    it("Should revert when we try to reject an already validated request", async () => {
+      await grantRole(validator, validatorRole);
+
+      await expect(
+        issuerFacet
+          .connect(validator)
+          .rejectIssuanceRequest(winninMatch)
+      ).to.be.revertedWith("Rejection: Already validated");
+    })
+
     it("checks that the certified generation volume is zero before minting", async () => {
       lastTokenID++;
       const amountBeforMint = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
       expect(amountBeforMint).to.equal(0);
+      lastTokenID--;
     });
 
     it("Authorized validator can validate and mint proofs", async () => {
@@ -249,6 +311,7 @@ describe("IssuerFacet", function () {
           .connect(owner)
           .requestProofIssuance(secondMatch, receiverAddress)
       ).to.emit(issuerFacet, "IssuanceRequested");
+      lastTokenID++;
 
       //step 2: validate issuance request
       tx = await issuerFacet
@@ -273,8 +336,6 @@ describe("IssuerFacet", function () {
       const amountMinted = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
       expect(amountMinted).to.equal(amount);
     });
-
-    //TODO: test request rejection
   });
 
   describe("\n** Proof revocation tests **\n", () => {
@@ -379,9 +440,9 @@ describe("IssuerFacet", function () {
           .connect(owner)
           .requestProofIssuance("WinningMatch 3", receiverAddress)
       ).to.emit(issuerFacet, "IssuanceRequested");
+      lastTokenID++;
 
       //step 2: validate issuance request
-      lastTokenID++;
       tx = await issuerFacet
         .connect(validator)
       [
@@ -406,8 +467,6 @@ describe("IssuerFacet", function () {
       const { timestamp } = await provider.getBlock(tx.blockNumber);
       lastTimestamp = timestamp;
       await expect(tx).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, receiverAddress, timestamp, 42);
-      const balance1 = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
-      const balance2 = await issuerFacet.balanceOf(receiverAddress, lastTokenID - 1);
     });
 
     it("should revert when retirement amount exceeds owned volume", async () => {
