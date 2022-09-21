@@ -37,6 +37,13 @@ let testCounter = 0;
 let lastTokenID = 0;
 let provider;
 
+const issuanceRequestStatus =  {
+  DEFAULT : 0,
+  PENDING : 1,
+  REJECTED: 2,
+  ACCEPTED: 3
+}
+
 const rewardAmount = parseEther("1");
 const timeLimit = 15 * 60;
 const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
@@ -168,6 +175,11 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("Validation not requested");
     });
 
+    it("checks that the request status is initially set to DEFAULT", async () => {
+      const request = await issuerFacet.connect(owner).getIssuanceRequest(winninMatch);
+      expect(request.status).equal(issuanceRequestStatus.DEFAULT);
+    });
+
     it("Can send proof issuance requests", async () => {
       expect(
         await issuerFacet
@@ -177,7 +189,12 @@ describe("IssuerFacet", function () {
       lastTokenID++;
     });
 
-    it("Reverts when one re-sends an already requested issuance", async () => {
+    it("checks that the request status has correctly been set to PENDING", async () => {
+      const request = await issuerFacet.connect(owner).getIssuanceRequest(winninMatch);
+      expect(request.status).equal(issuanceRequestStatus.PENDING);
+    });
+
+    it("Reverts when we request a new issance for a pending issuance request", async () => {
       await expect(
         issuerFacet
           .connect(owner)
@@ -185,7 +202,7 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("Request: Already requested proof");
     });
 
-    it("Non Authorized validator cannot validate issuance requests", async () => {
+    it("Non Authorized validator cannot validate private issuance requests", async () => {
       await revokeRole(validator, validatorRole);
       await expect(
         issuerFacet
@@ -194,7 +211,7 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("Access: Not a validator");
     });
 
-    it("Non authorized validator cannot validate nor mint proofs", async () => {
+    it("Non authorized validator cannot validate public issuance", async () => {
       
       await revokeRole(validator, validatorRole);
       await expect(
@@ -233,6 +250,11 @@ describe("IssuerFacet", function () {
 
     });
 
+    it("checks that the request status has correctly been set to REJECTED after rejection", async () => {
+      const request = await issuerFacet.connect(owner).getIssuanceRequest(rejectedMatch);
+      expect(request.status).equal(issuanceRequestStatus.REJECTED);
+    });
+
     it("Should revert when we try to reject an already rejected request", async () => {
       await grantRole(validator, validatorRole);
       
@@ -249,6 +271,9 @@ describe("IssuerFacet", function () {
       tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress);
       expect(tx).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
+
+      const request = await issuerFacet.connect(owner).getIssuanceRequest(rejectedMatch);
+      expect(request.status).equal(issuanceRequestStatus.PENDING);
     });
 
     it("Should revert when non authorized user tries to reject a request", async () => {

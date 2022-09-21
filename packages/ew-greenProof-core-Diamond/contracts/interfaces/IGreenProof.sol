@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import {LibIssuer} from "../libraries/LibIssuer.sol";
+
 interface IGreenProof {
     struct Proof {
         bool isRevoked;
@@ -16,6 +18,8 @@ interface IGreenProof {
     }
 
     function requestProofIssuance(string memory winningMatch, address recipient) external;
+
+    function getIssuanceRequest(string memory winningMatch) external view returns (LibIssuer.IssuanceRequest memory);
 
     function validateIssuanceRequest(
         string memory winningMatch,
