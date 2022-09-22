@@ -6,7 +6,8 @@ import type {
 export type {
   MessageControlllerGetMessageParams as MessageQuery,
   SendMessageDto,
-  UploadMessageBodyDto} from './client';
+  UploadMessageBodyDto,
+} from './client';
 
 export {
   topicsControllerGetTopics as getTopics,
@@ -19,6 +20,7 @@ export {
   messageControlllerDownloadMessage as downloadFileFromDDHub,
   GetChannelResponseDtoType as ChannelTypeEnum,
   identityControllerPost as savePrivateKey,
+  topicsControllerPostTopics as createTopic,
 } from './client';
 
 
