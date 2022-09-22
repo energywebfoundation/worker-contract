@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 import {IRewardVoting} from "../interfaces/IRewardVoting.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
 
 library LibVoting {
     bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
@@ -78,6 +77,8 @@ library LibVoting {
     // Event emitted after match is recorded
     event MatchRegistered(string matchInput, string matchResult);
 
+    event ConsensusReached(string indexed winningMatch, string indexed matchInput);
+
     // Worker had already voted for a match result
     error AlreadyVoted();
 
@@ -146,11 +147,7 @@ library LibVoting {
         emit WinningMatch(voting.matchInput, voting.winningMatch, voting.winningMatchVoteCount);
         registerWinningMatch(voting.matchInput, voting.winningMatch);
         if (voting.isSettlement) {
-            //TO-DO: send an issuanceRequest to the issuerFacet if it is a settlement voting
-            IGreenProof(address(this)).requestProofIssuance(
-                voting.winningMatch,
-                address(this) /* TODO: replace with the correct recipientAddress */
-            );
+            emit ConsensusReached(voting.winningMatch, voting.matchInput);
         }
 
         voting.status = Status.Completed;

@@ -1,16 +1,24 @@
-const {
-    getSelector,
-    FacetCutAction,
-    removeSelectors,
-    findAddressPositionInFacets,
-} = require("../scripts/libraries/diamond");
-
 const chai = require("chai");
 const { assert, expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
-const { solidity } = require("ethereum-waffle");
+const { solidity, deployMockContract } = require("ethereum-waffle");
 const { deployDiamond } = require("../scripts/deploy");
+const { claimManagerInterface } = require("./utils");
+
+const issuerRole = ethers.utils.namehash(
+  "minter.roles.greenproof.apps.iam.ewc"
+);
+const validatorRole = ethers.utils.namehash(
+  "validator.roles.greenproof.apps.iam.ewc"
+);
+const revokerRole = ethers.utils.namehash(
+  "revoker.roles.greenproof.apps.iam.ewc"
+);
+const workerRole = ethers.utils.namehash(
+  "workerRole.roles.greenproof.apps.iam.ewc"
+);
+
 
 chai.use(solidity);
 
@@ -28,7 +36,9 @@ describe("VotingFacet", function () {
     let tx;
     let receipt;
     let result;
-    const addresses = [];
+    let grantRole;
+    let revokeRole;
+    // const addresses = [];
 
     let worker1;
     let worker2;
@@ -44,6 +54,8 @@ describe("VotingFacet", function () {
     const rewardAmount = parseEther("1");
     const IS_SETTLEMENT = true;
     const timeLimit = 15 * 60;
+    const defaultVersion = 1;
+
 
     const timeframes = [
         { input: "MATCH_INPUT_1", output: "MATCH_OUTPUT_1" },
@@ -55,7 +67,39 @@ describe("VotingFacet", function () {
 
     beforeEach(async () => {
         console.log(`\n`);
-        diamondAddress = await deployDiamond(timeLimit, rewardAmount);
+        const [owner] = await ethers.getSigners();
+
+        //  Mocking claimManager
+        const claimManagerMocked = await deployMockContract(
+            owner,
+            claimManagerInterface
+        );
+
+        grantRole = async (operatorWallet, role) => {
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(true);
+        };
+
+        revokeRole = async (operatorWallet, role) => {
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(false);
+        };
+
+        const roles = {
+            issuerRole,
+            revokerRole,
+            validatorRole,
+            workerRole,
+        };
+
+        diamondAddress = await deployDiamond(
+            timeLimit,
+            rewardAmount,
+            claimManagerMocked.address,
+            roles
+        );
         diamondCutFacet = await ethers.getContractAt(
             "DiamondCutFacet",
             diamondAddress
@@ -85,6 +129,7 @@ describe("VotingFacet", function () {
     });
 
     it("should allow to vote whitelisted worker", async () => {
+        await grantRole(worker1, workerRole);
         await matchVoting.addWorker(worker1.address);
         expect(
             await matchVoting
@@ -103,6 +148,7 @@ describe("VotingFacet", function () {
     });
 
     it("should not allow to vote not whitelisted worker", async () => {
+        
         expect(await matchVoting.isWorker(nonWorker.address)).to.be.false;
         await expect(
             matchVoting
@@ -112,6 +158,10 @@ describe("VotingFacet", function () {
     });
 
     it("should get the winner with the most votes", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -140,6 +190,12 @@ describe("VotingFacet", function () {
     });
 
     it("consensus can be reached with simple majority", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        await grantRole(worker4, workerRole);
+        await grantRole(worker5, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -173,6 +229,12 @@ describe("VotingFacet", function () {
     });
 
     it("consensus can be reached with vast majority", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        await grantRole(worker4, workerRole);
+        await grantRole(worker5, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -227,6 +289,8 @@ describe("VotingFacet", function () {
     });
 
     it("should not be able to add same worker twice", async () => {
+        await grantRole(worker1, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
 
         await expect(matchVoting.addWorker(worker1.address)).to.be.revertedWith(
@@ -235,6 +299,12 @@ describe("VotingFacet", function () {
     });
 
     it("consensus should not be reached when votes are divided evenly", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        await grantRole(worker4, workerRole);
+        
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -272,6 +342,9 @@ describe("VotingFacet", function () {
     });
 
     it("reward should be paid after replenishment of funds", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
 
@@ -303,6 +376,10 @@ describe("VotingFacet", function () {
     });
 
     it("voting which exceeded time limit can be canceled", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -328,6 +405,10 @@ describe("VotingFacet", function () {
     });
 
     it("voting which exceeded time limit must not be completed", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -355,6 +436,10 @@ describe("VotingFacet", function () {
     });
 
     it("voting can not be cancelled by non owner", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -367,6 +452,6 @@ describe("VotingFacet", function () {
 
         await expect(
             matchVoting.connect(worker2).cancelExpiredVotings()
-        ).to.be.revertedWith("Ownable: caller is not the owner");
+        ).to.be.revertedWith("LibDiamond: Must be contract owner");
     });
 });
