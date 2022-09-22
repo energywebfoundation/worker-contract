@@ -89,27 +89,6 @@ contract VotingFacet is IVoting {
         }
     }
 
-    // function verifyProof(
-    //     // string memory winningMatch,
-    //     bytes32 rootHash,
-    //     bytes32 leaf,
-    //     bytes32[] memory proof
-    // ) external pure returns (bool) {
-    //     // LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-    //     // uint256 proofID = issuer.matchToProofIDs[winningMatch];
-    //     // if (proofID == 0) {
-    //     //     revert LibIssuer.NonExistingProof(proofID);
-    //     // }
-
-    //     //TODO: decide wether we want to store merkleRoorProof as strings
-    //     // if (LibVoting.compareStrings(rootHash, issuer.mintedProofs[proofID].merkleRootProof) == false) {
-    //     //     return false;
-    //     // }
-
-    //     //TODO: check that the provided roothash is the same as the one stored onChain
-    //     return MerkleProof.verify(proof, rootHash, leaf);
-    // }
-
     function getWinners(string memory matchInput) external view returns (address payable[] memory _winners) {
         _winners = LibVoting._getWinners(matchInput);
     }
