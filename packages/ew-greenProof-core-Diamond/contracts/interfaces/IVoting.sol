@@ -2,8 +2,11 @@
 pragma solidity ^0.8.8;
 
 interface IVoting {
-     // Event emitted after voting ended
+    // Event emitted after voting ended
     event WinningMatch(string indexed matchInput, string indexed matchResult, uint256 indexed voteCount);
+
+    // Event emitted after voting ended on settlement data
+    event ConsensusReached(string indexed winningMatch, string indexed matchInput);
 
     // Winning match result can not be determined
     event NoConsensusReached(string indexed matchInput);
@@ -13,6 +16,4 @@ interface IVoting {
 
     // Event emitted after match is recorded
     event MatchRegistered(string matchInput, string matchResult);
-
 }
-   
