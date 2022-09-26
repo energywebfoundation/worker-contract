@@ -5,6 +5,7 @@
     "packages/merkle-tree",
     "packages/voting-contract",
     "packages/voting-manager",
+    "packages/ddhub-client",
     "packages/worker",
     "packages/*"
   ],
