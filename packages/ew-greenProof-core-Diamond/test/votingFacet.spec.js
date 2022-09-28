@@ -58,15 +58,16 @@ describe("VotingFacet", function () {
 
 
     const timeframes = [
-        { input: "MATCH_INPUT_1", output: "MATCH_OUTPUT_1" },
-        { input: "MATCH_INPUT_2", output: "MATCH_OUTPUT_2" },
-        { input: "MATCH_INPUT_3", output: "MATCH_OUTPUT_3" },
-        { input: "MATCH_INPUT_4", output: "MATCH_OUTPUT_4" },
-        { input: "MATCH_INPUT_5", output: "MATCH_OUTPUT_5" },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_1") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_2"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_2") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_3"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_3") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_4"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_4") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_5"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_5") },
     ];
 
     beforeEach(async () => {
         console.log(`\n`);
+        console.log("inputMatch : ", timeframes[0].input)
         const [owner] = await ethers.getSigners();
 
         //  Mocking claimManager
