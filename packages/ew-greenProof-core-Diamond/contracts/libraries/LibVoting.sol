@@ -13,17 +13,19 @@ library LibVoting {
         // Number of votes for winning match
         uint256 winningMatchVoteCount;
         // Input match
-        string matchInput;
+        bytes32 matchInput;
         // List of all match results with at least one vote
-        string[] matches;
+        bytes32[] matches;
         // Winning match result
-        string winningMatch;
+        bytes32 winningMatch;
         // Worker address to match result
-        mapping(address => string) workerToMatchResult;
+        // mapping(address => string) workerToMatchResult;
+        mapping(address => bytes32) workerToMatchResult;
         // Worker address to voted flag
         mapping(address => bool) workerToVoted;
         // Match result to total vote count
-        mapping(string => uint256) matchResultToVoteCount;
+        // mapping(string => uint256) matchResultToVoteCount;
+        mapping(bytes32 => uint256) matchResultToVoteCount;
         // To decide which actions are currently applicable to voting
         Status status;
         // If none of the match results gets more votes then the others
@@ -41,12 +43,12 @@ library LibVoting {
         address rewardVotingAddress;
         //List of all workers
         address payable[] workers;
-        string[] matchInputs;
+        bytes32[] matchInputs;
         mapping(address => uint256) workerToIndex;
-        mapping(string => uint256) matchInputToIndex;
+        mapping(bytes32 => uint256) matchInputToIndex;
         // Worker address to match result
-        mapping(string => Voting) matchInputToVoting;
-        mapping(string => string) matches;
+        mapping(bytes32 => Voting) matchInputToVoting;
+        mapping(bytes32 => bytes32) matches;
     }
 
     struct DataProof {
@@ -66,18 +68,18 @@ library LibVoting {
     }
 
     // Event emitted after voting ended
-    event WinningMatch(string indexed matchInput, string indexed matchResult, uint256 indexed voteCount);
+    event WinningMatch(bytes32 matchInput, bytes32 matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
-    event NoConsensusReached(string indexed matchInput);
+    event NoConsensusReached(bytes32 matchInput);
 
     // Voting lasts more then time limit
-    event VotingExpired(string indexed matchInput);
+    event VotingExpired(bytes32 matchInput);
 
     // Event emitted after match is recorded
-    event MatchRegistered(string matchInput, string matchResult);
+    event MatchRegistered(bytes32 matchInput, bytes32 matchResult);
 
-    event ConsensusReached(string indexed winningMatch, string indexed matchInput);
+    event ConsensusReached(bytes32 winningMatch, bytes32 matchInput);
 
     // Worker had already voted for a match result
     error AlreadyVoted();
@@ -116,7 +118,7 @@ library LibVoting {
         return (votingStorage.numberOfWorkers / 2) + 1;
     }
 
-    function startVoting(string memory matchInput, bool isSettlement) internal {
+    function startVoting(bytes32 matchInput, bool isSettlement) internal {
         VotingStorage storage votingStorage = getStorage();
 
         Voting storage voting = votingStorage.matchInputToVoting[matchInput];
@@ -129,8 +131,7 @@ library LibVoting {
 
         if (
             votingStorage.matchInputToIndex[matchInput] == 0 &&
-            (votingStorage.matchInputs.length == 0 ||
-                (votingStorage.matchInputs.length > 0 && !compareStrings(votingStorage.matchInputs[0], matchInput)))
+            (votingStorage.matchInputs.length == 0 || (votingStorage.matchInputs.length > 0 && (votingStorage.matchInputs[0] != matchInput)))
         ) {
             votingStorage.matchInputToIndex[matchInput] = votingStorage.matchInputs.length;
             votingStorage.matchInputs.push(matchInput);
@@ -172,7 +173,7 @@ library LibVoting {
         voting.start = 0;
     }
 
-    function _getWinners(string memory matchInput) internal view returns (address payable[] memory _winners) {
+    function _getWinners(bytes32 matchInput) internal view returns (address payable[] memory _winners) {
         VotingStorage storage _votingStorage = getStorage();
 
         Voting storage voting = _votingStorage.matchInputToVoting[matchInput];
@@ -181,7 +182,7 @@ library LibVoting {
         uint256 winnerCount = 0;
         for (uint256 i = 0; i < _votingStorage.numberOfWorkers; i++) {
             address payable worker = _votingStorage.workers[i];
-            if (voting.workerToVoted[worker] && compareStrings(voting.workerToMatchResult[worker], voting.winningMatch)) {
+            if (voting.workerToVoted[worker] && (voting.workerToMatchResult[worker] == voting.winningMatch)) {
                 _winners[winnerCount] = worker;
                 winnerCount++;
             }
@@ -192,7 +193,7 @@ library LibVoting {
         return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
     }
 
-    function registerWinningMatch(string memory matchInput, string memory matchResult) internal {
+    function registerWinningMatch(bytes32 matchInput, bytes32 matchResult) internal {
         VotingStorage storage votingStorage = getStorage();
 
         votingStorage.matches[matchInput] = matchResult;

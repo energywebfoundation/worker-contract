@@ -7,6 +7,7 @@ import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
+import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 // import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
@@ -36,8 +37,8 @@ contract VotingFacet is IVoting {
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
     function vote(
-        string memory matchInput,
-        string memory matchResult,
+        bytes32 matchInput,
+        bytes32 matchResult,
         bool isSettlement
     ) external {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
@@ -89,16 +90,16 @@ contract VotingFacet is IVoting {
         }
     }
 
-    function getWinners(string memory matchInput) external view returns (address payable[] memory _winners) {
+    function getWinners(bytes32 matchInput) external view returns (address payable[] memory _winners) {
         _winners = LibVoting._getWinners(matchInput);
     }
 
-    function getWinningMatch(string memory matchInput) external view returns (string memory) {
+    function getWinningMatch(bytes32 matchInput) external view returns (bytes32) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
         return votingStorage.matchInputToVoting[matchInput].winningMatch;
     }
 
-    function getWorkerVote(string memory matchInput, address workerAddress) external view returns (string memory matchResult) {
+    function getWorkerVote(bytes32 matchInput, address workerAddress) external view returns (bytes32 matchResult) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         return votingStorage.matchInputToVoting[matchInput].workerToMatchResult[workerAddress];
@@ -148,7 +149,7 @@ contract VotingFacet is IVoting {
         votingStorage.numberOfWorkers = votingStorage.numberOfWorkers - 1;
     }
 
-    function getMatch(string memory input) external view returns (string memory) {
+    function getMatch(bytes32 input) external view returns (bytes32) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         return votingStorage.matches[input];
@@ -180,5 +181,22 @@ contract VotingFacet is IVoting {
                 voting.cancelVoting();
             }
         }
+    }
+
+    /** Data verification */
+
+    /** checks that some data is part of a voting consensus
+        @param voteID : the inputHash identifying the vote
+        @param dataHash: the hash of the data we ant to verify
+        @param dataProof: the merkle proof of the data
+        @return `True` if the dataHash is part of the voting merkle root, 'False` otherwise  
+
+     */
+    function isPartOfConsensus(
+        bytes32 voteID,
+        bytes32 dataHash,
+        bytes32[] memory dataProof
+    ) external pure returns (bool) {
+        return MerkleProof.verify(dataProof, voteID, dataHash);
     }
 }
