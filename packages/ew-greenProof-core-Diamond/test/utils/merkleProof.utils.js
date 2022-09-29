@@ -13,6 +13,45 @@ const getStringLeaves = (dataObject) => {
   return stringLeaves;
 }
 
+const arr = [
+  {
+    id: 1,
+    generatorID: 2,
+    volume: 10,
+    consumerID: 500
+  },
+  {
+    id: 2,
+    generatorID: 3,
+    volume: 10,
+    consumerID: 522
+  },
+  {
+    id: 3,
+    generatorID: 4,
+    volume: 10,
+    consumerID: 52
+  },
+  {
+    id: 4,
+    generatorID: 5,
+    volume: 42,
+    consumerID: 53
+  },
+  {
+    id: 5,
+    generatorID: 5,
+    volume: 10,
+    consumerID: 51
+  },
+]
+const leaves = arr.map(item => createPreciseProof(item).getHexRoot())
+const tree = createMerkleTree(leaves);
+
+const leaf = leaves[1];
+const proof = tree.getHexProof(leaf);
+const root = tree.getHexRoot()
+
 const getMerkleProof = (dataObject) => {
   const merkle = createPreciseProof(dataObject);
   const hexLeaves = merkle.getHexLeaves()
