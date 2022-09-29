@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
+import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
+import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
@@ -25,46 +28,42 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         _issuer = LibIssuer._getStorage();
     }
 
-    function requestProofIssuance(string memory winningMatch, address recipient) external override {
+    function requestProofIssuance(
+        bytes32 voteID,
+        address recipient,
+        bytes32 dataHash,
+        bytes32[] memory dataProof,
+        uint256 volume,
+        bytes32[] memory volumeProof
+    ) external override onlyValidator {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
-        require(
-            issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.PENDING &&
-                issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED,
-            "Request: Already requested proof"
-        );
+        require(LibVoting._isVoteRecorded(voteID), "Issuance Request : unknown vote");
+        require(LibVoting._isPartOfConsensus(voteID, dataHash, dataProof), "data: Not part of this consensus");
+        bytes32 volumeHash = keccak256(abi.encodePacked(("volume"), volume));
+        require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
+
         issuer.lastProofIndex++;
-        uint256 proofID = issuer.lastProofIndex;
+        _mint(recipient, issuer.lastProofIndex, volume, "");
+        LibIssuer._registerProof(issuer.lastProofIndex, dataHash);
 
-        LibIssuer.IssuanceRequest memory newIssuanceRequest = LibIssuer.IssuanceRequest(
-            proofID,
-            recipient,
-            winningMatch,
-            LibIssuer.DEFAULT_VCREDENTIAL_VALUE,
-            LibIssuer.RequestStatus.PENDING
-        );
-
-        issuer.issuanceRequests[winningMatch] = newIssuanceRequest;
-        emit LibIssuer.IssuanceRequested(proofID);
+        //TO-DO: emit an event to notify issuance
     }
 
-    function getIssuanceRequest(string memory winningMatch) external view override returns (LibIssuer.IssuanceRequest memory) {
-        LibIssuer.IssuerStorage storage issuer = getStorage();
-
-        return issuer.issuanceRequests[winningMatch];
-    }
-
-    function validateIssuanceRequest(
-        string memory winningMatch,
-        bytes32 merkleRootProof,
-        address receiver
-    ) external onlyValidator {
-        LibIssuer._acceptRequest(winningMatch, merkleRootProof);
-        LibIssuer._registerPrivateData(winningMatch, receiver);
+    function discloseData(
+        string memory key,
+        string memory value,
+        bytes32[] memory proof,
+        bytes32 merkleRoot
+    ) external {
+        //TO-DO: set access control here
+        bytes32 leaf = keccak256(abi.encodePacked(key, value));
+        require(LibProofManager._verifyProof(merkleRoot, leaf, proof), "Disclose : data not verified");
+        LibIssuer._discloseData(key, value, merkleRoot);
     }
 
     function validateIssuanceRequest(
-        string memory winningMatch,
+        bytes32 winningMatch,
         bytes32 merkleRootProof,
         address receiver,
         uint256 amount,
@@ -84,7 +83,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         emit LibIssuer.ProofMinted(issuer.issuanceRequests[winningMatch].requestID, amount);
     }
 
-    function rejectIssuanceRequest(string memory winningMatch) external onlyValidator {
+    function rejectIssuanceRequest(bytes32 winningMatch) external onlyValidator {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.REJECTED, "Rejection: Already rejected");

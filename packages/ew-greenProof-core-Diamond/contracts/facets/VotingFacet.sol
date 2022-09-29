@@ -7,7 +7,6 @@ import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
-import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 // import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
@@ -181,22 +180,5 @@ contract VotingFacet is IVoting {
                 voting.cancelVoting();
             }
         }
-    }
-
-    /** Data verification */
-
-    /** checks that some data is part of a voting consensus
-        @param voteID : the inputHash identifying the vote
-        @param dataHash: the hash of the data we ant to verify
-        @param dataProof: the merkle proof of the data
-        @return `True` if the dataHash is part of the voting merkle root, 'False` otherwise  
-
-     */
-    function isPartOfConsensus(
-        bytes32 voteID,
-        bytes32 dataHash,
-        bytes32[] memory dataProof
-    ) external pure returns (bool) {
-        return MerkleProof.verify(dataProof, voteID, dataHash);
     }
 }

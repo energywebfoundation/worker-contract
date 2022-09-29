@@ -17,26 +17,35 @@ interface IGreenProof {
         bytes32 merkleRootProof;
     }
 
-    function requestProofIssuance(string memory winningMatch, address recipient) external;
-
-    function getIssuanceRequest(string memory winningMatch) external view returns (LibIssuer.IssuanceRequest memory);
-
-    function validateIssuanceRequest(
-        string memory winningMatch,
-        bytes32 merkleRootProof,
-        address receiver
+    function requestProofIssuance(
+        bytes32 voteID,
+        address recipient,
+        bytes32 dataHash,
+        bytes32[] memory dataProof,
+        uint256 volume,
+        bytes32[] memory volumeProof
     ) external;
 
-    function validateIssuanceRequest(
-        string memory winningMatch,
-        bytes32 merkleRootProof,
-        address receiver,
-        uint256 amount,
-        uint256 productType,
-        uint256 start,
-        uint256 end,
-        bytes32 producerRef
-    ) external;
+    // function requestProofIssuance(bytes32 winningMatch, address recipient) external;
+
+    // function getIssuanceRequest(bytes32 winningMatch) external view returns (LibIssuer.IssuanceRequest memory);
+
+    // function validateIssuanceRequest(
+    //     bytes32 winningMatch,
+    //     bytes32 merkleRootProof,
+    //     address receiver
+    // ) external;
+
+    // function validateIssuanceRequest(
+    //     bytes32 winningMatch,
+    //     bytes32 merkleRootProof,
+    //     address receiver,
+    //     uint256 amount,
+    //     uint256 productType,
+    //     uint256 start,
+    //     uint256 end,
+    //     bytes32 producerRef
+    // ) external;
 
     event ProofMinted(uint256 indexed proofID, uint256 indexed amount);
     event IssuanceRequested(uint256 indexed proofID);

@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
+import {IVoting} from "../interfaces/IVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 
 library LibIssuer {
@@ -13,7 +14,10 @@ library LibIssuer {
         mapping(string => uint256) matchToProofIDs;
         mapping(uint256 => IGreenProof.Proof) mintedProofs;
         mapping(address => IGreenProof.Proof[]) userProofs;
-        mapping(string => IssuanceRequest) issuanceRequests;
+        mapping(bytes32 => IssuanceRequest) issuanceRequests;
+        mapping(bytes32 => mapping(string => string)) disclosedData;
+        //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
+        mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
     }
 
     event ProofMinted(uint256 indexed proofID, uint256 indexed volume);
@@ -35,12 +39,12 @@ library LibIssuer {
     struct IssuanceRequest {
         uint256 requestID;
         address recipient;
-        string winningMatch;
+        bytes32 winningMatch;
         bytes32 merkleRootProof;
         RequestStatus status;
     }
 
-    function _acceptRequest(string memory winningMatch, bytes32 merkleRootProof) internal {
+    function _acceptRequest(bytes32 winningMatch, bytes32 merkleRootProof) internal {
         IssuerStorage storage issuer = _getStorage();
 
         require(issuer.issuanceRequests[winningMatch].requestID != 0, "Validation not requested");
@@ -65,13 +69,13 @@ library LibIssuer {
         issuer.revocablePeriod = revocablePeriod;
     }
 
-    function setRequestStatus(string memory winningMatch, RequestStatus status) internal {
+    function setRequestStatus(bytes32 winningMatch, RequestStatus status) internal {
         IssuerStorage storage issuer = _getStorage();
 
         issuer.issuanceRequests[winningMatch].status = status;
     }
 
-    function _registerPrivateData(string memory winningMatch, address receiver) internal {
+    function _registerPrivateData(bytes32 winningMatch, address receiver) internal {
         LibIssuer.IssuerStorage storage issuer = _getStorage();
         uint256 proofID = issuer.issuanceRequests[winningMatch].requestID;
         bool isRevoked = false;
@@ -87,7 +91,7 @@ library LibIssuer {
 
     /** issueProof : Sends a request issuance of a new proof */
     function _registerData(
-        string memory winningMatch,
+        bytes32 winningMatch,
         address receiver,
         uint256 amount,
         uint256 productType,
@@ -117,6 +121,17 @@ library LibIssuer {
             ""
         );
         issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
+    }
+
+    function _discloseData(
+        string memory key,
+        string memory value,
+        bytes32 rootHash
+    ) internal {
+        LibIssuer.IssuerStorage storage issuer = _getStorage();
+        require(issuer.isDataDisclosed[rootHash][key] == false, "disclosure: data already disclosed");
+        issuer.disclosedData[rootHash][key] = value;
+        issuer.isDataDisclosed[rootHash][key] = true;
     }
 
     function _registerProof(uint256 proofID, bytes32 merkleRootProof) internal {
