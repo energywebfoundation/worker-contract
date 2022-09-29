@@ -135,10 +135,10 @@ describe("IssuerFacet", function () {
     productType = 1;
     start = 1234567890;
     end = 9876543210;
-    winninMatch = "MATCH_RESULT_1";
-    secondMatch = "MATCH_RESULT_2";
-    rejectedMatch = "MATCH_RESULT_TO_BE_REJECTED";
-    producerRef = ethers.utils.namehash("energyWeb");
+    winninMatch = ethers.utils.formatBytes32String("MATCH_RESULT_1");
+    secondMatch = ethers.utils.formatBytes32String("MATCH_RESULT_2");
+    rejectedMatch = ethers.utils.formatBytes32String("MATCH_RESULT_TO_BE_REJECTED");
+    producerRef = ethers.utils.formatBytes32String("energyWeb");
 
     const data = {
       receiverAddress,
@@ -166,25 +166,14 @@ describe("IssuerFacet", function () {
   });
 
   describe("\n** Proof issuance tests **\n", () => {
-    it("reverts when we try to validate request before request issuance", async () => {
-      await grantRole(validator, validatorRole);
-      await expect(
-        issuerFacet
-          .connect(validator)
-          ["validateIssuanceRequest(string,bytes32,address)"](winninMatch, VC, receiverAddress)
-      ).to.be.revertedWith("Validation not requested");
-    });
-
-    it("checks that the request status is initially set to DEFAULT", async () => {
-      const request = await issuerFacet.connect(owner).getIssuanceRequest(winninMatch);
-      expect(request.status).equal(issuanceRequestStatus.DEFAULT);
-    });
 
     it("Can send proof issuance requests", async () => {
+      await grantRole(validator, validatorRole);
+      
       expect(
         await issuerFacet
-          .connect(owner)
-          .requestProofIssuance(winninMatch, receiverAddress)
+          .connect(validator)
+          .requestProofIssuance(winninMatch, receiverAddress, winninMatch, proof, 42, proof)
       ).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
     });
