@@ -17,11 +17,5 @@ interface IVoting {
     // Event emitted after match is recorded
     event MatchRegistered(bytes32 matchInput, bytes32 matchResult);
 
-    function isPartOfConsensus(
-        bytes32 voteID,
-        bytes32 dataHash,
-        bytes32[] memory dataProof
-    ) external view returns (bool);
-
     function getWinningMatch(bytes32 matchInput) external view returns (bytes32);
 }

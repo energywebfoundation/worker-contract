@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 import {IRewardVoting} from "../interfaces/IRewardVoting.sol";
+import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 library LibVoting {
     bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
@@ -215,5 +216,28 @@ library LibVoting {
 
     function isNotWorker(address workerAddress) internal view returns (bool) {
         return isWorker(workerAddress) == false;
+    }
+
+    function _isVoteRecorded(bytes32 _matchInput) internal view returns (bool) {
+        VotingStorage storage votingStorage = getStorage();
+
+        return votingStorage.matches[_matchInput] != 0;
+    }
+
+    /** Data verification */
+
+    /** checks that some data is part of a voting consensus
+        @param voteID : the inputHash identifying the vote
+        @param dataHash: the hash of the data we ant to verify
+        @param dataProof: the merkle proof of the data
+        @return `True` if the dataHash is part of the voting merkle root, 'False` otherwise  
+
+     */
+    function _isPartOfConsensus(
+        bytes32 voteID,
+        bytes32 dataHash,
+        bytes32[] memory dataProof
+    ) internal pure returns (bool) {
+        return MerkleProof.verify(dataProof, voteID, dataHash);
     }
 }

@@ -24,7 +24,7 @@ library LibReward {
         }
     }
 
-    function reward(address payable[] memory winners) internal {
+    function _reward(address payable[] memory winners) internal {
         RewardStorage storage rs = getStorage();
 
         for (uint256 i = 0; i < winners.length; i++) {
