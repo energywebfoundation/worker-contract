@@ -37,6 +37,7 @@ describe("MatchVoting", () => {
 
   const timeframes = [
     { input: "MATCH_INPUT_1", output: toBytes32("MATCH_OUTPUT_1") },
+    { input: "MATCH_INPUT_1", output: toBytes32("REPLAYED_MATCH_OUTPUT_1") },
     { input: "MATCH_INPUT_2", output: toBytes32("MATCH_OUTPUT_2") },
     { input: "MATCH_INPUT_3", output: toBytes32("MATCH_OUTPUT_3") },
     { input: "MATCH_INPUT_4", output: toBytes32("MATCH_OUTPUT_4") },
@@ -115,6 +116,45 @@ describe("MatchVoting", () => {
     );
   });
 
+  it("should allow a worker to replay the vote", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    expect(
+      await matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+    
+    expect(
+      await matchVoting
+        .connect(worker1)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+      .to.emit(matchVoting, "WinningMatch")
+      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+    ).to.equal(timeframes[0].output);
+    expect(await certificateContract.matches(timeframes[0].input)).to.equal(
+      timeframes[0].output
+    );
+
+    //Replay
+    expect(
+      await matchVoting
+        .connect(worker1)
+        .vote(timeframes[0].input, timeframes[1].output)
+    )
+    // .to.emit(matchVoting, "WinningMatch")
+    // .withArgs(timeframes[0].input, timeframes[1].output, 1);
+
+     expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+    ).to.equal(timeframes[0].output);
+  });
+
   it("should not allow to vote not whitelisted worker", async () => {
     expect(await matchVoting.isWorker(worker1.address)).to.be.false;
     await expect(
@@ -163,11 +203,11 @@ describe("MatchVoting", () => {
       .to.emit(matchVoting, "WinningMatch")
       .withArgs(timeframes[0].input, timeframes[0].output, 2);
 
-    await expect(
-      matchVoting
-        .connect(worker3)
-        .vote(timeframes[0].input, timeframes[1].output)
-    ).to.be.revertedWith("VotingAlreadyEnded");
+    // await expect(
+    //   matchVoting
+    //     .connect(worker3)
+    //     .vote(timeframes[0].input, timeframes[1].output)
+    // ).to.be.revertedWith("VotingAlreadyEnded");
 
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
