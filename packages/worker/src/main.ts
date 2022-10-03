@@ -102,24 +102,9 @@ export class GreenProofWorker {
     return contract.connect(signer);
   };
 
-  private async registerWorkerAsAVoter() {
-    const contract = this.getContractWithSigner();
-    const workerAddress = contract.address;
-    const isWorker = await contract.isWorker(workerAddress);
-    if (isWorker) {
-      console.log('Worker registered');
-      return;
-    }
-    console.log('Registering worker...');
-    const tx = await contract.addWorker(workerAddress, { gasLimit: 1000000 });
-    await tx.wait();
-    console.log('Worker successfully registered.');
-  }
-
   async start(cb: CallBack) {
     const app = await NestFactory.create(AppModule);
     await app.listen(this.port);
-    await this.registerWorkerAsAVoter();
     await cb({
       merkleTree: this.merkleTree,
       getVotingContract: this.getContractWithSigner,
