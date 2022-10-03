@@ -103,14 +103,15 @@ export class GreenProofWorker {
   };
 
   private async registerWorkerAsAVoter() {
-    const workerAddress = this.getContractWithSigner().address;
-    const isWorker = await this.getContractWithSigner().isWorker(workerAddress);
+    const contract = this.getContractWithSigner();
+    const workerAddress = contract.address;
+    const isWorker = await contract.isWorker(workerAddress);
     if (isWorker) {
       console.log('Worker registered');
       return;
     }
     console.log('Registering worker...');
-    const tx = await this.getContractWithSigner().addWorker(workerAddress);
+    const tx = await contract.addWorker(workerAddress, { gasLimit: 1000000 });
     await tx.wait();
     console.log('Worker successfully registered.');
   }
