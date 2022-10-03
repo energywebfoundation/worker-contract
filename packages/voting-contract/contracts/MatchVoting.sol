@@ -41,9 +41,6 @@ contract MatchVoting is Ownable, IVoting {
     /// Worker address to match result
     mapping(string => LibVoting.Voting) public matchInputToVoting;
 
-    //Track the replaying vote status of each worker
-    mapping(address => mapping(string => bool)) private isRevoting;
-
     modifier onlyEnrolledWorkers(address _worker) {
         require(
             _worker.isWorker(claimManagerAddress, workerRole),
@@ -78,9 +75,6 @@ contract MatchVoting is Ownable, IVoting {
         }
 
         if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
-            //TODO: update the voting with the return of the vote replay
-            // return newVote =  voting._replayVote(matchInput, matchResult);
-
             (
                 bool shouldUpdateVote,
                 bytes32 newWinningMatch,
@@ -260,10 +254,6 @@ contract MatchVoting is Ownable, IVoting {
             matchInputs.push(matchInput);
         }
     }
-
-    // function isExpired(Voting storage voting) private view returns (bool) {
-    //     return voting.start + timeLimit < block.timestamp;
-    // }
 
     /// @notice Cancels votings that takes longer than time limit
     function cancelExpiredVotings() public onlyOwner {
