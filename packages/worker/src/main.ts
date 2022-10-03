@@ -40,7 +40,7 @@ export type MerkleTree = {
 type Runtime = {
   merkleTree: MerkleTree;
   getVotingContract: () => MatchVoting;
-  ddhubClient: DDHubClient,
+  getDDhubClient: () => DDHubClient,
 };
 
 type CallBack = (runtime: Runtime) => Promise<void>;
@@ -63,12 +63,12 @@ export class GreenProofWorker {
     this.port = port ?? 3030;
   }
 
-  public get ddhubClient() {
+  public getDDhubClient = () => {
     if (!this._ddhubClient) {
       throw new Error('DDHub communication not enabled. Please use "enableDDHubCommunication" method!');
     }
     return this._ddhubClient;
-  }
+  };
 
   public async enableDDHubCommunication({appNamespace, channelConfig, debugMode, ddhubUrl}: DDHUBConfig) {
     this._ddhubClient = new DDHubClient({
@@ -108,7 +108,7 @@ export class GreenProofWorker {
     await cb({
       merkleTree: this.merkleTree,
       getVotingContract: this.getContractWithSigner,
-      ddhubClient: this.ddhubClient,
+      getDDhubClient: this.getDDhubClient,
     });
   }
 }
