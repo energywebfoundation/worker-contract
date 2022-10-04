@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import type { MatchVoting } from '@energyweb/greenproof-voting-contract';
 import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
-import { createMerkleTree, stringify, verify, createPreciseProof } from '@energyweb/greenproof-merkle-tree';
+import { createMerkleTree, stringify, verify, createPreciseProof, hash } from '@energyweb/greenproof-merkle-tree';
 import { providers, Wallet } from 'ethers';
 import type { Config } from '@energyweb/greenproof-ddhub-client';
 import { DDHubClient } from '@energyweb/greenproof-ddhub-client';
@@ -34,12 +34,13 @@ export type MerkleTree = {
   stringify: typeof stringify;
   verify: typeof verify;
   createPreciseProof: typeof createPreciseProof;
+  hash: typeof hash;
 };
 
 type Runtime = {
   merkleTree: MerkleTree;
   getVotingContract: () => MatchVoting;
-  ddhubClient: DDHubClient,
+  getDDhubClient: () => DDHubClient,
 };
 
 type CallBack = (runtime: Runtime) => Promise<void>;
@@ -58,16 +59,16 @@ export class GreenProofWorker {
     this.privateKey = privateKey;
     this.votingContractAddress = votingContractAddress;
 
-    this.merkleTree = { createMerkleTree, stringify, verify, createPreciseProof };
+    this.merkleTree = { createMerkleTree, stringify, verify, createPreciseProof, hash };
     this.port = port ?? 3030;
   }
 
-  public get ddhubClient() {
+  public getDDhubClient = () => {
     if (!this._ddhubClient) {
       throw new Error('DDHub communication not enabled. Please use "enableDDHubCommunication" method!');
     }
     return this._ddhubClient;
-  }
+  };
 
   public async enableDDHubCommunication({appNamespace, channelConfig, debugMode, ddhubUrl}: DDHUBConfig) {
     this._ddhubClient = new DDHubClient({
@@ -101,22 +102,13 @@ export class GreenProofWorker {
     return contract.connect(signer);
   };
 
-  private async registerWorkerAsAVoter() {
-    const workerAddress = this.getContractWithSigner().address;
-    const isWorker = await this.getContractWithSigner().isWorker(workerAddress);
-    if (isWorker) return;
-    const tx = await this.getContractWithSigner().addWorker(workerAddress);
-    await tx.wait();
-  }
-
   async start(cb: CallBack) {
     const app = await NestFactory.create(AppModule);
     await app.listen(this.port);
-    await this.registerWorkerAsAVoter();
     await cb({
       merkleTree: this.merkleTree,
       getVotingContract: this.getContractWithSigner,
-      ddhubClient: this.ddhubClient,
+      getDDhubClient: this.getDDhubClient,
     });
   }
 }

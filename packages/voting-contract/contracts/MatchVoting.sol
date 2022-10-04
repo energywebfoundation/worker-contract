@@ -3,13 +3,17 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
 import "./Certificate.sol";
 import "./RewardVoting.sol";
 
 import "../libs/LibRoles.sol";
+import "../libs/LibVoting.sol";
 
-contract MatchVoting is Ownable {
+import "../interfaces/IVoting.sol";
+
+contract MatchVoting is Ownable, IVoting {
+    using LibVoting for address;
+    using LibVoting for LibVoting.Voting;
     using RolesLibrary for address;
 
     /// Certificate minting contract address
@@ -33,42 +37,10 @@ contract MatchVoting is Ownable {
 
     bytes32 private workerRole;
 
-    enum Status {
-        /// Not started or canceled
-        NotActive,
-        /// Worker can vote
-        Active,
-        /// Winner match is determined
-        Completed
-    }
+    // Worker address to match result on a specific matchInput
+    mapping(address => mapping(string => bytes32)) workerVotes;
 
-    struct Voting {
-        /// Input match
-        string matchInput;
-        /// List of all match results with at least one vote
-        bytes32[] matches;
-        /// Worker address to match result
-        mapping(address => bytes32) workerToMatchResult;
-        /// Worker address to voted flag
-        mapping(address => bool) workerToVoted;
-        /// Match result to total vote count
-        mapping(bytes32 => uint256) matchResultToVoteCount;
-        /// To decide which actions are currently applicable to voting
-        Status status;
-        /// Winning match result
-        bytes32 winningMatch;
-        /// Number of votes for winning match
-        uint256 winningMatchVoteCount;
-        /// If none of the match results gets more votes then the others
-        bool noConsensus;
-        /// Number of votes in this voting
-        uint256 numberOfVotes;
-        ///Timestamp of first voting
-        uint256 start;
-    }
-
-    /// Worker address to match result
-    mapping(string => Voting) public matchInputToVoting;
+    mapping(string => LibVoting.Voting) public matchInputToVoting;
 
     modifier onlyEnrolledWorkers(address _worker) {
         require(
@@ -77,34 +49,6 @@ contract MatchVoting is Ownable {
         );
         _;
     }
-
-    /// Event emitted after voting ended
-    event WinningMatch(
-        string indexed matchInput,
-        bytes32 matchResult,
-        uint256 voteCount
-    );
-
-    /// Winning match result can not be determined
-    event NoConsensusReached(string indexed matchInput);
-
-    /// Voting lasts more then time limit
-    event VotingExpired(string indexed matchInput);
-
-    /// Worker had already voted for a match result
-    error AlreadyVoted();
-
-    /// Sender is not whitelisted
-    error NotWhitelisted();
-
-    /// Voting ended, winner is chosen - workers cannot vote anymore
-    error VotingAlreadyEnded();
-
-    /// Worker has been added already
-    error WorkerAlreadyAdded();
-
-    /// Worker has not been added yet
-    error WorkerWasNotAdded();
 
     constructor(
         address _certificateContractAddress,
@@ -126,55 +70,88 @@ contract MatchVoting is Ownable {
         if (!isWorker(msg.sender)) {
             revert NotWhitelisted();
         }
-        Voting storage voting = matchInputToVoting[matchInput];
-        if (voting.status == Status.Active && isExpired(voting)) {
+        LibVoting.Voting storage voting = matchInputToVoting[matchInput];
+        if (voting._isExpired(timeLimit, matchInput)) {
             cancelVoting(voting);
-            emit VotingExpired(matchInput);
-        }
-        if (voting.status == Status.Completed) {
-            revert VotingAlreadyEnded();
         }
 
-        if (voting.status == Status.NotActive) {
-            startVoting(matchInput);
-        }
+        if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
+            // we prevent wasting computation if the vote is the same as the previous one
+            if (workerVotes[msg.sender][matchInput] == matchResult) {
+                return;
+            }
+            (
+                bool shouldUpdateVote,
+                bytes32 newWinningMatch,
+                uint256 newVoteCount
+            ) = voting._replayVote(matchInput, matchResult);
 
-        if (voting.workerToVoted[msg.sender]) {
-            revert AlreadyVoted();
-        }
+            if (shouldUpdateVote) {
+                //We update the voting results
+                LibVoting.updateWorkersVote(voting);
 
-        voting.workerToMatchResult[msg.sender] = matchResult;
-        voting.workerToVoted[msg.sender] = true;
-        voting.numberOfVotes += 1;
+                // We update the final vote with the replayed vote
+                for (uint256 i; i < voting.replayVoters.length; i++) {
+                    address worker = voting.replayVoters[i];
 
-        if (voting.matchResultToVoteCount[matchResult] == 0) {
-            voting.matches.push(matchResult);
-        }
+                    workerVotes[worker][matchInput] = voting
+                        .workerToMatchResult[worker];
+                    matchInputToVoting[matchInput].workerToMatchResult[
+                        worker
+                    ] = voting.workerToMatchResult[worker];
+                }
 
-        voting.matchResultToVoteCount[matchResult] += 1;
+                emit WinningMatch(
+                    voting.matchInput,
+                    newWinningMatch,
+                    newVoteCount
+                );
 
-        if (
-            voting.matchResultToVoteCount[matchResult] ==
-            voting.winningMatchVoteCount
-        ) {
-            voting.noConsensus = true;
-        } else if (
-            voting.matchResultToVoteCount[matchResult] >
-            voting.winningMatchVoteCount
-        ) {
-            voting.winningMatchVoteCount = voting.matchResultToVoteCount[
-                matchResult
-            ];
-            voting.winningMatch = matchResult;
-            voting.noConsensus = false;
+                IRewardVoting(rewardVotingAddress).reward(
+                    winners(voting.matchInput)
+                );
+            }
+        } else {
+            if (voting._hasNotStarted()) {
+                startVoting(matchInput);
+            }
 
-            if (voting.winningMatchVoteCount >= majority()) {
+            voting.numberOfVotes++;
+            voting.workerToVoted[msg.sender] = true;
+            workerVotes[msg.sender][matchInput] = matchResult;
+            voting.workerToMatchResult[msg.sender] = matchResult;
+
+            if (voting.matchResultToVoteCount[matchResult] == 0) {
+                voting.matches.push(matchResult);
+            }
+
+            voting.matchResultToVoteCount[matchResult]++;
+
+            if (
+                voting.matchResultToVoteCount[matchResult] ==
+                voting.winningMatchVoteCount
+            ) {
+                voting.noConsensus = true;
+            } else if (
+                voting.matchResultToVoteCount[matchResult] >
+                voting.winningMatchVoteCount
+            ) {
+                voting.winningMatchVoteCount = voting.matchResultToVoteCount[
+                    matchResult
+                ];
+                voting.winningMatch = matchResult;
+                voting.noConsensus = false;
+
+                if (voting.winningMatchVoteCount >= majority()) {
+                    completeVoting(voting);
+                }
+            }
+            if (
+                voting.numberOfVotes == numberOfWorkers &&
+                (voting.winningMatchVoteCount < majority())
+            ) {
                 completeVoting(voting);
             }
-        }
-
-        if (voting.numberOfVotes == numberOfWorkers) {
-            completeVoting(voting);
         }
     }
 
@@ -229,11 +206,10 @@ contract MatchVoting is Ownable {
         view
         returns (bytes32 matchResult)
     {
-        return
-            matchInputToVoting[matchInput].workerToMatchResult[workerAddress];
+        return workerVotes[workerAddress][matchInput];
     }
 
-    function completeVoting(Voting storage voting) private {
+    function completeVoting(LibVoting.Voting storage voting) private {
         if (voting.noConsensus) {
             cancelVoting(voting);
             emit NoConsensusReached(voting.matchInput);
@@ -252,7 +228,7 @@ contract MatchVoting is Ownable {
             voting.winningMatch,
             voting.winningMatchVoteCount
         );
-        voting.status = Status.Completed;
+        voting.status = LibVoting.Status.Completed;
         IRewardVoting(rewardVotingAddress).reward(winners(voting.matchInput));
     }
 
@@ -269,7 +245,7 @@ contract MatchVoting is Ownable {
         view
         returns (address payable[] memory _winners)
     {
-        Voting storage voting = matchInputToVoting[matchInput];
+        LibVoting.Voting storage voting = matchInputToVoting[matchInput];
         _winners = new address payable[](voting.winningMatchVoteCount);
         uint256 winnerCount = 0;
         for (uint256 i = 0; i < numberOfWorkers; i++) {
@@ -290,10 +266,10 @@ contract MatchVoting is Ownable {
     }
 
     function startVoting(string memory matchInput) private {
-        Voting storage voting = matchInputToVoting[matchInput];
+        LibVoting.Voting storage voting = matchInputToVoting[matchInput];
         voting.matchInput = matchInput;
         voting.start = block.timestamp;
-        voting.status = Status.Active;
+        voting.status = LibVoting.Status.Active;
 
         if (
             matchInputToIndex[matchInput] == 0 &&
@@ -306,23 +282,20 @@ contract MatchVoting is Ownable {
         }
     }
 
-    function isExpired(Voting storage voting) private view returns (bool) {
-        return voting.start + timeLimit < block.timestamp;
-    }
-
     /// @notice Cancels votings that takes longer than time limit
     function cancelExpiredVotings() public onlyOwner {
         for (uint256 i = 0; i < matchInputs.length; i++) {
-            Voting storage voting = matchInputToVoting[matchInputs[i]];
-            if (voting.status == Status.Active && isExpired(voting)) {
-                emit VotingExpired(matchInputs[i]);
+            LibVoting.Voting storage voting = matchInputToVoting[
+                matchInputs[i]
+            ];
+            if (voting._isExpired(timeLimit, matchInputs[i])) {
                 cancelVoting(voting);
             }
         }
     }
 
     /// @notice Deletes voting results
-    function cancelVoting(Voting storage voting) private {
+    function cancelVoting(LibVoting.Voting storage voting) private {
         delete voting.matches;
         for (uint256 i = 0; i < numberOfWorkers; i++) {
             voting.matchResultToVoteCount[
@@ -331,7 +304,7 @@ contract MatchVoting is Ownable {
             voting.workerToVoted[workers[i]] = false;
             voting.workerToMatchResult[workers[i]] = "";
         }
-        voting.status = Status.NotActive;
+        voting.status = LibVoting.Status.NotActive;
         voting.winningMatch = "";
         voting.winningMatchVoteCount = 0;
         voting.noConsensus = false;
@@ -346,5 +319,21 @@ contract MatchVoting is Ownable {
     {
         return (keccak256(abi.encodePacked((a))) ==
             keccak256(abi.encodePacked((b))));
+    }
+
+    function getNumberOfWorkers() external view override returns (uint256) {
+        return numberOfWorkers;
+    }
+
+    function getWorkers()
+        external
+        view
+        override
+        returns (address[] memory _workers)
+    {
+        for (uint256 i = 0; i < workers.length; i++) {
+            _workers[i] = address(workers[i]);
+        }
+        return _workers;
     }
 }
