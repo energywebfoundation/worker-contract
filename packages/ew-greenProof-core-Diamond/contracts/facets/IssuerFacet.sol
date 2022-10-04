@@ -61,37 +61,4 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         require(LibProofManager._verifyProof(merkleRoot, leaf, proof), "Disclose : data not verified");
         LibIssuer._discloseData(key, value, merkleRoot);
     }
-
-    function validateIssuanceRequest(
-        bytes32 winningMatch,
-        bytes32 merkleRootProof,
-        address receiver,
-        uint256 amount,
-        uint256 productType,
-        uint256 start,
-        uint256 end,
-        bytes32 producerRef
-    ) external onlyValidator {
-        LibIssuer.IssuerStorage storage issuer = getStorage();
-
-        LibIssuer._acceptRequest(winningMatch, merkleRootProof);
-        LibIssuer._registerData(winningMatch, receiver, amount, productType, start, end, producerRef);
-        LibIssuer._registerProof(issuer.issuanceRequests[winningMatch].requestID, merkleRootProof);
-
-        bytes memory proof = abi.encodePacked(issuer.issuanceRequests[winningMatch].merkleRootProof);
-        _mint(receiver, issuer.issuanceRequests[winningMatch].requestID, amount, proof);
-        emit LibIssuer.ProofMinted(issuer.issuanceRequests[winningMatch].requestID, amount);
-    }
-
-    function rejectIssuanceRequest(bytes32 winningMatch) external onlyValidator {
-        LibIssuer.IssuerStorage storage issuer = getStorage();
-
-        require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.REJECTED, "Rejection: Already rejected");
-        require(issuer.issuanceRequests[winningMatch].requestID != 0, "Rejection: Not a valid match");
-        require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED, "Rejection: Already validated");
-
-        issuer.lastProofIndex--;
-        issuer.issuanceRequests[winningMatch].status = LibIssuer.RequestStatus.REJECTED;
-        emit LibIssuer.RequestRejected(issuer.issuanceRequests[winningMatch].requestID);
-    }
 }

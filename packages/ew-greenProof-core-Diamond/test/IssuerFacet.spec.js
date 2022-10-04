@@ -167,7 +167,7 @@ describe("IssuerFacet", function () {
 
   describe("\n** Proof issuance tests **\n", () => {
 
-    it("Can send proof issuance requests", async () => {
+    it("Authorized issuers can send proof issuance requests", async () => {
       await grantRole(validator, validatorRole);
       
       expect(
@@ -176,83 +176,6 @@ describe("IssuerFacet", function () {
           .requestProofIssuance(winninMatch, receiverAddress, winninMatch, proof, 42, proof)
       ).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
-    });
-
-    it("checks that the request status has correctly been set to PENDING", async () => {
-      const request = await issuerFacet.connect(owner).getIssuanceRequest(winninMatch);
-      expect(request.status).equal(issuanceRequestStatus.PENDING);
-    });
-
-    it("Reverts when we request a new issance for a pending issuance request", async () => {
-      await expect(
-        issuerFacet
-          .connect(owner)
-          .requestProofIssuance(winninMatch, receiverAddress)
-      ).to.be.revertedWith("Request: Already requested proof");
-    });
-
-    it("Non Authorized validator cannot validate private issuance requests", async () => {
-      await revokeRole(validator, validatorRole);
-      await expect(
-        issuerFacet
-          .connect(validator)
-          ["validateIssuanceRequest(string,bytes32,address)"](winninMatch, VC, receiverAddress)
-      ).to.be.revertedWith("Access: Not a validator");
-    });
-
-    it("Non authorized validator cannot validate public issuance", async () => {
-      
-      await revokeRole(validator, validatorRole);
-      await expect(
-        issuerFacet
-          .connect(validator)
-          [
-            "validateIssuanceRequest(string,bytes32,address,uint256,uint256,uint256,uint256,bytes32)"
-          ](
-            winninMatch,
-            VC,
-            receiverAddress,
-            amount,
-            productType,
-            start,
-            end,
-            producerRef
-          )
-      ).to.be.revertedWith("Access: Not a validator");
-    });
-
-    it("validator can reject issuance requests", async () => {
-      await grantRole(validator, validatorRole);
-      
-      //Request issuance
-      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress);
-      expect(tx).to.emit(issuerFacet, "IssuanceRequested");
-      lastTokenID++;
-
-      //Rejection
-      expect(
-        await issuerFacet
-          .connect(validator)
-          .rejectIssuanceRequest(rejectedMatch)
-      ).to.emit(issuerFacet, "RequestRejected").withArgs(lastTokenID);
-      lastTokenID--;
-
-    });
-
-    it("checks that the request status has correctly been set to REJECTED after rejection", async () => {
-      const request = await issuerFacet.connect(owner).getIssuanceRequest(rejectedMatch);
-      expect(request.status).equal(issuanceRequestStatus.REJECTED);
-    });
-
-    it("Should revert when we try to reject an already rejected request", async () => {
-      await grantRole(validator, validatorRole);
-      
-      //Rejection
-      await expect(
-        issuerFacet
-          .connect(validator)
-          .rejectIssuanceRequest(rejectedMatch)
-      ).to.be.revertedWith("Rejection: Already rejected")
     });
 
     it("Should allow a new request issuance of rejected requests", async () => {
@@ -265,83 +188,11 @@ describe("IssuerFacet", function () {
       expect(request.status).equal(issuanceRequestStatus.PENDING);
     });
 
-    it("Should revert when non authorized user tries to reject a request", async () => {
-      await revokeRole(validator, validatorRole);
-      
-      //Rejection
-      await expect(
-        issuerFacet
-          .connect(validator)
-          .rejectIssuanceRequest(rejectedMatch)
-      ).to.be.revertedWith("Access: Not a validator")
-    });
-
-    it("Should revert when we try to reject a non existing request", async () => {
-      await grantRole(validator, validatorRole);
-      
-      await expect(
-        issuerFacet
-          .connect(validator)
-          .rejectIssuanceRequest("Non existing Request")
-      ).to.be.revertedWith("Rejection: Not a valid match");
-    });
-
-    it("Authorized validator can validate issuance requests", async () => {
-      // lastTokenID++;
-      await grantRole(validator, validatorRole);
-      expect(
-        await issuerFacet
-          .connect(validator)
-          ["validateIssuanceRequest(string,bytes32,address)"](winninMatch, VC, receiverAddress)
-      ).to.emit(issuerFacet, "RequestAccepted");
-    });
-
-    it("Should revert when we try to reject an already validated request", async () => {
-      await grantRole(validator, validatorRole);
-
-      await expect(
-        issuerFacet
-          .connect(validator)
-          .rejectIssuanceRequest(winninMatch)
-      ).to.be.revertedWith("Rejection: Already validated");
-    })
-
     it("checks that the certified generation volume is zero before minting", async () => {
       lastTokenID++;
       const amountBeforMint = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
       expect(amountBeforMint).to.equal(0);
       lastTokenID--;
-    });
-
-    it("Authorized validator can validate and mint proofs", async () => {
-      await grantRole(validator, validatorRole);
-      let id;
-      let tx;
-      //step 1: request issuance
-      expect(
-        await issuerFacet
-          .connect(owner)
-          .requestProofIssuance(secondMatch, receiverAddress)
-      ).to.emit(issuerFacet, "IssuanceRequested");
-      lastTokenID++;
-
-      //step 2: validate issuance request
-      tx = await issuerFacet
-        .connect(validator)
-        [
-          "validateIssuanceRequest(string,bytes32,address,uint256,uint256,uint256,uint256,bytes32)"
-        ](
-          secondMatch,
-          VC,
-          receiverAddress,
-          amount,
-          productType,
-          start,
-          end,
-          producerRef
-        );
-      await tx.wait();
-      expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, amount);
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {
