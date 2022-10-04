@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
 import "./Certificate.sol";
 import "./RewardVoting.sol";
 
@@ -38,7 +37,9 @@ contract MatchVoting is Ownable, IVoting {
 
     bytes32 private workerRole;
 
-    /// Worker address to match result
+    // Worker address to match result on a specific matchInput
+    mapping(address => mapping(string => bytes32)) workerVotes;
+
     mapping(string => LibVoting.Voting) public matchInputToVoting;
 
     modifier onlyEnrolledWorkers(address _worker) {
@@ -75,17 +76,37 @@ contract MatchVoting is Ownable, IVoting {
         }
 
         if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
+            // we prevent wasting computation if the vote is the same as the previous one
+            if (workerVotes[msg.sender][matchInput] == matchResult) {
+                return;
+            }
             (
                 bool shouldUpdateVote,
                 bytes32 newWinningMatch,
                 uint256 newVoteCount
             ) = voting._replayVote(matchInput, matchResult);
+
             if (shouldUpdateVote) {
+                //We update the voting results
+                LibVoting.updateWorkersVote(voting);
+
+                // We update the final vote with the replayed vote
+                for (uint256 i; i < voting.replayVoters.length; i++) {
+                    address worker = voting.replayVoters[i];
+
+                    workerVotes[worker][matchInput] = voting
+                        .workerToMatchResult[worker];
+                    matchInputToVoting[matchInput].workerToMatchResult[
+                        worker
+                    ] = voting.workerToMatchResult[worker];
+                }
+
                 emit WinningMatch(
                     voting.matchInput,
                     newWinningMatch,
                     newVoteCount
                 );
+
                 IRewardVoting(rewardVotingAddress).reward(
                     winners(voting.matchInput)
                 );
@@ -94,13 +115,17 @@ contract MatchVoting is Ownable, IVoting {
             if (voting._hasNotStarted()) {
                 startVoting(matchInput);
             }
+
+            voting.numberOfVotes++;
+            voting.workerToVoted[msg.sender] = true;
+            workerVotes[msg.sender][matchInput] = matchResult;
             voting.workerToMatchResult[msg.sender] = matchResult;
-            voting.numberOfVotes += 1;
 
             if (voting.matchResultToVoteCount[matchResult] == 0) {
                 voting.matches.push(matchResult);
             }
-            voting.matchResultToVoteCount[matchResult] += 1;
+
+            voting.matchResultToVoteCount[matchResult]++;
 
             if (
                 voting.matchResultToVoteCount[matchResult] ==
@@ -121,7 +146,10 @@ contract MatchVoting is Ownable, IVoting {
                     completeVoting(voting);
                 }
             }
-            if (voting.numberOfVotes == numberOfWorkers) {
+            if (
+                voting.numberOfVotes == numberOfWorkers &&
+                (voting.winningMatchVoteCount < majority())
+            ) {
                 completeVoting(voting);
             }
         }
@@ -178,8 +206,7 @@ contract MatchVoting is Ownable, IVoting {
         view
         returns (bytes32 matchResult)
     {
-        return
-            matchInputToVoting[matchInput].workerToMatchResult[workerAddress];
+        return workerVotes[workerAddress][matchInput];
     }
 
     function completeVoting(LibVoting.Voting storage voting) private {

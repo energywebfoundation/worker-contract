@@ -116,43 +116,88 @@ describe("MatchVoting", () => {
     );
   });
 
-  it("should allow a worker to replay the vote", async () => {
+  it("should allow workers to replay the vote", async () => {
     await matchVoting.addWorker(worker1.address);
     await matchVoting.addWorker(worker2.address);
-    await matchVoting.addWorker(worker3.address);
 
     expect(
       await matchVoting
-        .connect(worker2)
-        .vote(timeframes[0].input, timeframes[0].output)
-    )
-    
-    expect(
-      await matchVoting
         .connect(worker1)
+        .vote(timeframes[0].input, timeframes[0].output)
+    );
+    
+    await expect(
+      matchVoting
+        .connect(worker2)
         .vote(timeframes[0].input, timeframes[0].output)
     )
       .to.emit(matchVoting, "WinningMatch")
       .withArgs(timeframes[0].input, timeframes[0].output, 2);
+    
     expect(
       await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
     ).to.equal(timeframes[0].output);
+
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+    ).to.equal(timeframes[0].output);
+    
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
     );
 
-    //Replay
+    //Replaying vote
+
+    //Worker 1 replay a vote
     expect(
       await matchVoting
         .connect(worker1)
         .vote(timeframes[0].input, timeframes[1].output)
-    )
-    // .to.emit(matchVoting, "WinningMatch")
-    // .withArgs(timeframes[0].input, timeframes[1].output, 1);
+    );
 
-     expect(
+    //We verify that the final vote of worker 1 is not updated
+    expect(
       await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
     ).to.equal(timeframes[0].output);
+
+    //worker 2 replays vote
+    expect(
+      await matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[4].output)
+    );
+
+    //We verify that the final vote of worker 2 is not updated
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+    ).to.equal(timeframes[0].output);
+
+    //No consensus has been reached on replaying: we adding worker3
+    await matchVoting.addWorker(worker3.address);
+
+    //Worker 3 replays vote like worker 2 : a consensus is reached
+    await expect(
+        matchVoting
+        .connect(worker3)
+        .vote(timeframes[0].input, timeframes[4].output)
+    )
+    .to.emit(matchVoting, "WinningMatch")
+      .withArgs(timeframes[0].input, timeframes[4].output, 2);
+    
+    //We verify that the final vote for worker 1 is updated
+     expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+     ).to.equal(timeframes[1].output);
+    
+    //We verify that the final vote for worker 2 is updated
+     expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+     ).to.equal(timeframes[4].output);
+    
+    //We verify that the final vote for worker 3 is updated
+     expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker3.address)
+    ).to.equal(timeframes[4].output);
   });
 
   it("should not allow to vote not whitelisted worker", async () => {

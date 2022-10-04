@@ -50,35 +50,22 @@ library LibVoting {
         uint256 numberOfReplayedVotes;
         ///Timestamp of first voting
         uint256 start;
+        //List of workers replaying the vote: This help updating workerToMatchResult after a replay consensus
+        address[] replayVoters;
     }
 
-    // /// Event emitted after voting ended
+    // Event emitted after voting ended
     event WinningMatch(
         string indexed matchInput,
         bytes32 matchResult,
         uint256 voteCount
     );
 
-    /// Winning match result can not be determined
+    // Winning match result can not be determined
     event NoConsensusReached(string indexed matchInput);
 
-    /// Voting lasts more then time limit
+    // Voting lasts more then time limit
     event VotingExpired(string indexed matchInput);
-
-    // /// Worker had already voted for a match result
-    // error AlreadyVoted();
-
-    // /// Sender is not whitelisted
-    // error NotWhitelisted();
-
-    // /// Voting ended, winner is chosen - workers cannot vote anymore
-    // error VotingAlreadyEnded();
-
-    // /// Worker has been added already
-    // error WorkerAlreadyAdded();
-
-    // /// Worker has not been added yet
-    // error WorkerWasNotAdded();
 
     function _isClosed(Voting storage vote) internal view returns (bool) {
         return vote.status == Status.Completed;
@@ -118,14 +105,19 @@ library LibVoting {
     )
         internal
         returns (
-            bool,
-            bytes32,
-            uint256
+            bool shouldUpdateVoting,
+            bytes32 replayedWinningMatch,
+            uint256 winningMatchReplayedVoteCount
         )
     {
-        bool updateVoting = false;
         if (voting.workerToReplayedVoted[msg.sender][matchInput][matchResult]) {
             revert IVoting.AlreadyVoted();
+        }
+        voting.workerToReplayedVoted[msg.sender][matchInput][
+            matchResult
+        ] = true;
+        if (voting.workerToReplayedMatchResult[msg.sender] == 0) {
+            voting.replayVoters.push(msg.sender);
         }
         voting.workerToReplayedMatchResult[msg.sender] = matchResult;
         voting.numberOfReplayedVotes++;
@@ -133,7 +125,7 @@ library LibVoting {
         if (voting.replayedMatchResultToVoteCount[matchResult] == 0) {
             voting.replayedMatches.push(matchResult);
         }
-        voting.replayedMatchResultToVoteCount[matchResult] += 1;
+        voting.replayedMatchResultToVoteCount[matchResult]++;
 
         if (
             voting.replayedMatchResultToVoteCount[matchResult] ==
@@ -150,31 +142,40 @@ library LibVoting {
             voting.replayedWinningMatch = matchResult;
 
             uint256 nbOfWorkers = IVoting(address(this)).getNumberOfWorkers();
+            uint256 majority = (nbOfWorkers / 2) + 1;
 
-            if (voting.winningMatchReplayedVoteCount >= (nbOfWorkers / 2) + 1) {
+            if (voting.winningMatchReplayedVoteCount >= majority) {
                 if (voting.noReplayedConsensus == false) {
-                    updateVoting = true;
-                } else {
-                    //CancelVoting
+                    shouldUpdateVoting = true;
+                    replayedWinningMatch = voting.replayedWinningMatch;
+                    winningMatchReplayedVoteCount = voting
+                        .winningMatchReplayedVoteCount;
                 }
-                return (
-                    updateVoting,
-                    voting.replayedWinningMatch,
-                    voting.winningMatchReplayedVoteCount
-                );
             }
-            if (voting.numberOfReplayedVotes == nbOfWorkers) {
-                //TODO: create an internal function for this completVoting logic
+            if (
+                voting.winningMatchReplayedVoteCount < majority &&
+                voting.numberOfReplayedVotes == nbOfWorkers
+            ) {
                 if (voting.noReplayedConsensus == false) {
-                    updateVoting = true;
+                    shouldUpdateVoting = true;
+                    replayedWinningMatch = voting.replayedWinningMatch;
+                    winningMatchReplayedVoteCount = voting
+                        .winningMatchReplayedVoteCount;
                 }
-                return (
-                    updateVoting,
-                    voting.replayedWinningMatch,
-                    voting.winningMatchReplayedVoteCount
-                );
             }
-            return (updateVoting, "", 0);
+        }
+    }
+
+    function updateWorkersVote(Voting storage voting) internal {
+        for (uint256 i = 0; i < voting.replayVoters.length; i++) {
+            address replayingVoter = voting.replayVoters[i];
+
+            //Copying the replayed voting result into the final voting list
+            voting.workerToMatchResult[replayingVoter] = voting
+                .workerToReplayedMatchResult[replayingVoter];
+
+            //Removing the replayed match result from the temporary voting list
+            voting.workerToReplayedMatchResult[replayingVoter] = 0;
         }
     }
 }
