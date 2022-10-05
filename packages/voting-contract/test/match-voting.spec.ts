@@ -116,6 +116,116 @@ describe("MatchVoting", () => {
     );
   });
 
+  it("should not reveal workers vote before the end of vote", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    
+
+    expect(
+      await matchVoting
+        .connect(worker1)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+    
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+    ).to.equal(ethers.constants.Zero);
+  });
+
+  it("should reveal workers vote after the end of vote", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    
+
+    expect(
+      await matchVoting
+        .connect(worker1)
+        .vote(timeframes[0].input, timeframes[0].output)
+    );
+    
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+    ).to.equal(ethers.constants.Zero);
+
+    await expect(
+      matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    ).to.emit(matchVoting, "WinningMatch")
+      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+    
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+    ).to.equal(timeframes[0].output);
+  });
+
+   it("should not reveal winners before the end of vote", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+
+     expect(
+       await matchVoting
+         .connect(worker1)
+         .vote(timeframes[0].input, timeframes[0].output)
+     );
+    
+    expect(
+      await matchVoting.winners(timeframes[0].input)
+    ).to.be.empty;
+     
+     await expect(
+      matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[0].output)
+    )
+      .to.emit(matchVoting, "WinningMatch")
+       .withArgs(timeframes[0].input, timeframes[0].output, 2);
+     
+    expect(
+      await matchVoting.winners(timeframes[0].input)
+    ).to.be.deep.equal([worker1.address, worker2.address]);
+   });
+  
+  it("should not reveal winningMatches before the end of vote", async () => {
+    await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker2.address);
+    await matchVoting.addWorker(worker3.address);
+
+    await expect(
+      matchVoting
+        .connect(worker1)
+        .vote(timeframes[0].input, timeframes[0].output)
+    ).to.not.emit(matchVoting, "WinningMatch");
+    
+    //The vote is not ended, hence we should not get the winngMatch
+    expect(
+      await matchVoting.getWinningMatch(timeframes[0].input)
+    ).to.equal(ethers.constants.Zero);
+
+    await expect(
+      matchVoting
+        .connect(worker2)
+        .vote(timeframes[0].input, timeframes[2].output)
+    ).to.not.emit(matchVoting, "WinningMatch");
+
+    //The vote is still not ended, hence we should not get the winngMatch
+    expect(
+      await matchVoting.getWinningMatch(timeframes[0].input)
+    ).to.equal(ethers.constants.Zero);
+
+    await expect(
+      matchVoting
+        .connect(worker3)
+        .vote(timeframes[0].input, timeframes[0].output)
+    ).to.emit(matchVoting, "WinningMatch")
+      .withArgs(timeframes[0].input, timeframes[0].output, 2);
+    
+    //The vote ended, hence we should get the winngMatch
+    expect(
+      await matchVoting.getWinningMatch(timeframes[0].input)
+    ).to.equal(timeframes[0].output);
+  });
+
   it("should allow workers to replay the vote", async () => {
     await matchVoting.addWorker(worker1.address);
     await matchVoting.addWorker(worker2.address);
@@ -124,7 +234,26 @@ describe("MatchVoting", () => {
       await matchVoting
         .connect(worker1)
         .vote(timeframes[0].input, timeframes[0].output)
-    );
+    ).to.not.emit(matchVoting, "WinningMatch");
+
+    //The vote is not ended, hence we should not get the winngMatch
+    expect(
+      await matchVoting.getWinningMatch(timeframes[0].input)
+    ).to.equal(ethers.constants.Zero);
+
+    //We check that votes are not released before end of vote
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+    ).to.equal(ethers.constants.Zero);
+    
+    expect(
+      await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+    ).to.equal(ethers.constants.Zero);
+
+    //We check that winners are note shown before end of vote
+    expect(
+      await matchVoting.winners(timeframes[0].input)
+    ).to.be.empty;
     
     await expect(
       matchVoting
@@ -141,6 +270,10 @@ describe("MatchVoting", () => {
     expect(
       await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
     ).to.equal(timeframes[0].output);
+
+    expect(
+      await matchVoting.winners(timeframes[0].input)
+    ).to.be.deep.equal([worker1.address, worker2.address]);
     
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
@@ -160,6 +293,11 @@ describe("MatchVoting", () => {
       await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
     ).to.equal(timeframes[0].output);
 
+    //we verify that the winngMatch has not been updated
+    expect(
+      await matchVoting.getWinningMatch(timeframes[0].input)
+    ).to.equal(timeframes[0].output);
+
     //worker 2 replays vote
     expect(
       await matchVoting
@@ -170,6 +308,11 @@ describe("MatchVoting", () => {
     //We verify that the final vote of worker 2 is not updated
     expect(
       await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+    ).to.equal(timeframes[0].output);
+
+     //we verify that the winngMatch has not been updated
+    expect(
+      await matchVoting.getWinningMatch(timeframes[0].input)
     ).to.equal(timeframes[0].output);
 
     //No consensus has been reached on replaying: we adding worker3
@@ -197,6 +340,11 @@ describe("MatchVoting", () => {
     //We verify that the final vote for worker 3 is updated
      expect(
       await matchVoting.getWorkerVote(timeframes[0].input, worker3.address)
+     ).to.equal(timeframes[4].output);
+    
+    //we verify that the winngMatch has correctly been updated
+    expect(
+      await matchVoting.getWinningMatch(timeframes[0].input)
     ).to.equal(timeframes[4].output);
   });
 
@@ -247,12 +395,6 @@ describe("MatchVoting", () => {
     )
       .to.emit(matchVoting, "WinningMatch")
       .withArgs(timeframes[0].input, timeframes[0].output, 2);
-
-    // await expect(
-    //   matchVoting
-    //     .connect(worker3)
-    //     .vote(timeframes[0].input, timeframes[1].output)
-    // ).to.be.revertedWith("VotingAlreadyEnded");
 
     expect(await certificateContract.matches(timeframes[0].input)).to.equal(
       timeframes[0].output
