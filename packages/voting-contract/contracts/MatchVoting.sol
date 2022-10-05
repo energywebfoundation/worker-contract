@@ -134,7 +134,6 @@ contract MatchVoting is Ownable, IVoting {
 
             voting.numberOfVotes++;
             voting.workerToVoted[msg.sender] = true;
-            // workerVotes[msg.sender][matchInput] = matchResult;
             voting.workerToMatchResult[msg.sender] = matchResult;
 
             if (voting.matchResultToVoteCount[matchResult] == 0) {
