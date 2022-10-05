@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-worker",
-  "version": "6.0.17",
+  "version": "6.0.18",
   "license": "MIT",
   "author": "EnergyWeb DevHub GmbH;",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
   "dependencies": {
     "@energyweb/greenproof-ddhub-client": "1.0.4",
     "@energyweb/greenproof-merkle-tree": "2.0.6",
-    "@energyweb/greenproof-voting-contract": "1.0.8",
+    "@energyweb/greenproof-voting-contract": "1.0.9",
     "@nestjs/common": "9.0.11",
     "@nestjs/core": "9.0.11",
     "@nestjs/platform-express": "9.0.11",
