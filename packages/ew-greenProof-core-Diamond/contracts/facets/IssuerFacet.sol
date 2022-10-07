@@ -9,6 +9,7 @@ import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 import "hardhat/console.sol";
+import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /// @title GreenProof Issuer Module
@@ -42,11 +43,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
         require(LibVoting._isVoteRecorded(voteID), "Issuance Request : unknown vote");
         require(LibVoting._isPartOfConsensus(voteID, dataHash, dataProof), "data: Not part of this consensus");
-        bytes32 volumeHash = keccak256(abi.encodePacked(("volume"), volume));
 
-        console.log("\nCHECKING LEAF CONTENT :: ");
-        console.logBytes32(volumeHash);
-        console.logBytes(abi.encodePacked(("volume"), volume));
+        string memory volumeString = UintUtils.toString(volume);
+        bytes32 volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+
+        console.log("Consumption volume to certify :: %s", volumeString);
 
         require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
 
@@ -54,7 +55,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         _mint(recipient, issuer.lastProofIndex, volume, "");
         LibIssuer._registerProof(issuer.lastProofIndex, dataHash);
 
-        //TO-DO: emit an event to notify issuance
+        emit LibIssuer.IssuanceRequested(issuer.lastProofIndex);
     }
 
     function discloseData(

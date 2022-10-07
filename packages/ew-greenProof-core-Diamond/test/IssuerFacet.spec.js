@@ -33,7 +33,6 @@ let producerRef;
 let grantRole;
 let revokeRole;
 let VC;
-let timeframes;
 let votes;
 let merkleInfos;
 let testCounter = 0;
@@ -189,18 +188,6 @@ describe("IssuerFacet", function () {
     rejectedMatch = ethers.utils.formatBytes32String("MATCH_RESULT_TO_BE_REJECTED");
     producerRef = ethers.utils.formatBytes32String("energyWeb");
 
-    timeframes = [
-      { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_1") },
-      { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("REPLAYED_MATCH_OUTPUT_1") },
-      { input: ethers.utils.formatBytes32String("MATCH_INPUT_2"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_2") },
-      { input: ethers.utils.formatBytes32String("MATCH_INPUT_3"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_3") },
-      { input: ethers.utils.formatBytes32String("MATCH_INPUT_4"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_4") },
-      { input: ethers.utils.formatBytes32String("MATCH_INPUT_5"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_5") },
-    ];
-
-    
-    
-    
     leaves = data.map(item => createPreciseProof(item).getHexRoot());
     dataTree = createMerkleTree(leaves);
 
@@ -219,8 +206,6 @@ describe("IssuerFacet", function () {
 
   beforeEach(async () => {
     console.log(`Test ${++testCounter} :`);
-
-    // await votingFacet.connect(worker3).vote(votes[ 0 ].matchInput, vote, IS_SETTLEMENT);
   });
 
   afterEach(async () => {
@@ -257,18 +242,10 @@ describe("IssuerFacet", function () {
 
       console.log({ volumeLeaf, bytes });
 
-      // const voteID = inputHash;
-      
-
-      // expect(await proofManagerFacet.connect(owner).verifyProof(dataTree.getHexRoot(), leaves[0], proof)).to.be.true;
-      // expect(await proofManagerFacet.connect(owner).verifyProof(votes[0].matchInput,  hash('volume' + JSON.stringify(42)), volumeProof)).to.be.true;
-
       expect(
         await issuerFacet
           .connect(validator)
-          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, ethers.utils.formatBytes32String(data[0].volume.toString()), volumeProof)
-          // .requestProofIssuance(voteID, receiverAddress, dataTree.getHexRoot(), proof, data[0].volume, volumeProof)
-          // .requestProofIssuance(dataTree.getHexRoot(), receiverAddress, voteID, proof, data[0].volume, volumeProof)
+          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
       ).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
     });
