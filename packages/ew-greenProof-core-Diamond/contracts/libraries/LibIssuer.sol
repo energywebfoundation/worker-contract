@@ -4,6 +4,8 @@ pragma solidity ^0.8.8;
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 
+import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
+
 library LibIssuer {
     bytes32 constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
     bytes32 constant DEFAULT_VCREDENTIAL_VALUE = "";
@@ -27,7 +29,7 @@ library LibIssuer {
     // error NotValidatedProof(uint256 proofID);
     error NonExistingProof(uint256 proofId);
     error NonRevokableProof(uint256 proofID, uint256 issuanceDate, uint256 revocableDateLimit);
-
+    error NotInConsensus(bytes32 voteID);
     enum RequestStatus {
         DEFAULT,
         PENDING,
@@ -57,13 +59,16 @@ library LibIssuer {
         issuer.revocablePeriod = revocablePeriod;
     }
 
-    function setRequestStatus(bytes32 winningMatch, RequestStatus status) internal {
+    function _incrementProofIndex() internal {
         IssuerStorage storage issuer = _getStorage();
-
-        issuer.issuanceRequests[winningMatch].status = status;
+        issuer.lastProofIndex++;
     }
 
-    /** issueProof : Sends a request issuance of a new proof */
+    function _getVolumeHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
+        string memory volumeString = UintUtils.toString(volume);
+        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+
     function _registerProof(
         bytes32 dataHash,
         address receiver,
@@ -77,16 +82,5 @@ library LibIssuer {
 
         issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash);
         issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
-    }
-
-    function _discloseData(
-        string memory key,
-        string memory value,
-        bytes32 rootHash
-    ) internal {
-        LibIssuer.IssuerStorage storage issuer = _getStorage();
-        require(issuer.isDataDisclosed[rootHash][key] == false, "disclosure: data already disclosed");
-        issuer.disclosedData[rootHash][key] = value;
-        issuer.isDataDisclosed[rootHash][key] = true;
     }
 }
