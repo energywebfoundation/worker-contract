@@ -8,7 +8,7 @@ const {
   solidity,
 } = require("ethereum-waffle");
 const { claimManagerInterface, getMerkleProof } = require("./utils");
-const { createMerkleTree, createPreciseProof, hash } = require('@energyweb/greenproof-merkle-tree')
+const { createMerkleTree, createPreciseProof, hash, stringify } = require('@energyweb/greenproof-merkle-tree')
 chai.use(solidity);
 
 const timeTravel = async (seconds) => {
@@ -220,7 +220,7 @@ describe("IssuerFacet", function () {
   beforeEach(async () => {
     console.log(`Test ${++testCounter} :`);
 
-    // await votingFacet.connect(worker3).vote(votes[ 0 ].matchInput, votes[ 0 ].matchResult, IS_SETTLEMENT);
+    // await votingFacet.connect(worker3).vote(votes[ 0 ].matchInput, vote, IS_SETTLEMENT);
   });
 
   afterEach(async () => {
@@ -239,17 +239,25 @@ describe("IssuerFacet", function () {
       await votingFacet.connect(owner).addWorker(worker1.address);
       await votingFacet.connect(owner).addWorker(worker2.address);
 
-      await votingFacet.connect(worker1).vote(votes[ 0 ].matchInput, votes[ 0 ].matchResult, IS_SETTLEMENT);
-      await votingFacet.connect(worker2).vote(votes[ 0 ].matchInput, votes[ 0 ].matchResult, IS_SETTLEMENT);
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+  
+      const matchResult = dataTree.getHexRoot();
+      const matchResultProof = dataTree.getHexProof(leaves[0]);
+
+      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
       
       //2 - request proof issuance for the vote ID (inputHash)
 
-      const proof = dataTree.getHexProof(leaves[ 0 ]);
-      const volumeTree = createPreciseProof(data[ 0 ]);
+      const volumeTree = createPreciseProof(data[0]);
+      const bytes = Buffer.from('volume' + JSON.stringify(42))
       const volumeLeaf = hash('volume' + JSON.stringify(42))
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
+      const volumeRootHash = volumeTree.getHexRoot()
 
-      const voteID = votes[ 0 ].matchInput;
+      console.log({ volumeLeaf, bytes });
+
+      // const voteID = inputHash;
       
 
       // expect(await proofManagerFacet.connect(owner).verifyProof(dataTree.getHexRoot(), leaves[0], proof)).to.be.true;
@@ -258,7 +266,7 @@ describe("IssuerFacet", function () {
       expect(
         await issuerFacet
           .connect(validator)
-          .requestProofIssuance(voteID, receiverAddress, volumeTree.getHexRoot(), proof, data[0].volume, volumeProof)
+          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, ethers.utils.formatBytes32String(data[0].volume.toString()), volumeProof)
           // .requestProofIssuance(voteID, receiverAddress, dataTree.getHexRoot(), proof, data[0].volume, volumeProof)
           // .requestProofIssuance(dataTree.getHexRoot(), receiverAddress, voteID, proof, data[0].volume, volumeProof)
       ).to.emit(issuerFacet, "IssuanceRequested");
