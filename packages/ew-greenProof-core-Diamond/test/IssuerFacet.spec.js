@@ -16,49 +16,33 @@ const timeTravel = async (seconds) => {
   await network.provider.send("evm_mine", []);
 };
 
-let issuerFacet;
-let votingFacet;
-let diamondAddress;
-let proofManagerFacet;
-let owner;
-let receiver;
-let validator;
-let receiverAddress;
-let amount;
-let productType;
-let start;
-let end;
-let winninMatch;
-let producerRef;
-let grantRole;
-let revokeRole;
 let VC;
-let votes;
-let merkleInfos;
-let testCounter = 0;
-let lastTokenID = 0;
-let provider;
+let owner;
 let leaves;
-let dataTree;
-
+let leaves2;
 let worker1;
 let worker2;
-let worker3;
+let leaves3;
+let dataTree;
+let receiver;
+let provider;
+let dataTree2;
+let dataTree3;
+let grantRole;
+let revokeRole;
+let issuerFacet;
+let merkleInfos;
+let votingFacet;
+let diamondAddress;
+let receiverAddress;
+let testCounter = 0;
+let lastTokenID = 0;
+let proofManagerFacet;
 
-const issuanceRequestStatus =  {
-  DEFAULT : 0,
-  PENDING : 1,
-  REJECTED: 2,
-  ACCEPTED: 3
-}
-
-const IS_SETTLEMENT = true;
-
-
-const rewardAmount = parseEther("1");
 const timeLimit = 15 * 60;
+const IS_SETTLEMENT = true;
+const rewardAmount = parseEther("1");
 const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
-
 
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
@@ -72,23 +56,27 @@ const revokerRole = ethers.utils.namehash(
 const workerRole = ethers.utils.namehash(
   "workerRole.roles.greenproof.apps.iam.ewc"
 );
-const defaultVersion = 1;
+const volume = 42;
 const proofID1 = 1;
 const proofID2 = 2;
+const defaultVersion = 1;
 
 const data = [
-    {
-      id: 1,
-      generatorID: 2,
-      volume: 42,
-      consumerID: 500
-    },
-    {
-      id: 2,
-      generatorID: 3,
-      volume: 21,
-      consumerID: 522
-    },
+  {
+    id: 1,
+    generatorID: 2,
+    volume,
+    consumerID: 500
+  },
+  {
+    id: 2,
+    generatorID: 3,
+    volume: 21,
+    consumerID: 522
+  }
+];
+
+const data2 = [
     {
       id: 3,
       generatorID: 4,
@@ -107,20 +95,40 @@ const data = [
       volume: 10,
       consumerID: 51
     },
-]
+];
+
+const data3 = [
+    {
+      id: 3,
+      generatorID: 4,
+      volume: 10,
+      consumerID: 52
+    },
+    {
+      id: 4,
+      generatorID: 5,
+      volume,
+      consumerID: 53
+    },
+    {
+      id: 5,
+      generatorID: 5,
+      volume: 10,
+      consumerID: 51
+    },
+];
 
 describe("IssuerFacet", function () {
   before(async () => {
     [
       owner,
-      validator,
+      issuer,
       minter,
       receiver,
       revoker,
       nonAuthorizedOperator,
       worker1,
       worker2,
-      worker3,
       notEnrolledWorker,
       toRemoveWorker,
     ] = await ethers.getSigners();
@@ -179,29 +187,14 @@ describe("IssuerFacet", function () {
     );
 
     receiverAddress = receiver.address;
-    amount = 42;
-    productType = 1;
-    start = 1234567890;
-    end = 9876543210;
-    winninMatch = ethers.utils.formatBytes32String("MATCH_RESULT_1");
-    secondMatch = ethers.utils.formatBytes32String("MATCH_RESULT_2");
-    rejectedMatch = ethers.utils.formatBytes32String("MATCH_RESULT_TO_BE_REJECTED");
-    producerRef = ethers.utils.formatBytes32String("energyWeb");
 
     leaves = data.map(item => createPreciseProof(item).getHexRoot());
-    dataTree = createMerkleTree(leaves);
+    leaves2 = data2.map(item => createPreciseProof(item).getHexRoot());
+    leaves3 = data3.map(item => createPreciseProof(item).getHexRoot());
 
-    const matchResult = dataTree.getHexRoot();
-    votes = [
-      // { matchInput: createPreciseProof(data[ 0 ]).getHexRoot(), matchResult },
-      { matchInput: dataTree.getHexRoot(), matchResult },
-      { matchInput: leaves[1], matchResult },
-      { matchInput: leaves[2], matchResult },
-    ]
-    
-    //TODO: remove the VC field
-    merkleInfos = getMerkleProof(data);
-    VC = merkleInfos.merkleRoot;
+    dataTree = createMerkleTree(leaves);
+    dataTree2 = createMerkleTree(leaves2);
+    dataTree3 = createMerkleTree(leaves3);
   });
 
   beforeEach(async () => {
@@ -214,8 +207,15 @@ describe("IssuerFacet", function () {
 
   describe("\n** Proof issuance tests **\n", () => {
 
-    it.only("Authorized issuers can send proof issuance requests", async () => {
-      await grantRole(validator, validatorRole);
+    it("checks that the certified generation volume is zero before minting", async () => {
+      const nextTokenID = lastTokenID + 1;
+      const amountBeforeMint = await issuerFacet.balanceOf(receiverAddress, nextTokenID);
+
+      expect(amountBeforeMint).to.equal(0);
+    });
+
+    it("Authorized issuers can send proof issuance requests", async () => {
+      await grantRole(issuer, issuerRole);
       
       //1 - Run the voting process with a consensus
       await grantRole(worker1, workerRole);
@@ -235,41 +235,48 @@ describe("IssuerFacet", function () {
       //2 - request proof issuance for the vote ID (inputHash)
 
       const volumeTree = createPreciseProof(data[0]);
-      const bytes = Buffer.from('volume' + JSON.stringify(42))
-      const volumeLeaf = hash('volume' + JSON.stringify(42))
+      const volumeLeaf = hash('volume' + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
-      const volumeRootHash = volumeTree.getHexRoot()
+      const volumeRootHash = volumeTree.getHexRoot();
 
-      console.log({ volumeLeaf, bytes });
 
-      expect(
-        await issuerFacet
-          .connect(validator)
+    lastTokenID++;
+     await expect(
+         issuerFacet
+          .connect(issuer)
           .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
-      ).to.emit(issuerFacet, "IssuanceRequested");
-      lastTokenID++;
-    });
-
-    it("Should allow a new request issuance of rejected requests", async () => {
-      //Request previously rejected request
-      tx = await issuerFacet.connect(owner).requestProofIssuance(rejectedMatch, receiverAddress);
-      expect(tx).to.emit(issuerFacet, "IssuanceRequested");
-      lastTokenID++;
-
-      const request = await issuerFacet.connect(owner).getIssuanceRequest(rejectedMatch);
-      expect(request.status).equal(issuanceRequestStatus.PENDING);
-    });
-
-    it("checks that the certified generation volume is zero before minting", async () => {
-      lastTokenID++;
-      const amountBeforMint = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
-      expect(amountBeforMint).to.equal(0);
-      lastTokenID--;
+      ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {
       const amountMinted = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
-      expect(amountMinted).to.equal(amount);
+
+      expect(amountMinted).to.equal(volume);
+    });
+
+    it("Should reject issuance requests for wrongs voteIDs", async () => {
+
+      //1 - Run the voting process with a consensus
+
+      const wrongInputHash = '0x' + hash("dummmy wrong data").toString('hex');
+      const inputHash = '0x' + hash(stringify(data2)).toString('hex');
+
+      const matchResult = dataTree2.getHexRoot();
+      const matchResultProof = dataTree2.getHexProof(leaves2[0]);
+
+      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      
+      //2 - request proof issuance for the vote ID (inputHash)
+
+      const volumeTree = createPreciseProof(data2[0]);
+      const volumeLeaf = hash('volume' + JSON.stringify(data2[0].volume));
+      const volumeProof = volumeTree.getHexProof(volumeLeaf);
+      const volumeRootHash = volumeTree.getHexRoot();
+
+      await expect(
+        issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, receiverAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof)
+      ).to.be.revertedWith("data: Not part of this consensus");
     });
   });
 
@@ -291,7 +298,14 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith(`NonExistingProof(${nonExistingCertificateID})`);
     });
 
-    it("should allow an authorized entity to revoke non retired proof", async () => {
+    it("should reverts if a non authorized entity tries to revoke a non retired proof", async () => {
+      await revokeRole(revoker, revokerRole);
+      await expect(
+        proofManagerFacet.connect(revoker).revokeProof(proofID1)
+      ).to.be.revertedWith("Access: Not enrolled as revoker");
+    });
+
+    it("should allow an authorized entity to revoke a non retired proof", async () => {
       await grantRole(revoker, revokerRole);
       await expect(
         proofManagerFacet.connect(revoker).revokeProof(proofID1)
@@ -312,37 +326,38 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow proof retirement", async () => {
-      await grantRole(validator, validatorRole);
-      let id;
       let tx;
-      //step 1: request issuance
-      expect(
-        await issuerFacet
-          .connect(owner)
-          .requestProofIssuance("WinningMatch 3", receiverAddress)
-      ).to.emit(issuerFacet, "IssuanceRequested");
-      lastTokenID++;
 
-      //step 2: validate issuance request
-      tx = await issuerFacet
-        .connect(validator)
-      [
-        "validateIssuanceRequest(string,bytes32,address,uint256,uint256,uint256,uint256,bytes32)"
-      ](
-        "WinningMatch 3",
-        VC,
-        receiverAddress,
-        amount,
-        productType,
-        start,
-        end,
-        producerRef
-      );
-      await tx.wait();
-      expect(tx).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, amount);
+      await grantRole(issuer, issuerRole);
+      
+      //1 - Run the voting process with a consensus
+      await grantRole(worker1, workerRole);
+      await grantRole(worker2, workerRole);
+
+      const inputHash = '0x' + hash(stringify(data3)).toString('hex');
+  
+      const matchResult = dataTree3.getHexRoot();
+      const matchResultProof = dataTree3.getHexProof(leaves3[1]);
+
+      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      
+      //2 - request proof issuance for the vote ID (inputHash)
+
+      const volumeTree = createPreciseProof(data3[1]);
+      const volumeLeaf = hash('volume' + JSON.stringify(volume));
+      const volumeProof = volumeTree.getHexProof(volumeLeaf);
+      const volumeRootHash = volumeTree.getHexRoot();
+
+      lastTokenID++;
+      await expect(
+         issuerFacet
+          .connect(issuer)
+          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data3[1].volume, volumeProof)
+      ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
 
       //step3: retire proof
-      tx = await proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 42);
+      tx = await proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, volume);
       await tx.wait();
 
       const { timestamp } = await provider.getBlock(tx.blockNumber);
@@ -351,7 +366,7 @@ describe("IssuerFacet", function () {
 
     it("should revert when retirement amount exceeds owned volume", async () => {
       await expect(
-        proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 20)
+        proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 100)
       ).to.be.revertedWith("Insufficient volume owned");
       
     });
@@ -421,6 +436,8 @@ describe("IssuerFacet", function () {
     })
 
     it("should successfully verify a proof", async () => {
+      merkleInfos = getMerkleProof(data3);
+      VC = merkleInfos.merkleRoot;
       expect(
         await proofManagerFacet.connect(owner).verifyProof(VC, merkleInfos.proofs[ 0 ].hexLeaf, merkleInfos.proofs[ 0 ].leafProof)
       ).to.be.true;

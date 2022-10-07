@@ -220,12 +220,6 @@ library LibVoting {
         return isWorker(workerAddress) == false;
     }
 
-    function _isVoteRecorded(bytes32 _matchInput) internal view returns (bool) {
-        VotingStorage storage votingStorage = getStorage();
-
-        return votingStorage.matches[_matchInput] != 0;
-    }
-
     /** Data verification */
 
     /** checks that some data is part of a voting consensus
@@ -239,7 +233,7 @@ library LibVoting {
         bytes32 voteID,
         bytes32 dataHash,
         bytes32[] memory dataProof
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         bytes32 matchResult = IVoting(address(this)).getWinningMatch(voteID);
         return MerkleProof.verify(dataProof, matchResult, dataHash);
     }
