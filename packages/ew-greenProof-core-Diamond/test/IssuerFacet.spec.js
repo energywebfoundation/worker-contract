@@ -276,7 +276,7 @@ describe("IssuerFacet", function () {
 
       await expect(
         issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, receiverAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof)
-      ).to.be.revertedWith("data: Not part of this consensus");
+      ).to.be.revertedWith(wrongInputHash);
     });
   });
 
@@ -423,12 +423,12 @@ describe("IssuerFacet", function () {
       const leaves = arr.map(item => createPreciseProof(item).getHexRoot())
       const tree = createMerkleTree(leaves);
 
-      const leaf = leaves[1];
+      const leaf = leaves[ 1 ];
       const proof = tree.getHexProof(leaf);
       const root = tree.getHexRoot()
       expect(await proofManagerFacet.connect(owner).verifyProof(root, leaf, proof)).to.be.true;
 
-      const leafTree = createPreciseProof(arr[1])
+      const leafTree = createPreciseProof(arr[ 1 ])
       const leafRoot = leafTree.getHexRoot()
       const leafLeaf = hash('consumerID' + JSON.stringify(522))
       const leafProof = leafTree.getHexProof(leafLeaf)
@@ -443,5 +443,16 @@ describe("IssuerFacet", function () {
       ).to.be.true;
     });
 
-  })
+  });
+
+  describe("\n** Data disclosure tests **\n", () => {
+    it("should successfully disclose data", async () => {
+      await grantRole(issuer, issuerRole);
+
+    });
+
+    ii("should revert when non authorized user tries to disclose data", async () => {
+      //TODO: writre failure data disclosure test
+    })
+  });
 }); 

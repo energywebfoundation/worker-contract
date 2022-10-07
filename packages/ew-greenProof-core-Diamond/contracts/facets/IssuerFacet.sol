@@ -8,8 +8,6 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
-import "hardhat/console.sol";
-import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /// @title GreenProof Issuer Module
@@ -18,6 +16,7 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 /// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
 
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
+    using LibIssuer for uint256;
     using LibClaimManager for address;
 
     modifier onlyIssuer() {
@@ -28,11 +27,6 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         _;
     }
 
-    /** getStorage: returns a pointer to the storage  */
-    function getStorage() internal pure returns (LibIssuer.IssuerStorage storage _issuer) {
-        _issuer = LibIssuer._getStorage();
-    }
-
     function requestProofIssuance(
         bytes32 voteID,
         address recipient,
@@ -41,18 +35,18 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256 volume,
         bytes32[] memory volumeProof
     ) external override onlyIssuer {
-        LibIssuer.IssuerStorage storage issuer = getStorage();
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(LibVoting._isPartOfConsensus(voteID, dataHash, dataProof), "data: Not part of this consensus");
+        LibIssuer._incrementProofIndex();
 
-        string memory volumeString = UintUtils.toString(volume);
-        bytes32 volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+        bool isVoteInConsensus = LibVoting._isPartOfConsensus(voteID, dataHash, dataProof);
+        if (!isVoteInConsensus) {
+            revert LibIssuer.NotInConsensus(voteID);
+        }
 
-        console.log("Consumption volume to certify :: %s", volumeString);
-
+        bytes32 volumeHash = volume._getVolumeHash();
         require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
 
-        issuer.lastProofIndex++;
         LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex);
         _mint(recipient, issuer.lastProofIndex, volume, "");
         emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
@@ -62,11 +56,15 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         string memory key,
         string memory value,
         bytes32[] memory proof,
-        bytes32 merkleRoot
-    ) external {
-        //TO-DO: set access control here
+        bytes32 rootHash
+    ) external override onlyIssuer {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        require(issuer.isDataDisclosed[rootHash][key] == false, "disclosure: data already disclosed");
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
-        require(LibProofManager._verifyProof(merkleRoot, leaf, proof), "Disclose : data not verified");
-        LibIssuer._discloseData(key, value, merkleRoot);
+        require(LibProofManager._verifyProof(rootHash, leaf, proof), "Disclose : data not verified");
+
+        issuer.disclosedData[rootHash][key] = value;
+        issuer.isDataDisclosed[rootHash][key] = true;
     }
 }

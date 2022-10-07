@@ -22,8 +22,12 @@ interface IGreenProof {
         bytes32[] memory volumeProof
     ) external;
 
+    function discloseData(
+        string memory key,
+        string memory value,
+        bytes32[] memory proof,
+        bytes32 merkleRoot
+    ) external;
+
     event ProofMinted(uint256 indexed proofID, uint256 indexed amount);
-    event IssuanceRequested(uint256 indexed proofID);
-    event RequestAccepted(uint256 indexed proofID);
-    event RequestRejected(uint256 indexed proofID);
 }
