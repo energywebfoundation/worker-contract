@@ -17,6 +17,7 @@ const timeTravel = async (seconds) => {
 };
 
 let issuerFacet;
+let votingFacet;
 let diamondAddress;
 let proofManagerFacet;
 let owner;
@@ -32,10 +33,18 @@ let producerRef;
 let grantRole;
 let revokeRole;
 let VC;
+let timeframes;
+let votes;
 let merkleInfos;
 let testCounter = 0;
 let lastTokenID = 0;
 let provider;
+let leaves;
+let dataTree;
+
+let worker1;
+let worker2;
+let worker3;
 
 const issuanceRequestStatus =  {
   DEFAULT : 0,
@@ -44,9 +53,14 @@ const issuanceRequestStatus =  {
   ACCEPTED: 3
 }
 
+const IS_SETTLEMENT = true;
+
+
 const rewardAmount = parseEther("1");
 const timeLimit = 15 * 60;
 const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
+
+
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
 );
@@ -63,6 +77,39 @@ const defaultVersion = 1;
 const proofID1 = 1;
 const proofID2 = 2;
 
+const data = [
+    {
+      id: 1,
+      generatorID: 2,
+      volume: 42,
+      consumerID: 500
+    },
+    {
+      id: 2,
+      generatorID: 3,
+      volume: 21,
+      consumerID: 522
+    },
+    {
+      id: 3,
+      generatorID: 4,
+      volume: 10,
+      consumerID: 52
+    },
+    {
+      id: 4,
+      generatorID: 5,
+      volume: 10,
+      consumerID: 53
+    },
+    {
+      id: 5,
+      generatorID: 5,
+      volume: 10,
+      consumerID: 51
+    },
+]
+
 describe("IssuerFacet", function () {
   before(async () => {
     [
@@ -72,8 +119,9 @@ describe("IssuerFacet", function () {
       receiver,
       revoker,
       nonAuthorizedOperator,
-      worker5,
-      worker6,
+      worker1,
+      worker2,
+      worker3,
       notEnrolledWorker,
       toRemoveWorker,
     ] = await ethers.getSigners();
@@ -125,6 +173,7 @@ describe("IssuerFacet", function () {
       diamondAddress
     );
     issuerFacet = await ethers.getContractAt("IssuerFacet", diamondAddress);
+    votingFacet = await ethers.getContractAt("VotingFacet", diamondAddress);
     proofManagerFacet = await ethers.getContractAt(
       "ProofManagerFacet",
       diamondAddress
@@ -140,25 +189,38 @@ describe("IssuerFacet", function () {
     rejectedMatch = ethers.utils.formatBytes32String("MATCH_RESULT_TO_BE_REJECTED");
     producerRef = ethers.utils.formatBytes32String("energyWeb");
 
-    const data = {
-      receiverAddress,
-      amount,
-      productType,
-      timeFrame: {   
-        start,
-        end,
-      },
-      winninMatch,
-      producerRef,
-      type: "solar",
-      generatorID: 4221
-    }
+    timeframes = [
+      { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_1") },
+      { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("REPLAYED_MATCH_OUTPUT_1") },
+      { input: ethers.utils.formatBytes32String("MATCH_INPUT_2"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_2") },
+      { input: ethers.utils.formatBytes32String("MATCH_INPUT_3"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_3") },
+      { input: ethers.utils.formatBytes32String("MATCH_INPUT_4"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_4") },
+      { input: ethers.utils.formatBytes32String("MATCH_INPUT_5"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_5") },
+    ];
+
+    
+    
+    
+    leaves = data.map(item => createPreciseProof(item).getHexRoot());
+    dataTree = createMerkleTree(leaves);
+
+    const matchResult = dataTree.getHexRoot();
+    votes = [
+      // { matchInput: createPreciseProof(data[ 0 ]).getHexRoot(), matchResult },
+      { matchInput: dataTree.getHexRoot(), matchResult },
+      { matchInput: leaves[1], matchResult },
+      { matchInput: leaves[2], matchResult },
+    ]
+    
+    //TODO: remove the VC field
     merkleInfos = getMerkleProof(data);
     VC = merkleInfos.merkleRoot;
   });
 
   beforeEach(async () => {
     console.log(`Test ${++testCounter} :`);
+
+    // await votingFacet.connect(worker3).vote(votes[ 0 ].matchInput, votes[ 0 ].matchResult, IS_SETTLEMENT);
   });
 
   afterEach(async () => {
@@ -167,13 +229,38 @@ describe("IssuerFacet", function () {
 
   describe("\n** Proof issuance tests **\n", () => {
 
-    it("Authorized issuers can send proof issuance requests", async () => {
+    it.only("Authorized issuers can send proof issuance requests", async () => {
       await grantRole(validator, validatorRole);
       
+      //1 - Run the voting process with a consensus
+      await grantRole(worker1, workerRole);
+      await grantRole(worker2, workerRole);
+
+      await votingFacet.connect(owner).addWorker(worker1.address);
+      await votingFacet.connect(owner).addWorker(worker2.address);
+
+      await votingFacet.connect(worker1).vote(votes[ 0 ].matchInput, votes[ 0 ].matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker2).vote(votes[ 0 ].matchInput, votes[ 0 ].matchResult, IS_SETTLEMENT);
+      
+      //2 - request proof issuance for the vote ID (inputHash)
+
+      const proof = dataTree.getHexProof(leaves[ 0 ]);
+      const volumeTree = createPreciseProof(data[ 0 ]);
+      const volumeLeaf = hash('volume' + JSON.stringify(42))
+      const volumeProof = volumeTree.getHexProof(volumeLeaf);
+
+      const voteID = votes[ 0 ].matchInput;
+      
+
+      // expect(await proofManagerFacet.connect(owner).verifyProof(dataTree.getHexRoot(), leaves[0], proof)).to.be.true;
+      // expect(await proofManagerFacet.connect(owner).verifyProof(votes[0].matchInput,  hash('volume' + JSON.stringify(42)), volumeProof)).to.be.true;
+
       expect(
         await issuerFacet
           .connect(validator)
-          .requestProofIssuance(winninMatch, receiverAddress, winninMatch, proof, 42, proof)
+          .requestProofIssuance(voteID, receiverAddress, volumeTree.getHexRoot(), proof, data[0].volume, volumeProof)
+          // .requestProofIssuance(voteID, receiverAddress, dataTree.getHexRoot(), proof, data[0].volume, volumeProof)
+          // .requestProofIssuance(dataTree.getHexRoot(), receiverAddress, voteID, proof, data[0].volume, volumeProof)
       ).to.emit(issuerFacet, "IssuanceRequested");
       lastTokenID++;
     });

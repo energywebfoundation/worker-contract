@@ -7,6 +7,8 @@ import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
+
+import "hardhat/console.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /// @title GreenProof Issuer Module
@@ -41,6 +43,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         require(LibVoting._isVoteRecorded(voteID), "Issuance Request : unknown vote");
         require(LibVoting._isPartOfConsensus(voteID, dataHash, dataProof), "data: Not part of this consensus");
         bytes32 volumeHash = keccak256(abi.encodePacked(("volume"), volume));
+
+        console.log("\nCHECKING LEAF CONTENT :: ");
+        console.logBytes32(volumeHash);
+        console.logBytes(abi.encodePacked(("volume"), volume));
+
         require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
 
         issuer.lastProofIndex++;
