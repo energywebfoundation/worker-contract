@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 import {IRewardVoting} from "../interfaces/IRewardVoting.sol";
+import {IVoting} from "../interfaces/IVoting.sol";
+
 import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 library LibVoting {
@@ -237,7 +239,8 @@ library LibVoting {
         bytes32 voteID,
         bytes32 dataHash,
         bytes32[] memory dataProof
-    ) internal pure returns (bool) {
-        return MerkleProof.verify(dataProof, voteID, dataHash);
+    ) internal returns (bool) {
+        bytes32 matchResult = IVoting(address(this)).getWinningMatch(voteID);
+        return MerkleProof.verify(dataProof, matchResult, dataHash);
     }
 }
