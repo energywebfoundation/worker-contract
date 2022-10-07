@@ -18,11 +18,13 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 /// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
 
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
-    modifier onlyValidator() {
+    using LibClaimManager for address;
+
+    modifier onlyIssuer() {
         LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
 
-        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.validatorRole];
-        require(LibClaimManager.isValidator(msg.sender, lastRoleVersion), "Access: Not a validator");
+        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.issuerRole];
+        require(msg.sender.isIssuer(lastRoleVersion), "Access: Not an issuer");
         _;
     }
 
@@ -38,10 +40,9 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32[] memory dataProof,
         uint256 volume,
         bytes32[] memory volumeProof
-    ) external override onlyValidator {
+    ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
-        require(LibVoting._isVoteRecorded(voteID), "Issuance Request : unknown vote");
         require(LibVoting._isPartOfConsensus(voteID, dataHash, dataProof), "data: Not part of this consensus");
 
         string memory volumeString = UintUtils.toString(volume);
@@ -52,10 +53,9 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
 
         issuer.lastProofIndex++;
+        LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex);
         _mint(recipient, issuer.lastProofIndex, volume, "");
-        LibIssuer._registerProof(issuer.lastProofIndex, dataHash);
-
-        emit LibIssuer.IssuanceRequested(issuer.lastProofIndex);
+        emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
     }
 
     function discloseData(

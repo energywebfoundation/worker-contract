@@ -21,11 +21,10 @@ library LibIssuer {
     }
 
     event ProofMinted(uint256 indexed proofID, uint256 indexed volume);
-    event IssuanceRequested(uint256 indexed proofID); //TO-DO: Inject event params
-    event RequestAccepted(uint256 indexed proofID);
+    event IssuanceRequested(uint256 indexed proofID);
     event RequestRejected(uint256 indexed proofID);
 
-    error NotValidatedProof(uint256 proofID);
+    // error NotValidatedProof(uint256 proofID);
     error NonExistingProof(uint256 proofId);
     error NonRevokableProof(uint256 proofID, uint256 issuanceDate, uint256 revocableDateLimit);
 
@@ -42,17 +41,6 @@ library LibIssuer {
         bytes32 winningMatch;
         bytes32 merkleRootProof;
         RequestStatus status;
-    }
-
-    function _acceptRequest(bytes32 winningMatch, bytes32 merkleRootProof) internal {
-        IssuerStorage storage issuer = _getStorage();
-
-        require(issuer.issuanceRequests[winningMatch].requestID != 0, "Validation not requested");
-        require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED, "Already validated");
-
-        issuer.issuanceRequests[winningMatch].status = LibIssuer.RequestStatus.ACCEPTED;
-        issuer.issuanceRequests[winningMatch].merkleRootProof = merkleRootProof;
-        emit RequestAccepted(issuer.issuanceRequests[winningMatch].requestID);
     }
 
     function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {
@@ -75,51 +63,19 @@ library LibIssuer {
         issuer.issuanceRequests[winningMatch].status = status;
     }
 
-    function _registerPrivateData(bytes32 winningMatch, address receiver) internal {
-        LibIssuer.IssuerStorage storage issuer = _getStorage();
-        uint256 proofID = issuer.issuanceRequests[winningMatch].requestID;
-        bool isRevoked = false;
-        bool isRetired = false;
-
-        if (issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED) {
-            revert LibIssuer.NotValidatedProof(proofID);
-        }
-
-        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, 0, 0, 0, 0, "", "");
-        issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
-    }
-
     /** issueProof : Sends a request issuance of a new proof */
-    function _registerData(
-        bytes32 winningMatch,
+    function _registerProof(
+        bytes32 dataHash,
         address receiver,
         uint256 amount,
-        uint256 productType,
-        uint256 start,
-        uint256 end,
-        bytes32 producerRef
+        uint256 proofID
     ) internal {
         bool isRevoked = false;
         bool isRetired = false;
 
         LibIssuer.IssuerStorage storage issuer = _getStorage();
-        uint256 proofID = issuer.issuanceRequests[winningMatch].requestID;
 
-        if (issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED) {
-            revert LibIssuer.NotValidatedProof(proofID);
-        }
-        issuer.mintedProofs[proofID] = IGreenProof.Proof(
-            isRevoked,
-            isRetired,
-            proofID,
-            block.timestamp,
-            productType,
-            amount,
-            start,
-            end,
-            producerRef,
-            ""
-        );
+        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash);
         issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
     }
 
@@ -132,10 +88,5 @@ library LibIssuer {
         require(issuer.isDataDisclosed[rootHash][key] == false, "disclosure: data already disclosed");
         issuer.disclosedData[rootHash][key] = value;
         issuer.isDataDisclosed[rootHash][key] = true;
-    }
-
-    function _registerProof(uint256 proofID, bytes32 merkleRootProof) internal {
-        LibIssuer.IssuerStorage storage issuer = _getStorage();
-        issuer.mintedProofs[proofID].merkleRootProof = merkleRootProof;
     }
 }
