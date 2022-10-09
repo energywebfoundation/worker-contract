@@ -38,6 +38,7 @@ let receiverAddress;
 let testCounter = 0;
 let lastTokenID = 0;
 let proofManagerFacet;
+let nonAuthorizedOperator;
 
 const timeLimit = 15 * 60;
 const IS_SETTLEMENT = true;
@@ -446,13 +447,79 @@ describe("IssuerFacet", function () {
   });
 
   describe("\n** Data disclosure tests **\n", () => {
-    it("should successfully disclose data", async () => {
+
+    it("should revert when non authorized user tries to disclose data", async () => {
+      //TODO: writre failure data disclosure test
+      await revokeRole(nonAuthorizedOperator, issuerRole);
+
+      const key = "consumerID";
+      const value = "500";
+
+      const disclosedDataTree = createPreciseProof(data[0]);
+      const dataLeaf = hash(key + value);
+      const dataProof = disclosedDataTree.getHexProof(dataLeaf);
+      const dataRootHash = disclosedDataTree.getHexRoot();
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+      const proof = dataTree.getHexProof(dataRootHash);
+
+      await expect(
+        issuerFacet.connect(nonAuthorizedOperator).discloseData(key, value, dataProof, proof, dataRootHash, inputHash)
+      ).to.be.revertedWith("Access: Not an issuer");
+    });
+    
+    it("should allow authorized user to disclose data", async () => {
       await grantRole(issuer, issuerRole);
+
+      const key = "consumerID";
+      const value = "500";
+
+      const disclosedDataTree = createPreciseProof(data[0]);
+      const dataLeaf = hash(key + value);
+      const dataProof = disclosedDataTree.getHexProof(dataLeaf);
+      const dataRootHash = disclosedDataTree.getHexRoot();
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+      const proof = dataTree.getHexProof(dataRootHash);
+
+      await issuerFacet.connect(issuer).discloseData(key, value, dataProof, proof, dataRootHash, inputHash);
 
     });
 
-    ii("should revert when non authorized user tries to disclose data", async () => {
-      //TODO: writre failure data disclosure test
+    it("should revert when one tries to disclose not verified data", async () => {
+      await grantRole(issuer, issuerRole);
+
+      const wrongKey = "NotExistingKey";
+      const value = "500";
+
+      const disclosedDataTree = createPreciseProof(data[0]);
+      const dataLeaf = hash(wrongKey + value);
+      const dataProof = disclosedDataTree.getHexProof(dataLeaf);
+      const dataRootHash = disclosedDataTree.getHexRoot();
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+      const proof = dataTree.getHexProof(dataRootHash);
+
+      await expect(
+        issuerFacet.connect(issuer).discloseData(wrongKey, value, dataProof, proof, dataRootHash, inputHash)
+      ).to.be.revertedWith("Disclose : data not verified");
+
+    });
+
+
+    it("should revert when one tries to disclose already disclosed data", async () => {
+      // await grantRole(issuer, issuerRole);
+
+      const key = "consumerID";
+      const value = "500";
+
+      const disclosedDataTree = createPreciseProof(data[0]);
+      const dataLeaf = hash(key + value);
+      const dataProof = disclosedDataTree.getHexProof(dataLeaf);
+      const dataRootHash = disclosedDataTree.getHexRoot();
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+      const proof = dataTree.getHexProof(dataRootHash);
+
+      await expect(
+        issuerFacet.connect(issuer).discloseData(key, value, dataProof, proof, dataRootHash, inputHash)
+      ).to.be.revertedWith("Disclose: data already disclosed");
     })
   });
 }); 
