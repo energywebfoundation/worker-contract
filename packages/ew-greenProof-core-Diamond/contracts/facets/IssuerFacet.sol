@@ -55,14 +55,17 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     function discloseData(
         string memory key,
         string memory value,
+        bytes32[] memory dataProof,
         bytes32[] memory proof,
+        bytes32 dataHash,
         bytes32 rootHash
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(issuer.isDataDisclosed[rootHash][key] == false, "disclosure: data already disclosed");
+        require(issuer.isDataDisclosed[rootHash][key] == false, "Disclose: data already disclosed");
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
-        require(LibProofManager._verifyProof(rootHash, leaf, proof), "Disclose : data not verified");
+        require(LibProofManager._verifyProof(dataHash, leaf, dataProof), "Disclose : data not verified");
+        require(LibVoting._isPartOfConsensus(rootHash, dataHash, proof), "Disclose: data not part of this consensus");
 
         issuer.disclosedData[rootHash][key] = value;
         issuer.isDataDisclosed[rootHash][key] = true;

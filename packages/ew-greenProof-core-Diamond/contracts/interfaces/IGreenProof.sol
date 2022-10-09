@@ -25,8 +25,10 @@ interface IGreenProof {
     function discloseData(
         string memory key,
         string memory value,
+        bytes32[] memory dataProof,
         bytes32[] memory proof,
-        bytes32 merkleRoot
+        bytes32 merkleRoot,
+        bytes32 dataHash
     ) external;
 
     event ProofMinted(uint256 indexed proofID, uint256 indexed amount);
