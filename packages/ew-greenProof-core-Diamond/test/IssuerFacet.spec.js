@@ -503,9 +503,7 @@ describe("IssuerFacet", function () {
 
     });
 
-
     it("should revert when one tries to disclose already disclosed data", async () => {
-      // await grantRole(issuer, issuerRole);
 
       const key = "consumerID";
       const value = "500";

@@ -51,6 +51,7 @@ contract Diamond {
         oldAddress = LibClaimManager.setClaimManagerAddress(_newaddress);
     }
 
+    //TODO: provide unit tests for RoleVersion update
     function updateRoleVersion(bytes32 role, uint256 _newVersion) external returns (uint256 oldVersion) {
         oldVersion = LibClaimManager.setRoleVersion(role, _newVersion);
     }
