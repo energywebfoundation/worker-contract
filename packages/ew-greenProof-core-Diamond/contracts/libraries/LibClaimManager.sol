@@ -28,7 +28,7 @@ library LibClaimManager {
         if (claimStore.claimManagerAddress == address(0)) {
             revert NotInitializedClaimManager();
         }
-        // ExtCall : Contract deployed and managed by EnergyWeb Fondation
+        // ExtCall : Contract deployed and managed by EnergyWeb Foundation
         return IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
     }
 
@@ -66,6 +66,7 @@ library LibClaimManager {
         claimStore.roleToVersions[_role] = _newVersion;
     }
 
+    //TODO: provide unit tests for claimManager Update
     function setClaimManagerAddress(address _newAddress) internal returns (address oldAddress) {
         LibDiamond.enforceIsContractOwner();
         ClaimManagerStorage storage claimStore = getStorage();
@@ -73,7 +74,7 @@ library LibClaimManager {
         if (claimStore.claimManagerAddress == address(0)) {
             revert NotInitializedClaimManager();
         }
-        require(_newAddress != address(0), "Invalid contract address");
+        require(_newAddress != address(0), "Cannot update to null address");
         require(claimStore.claimManagerAddress != _newAddress, "Same address");
 
         oldAddress = claimStore.claimManagerAddress;

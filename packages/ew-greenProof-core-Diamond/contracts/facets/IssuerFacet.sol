@@ -47,7 +47,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32 volumeHash = volume._getVolumeHash();
         require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
 
-        LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex);
+        LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex, voteID);
         _mint(recipient, issuer.lastProofIndex, volume, "");
         emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
     }
