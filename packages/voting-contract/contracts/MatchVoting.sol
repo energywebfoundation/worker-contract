@@ -40,6 +40,9 @@ contract MatchVoting is Ownable, IVoting {
     // Worker address to match result on a specific matchInput
     mapping(address => mapping(string => bytes32)) workerVotes;
 
+    mapping(string => bytes32) public winningMatches;
+    mapping(string => address payable[]) public winnersList;
+
     mapping(string => LibVoting.Voting) public matchInputToVoting;
 
     modifier onlyEnrolledWorkers(address _worker) {
@@ -89,6 +92,19 @@ contract MatchVoting is Ownable, IVoting {
             if (shouldUpdateVote) {
                 //We update the voting results
                 LibVoting.updateWorkersVote(voting);
+                _revealWinners(voting);
+
+                voting.winningMatchVoteCount = newVoteCount;
+                bytes32 winMatch = matchInputToVoting[matchInput].winningMatch;
+
+                //we prevent updating if the final winning match did not change
+                if (winMatch != newWinningMatch) {
+                    matchInputToVoting[matchInput]
+                        .winningMatch = newWinningMatch;
+
+                    //We update winningMatches list
+                    winningMatches[voting.matchInput] = newWinningMatch;
+                }
 
                 // We update the final vote with the replayed vote
                 for (uint256 i; i < voting.replayVoters.length; i++) {
@@ -108,7 +124,7 @@ contract MatchVoting is Ownable, IVoting {
                 );
 
                 IRewardVoting(rewardVotingAddress).reward(
-                    winners(voting.matchInput)
+                    winnersList[voting.matchInput]
                 );
             }
         } else {
@@ -118,7 +134,6 @@ contract MatchVoting is Ownable, IVoting {
 
             voting.numberOfVotes++;
             voting.workerToVoted[msg.sender] = true;
-            workerVotes[msg.sender][matchInput] = matchResult;
             voting.workerToMatchResult[msg.sender] = matchResult;
 
             if (voting.matchResultToVoteCount[matchResult] == 0) {
@@ -160,7 +175,7 @@ contract MatchVoting is Ownable, IVoting {
         view
         returns (bytes32)
     {
-        return matchInputToVoting[matchInput].winningMatch;
+        return winningMatches[matchInput];
     }
 
     function numberOfMatchInputs() public view returns (uint256) {
@@ -229,7 +244,12 @@ contract MatchVoting is Ownable, IVoting {
             voting.winningMatchVoteCount
         );
         voting.status = LibVoting.Status.Completed;
-        IRewardVoting(rewardVotingAddress).reward(winners(voting.matchInput));
+        _revealVotes(voting);
+        _revealWinners(voting);
+        winningMatches[voting.matchInput] = voting.winningMatch;
+        IRewardVoting(rewardVotingAddress).reward(
+            winnersList[voting.matchInput]
+        );
     }
 
     /// @notice Check if this account allowed to vote
@@ -240,14 +260,13 @@ contract MatchVoting is Ownable, IVoting {
     }
 
     /// @notice Workers who voted for winning result
-    function winners(string memory matchInput)
-        public
-        view
-        returns (address payable[] memory _winners)
-    {
-        LibVoting.Voting storage voting = matchInputToVoting[matchInput];
-        _winners = new address payable[](voting.winningMatchVoteCount);
+    function _revealWinners(LibVoting.Voting storage voting) internal {
         uint256 winnerCount = 0;
+        string memory matchInput = voting.matchInput;
+        address payable[] memory _winners = new address payable[](
+            voting.winningMatchVoteCount
+        );
+
         for (uint256 i = 0; i < numberOfWorkers; i++) {
             address payable worker = workers[i];
             if (
@@ -257,6 +276,17 @@ contract MatchVoting is Ownable, IVoting {
                 _winners[winnerCount] = worker;
                 winnerCount++;
             }
+        }
+        winnersList[matchInput] = _winners;
+    }
+
+    /// @notice Reveals the votes only after the vote is ended
+    function _revealVotes(LibVoting.Voting storage voting) internal {
+        for (uint256 i = 0; i < workers.length; i++) {
+            address payable currentWorker = workers[i];
+
+            workerVotes[currentWorker][voting.matchInput] = voting
+                .workerToMatchResult[msg.sender];
         }
     }
 
@@ -335,5 +365,13 @@ contract MatchVoting is Ownable, IVoting {
             _workers[i] = address(workers[i]);
         }
         return _workers;
+    }
+
+    function winners(string memory matchInput)
+        external
+        view
+        returns (address payable[] memory)
+    {
+        return winnersList[matchInput];
     }
 }
