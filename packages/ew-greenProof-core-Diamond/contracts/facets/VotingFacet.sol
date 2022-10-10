@@ -13,14 +13,14 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 contract VotingFacet is IVoting {
     /**
         Allowing library's function calls on address type
-        This improves code reading by writing address.isWorker() and address.isNotWorker()
+        This improves code readabilitying by writing address.isWorker() and address.isNotWorker()
         Instead of LibVoting.isWorker(address) and LibVoting.isNotWorker(address)
     */
     using LibVoting for address;
 
     /**
         Allowing library's function calls on Voting struct type. 
-        This improves code reading by writing voting.isExpired() or voting.cancelVoting()
+        This improves code readability by writing voting.isExpired() or voting.cancelVoting()
         Instead of LibVoting.isExpired(voting) or LibVoting.cancelVoting(voting) respectively
     */
     using LibVoting for LibVoting.Voting;
