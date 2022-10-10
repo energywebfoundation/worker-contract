@@ -1,0 +1,2442 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v2/identity": {
+      "get": {
+        "operationId": "IdentityController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Identity data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Identity"
+        ]
+      },
+      "post": {
+        "operationId": "IdentityController_post",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIdentityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Identity successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v2/identity/claims": {
+      "get": {
+        "operationId": "IdentityController_getClaims",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Claims data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/default"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v2/enrol": {
+      "get": {
+        "operationId": "EnrolmentController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Enrolment"
+        ]
+      },
+      "post": {
+        "operationId": "EnrolmentController_init",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Enrolment"
+        ]
+      }
+    },
+    "/api/v2/certificate": {
+      "post": {
+        "operationId": "CertificateController_save",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadCertificateBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Certificates Uploaded Successfully"
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Gateway Configuration"
+        ]
+      }
+    },
+    "/api/v2/channels": {
+      "post": {
+        "operationId": "ChannelController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChannelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Channel successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Channels"
+        ]
+      },
+      "get": {
+        "operationId": "ChannelController_getByType",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "description": "Channel type",
+            "example": "sub",
+            "schema": {
+              "enum": [
+                "sub",
+                "pub",
+                "download",
+                "upload"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gives channels based on type from query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GetChannelResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/api/v2/channels/{fqcn}": {
+      "get": {
+        "operationId": "ChannelController_get",
+        "parameters": [
+          {
+            "name": "fqcn",
+            "required": true,
+            "in": "path",
+            "description": "Channel type",
+            "example": "channel.name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Channel details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChannelResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Channel not found"
+          }
+        },
+        "tags": [
+          "Channels"
+        ]
+      },
+      "delete": {
+        "operationId": "ChannelController_delete",
+        "parameters": [
+          {
+            "name": "fqcn",
+            "required": true,
+            "in": "path",
+            "description": "Channel type",
+            "example": "channel.name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Channel deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Channel not found"
+          }
+        },
+        "tags": [
+          "Channels"
+        ]
+      },
+      "put": {
+        "operationId": "ChannelController_update",
+        "parameters": [
+          {
+            "name": "fqcn",
+            "required": true,
+            "in": "path",
+            "description": "Channel type",
+            "example": "channel.name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Channel successfully updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/api/v2/channels/{fqcn}/qualifiedDids": {
+      "get": {
+        "operationId": "ChannelController_getQualifiedDids",
+        "parameters": [
+          {
+            "name": "fqcn",
+            "required": true,
+            "in": "path",
+            "description": "Channel type",
+            "example": "channel.name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Channel qualified dids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChannelQualifiedDidsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Channel not found"
+          }
+        },
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/api/v2/channels/refresh": {
+      "post": {
+        "operationId": "ChannelController_refreshDID",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Refreshed cache"
+          }
+        },
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/api/v2/messages": {
+      "get": {
+        "operationId": "MessageControlller_getMessage",
+        "parameters": [
+          {
+            "name": "fqcn",
+            "required": true,
+            "in": "query",
+            "example": "channel.name",
+            "description": "channel name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "date from which messages to be fetched",
+            "example": "2022-03-31T09:48:44.357Z",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "amount",
+            "required": false,
+            "in": "query",
+            "example": 1,
+            "description": "Latest amount of messages to be fetched",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "topicName",
+            "required": false,
+            "in": "query",
+            "example": "getOperatingEnvelope",
+            "description": "topic name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topicOwner",
+            "required": false,
+            "in": "query",
+            "example": "torta.apps.eggplant.vege.iam.ewc",
+            "description": "application namespace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "required": false,
+            "in": "query",
+            "example": "test2",
+            "description": "cursor for pointing to messages",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message recieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GetMessagesResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Messages Not found"
+          }
+        },
+        "tags": [
+          "Messaging"
+        ]
+      },
+      "post": {
+        "operationId": "MessageControlller_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessagelResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Channel not found or Topic not found"
+          }
+        },
+        "tags": [
+          "Messaging"
+        ]
+      }
+    },
+    "/api/v2/messages/download": {
+      "get": {
+        "operationId": "MessageControlller_downloadMessage",
+        "parameters": [
+          {
+            "name": "fileId",
+            "required": true,
+            "in": "query",
+            "description": "file Id for which file will be downloaded",
+            "example": "bb2686d2-97be-436b-8869",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message Dwonloaded successfully"
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Messaging"
+        ]
+      }
+    },
+    "/api/v2/messages/upload": {
+      "post": {
+        "operationId": "MessageControlller_uploadFile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/uploadMessageBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File Upload Successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessagelResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Channel not found or Topic not found"
+          }
+        },
+        "tags": [
+          "Messaging"
+        ]
+      }
+    },
+    "/api/v2/keys": {
+      "post": {
+        "operationId": "KeysController_derive",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Gateway Configuration"
+        ]
+      }
+    },
+    "/api/v2/applications": {
+      "get": {
+        "operationId": "ApplicationsController_getApplications",
+        "summary": "",
+        "description": "Gets Applications",
+        "parameters": [
+          {
+            "name": "roleName",
+            "required": true,
+            "in": "query",
+            "example": "topiccreator",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of applications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Applications"
+        ]
+      }
+    },
+    "/api/v2/applications/{namespace}": {
+      "get": {
+        "operationId": "ApplicationsController_getApplicationsByNamespace",
+        "summary": "",
+        "description": "Gets applications for specified namespace",
+        "parameters": [
+          {
+            "name": "namespace",
+            "required": true,
+            "in": "path",
+            "example": "ddhub.apps.energyweb.iam.ewc",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of applications filtered by namespace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Applications"
+        ]
+      }
+    },
+    "/api/v2/topics": {
+      "get": {
+        "operationId": "TopicsController_getTopics",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "example": 1,
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "example": 1,
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "example": "topic name",
+            "schema": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          {
+            "name": "owner",
+            "required": true,
+            "in": "query",
+            "example": "ddhub.apps.energyweb.iam.ewc",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "required": false,
+            "in": "query",
+            "example": [
+              "aggregator"
+            ],
+            "schema": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get Topics List",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      },
+      "post": {
+        "operationId": "TopicsController_postTopics",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostTopicBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Topic successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostTopicDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      }
+    },
+    "/api/v2/topics/{id}/versions": {
+      "get": {
+        "operationId": "TopicsController_getTopicsHistoryById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "example": 1,
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "example": 1,
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get Topics List with same Id and different versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedTopicResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      }
+    },
+    "/api/v2/topics/{id}/versions/{versionNumber}": {
+      "get": {
+        "operationId": "TopicsController_getTopicHistoryByIdAndVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionNumber",
+            "required": true,
+            "in": "path",
+            "description": "version of the topic",
+            "example": "1.0.9",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get Topics History by Id and version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostTopicDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      },
+      "put": {
+        "operationId": "TopicsController_updateTopicsByIdAndVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionNumber",
+            "required": true,
+            "in": "path",
+            "description": "version of the topic",
+            "example": "1.0.9",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTopicHistoryBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Topic updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostTopicDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Topic not found"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      },
+      "delete": {
+        "operationId": "TopicsController_deleteTopicsByVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionNumber",
+            "required": true,
+            "in": "path",
+            "description": "version of the topic",
+            "example": "1.0.9",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Topic deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteTopic"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Topic not found"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      }
+    },
+    "/api/v2/topics/count": {
+      "get": {
+        "operationId": "TopicsController_getTopicsCountByOwner",
+        "parameters": [
+          {
+            "name": "owner",
+            "required": true,
+            "in": "query",
+            "example": [
+              "torta.apps.eggplant.vege.iam.ewc",
+              "mini.apps.sliced.carrot.vege.iam.ewc"
+            ],
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get Topics Count by Owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopicCountDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      }
+    },
+    "/api/v2/topics/search": {
+      "get": {
+        "operationId": "TopicsController_getTopicsBySearch",
+        "parameters": [
+          {
+            "name": "keyword",
+            "required": true,
+            "in": "query",
+            "example": "Topic_JSON_V12",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "owner",
+            "required": false,
+            "in": "query",
+            "example": "ddhub.apps.energyweb.iam.ewc",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "example": 1,
+            "schema": {
+              "default": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "example": 1,
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get Topics by Search",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      }
+    },
+    "/api/v2/topics/{id}": {
+      "put": {
+        "operationId": "TopicsController_updateTopics",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTopicBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Topic updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PutTopicDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Topic not found"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      },
+      "delete": {
+        "operationId": "TopicsController_deleteTopics",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Topic deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteTopic"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or some requirements were not fully satisfied"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Topic not found"
+          }
+        },
+        "tags": [
+          "Topics"
+        ]
+      }
+    },
+    "/api/v2/cron": {
+      "get": {
+        "operationId": "CronController_getJobsResults",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of CRON jobs results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CronResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "info": {
+    "title": "DDHub Client Gateway",
+    "description": "DDHub Client Gateway",
+    "version": "2.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "RoleDto": {
+        "type": "object",
+        "properties": {
+          "namespace": {
+            "type": "string",
+            "description": "Namespace",
+            "example": "user.roles.ddhub.apps.szostak.iam.ewc"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Describes if role is required for basic usage",
+            "example": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NOT_ENROLLED",
+              "AWAITING_APPROVAL",
+              "APPROVED",
+              "REJECTED",
+              "SYNCED"
+            ],
+            "description": "Role status",
+            "example": "APPROVED"
+          }
+        },
+        "required": [
+          "namespace",
+          "required",
+          "status"
+        ]
+      },
+      "EnrolmentDto": {
+        "type": "object",
+        "properties": {
+          "did": {
+            "type": "string",
+            "description": "DID address",
+            "example": "did:ethr:volta:0xfeFBb03EFc1054Cc4e3Fbf36362689cc1F5924a8"
+          },
+          "roles": {
+            "description": "Array of roles",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleDto"
+            }
+          }
+        },
+        "required": [
+          "did",
+          "roles"
+        ]
+      },
+      "IdentityResponseDto": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Wallet address",
+            "example": "0xfeFBb03EFc1054Cc4e3Fbf36362689cc1F5924a8"
+          },
+          "balance": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "OK",
+              "NONE"
+            ],
+            "description": "User balance",
+            "example": "OK"
+          },
+          "enrolment": {
+            "description": "Enrolment response",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EnrolmentDto"
+              }
+            ]
+          },
+          "publicKey": {
+            "type": "string",
+            "description": "Public key",
+            "example": "0x04341da2f081cef1a9c19557551b9c9f10ce135eeec9e45a41f3750db8ef2d34e990b27ee730c6643d1862f5899dccbdf011e8a33fd8cd7de42442b0c7570540db"
+          }
+        },
+        "required": [
+          "address",
+          "balance",
+          "enrolment",
+          "publicKey"
+        ]
+      },
+      "default": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateIdentityDto": {
+        "type": "object",
+        "properties": {
+          "privateKey": {
+            "type": "string",
+            "description": "Private key starting with 0x. If not passed then keys will be generated"
+          }
+        }
+      },
+      "UploadCertificateBodyDto": {
+        "type": "object",
+        "properties": {
+          "certificate": {
+            "type": "string",
+            "format": "binary",
+            "description": "certificate to be uploaded"
+          },
+          "privateKey": {
+            "type": "string",
+            "format": "binary",
+            "description": "privateKey to be uploaded"
+          },
+          "caCertificate": {
+            "type": "string",
+            "format": "binary",
+            "description": "caCertificate to be uploaded"
+          }
+        },
+        "required": [
+          "certificate",
+          "privateKey"
+        ]
+      },
+      "TopicDto": {
+        "type": "object",
+        "properties": {
+          "topicName": {
+            "type": "string",
+            "description": "Topic name",
+            "example": "operatorEnvelope"
+          },
+          "owner": {
+            "type": "string",
+            "example": "aemo.edge",
+            "description": "Owner name"
+          }
+        },
+        "required": [
+          "topicName",
+          "owner"
+        ]
+      },
+      "ChannelConditionsDto": {
+        "type": "object",
+        "properties": {
+          "dids": {
+            "description": "Array of DIDS",
+            "example": [
+              "did:ethr:volta:0x09Df5d33f1242E1b8aA5E0E0F6BfA687E6846993"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "roles": {
+            "description": "Array of roles",
+            "example": [
+              "marketoperator.roles"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topics": {
+            "description": "Array of topics",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicDto"
+            }
+          }
+        },
+        "required": [
+          "dids",
+          "roles",
+          "topics"
+        ]
+      },
+      "CreateChannelDto": {
+        "type": "object",
+        "properties": {
+          "fqcn": {
+            "type": "string",
+            "description": "Channel type",
+            "example": "channel.name"
+          },
+          "payloadEncryption": {
+            "type": "boolean",
+            "description": "Channel encryption",
+            "example": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Channel type",
+            "enum": [
+              "sub",
+              "pub",
+              "download",
+              "upload"
+            ],
+            "example": "sub"
+          },
+          "conditions": {
+            "description": "Channel conditions",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChannelConditionsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fqcn",
+          "payloadEncryption",
+          "type",
+          "conditions"
+        ]
+      },
+      "ChannelEntity": {
+        "type": "object",
+        "properties": {}
+      },
+      "ChannelTopic": {
+        "type": "object",
+        "properties": {
+          "topicName": {
+            "type": "string",
+            "description": "Topic name",
+            "example": "operatorEnvelope"
+          },
+          "owner": {
+            "type": "string",
+            "example": "aemo.edge",
+            "description": "Owner name"
+          },
+          "topicId": {
+            "type": "string",
+            "example": "622fed6e4258501225095045",
+            "description": "Topic ID from Message Broker"
+          }
+        },
+        "required": [
+          "topicName",
+          "owner",
+          "topicId"
+        ]
+      },
+      "ChannelConditions": {
+        "type": "object",
+        "properties": {
+          "dids": {
+            "description": "Array of DIDS",
+            "example": [
+              "did:ethr:volta:0x09Df5d33f1242E1b8aA5E0E0F6BfA687E6846993"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "roles": {
+            "description": "Array of roles",
+            "example": [
+              "marketoperator.roles"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "qualifiedDids": {
+            "description": "List of qualified dids",
+            "example": [
+              "did:ethr:volta:0x09Df5d33f1242E1b8aA5E0E0F6BfA687E6846993",
+              "did:ethr:volta:0x3Ce3B60427b4Bf0Ce366d9963BeC5ef3CBD06ad5"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topics": {
+            "description": "Array of topics",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelTopic"
+            }
+          }
+        },
+        "required": [
+          "dids",
+          "roles",
+          "qualifiedDids",
+          "topics"
+        ]
+      },
+      "GetChannelResponseDto": {
+        "type": "object",
+        "properties": {
+          "fqcn": {
+            "type": "string",
+            "description": "Channel type",
+            "example": "channel.name"
+          },
+          "payloadEncryption": {
+            "type": "boolean",
+            "description": "Channel encryption",
+            "example": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Channel type",
+            "enum": [
+              "sub",
+              "pub",
+              "download",
+              "upload"
+            ],
+            "example": "sub"
+          },
+          "conditions": {
+            "description": "Channel conditions",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChannelConditions"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fqcn",
+          "payloadEncryption",
+          "type",
+          "conditions"
+        ]
+      },
+      "GetChannelQualifiedDidsDto": {
+        "type": "object",
+        "properties": {
+          "fqcn": {
+            "type": "string",
+            "description": "Channel name / fqcn",
+            "example": "channel.name"
+          },
+          "qualifiedDids": {
+            "description": "List of qualified dids",
+            "example": [
+              "did:ethr:volta:0x09Df5d33f1242E1b8aA5E0E0F6BfA687E6846993",
+              "did:ethr:volta:0x3Ce3B60427b4Bf0Ce366d9963BeC5ef3CBD06ad5"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Last update time",
+            "example": "2022-03-22T14:27:00.027Z"
+          }
+        },
+        "required": [
+          "fqcn",
+          "qualifiedDids",
+          "updatedAt"
+        ]
+      },
+      "UpdateChannelDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Channel type",
+            "enum": [
+              "sub",
+              "pub",
+              "download",
+              "upload"
+            ],
+            "example": "sub"
+          },
+          "payloadEncryption": {
+            "type": "boolean",
+            "description": "Channel encryption",
+            "example": true
+          },
+          "conditions": {
+            "description": "Channel conditions",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChannelConditionsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "payloadEncryption",
+          "conditions"
+        ]
+      },
+      "GetMessagesResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "message id",
+            "example": "110"
+          },
+          "topicName": {
+            "type": "string",
+            "description": "topic Name",
+            "example": "getOperatingEnvelope"
+          },
+          "topicOwner": {
+            "type": "string",
+            "description": "application namespace",
+            "example": "torta.apps.eggplant.vege.iam.ewc"
+          },
+          "topicVersion": {
+            "type": "string",
+            "description": "Topic Version",
+            "example": "1.0.0"
+          },
+          "topicSchemaType": {
+            "type": "string",
+            "description": "schema type of the topic",
+            "enum": [
+              "JSD7",
+              "XML",
+              "XSD6",
+              "CSV",
+              "TSV"
+            ],
+            "example": "JSD7"
+          },
+          "payload": {
+            "type": "string",
+            "description": "Payload sent to message",
+            "example": "{\"fileId\":\"624bfd4f4c6cf04abfc20041\"}"
+          },
+          "signature": {
+            "type": "string",
+            "description": "signature sent to message",
+            "example": "0x0abc6026b01856a756de47ec6f44d9c14fe69009bbf3b9b6cf522d8d783a1c654425848381affca5dab9284d8715fa2f9e34155374bafd923d75c219496cbe161c"
+          },
+          "sender": {
+            "type": "string",
+            "description": "signature sent to message",
+            "example": "did:ethr:volta:0x03830466Ce257f9B798B0f27359D7639dFB6457D"
+          },
+          "timestampNanos": {
+            "type": "number",
+            "description": "signature sent to message",
+            "example": 1649147198388
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "transactionId sent to message for idempotency",
+            "example": "1649147198388"
+          },
+          "signatureValid": {
+            "type": "boolean",
+            "description": "transactionId sent to message for idempotency",
+            "example": true
+          }
+        },
+        "required": [
+          "id",
+          "topicName",
+          "topicOwner",
+          "topicVersion",
+          "topicSchemaType",
+          "payload",
+          "signature",
+          "sender",
+          "timestampNanos",
+          "transactionId",
+          "signatureValid"
+        ]
+      },
+      "SendMessageDto": {
+        "type": "object",
+        "properties": {
+          "fqcn": {
+            "type": "string",
+            "description": "Channel Name",
+            "example": "channel.name"
+          },
+          "topicName": {
+            "type": "string",
+            "description": "Topic name"
+          },
+          "topicVersion": {
+            "type": "string",
+            "example": "1.0.0",
+            "description": "Topic Version"
+          },
+          "topicOwner": {
+            "type": "string",
+            "example": "aemo.edge",
+            "description": "Topic Owner"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Transaction Id used to check Idempotency"
+          },
+          "payload": {
+            "type": "string",
+            "example": "{ data: 49 }",
+            "description": "Payload to be sent to message"
+          }
+        },
+        "required": [
+          "fqcn",
+          "topicName",
+          "topicVersion",
+          "topicOwner",
+          "transactionId",
+          "payload"
+        ]
+      },
+      "Recipients": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "total number of recipients",
+            "example": 3
+          },
+          "sent": {
+            "type": "number",
+            "description": "total number of recipients for whom message is sent successfully",
+            "example": 2
+          },
+          "failed": {
+            "type": "number",
+            "description": "total number of recipients for whom message is failed",
+            "example": 1
+          }
+        },
+        "required": [
+          "total",
+          "sent",
+          "failed"
+        ]
+      },
+      "Details": {
+        "type": "object",
+        "properties": {
+          "did": {
+            "type": "string",
+            "description": "did for which message is successful or failed",
+            "example": "did:ethr:volta:0x09Df5d33f1242E1b8aA5E0E0F6BfA687E6846993"
+          },
+          "messageId": {
+            "type": "string",
+            "description": "message Id returned by message broker",
+            "example": "623c875beaa0422bfc19b1ce"
+          },
+          "statusCode": {
+            "type": "number",
+            "description": "status code returned by message broker",
+            "example": 200
+          }
+        },
+        "required": [
+          "did",
+          "messageId",
+          "statusCode"
+        ]
+      },
+      "Status": {
+        "type": "object",
+        "properties": {
+          "details": {
+            "description": "details of messages sent or failed",
+            "example": "[\n            {\n                \"did\": \"did:ethr:volta:0x09Df5d33f1242E1b8aA5E0E0F6BfA687E6846993\",\n                \"messageId\": \"623c875beaa0422bfc19b1ce\",\n                \"statusCode\": 200\n            }\n        ]",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Details"
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "name of message sent or failed",
+            "example": "SENT or FAILED"
+          }
+        },
+        "required": [
+          "details",
+          "name"
+        ]
+      },
+      "SendMessagelResponseDto": {
+        "type": "object",
+        "properties": {
+          "clientGatewayMessageId": {
+            "type": "string",
+            "description": "client Gateway Message Id",
+            "example": "0b271eb8-1e21-4817-95af-7951649360ed"
+          },
+          "did": {
+            "type": "string",
+            "description": "did",
+            "example": "did: ethr: volta: 0x09Df5d33f1242E1b8aA5E0E0F6BfA687E6846993"
+          },
+          "recipients": {
+            "description": "recipients",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Recipients"
+              }
+            ]
+          },
+          "status": {
+            "description": "status of messages sent",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Status"
+            }
+          }
+        },
+        "required": [
+          "clientGatewayMessageId",
+          "did",
+          "recipients",
+          "status"
+        ]
+      },
+      "uploadMessageBodyDto": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "File uploaded"
+          },
+          "fqcn": {
+            "type": "string",
+            "description": "Channel Name",
+            "example": "channel.name"
+          },
+          "topicName": {
+            "type": "string",
+            "description": "Topic name"
+          },
+          "topicVersion": {
+            "type": "string",
+            "example": "1.0.0",
+            "description": "Topic Version"
+          },
+          "topicOwner": {
+            "type": "string",
+            "example": "aemo.edge",
+            "description": "Topic Owner"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Transaction Id used to check Idempotency"
+          }
+        },
+        "required": [
+          "file",
+          "fqcn",
+          "topicName",
+          "topicVersion",
+          "topicOwner"
+        ]
+      },
+      "ApplicationDTO": {
+        "type": "object",
+        "properties": {
+          "appName": {
+            "type": "string",
+            "description": "app Name",
+            "example": "application.something"
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "url of the logo",
+            "example": "url of the logo"
+          },
+          "websiteUrl": {
+            "type": "string",
+            "description": "url of the website",
+            "example": "url of the website"
+          },
+          "description": {
+            "type": "string",
+            "description": "description of the app",
+            "example": "description"
+          },
+          "createdDate": {
+            "type": "string",
+            "description": "When application got stored in cache",
+            "example": "2022-05-18T11:19:07.000Z"
+          },
+          "updatedDate": {
+            "type": "string",
+            "description": "When application got stored in cache",
+            "example": "2022-05-18T11:19:07.000Z"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "application namespace",
+            "example": "ddhub.apps.energyweb.iam.ewc"
+          },
+          "roles": {
+            "description": "application assigned roles",
+            "example": [
+              "user",
+              "topiccreator"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topicsCount": {
+            "type": "number",
+            "description": "number of topics",
+            "example": "4"
+          }
+        },
+        "required": [
+          "appName",
+          "logoUrl",
+          "websiteUrl",
+          "description",
+          "createdDate",
+          "updatedDate",
+          "namespace",
+          "roles",
+          "topicsCount"
+        ]
+      },
+      "GetTopicDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3"
+          },
+          "name": {
+            "type": "string",
+            "description": "name of the topic",
+            "example": "Topic_JSON_V12"
+          },
+          "schemaType": {
+            "type": "string",
+            "description": "schema type of the topic",
+            "enum": [
+              "JSD7",
+              "XML",
+              "XSD6",
+              "CSV",
+              "TSV"
+            ],
+            "example": "JSD7"
+          },
+          "version": {
+            "type": "string",
+            "description": "version of the topic",
+            "example": "1.0.9"
+          },
+          "owner": {
+            "type": "string",
+            "description": "owner of the topic",
+            "example": "torta.apps.eggplant.vege.iam.ewc"
+          },
+          "tags": {
+            "description": "tags of the topic",
+            "example": "[\"aggregator\"]",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "schemaType",
+          "version",
+          "owner",
+          "tags"
+        ]
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "total number of channels",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "description": "limit of channels",
+            "example": 1,
+            "default": 5
+          },
+          "page": {
+            "type": "number",
+            "example": 1,
+            "default": 1
+          },
+          "records": {
+            "description": "Topics records",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetTopicDto"
+            }
+          }
+        },
+        "required": [
+          "count",
+          "records"
+        ]
+      },
+      "GetTopicSearchDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3"
+          },
+          "name": {
+            "type": "string",
+            "description": "name of the topic",
+            "example": "Topic_JSON_V12"
+          },
+          "schemaType": {
+            "type": "string",
+            "description": "schema type of the topic",
+            "enum": [
+              "JSD7",
+              "XML",
+              "XSD6",
+              "CSV",
+              "TSV"
+            ],
+            "example": "JSD7"
+          },
+          "owner": {
+            "type": "string",
+            "description": "owner of the topic",
+            "example": "torta.apps.eggplant.vege.iam.ewc"
+          },
+          "version": {
+            "type": "string",
+            "description": "version of the topic",
+            "example": "1.0.9"
+          },
+          "tags": {
+            "description": "tags of the topic",
+            "example": "[\"aggregator\"]",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdDate": {
+            "type": "string",
+            "description": "timestamp of the topic updated",
+            "example": "2022-06-08T05:43:15.510Z"
+          },
+          "updatedDate": {
+            "type": "string",
+            "description": "timestamp of the topic updated",
+            "example": "2022-06-08T05:43:15.510Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "schemaType",
+          "owner",
+          "version",
+          "tags"
+        ]
+      },
+      "PaginatedTopicResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "total number of channels",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "example": 1,
+            "default": 5,
+            "description": "limit of channels"
+          },
+          "page": {
+            "type": "number",
+            "example": 1,
+            "default": 1,
+            "description": "page number out of total pages"
+          },
+          "records": {
+            "description": "Topics records",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetTopicSearchDto"
+            }
+          }
+        },
+        "required": [
+          "count",
+          "records"
+        ]
+      },
+      "PostTopicDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3"
+          },
+          "name": {
+            "type": "string",
+            "description": "name of the topic",
+            "example": "Topic_JSON_V12"
+          },
+          "schemaType": {
+            "type": "string",
+            "description": "schema type of the topic",
+            "enum": [
+              "JSD7",
+              "XML",
+              "XSD6",
+              "CSV",
+              "TSV"
+            ],
+            "example": "JSD7"
+          },
+          "schema": {
+            "type": "string",
+            "description": "schema of the topic",
+            "example": "{\"type\":\"object\",\"properties\":{\"data\":{\"type\":\"number\"}}}"
+          },
+          "version": {
+            "type": "string",
+            "description": "version of the topic",
+            "example": "1.0.9"
+          },
+          "owner": {
+            "type": "string",
+            "description": "owner of the topic",
+            "example": "torta.apps.eggplant.vege.iam.ewc"
+          },
+          "tags": {
+            "description": "tags of the topic",
+            "example": "[\"aggregator\"]",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "schemaType",
+          "schema",
+          "version",
+          "owner",
+          "tags"
+        ]
+      },
+      "TopicCountDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "number of topics",
+            "example": 2
+          },
+          "owner": {
+            "type": "string",
+            "description": "owner name",
+            "example": "torta.apps.eggplant.vege.iam.ewc"
+          }
+        },
+        "required": [
+          "count",
+          "owner"
+        ]
+      },
+      "PostTopicBodyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name of the topic",
+            "example": "Topic_JSON_V12"
+          },
+          "schemaType": {
+            "type": "string",
+            "description": "schema type of the topic",
+            "enum": [
+              "JSD7",
+              "XML",
+              "XSD6",
+              "CSV",
+              "TSV"
+            ],
+            "example": "JSD7"
+          },
+          "schema": {
+            "type": "string",
+            "description": "schema of the topic",
+            "example": "{\"type\":\"object\",\"properties\":{\"data\":{\"type\":\"number\"}}}"
+          },
+          "version": {
+            "type": "string",
+            "description": "version of the topic",
+            "example": "1.0.9"
+          },
+          "owner": {
+            "type": "string",
+            "description": "owner of the topic",
+            "example": "torta.apps.eggplant.vege.iam.ewc"
+          },
+          "tags": {
+            "description": "tags of the topic",
+            "example": "[\"aggregator\"]",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "schemaType",
+          "schema",
+          "version",
+          "owner",
+          "tags"
+        ]
+      },
+      "UpdateTopicHistoryBodyDto": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string",
+            "description": "schema of the topic",
+            "example": "{\"type\":\"object\",\"properties\":{\"data\":{\"type\":\"number\"}}}"
+          }
+        },
+        "required": [
+          "schema"
+        ]
+      },
+      "UpdateTopicBodyDto": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "description": "tags of the topic",
+            "example": "[\"aggregator\"]",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "tags"
+        ]
+      },
+      "PutTopicDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id of the topic",
+            "example": "62545547fe37f174d7715ff3"
+          },
+          "name": {
+            "type": "string",
+            "description": "name of the topic",
+            "example": "Topic_JSON_V12"
+          },
+          "schemaType": {
+            "type": "string",
+            "description": "schema type of the topic",
+            "enum": [
+              "JSD7",
+              "XML",
+              "XSD6",
+              "CSV",
+              "TSV"
+            ],
+            "example": "JSD7"
+          },
+          "owner": {
+            "type": "string",
+            "description": "owner of the topic",
+            "example": "torta.apps.eggplant.vege.iam.ewc"
+          },
+          "tags": {
+            "description": "tags of the topic",
+            "example": "[\"aggregator\"]",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "schemaType",
+          "owner",
+          "tags"
+        ]
+      },
+      "DeleteTopic": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "timestamp of the topic updated",
+            "example": "2022-04-12"
+          },
+          "returnCode": {
+            "type": "string",
+            "description": "returnCode from MB",
+            "example": "200"
+          },
+          "returnMessage": {
+            "type": "string",
+            "description": "returnMessage from MB",
+            "example": "Success"
+          }
+        },
+        "required": [
+          "timestamp",
+          "returnCode",
+          "returnMessage"
+        ]
+      },
+      "CronResponseDto": {
+        "type": "object",
+        "properties": {
+          "createdDate": {
+            "type": "string",
+            "description": "Date when CRON job started to run",
+            "example": "2022-05-15T11:50:02.000Z"
+          },
+          "executedAt": {
+            "type": "string",
+            "description": "Date when cron job finished execution",
+            "example": "2022-05-15T12:03:09.236Z"
+          },
+          "jobName": {
+            "type": "string",
+            "description": "CRON job name",
+            "example": "DID_LISTENER",
+            "enum": [
+              "DID_LISTENER",
+              "CHANNEL_ROLES",
+              "TOPIC_REFRESH",
+              "SYMMETRIC_KEYS",
+              "PRIVATE_KEY",
+              "APPLICATIONS_REFRESH",
+              "HEARTBEAT",
+              "FILE_CLEANER",
+              "EVENTS",
+              "ROLES_REFRESH"
+            ]
+          },
+          "latestStatus": {
+            "type": "string",
+            "description": "CRON job status",
+            "example": "FAILED",
+            "enum": [
+              "SUCCESS",
+              "FAILED"
+            ]
+          },
+          "updatedDate": {
+            "type": "string",
+            "description": "Date when CRON job was updated (it will usually match executedAt)",
+            "example": "2022-05-15T12:03:09.000Z"
+          }
+        },
+        "required": [
+          "createdDate",
+          "executedAt",
+          "jobName",
+          "latestStatus",
+          "updatedDate"
+        ]
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "Postman Collection",
+    "url": "/docs-json"
+  }
+}
