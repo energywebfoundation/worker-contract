@@ -6,6 +6,7 @@
     "packages/voting-contract",
     "packages/issuer-contract",
     "packages/voting-manager",
+    "packages/ddhub-client",
     "packages/worker",
     "packages/*"
   ],
