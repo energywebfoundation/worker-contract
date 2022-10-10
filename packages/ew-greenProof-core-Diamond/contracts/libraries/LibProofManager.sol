@@ -13,7 +13,6 @@ library LibProofManager {
         bytes32 leaf,
         bytes32[] memory proof
     ) internal pure returns (bool) {
-        //TODO: check that the provided roothash is the same as the one stored onChain
         return MerkleProof.verify(proof, rootHash, leaf);
     }
 }
