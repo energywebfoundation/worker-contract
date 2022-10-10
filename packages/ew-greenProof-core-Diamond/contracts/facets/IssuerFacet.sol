@@ -48,7 +48,8 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
 
         LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex, voteID);
-        _mint(recipient, issuer.lastProofIndex, volume, "");
+        uint256 volumeInWei = volume * 1 ether;
+        _mint(recipient, issuer.lastProofIndex, volumeInWei, "");
         emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
     }
 
@@ -69,5 +70,9 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
         issuer.disclosedData[rootHash][key] = value;
         issuer.isDataDisclosed[rootHash][key] = true;
+    }
+
+    function getCertificateOwners(uint256 proofID) external view override returns (address[] memory) {
+        return _accountsByToken(proofID);
     }
 }

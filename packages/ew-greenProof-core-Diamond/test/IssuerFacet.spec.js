@@ -235,6 +235,7 @@ describe("IssuerFacet", function () {
       
       //2 - request proof issuance for the vote ID (inputHash)
 
+      console.log("stringifyed volume :: ", JSON.stringify(volume))
       const volumeTree = createPreciseProof(data[0]);
       const volumeLeaf = hash('volume' + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
@@ -252,7 +253,30 @@ describe("IssuerFacet", function () {
     it("checks that the certified generation volume is correct after minting", async () => {
       const amountMinted = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
 
-      expect(amountMinted).to.equal(volume);
+      expect(amountMinted).to.equal(parseEther(volume.toString()));
+    });
+
+    it("should correctly transfer certificates", async () => {
+      const data = ethers.utils.formatBytes32String("");
+      await expect(
+        issuerFacet.connect(receiver).safeTransferFrom(receiverAddress, owner.address, lastTokenID, parseEther("2"), data)
+      ).to.emit(issuerFacet, "TransferSingle").withArgs(receiverAddress, receiverAddress, owner.address, lastTokenID, parseEther("2"));
+
+      const generatorCertificateAmount = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
+
+      expect(generatorCertificateAmount).to.equal(parseEther((volume - 2).toString()));
+
+      const ownerCertificateAmount = await issuerFacet.balanceOf(owner.address, lastTokenID);
+
+      expect(ownerCertificateAmount).to.equal(parseEther(("2")));
+    })
+
+    it("should get the list of all certificate owners", async () => {
+      
+      const certificateOwners = await issuerFacet.getCertificateOwners(lastTokenID);
+       console.log(`Owners of certificate ID ${lastTokenID} : `, certificateOwners);
+       
+       expect(certificateOwners).to.be.deep.equal([ receiverAddress, owner.address ]);
     });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
@@ -322,7 +346,7 @@ describe("IssuerFacet", function () {
 
     it("should revert if one tries to retire a revoked proof", async () => {
       await expect(
-        proofManagerFacet.connect(owner).retireProof(owner.address, proofID1, 1)
+        proofManagerFacet.connect(owner).retireProof(proofID1, 1)
       ).to.be.revertedWith("proof revoked");
     });
 
@@ -358,7 +382,7 @@ describe("IssuerFacet", function () {
       ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
 
       //step3: retire proof
-      tx = await proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, volume);
+      tx = await proofManagerFacet.connect(receiver).retireProof(lastTokenID, volume);
       await tx.wait();
 
       const { timestamp } = await provider.getBlock(tx.blockNumber);
@@ -367,7 +391,7 @@ describe("IssuerFacet", function () {
 
     it("should revert when retirement amount exceeds owned volume", async () => {
       await expect(
-        proofManagerFacet.connect(receiver).retireProof(receiverAddress, lastTokenID, 100)
+        proofManagerFacet.connect(receiver).retireProof(lastTokenID, parseEther("100"))
       ).to.be.revertedWith("Insufficient volume owned");
       
     });
@@ -449,7 +473,6 @@ describe("IssuerFacet", function () {
   describe("\n** Data disclosure tests **\n", () => {
 
     it("should revert when non authorized user tries to disclose data", async () => {
-      //TODO: writre failure data disclosure test
       await revokeRole(nonAuthorizedOperator, issuerRole);
 
       const key = "consumerID";

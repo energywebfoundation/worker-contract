@@ -17,19 +17,13 @@ contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
         _;
     }
 
-    function retireProof(
-        address from,
-        uint256 proofID,
-        uint256 amount
-    ) external override {
+    function retireProof(uint256 proofID, uint256 amount) external override {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.mintedProofs[proofID].isRevoked == false, "proof revoked");
-        require(_balanceOf(from, proofID) >= amount, "Insufficient volume owned");
-        //TODO: isApprovedForAll --> make sure we are allowed to delegate certificate management
-        require(msg.sender == from || LibProofManager._isApprovedForAll(from, msg.sender), "Not allowed to retire");
-        _burn(from, proofID, amount);
-        emit ProofRetired(proofID, from, block.timestamp, amount);
+        require(_balanceOf(msg.sender, proofID) >= amount, "Insufficient volume owned");
+        _burn(msg.sender, proofID, amount);
+        emit ProofRetired(proofID, msg.sender, block.timestamp, amount);
     }
 
     function revokeProof(uint256 proofID) external override onlyRevoker {
