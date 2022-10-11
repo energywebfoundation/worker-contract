@@ -482,11 +482,9 @@ describe("IssuerFacet", function () {
       const dataLeaf = hash(key + value);
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
       const dataRootHash = disclosedDataTree.getHexRoot();
-      const inputHash = '0x' + hash(stringify(data)).toString('hex');
-      const proof = dataTree.getHexProof(dataRootHash);
 
       await expect(
-        issuerFacet.connect(nonAuthorizedOperator).discloseData(key, value, dataProof, proof, dataRootHash, inputHash)
+        issuerFacet.connect(nonAuthorizedOperator).discloseData(key, value, dataProof, dataRootHash)
       ).to.be.revertedWith("Access: Not an issuer");
     });
     
@@ -500,10 +498,8 @@ describe("IssuerFacet", function () {
       const dataLeaf = hash(key + value);
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
       const dataRootHash = disclosedDataTree.getHexRoot();
-      const inputHash = '0x' + hash(stringify(data)).toString('hex');
-      const proof = dataTree.getHexProof(dataRootHash);
 
-      await issuerFacet.connect(issuer).discloseData(key, value, dataProof, proof, dataRootHash, inputHash);
+      await issuerFacet.connect(issuer).discloseData(key, value, dataProof, dataRootHash);
 
     });
 
@@ -517,11 +513,9 @@ describe("IssuerFacet", function () {
       const dataLeaf = hash(wrongKey + value);
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
       const dataRootHash = disclosedDataTree.getHexRoot();
-      const inputHash = '0x' + hash(stringify(data)).toString('hex');
-      const proof = dataTree.getHexProof(dataRootHash);
 
       await expect(
-        issuerFacet.connect(issuer).discloseData(wrongKey, value, dataProof, proof, dataRootHash, inputHash)
+        issuerFacet.connect(issuer).discloseData(wrongKey, value, dataProof, dataRootHash)
       ).to.be.revertedWith("Disclose : data not verified");
 
     });
@@ -535,11 +529,9 @@ describe("IssuerFacet", function () {
       const dataLeaf = hash(key + value);
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
       const dataRootHash = disclosedDataTree.getHexRoot();
-      const inputHash = '0x' + hash(stringify(data)).toString('hex');
-      const proof = dataTree.getHexProof(dataRootHash);
 
       await expect(
-        issuerFacet.connect(issuer).discloseData(key, value, dataProof, proof, dataRootHash, inputHash)
+        issuerFacet.connect(issuer).discloseData(key, value, dataProof, dataRootHash)
       ).to.be.revertedWith("Disclose: data already disclosed");
     })
   });

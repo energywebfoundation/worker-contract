@@ -37,8 +37,6 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        LibIssuer._incrementProofIndex();
-
         bool isVoteInConsensus = LibVoting._isPartOfConsensus(voteID, dataHash, dataProof);
         if (!isVoteInConsensus) {
             revert LibIssuer.NotInConsensus(voteID);
@@ -47,6 +45,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32 volumeHash = volume._getVolumeHash();
         require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
 
+        LibIssuer._incrementProofIndex();
         LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex, voteID);
         uint256 volumeInWei = volume * 1 ether;
         _mint(recipient, issuer.lastProofIndex, volumeInWei, "");
@@ -57,19 +56,16 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         string memory key,
         string memory value,
         bytes32[] memory dataProof,
-        bytes32[] memory proof,
-        bytes32 dataHash,
-        bytes32 rootHash
+        bytes32 dataHash
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(issuer.isDataDisclosed[rootHash][key] == false, "Disclose: data already disclosed");
+        require(issuer.isDataDisclosed[dataHash][key] == false, "Disclose: data already disclosed");
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
         require(LibProofManager._verifyProof(dataHash, leaf, dataProof), "Disclose : data not verified");
-        require(LibVoting._isPartOfConsensus(rootHash, dataHash, proof), "Disclose: data not part of this consensus");
 
-        issuer.disclosedData[rootHash][key] = value;
-        issuer.isDataDisclosed[rootHash][key] = true;
+        issuer.disclosedData[dataHash][key] = value;
+        issuer.isDataDisclosed[dataHash][key] = true;
     }
 
     function getCertificateOwners(uint256 proofID) external view override returns (address[] memory) {
