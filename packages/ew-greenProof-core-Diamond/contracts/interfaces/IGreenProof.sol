@@ -10,7 +10,7 @@ interface IGreenProof {
         uint256 index;
         uint256 issuanceDate;
         uint256 volume;
-        bytes32 merkleRootProof;
+        bytes32 merkleRootHash;
     }
 
     function requestProofIssuance(

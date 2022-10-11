@@ -13,12 +13,13 @@ library LibIssuer {
     struct IssuerStorage {
         uint256 lastProofIndex;
         uint256 revocablePeriod;
-        mapping(bytes32 => uint256) DataToCertificateIDs;
+        mapping(bytes32 => uint256) dataToCertificateIDs;
         mapping(uint256 => IGreenProof.Proof) mintedProofs;
         mapping(address => IGreenProof.Proof[]) userProofs;
         mapping(bytes32 => mapping(string => string)) disclosedData;
         //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
         mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
+        mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
     event ProofMinted(uint256 indexed proofID, uint256 indexed volume);
@@ -28,6 +29,7 @@ library LibIssuer {
     error NonExistingProof(uint256 proofId);
     error NonRevokableProof(uint256 proofID, uint256 issuanceDate, uint256 revocableDateLimit);
     error NotInConsensus(bytes32 voteID);
+    error AlreadyCertifiedData(bytes32 dataHash);
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
@@ -54,7 +56,14 @@ library LibIssuer {
 
         issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash);
         issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
-        issuer.DataToCertificateIDs[dataHash] = proofID;
+        issuer.dataToCertificateIDs[dataHash] = proofID;
+        issuer.voteToCertificates[voteID][dataHash] = proofID;
+    }
+
+    function _isCertified(bytes32 _data) internal view returns (bool) {
+        IssuerStorage storage issuer = _getStorage();
+
+        return issuer.dataToCertificateIDs[_data] != 0;
     }
 
     function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {

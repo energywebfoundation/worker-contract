@@ -241,13 +241,30 @@ describe("IssuerFacet", function () {
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
 
+      lastTokenID++;
+      await expect(
+          issuerFacet
+            .connect(issuer)
+            .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
+        ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
+    });
 
-    lastTokenID++;
+    it("reverts when issuers send dupplicate proof issuance requests", async () => {
+
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+  
+      const matchResultProof = dataTree.getHexProof(leaves[0]);
+      
+      const volumeTree = createPreciseProof(data[0]);
+      const volumeLeaf = hash('volume' + JSON.stringify(volume));
+      const volumeProof = volumeTree.getHexProof(volumeLeaf);
+      const volumeRootHash = volumeTree.getHexRoot();
+
      await expect(
          issuerFacet
           .connect(issuer)
           .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
-      ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
+     ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`)
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {
