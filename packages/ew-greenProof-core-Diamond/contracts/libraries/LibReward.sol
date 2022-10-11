@@ -19,18 +19,10 @@ library LibReward {
         RewardStorage storage rs = getStorage();
 
         while (rs.rewardQueue.length > 0 && address(this).balance > rs.rewardAmount) {
-            rs.rewardQueue[rs.rewardQueue.length - 1].transfer(rs.rewardAmount);
+            address payable currentWorker = rs.rewardQueue[rs.rewardQueue.length - 1];
             rs.rewardQueue.pop();
+            currentWorker.transfer(rs.rewardAmount);
         }
-    }
-
-    function _reward(address payable[] memory winners) internal {
-        RewardStorage storage rs = getStorage();
-
-        for (uint256 i = 0; i < winners.length; i++) {
-            rs.rewardQueue.push(winners[i]);
-        }
-        payReward();
     }
 
     function getStorage() internal pure returns (RewardStorage storage rs) {
