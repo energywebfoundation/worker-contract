@@ -17,5 +17,13 @@ interface IVoting {
     // Event emitted after match is recorded
     event MatchRegistered(bytes32 matchInput, bytes32 matchResult);
 
+    function getNumberOfWorkers() external view returns (uint256);
+
+    function getWorkers() external view returns (address[] memory);
+
     function getWinningMatch(bytes32 matchInput) external view returns (bytes32);
+
+    function winners(bytes32 matchInput) external view returns (address payable[] memory);
+
+    function getWorkerVote(bytes32 matchInput, address workerAddress) external view returns (bytes32 matchResult);
 }
