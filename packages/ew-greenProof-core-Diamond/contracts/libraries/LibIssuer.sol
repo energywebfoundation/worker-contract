@@ -13,7 +13,7 @@ library LibIssuer {
     struct IssuerStorage {
         uint256 lastProofIndex;
         uint256 revocablePeriod;
-        mapping(bytes32 => uint256) matchesToProofIDs;
+        mapping(bytes32 => uint256) DataToCertificateIDs;
         mapping(uint256 => IGreenProof.Proof) mintedProofs;
         mapping(address => IGreenProof.Proof[]) userProofs;
         mapping(bytes32 => mapping(string => string)) disclosedData;
@@ -54,7 +54,7 @@ library LibIssuer {
 
         issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash);
         issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
-        issuer.matchesToProofIDs[voteID] = proofID;
+        issuer.DataToCertificateIDs[dataHash] = proofID;
     }
 
     function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {
