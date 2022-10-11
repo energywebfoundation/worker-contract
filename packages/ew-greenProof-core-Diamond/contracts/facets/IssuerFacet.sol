@@ -17,6 +17,7 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
     using LibIssuer for uint256;
+    using LibIssuer for bytes32;
     using LibClaimManager for address;
 
     modifier onlyIssuer() {
@@ -37,6 +38,9 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
+        if (dataHash._isCertified()) {
+            revert LibIssuer.AlreadyCertifiedData(dataHash);
+        }
         bool isVoteInConsensus = LibVoting._isPartOfConsensus(voteID, dataHash, dataProof);
         if (!isVoteInConsensus) {
             revert LibIssuer.NotInConsensus(voteID);
