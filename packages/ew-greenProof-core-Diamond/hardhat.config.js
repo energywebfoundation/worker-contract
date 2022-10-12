@@ -20,7 +20,13 @@ task("accounts", "Prints the list of accounts", async () => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.9",
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.16",
+      },
+    ],
+  },
   networks: {
     ganache: {
       url: "http://localhost:8545",
