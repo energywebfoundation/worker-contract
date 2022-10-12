@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
@@ -10,11 +10,12 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
-/// @title GreenProof Issuer Module
-/// @author Energyweb Fondation
-/// @notice This handles certificates Issuance as Green proofs. Certificates consists on ERC-1155 tokens anchored to Verfiable Credentials
-/// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
-
+/**
+ * @title `IssuerFacet` - The issuance component of the GreenProof core module.
+ * @author Energyweb Foundation
+ * @notice This facet handles certificates Issuance as Green proofs. Certificates consists of ERC-1155 tokens anchored to merkleRoot hashes of data.
+ * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
+ */
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
     using LibIssuer for uint256;
     using LibIssuer for bytes32;
@@ -28,6 +29,17 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         _;
     }
 
+    /**
+     * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
+     * This runs the automatic data verification and the certificate minting process.
+     * @param voteID - The identifier of the vote
+     * @param recipient - The address of the wallet which will receive the minted certificate tokens (i.e - generator's wallet)
+     * @param dataHash - The merkleRoot hash of the data we are certifying.
+     * @param dataProof - The proofs path to verify that data is part of the vote consensus merkleTree
+     * @param volume - The amount of furniture we want to certify
+     * @param volumeProof - the proofs path to verify that the amount of volume we want to certify is part of the `dataHash` merkleTree.
+     * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
+     */
     function requestProofIssuance(
         bytes32 voteID,
         address recipient,
@@ -39,6 +51,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         if (dataHash._isCertified()) {
+            // this prevents dupplicate issuance of the same certificate ID
             revert LibIssuer.AlreadyCertifiedData(dataHash);
         }
         bool isVoteInConsensus = LibVoting._isPartOfConsensus(voteID, dataHash, dataProof);
@@ -56,6 +69,14 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
     }
 
+    /**
+     * @notice `discloseData` - Publicly exposes specific a information of the certified data.
+     * This information is a key-value pair composing the dataHash merkleTree
+     * @param key - the key referencing the information inside the certified data set
+     * @param value - the actual value of the information
+     * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
+     * @param dataHash - The merkleRoot hash of the certified data set.
+     */
     function discloseData(
         string memory key,
         string memory value,
@@ -72,7 +93,12 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         issuer.isDataDisclosed[dataHash][key] = true;
     }
 
-    function getCertificateOwners(uint256 proofID) external view override returns (address[] memory) {
-        return _accountsByToken(proofID);
+    /**
+     * @notice `getCertificateOwners` - Get the listing of all the wallets which hold a share of a specific certificate
+     * @param certificateID - the id of the minted certificate
+     * @return certificateOwners - The List of all users / wallets holding a share of this `certificateID`.
+     */
+    function getCertificateOwners(uint256 certificateID) external view override returns (address[] memory certificateOwners) {
+        certificateOwners = _accountsByToken(certificateID);
     }
 }

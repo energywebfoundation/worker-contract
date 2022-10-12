@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
-import {IRewardVoting} from "../interfaces/IRewardVoting.sol";
+pragma solidity ^0.8.16;
+import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 
 import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
-
-import {LibReward} from "./LibReward.sol";
 
 library LibVoting {
     bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
@@ -53,25 +51,22 @@ library LibVoting {
         address[] replayVoters;
     }
 
+    /**
+     * @title `VotingStarage` is the structured storage workspace of all storage variables related to voting component
+     * @notice Whenever you wish to update your app and add more variable to the storage, make sure to add them at the end of te struct
+     */
     struct VotingStorage {
-        uint256 timeLimit;
-        uint256 numberOfWorkers;
-        // Certificate minting contract address
-        address certificateContractAddress;
-        // Address of voting reward contract
-        address rewardVotingAddress;
-        //List of all workers
-        address payable[] workers;
-        bytes32[] matchInputs;
-        mapping(address => uint256) workerToIndex;
-        mapping(bytes32 => uint256) matchInputToIndex;
-        // Worker address to match result
-        mapping(bytes32 => Voting) matchInputToVoting;
-        mapping(bytes32 => bytes32) matches;
-        mapping(bytes32 => bytes32) winningMatches;
-        mapping(bytes32 => address payable[]) winnersList;
-        // Worker address to match result on a specific matchInput
-        mapping(address => mapping(bytes32 => bytes32)) workerVotes;
+        uint256 timeLimit; /* limit of duration of a voting session. The vote is considered expired after `votingStartDate` + `timeLimit` */
+        uint256 numberOfWorkers; /* Number of workers taking part to vote. This will determine the consensus threshold  */
+        address payable[] workers; /* List of all whitelisted workers */
+        bytes32[] matchInputs; /* List of all votes identifiers */
+        mapping(address => uint256) workerToIndex; /* Quick access to a specific worker's index inside the `workers` whitelist */
+        mapping(bytes32 => uint256) matchInputToIndex; /* Quick access to a specific vote's index inside the `matchInputs` list */
+        mapping(bytes32 => Voting) matchInputToVoting; /* Associates a specific vote ID to a precise voting session*/
+        mapping(bytes32 => bytes32) matches; /* Records the final consensus of a specific voteID */
+        mapping(bytes32 => bytes32) winningMatches; /* Keeps track of the current consensus with the most votes */
+        mapping(bytes32 => address payable[]) winnersList; /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the rigth workers */
+        mapping(address => mapping(bytes32 => bytes32)) workerVotes; /* Keeps track of the vote of workers for each vote session */
     }
 
     enum Status {
@@ -110,27 +105,38 @@ library LibVoting {
     error WorkerAlreadyAdded();
 
     // Worker has not been added yet
-    error WorkerWasNotAdded();
+    error WorkerWasNotAdded(address notWhitListedWorker);
 
-    // initialize voting parameters at the diamnond construction
+    // initialize voting parameters at the diamond construction
     function init(uint256 _timeLimit) internal {
         VotingStorage storage _votingStorage = getStorage();
 
         _votingStorage.timeLimit = _timeLimit;
     }
 
-    function _isExpired(
-        Voting storage currentVote,
-        uint256 timeLimit,
-        bytes32 matchInput
-    ) internal returns (bool) {
-        if (currentVote.status == Status.Active && (currentVote.start + timeLimit < block.timestamp)) {
-            emit VotingExpired(matchInput);
-            return true;
+    /**
+     * @notice _isExpired: Checks if a vote session has expired (i.e exceeded the `timeLimit`)
+     * @param currentVoting - The voting session which validity we want to check
+     * @return isVotingExpired : boolean
+     * @dev the timeLimit duration is set once during contract construction
+     */
+    function _isExpired(Voting storage currentVoting) internal returns (bool isVotingExpired) {
+        VotingStorage storage votingStorage = getStorage();
+
+        if (currentVoting.status == Status.Active && (currentVoting.start + votingStorage.timeLimit < block.timestamp)) {
+            emit VotingExpired(currentVoting.matchInput);
+            isVotingExpired = true;
+        } else {
+            isVotingExpired = false;
         }
-        return false;
     }
 
+    /**
+     * @notice _replayVote: Allows workers to update their vote anytime
+     * @param voting - The voting session under which we want to revote
+     * @param matchInput - the identifier of the vote
+     * @param matchResult - the actual vote of the worker
+     */
     function _replayVote(
         Voting storage voting,
         bytes32 matchInput,

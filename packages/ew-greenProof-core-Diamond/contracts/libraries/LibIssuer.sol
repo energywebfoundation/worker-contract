@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
