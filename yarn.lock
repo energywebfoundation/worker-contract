@@ -1571,8 +1571,7 @@
   resolved "https://registry.yarnpkg.com/@energyweb/greenproof-merkle-tree/-/greenproof-merkle-tree-2.0.6.tgz#8bd828645b06415104ddd6b346b34d5d78b9f244"
   integrity sha512-8UOUWIYpp0dupndQG9caVzVkcLhF0A74/AMWXGqgPA4tTtKKMGBiFE7QQm0N6UvH4cwzwQmj0gX6xu45otqILA==
   dependencies:
-    keccak256 "^1.0.6"
-    merkletreejs "0.2.32"
+    "@openzeppelin/contracts" "4.7.3"
 
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
@@ -5610,6 +5609,11 @@ ansi-styles@^5.0.0:
   integrity sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==
 
 ansi-styles@^6.0.0, ansi-styles@^6.1.0:
+  version "6.1.1"
+  resolved "https://registry.npmjs.org/ansi-styles/-/ansi-styles-6.1.1.tgz"
+  integrity sha512-qDOv24WjnYuL+wbwHdlsYZFy+cgPtrYw0Tn7GLORicQp9BkQLzrgI3Pm4VyR9ERZ41YTn7KlMPuL1n05WdZvmg==
+
+ansi-styles@^6.1.0:
   version "6.1.1"
   resolved "https://registry.npmjs.org/ansi-styles/-/ansi-styles-6.1.1.tgz"
   integrity sha512-qDOv24WjnYuL+wbwHdlsYZFy+cgPtrYw0Tn7GLORicQp9BkQLzrgI3Pm4VyR9ERZ41YTn7KlMPuL1n05WdZvmg==
