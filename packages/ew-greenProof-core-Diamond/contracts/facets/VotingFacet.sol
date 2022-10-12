@@ -13,14 +13,15 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 contract VotingFacet is IVoting {
     /**
         Allowing library's function calls on address type
-        This improves code reading by writing address.isWorker() and address.isNotWorker()
+        This improves code readabilitying by writing address.isWorker() and address.isNotWorker()
         Instead of LibVoting.isWorker(address) and LibVoting.isNotWorker(address)
     */
     using LibVoting for address;
+    using LibVoting for LibVoting.Voting;
 
     /**
         Allowing library's function calls on Voting struct type. 
-        This improves code reading by writing voting.isExpired() or voting.cancelVoting()
+        This improves code readability by writing voting.isExpired() or voting.cancelVoting()
         Instead of LibVoting.isExpired(voting) or LibVoting.cancelVoting(voting) respectively
     */
     using LibVoting for LibVoting.Voting;
@@ -36,8 +37,8 @@ contract VotingFacet is IVoting {
     /// @notice Increases number of votes given for matchResult. Winner is determined by simple majority
     /// When consensus is not reached the voting is restarted
     function vote(
-        string memory matchInput,
-        string memory matchResult,
+        bytes32 matchInput,
+        bytes32 matchResult,
         bool isSettlement
     ) external {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
@@ -46,83 +47,120 @@ contract VotingFacet is IVoting {
             revert LibVoting.NotWhitelisted();
         }
         LibVoting.Voting storage voting = votingStorage.matchInputToVoting[matchInput];
-        if (voting.status == LibVoting.Status.Active && (voting.isExpired())) {
-            voting.cancelVoting();
-            emit LibVoting.VotingExpired(matchInput);
-        }
-        if (voting.status == LibVoting.Status.Completed) {
-            revert LibVoting.VotingAlreadyEnded();
+        if (voting._isExpired(votingStorage.timeLimit, matchInput)) {
+            voting._cancelVoting();
         }
 
-        if (voting.status == LibVoting.Status.NotActive) {
-            LibVoting.startVoting(matchInput, isSettlement);
-        }
-
-        if (voting.workerToVoted[msg.sender]) {
-            revert LibVoting.AlreadyVoted();
-        }
-
-        voting.workerToMatchResult[msg.sender] = matchResult;
-        voting.workerToVoted[msg.sender] = true;
-        voting.numberOfVotes += 1;
-
-        if (voting.matchResultToVoteCount[matchResult] == 0) {
-            voting.matches.push(matchResult);
-        }
-
-        voting.matchResultToVoteCount[matchResult] += 1;
-
-        if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
-            voting.noConsensus = true;
-        } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
-            voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
-            voting.winningMatch = matchResult;
-            voting.noConsensus = false;
-
-            if (voting.winningMatchVoteCount >= LibVoting.majority()) {
-                voting.completeVoting();
+        if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
+            // we prevent wasting computation if the vote is the same as the previous one
+            if (votingStorage.workerVotes[msg.sender][matchInput] == matchResult) {
+                return;
             }
-        }
+            (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchInput, matchResult);
 
-        if (voting.numberOfVotes == votingStorage.numberOfWorkers) {
-            voting.completeVoting();
+            if (shouldUpdateVote) {
+                //We update the voting results
+                voting._updateWorkersVote();
+                voting._revealWinners();
+
+                voting.winningMatchVoteCount = newVoteCount;
+                bytes32 winMatch = votingStorage.matchInputToVoting[matchInput].winningMatch;
+
+                //we prevent updating if the final winning match did not change
+                if (winMatch != newWinningMatch) {
+                    votingStorage.matchInputToVoting[matchInput].winningMatch = newWinningMatch;
+
+                    //We update winningMatches list
+                    votingStorage.winningMatches[voting.matchInput] = newWinningMatch;
+                }
+
+                // We update the final vote with the replayed vote
+                for (uint256 i; i < voting.replayVoters.length; i++) {
+                    address worker = voting.replayVoters[i];
+
+                    votingStorage.workerVotes[worker][matchInput] = voting.workerToMatchResult[worker];
+                    votingStorage.matchInputToVoting[matchInput].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
+                }
+
+                emit WinningMatch(voting.matchInput, newWinningMatch, newVoteCount);
+
+                LibVoting._reward(votingStorage.winnersList[voting.matchInput]);
+            } else {
+                if (voting._hasNotStarted()) {
+                    LibVoting._startVoting(matchInput, voting.isSettlement);
+                }
+
+                voting.numberOfVotes++;
+                voting.workerToVoted[msg.sender] = true;
+                voting.workerToMatchResult[msg.sender] = matchResult;
+
+                if (voting.matchResultToVoteCount[matchResult] == 0) {
+                    voting.matches.push(matchResult);
+                }
+
+                voting.matchResultToVoteCount[matchResult]++;
+
+                if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
+                    voting.noConsensus = true;
+                } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
+                    voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
+                    voting.winningMatch = matchResult;
+                    voting.noConsensus = false;
+
+                    if (voting.winningMatchVoteCount >= LibVoting._majority()) {
+                        voting._completeVoting();
+                    }
+                }
+                if (voting.numberOfVotes == votingStorage.numberOfWorkers && (voting.winningMatchVoteCount < LibVoting._majority())) {
+                    voting._completeVoting();
+                }
+            }
+        } else {
+            if (voting._hasNotStarted()) {
+                LibVoting._startVoting(matchInput, voting.isSettlement);
+            }
+
+            voting.numberOfVotes++;
+            voting.workerToVoted[msg.sender] = true;
+            voting.workerToMatchResult[msg.sender] = matchResult;
+
+            if (voting.matchResultToVoteCount[matchResult] == 0) {
+                voting.matches.push(matchResult);
+            }
+
+            voting.matchResultToVoteCount[matchResult]++;
+
+            if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
+                voting.noConsensus = true;
+            } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
+                voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
+                voting.winningMatch = matchResult;
+                voting.noConsensus = false;
+
+                if (voting.winningMatchVoteCount >= LibVoting._majority()) {
+                    LibVoting._completeVoting(voting);
+                }
+            }
+            if (voting.numberOfVotes == votingStorage.numberOfWorkers && (voting.winningMatchVoteCount < LibVoting._majority())) {
+                LibVoting._completeVoting(voting);
+            }
         }
     }
 
-    // function verifyProof(
-    //     // string memory winningMatch,
-    //     bytes32 rootHash,
-    //     bytes32 leaf,
-    //     bytes32[] memory proof
-    // ) external pure returns (bool) {
-    //     // LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-    //     // uint256 proofID = issuer.matchToProofIDs[winningMatch];
-    //     // if (proofID == 0) {
-    //     //     revert LibIssuer.NonExistingProof(proofID);
-    //     // }
-
-    //     //TODO: decide wether we want to store merkleRoorProof as strings
-    //     // if (LibVoting.compareStrings(rootHash, issuer.mintedProofs[proofID].merkleRootProof) == false) {
-    //     //     return false;
-    //     // }
-
-    //     //TODO: check that the provided roothash is the same as the one stored onChain
-    //     return MerkleProof.verify(proof, rootHash, leaf);
-    // }
-
-    function getWinners(string memory matchInput) external view returns (address payable[] memory _winners) {
+    function getWinners(bytes32 matchInput) external view returns (address payable[] memory _winners) {
         _winners = LibVoting._getWinners(matchInput);
     }
 
-    function getWinningMatch(string memory matchInput) external view returns (string memory) {
+    function getWinningMatch(bytes32 matchInput) external view returns (bytes32) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
-        return votingStorage.matchInputToVoting[matchInput].winningMatch;
+
+        return votingStorage.winningMatches[matchInput];
     }
 
-    function getWorkerVote(string memory matchInput, address workerAddress) external view returns (string memory matchResult) {
+    function getWorkerVote(bytes32 matchInput, address workerAddress) external view override returns (bytes32 matchResult) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.matchInputToVoting[matchInput].workerToMatchResult[workerAddress];
+        return votingStorage.workerVotes[workerAddress][matchInput];
     }
 
     function numberOfMatchInputs() external view returns (uint256) {
@@ -154,7 +192,7 @@ contract VotingFacet is IVoting {
         if (LibVoting.isNotWorker(workerToRemove)) {
             revert LibVoting.WorkerWasNotAdded();
         }
-        require(LibClaimManager.isWorker(workerToRemove, lastRoleVersion), "Not allowed: still enrolled as worker");
+        require(LibClaimManager.isWorker(workerToRemove, lastRoleVersion) == false, "Not allowed: still enrolled as worker");
 
         if (votingStorage.numberOfWorkers > 1) {
             uint256 workerIndex = votingStorage.workerToIndex[workerToRemove];
@@ -169,19 +207,10 @@ contract VotingFacet is IVoting {
         votingStorage.numberOfWorkers = votingStorage.numberOfWorkers - 1;
     }
 
-    function getMatch(string memory input) external view returns (string memory) {
+    function getMatch(bytes32 input) external view returns (bytes32) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         return votingStorage.matches[input];
-    }
-
-    function reward(address payable[] memory winners) external {
-        LibReward.RewardStorage storage rs = LibReward.getStorage();
-
-        for (uint256 i = 0; i < winners.length; i++) {
-            rs.rewardQueue.push(winners[i]);
-        }
-        LibReward.payReward();
     }
 
     function isWorker(address addressToCheck) external view returns (bool) {
@@ -198,8 +227,29 @@ contract VotingFacet is IVoting {
             LibVoting.Voting storage voting = votingStorage.matchInputToVoting[votingStorage.matchInputs[i]];
             if (voting.status == LibVoting.Status.Active && voting.isExpired()) {
                 emit LibVoting.VotingExpired(votingStorage.matchInputs[i]);
-                voting.cancelVoting();
+                voting._cancelVoting();
             }
         }
+    }
+
+    function getNumberOfWorkers() external view override returns (uint256) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+
+        return votingStorage.numberOfWorkers;
+    }
+
+    function getWorkers() external view override returns (address[] memory _workers) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+
+        for (uint256 i = 0; i < votingStorage.workers.length; i++) {
+            _workers[i] = address(votingStorage.workers[i]);
+        }
+        return _workers;
+    }
+
+    function winners(bytes32 matchInput) external view override returns (address payable[] memory) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+
+        return votingStorage.winnersList[matchInput];
     }
 }

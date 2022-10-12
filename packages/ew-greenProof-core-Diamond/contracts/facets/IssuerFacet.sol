@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
+import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
+import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
+
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /// @title GreenProof Issuer Module
@@ -12,81 +16,63 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 /// @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond standard : https://eips.ethereum.org/EIPS/eip-2535
 
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
-    modifier onlyValidator() {
+    using LibIssuer for uint256;
+    using LibIssuer for bytes32;
+    using LibClaimManager for address;
+
+    modifier onlyIssuer() {
         LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
 
-        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.validatorRole];
-        require(LibClaimManager.isValidator(msg.sender, lastRoleVersion), "Access: Not a validator");
+        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.issuerRole];
+        require(msg.sender.isIssuer(lastRoleVersion), "Access: Not an issuer");
         _;
     }
 
-    /** getStorage: returns a pointer to the storage  */
-    function getStorage() internal pure returns (LibIssuer.IssuerStorage storage _issuer) {
-        _issuer = LibIssuer._getStorage();
+    function requestProofIssuance(
+        bytes32 voteID,
+        address recipient,
+        bytes32 dataHash,
+        bytes32[] memory dataProof,
+        uint256 volume,
+        bytes32[] memory volumeProof
+    ) external override onlyIssuer {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        if (dataHash._isCertified()) {
+            revert LibIssuer.AlreadyCertifiedData(dataHash);
+        }
+        bool isVoteInConsensus = LibVoting._isPartOfConsensus(voteID, dataHash, dataProof);
+        if (!isVoteInConsensus) {
+            revert LibIssuer.NotInConsensus(voteID);
+        }
+
+        bytes32 volumeHash = volume._getVolumeHash();
+        require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
+
+        LibIssuer._incrementProofIndex();
+        LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex, voteID);
+        uint256 volumeInWei = volume * 1 ether;
+        _mint(recipient, issuer.lastProofIndex, volumeInWei, "");
+        emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
     }
 
-    function requestProofIssuance(string memory winningMatch, address recipient) external override {
-        LibIssuer.IssuerStorage storage issuer = getStorage();
+    function discloseData(
+        string memory key,
+        string memory value,
+        bytes32[] memory dataProof,
+        bytes32 dataHash
+    ) external override onlyIssuer {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(
-            issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.PENDING &&
-                issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED,
-            "Request: Already requested proof"
-        );
-        issuer.lastProofIndex++;
-        uint256 proofID = issuer.lastProofIndex;
+        require(issuer.isDataDisclosed[dataHash][key] == false, "Disclose: data already disclosed");
+        bytes32 leaf = keccak256(abi.encodePacked(key, value));
+        require(LibProofManager._verifyProof(dataHash, leaf, dataProof), "Disclose : data not verified");
 
-        LibIssuer.IssuanceRequest memory newIssuanceRequest = LibIssuer.IssuanceRequest(
-            proofID,
-            recipient,
-            winningMatch,
-            LibIssuer.DEFAULT_VCREDENTIAL_VALUE,
-            LibIssuer.RequestStatus.PENDING
-        );
-
-        issuer.issuanceRequests[winningMatch] = newIssuanceRequest;
-        emit LibIssuer.IssuanceRequested(proofID);
+        issuer.disclosedData[dataHash][key] = value;
+        issuer.isDataDisclosed[dataHash][key] = true;
     }
 
-    function validateIssuanceRequest(
-        string memory winningMatch,
-        bytes32 merkleRootProof,
-        address receiver
-    ) external onlyValidator {
-        LibIssuer._acceptRequest(winningMatch, merkleRootProof);
-        LibIssuer._registerPrivateData(winningMatch, receiver);
-    }
-
-    function validateIssuanceRequest(
-        string memory winningMatch,
-        bytes32 merkleRootProof,
-        address receiver,
-        uint256 amount,
-        uint256 productType,
-        uint256 start,
-        uint256 end,
-        bytes32 producerRef
-    ) external onlyValidator {
-        LibIssuer.IssuerStorage storage issuer = getStorage();
-
-        LibIssuer._acceptRequest(winningMatch, merkleRootProof);
-        LibIssuer._registerData(winningMatch, receiver, amount, productType, start, end, producerRef);
-        LibIssuer._registerProof(issuer.issuanceRequests[winningMatch].requestID, merkleRootProof);
-
-        bytes memory proof = abi.encodePacked(issuer.issuanceRequests[winningMatch].merkleRootProof);
-        _mint(receiver, issuer.issuanceRequests[winningMatch].requestID, amount, proof);
-        emit LibIssuer.ProofMinted(issuer.issuanceRequests[winningMatch].requestID, amount);
-    }
-
-    function rejectIssuanceRequest(string memory winningMatch) external onlyValidator {
-        LibIssuer.IssuerStorage storage issuer = getStorage();
-
-        require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.REJECTED, "Rejection: Already rejected");
-        require(issuer.issuanceRequests[winningMatch].requestID != 0, "Rejection: Not a valid match");
-        require(issuer.issuanceRequests[winningMatch].status != LibIssuer.RequestStatus.ACCEPTED, "Rejection: Already validated");
-
-        issuer.lastProofIndex--;
-        issuer.issuanceRequests[winningMatch].status = LibIssuer.RequestStatus.REJECTED;
-        emit LibIssuer.RequestRejected(issuer.issuanceRequests[winningMatch].requestID);
+    function getCertificateOwners(uint256 proofID) external view override returns (address[] memory) {
+        return _accountsByToken(proofID);
     }
 }
