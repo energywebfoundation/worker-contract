@@ -1,16 +1,24 @@
-const {
-    getSelector,
-    FacetCutAction,
-    removeSelectors,
-    findAddressPositionInFacets,
-} = require("../scripts/libraries/diamond");
-
 const chai = require("chai");
-const { assert, expect } = require("chai");
+const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
-const { solidity } = require("ethereum-waffle");
+const { solidity, deployMockContract } = require("ethereum-waffle");
 const { deployDiamond } = require("../scripts/deploy");
+const { claimManagerInterface } = require("./utils");
+
+const issuerRole = ethers.utils.namehash(
+  "minter.roles.greenproof.apps.iam.ewc"
+);
+const validatorRole = ethers.utils.namehash(
+  "validator.roles.greenproof.apps.iam.ewc"
+);
+const revokerRole = ethers.utils.namehash(
+  "revoker.roles.greenproof.apps.iam.ewc"
+);
+const workerRole = ethers.utils.namehash(
+  "workerRole.roles.greenproof.apps.iam.ewc"
+);
+
 
 chai.use(solidity);
 
@@ -21,41 +29,69 @@ const timeTravel = async (seconds) => {
 
 describe("VotingFacet", function () {
     let diamondAddress;
-    let diamondCutFacet;
-    let diamondLoupeFacet;
-    let ownershipFacet;
-    let issuerFacet;
-    let tx;
-    let receipt;
-    let result;
-    const addresses = [];
+    let grantRole;
+    let revokeRole;
 
+    let owner;
     let worker1;
     let worker2;
     let worker3;
     let worker4;
     let worker5;
-    let worker6;
+    let toRemoveWorker;
+    let notEnrolledWorker;
     let faucet;
-    let MatchVotingContrac;
-    let certificateContract;
-    let rewardVoting;
     let matchVoting;
+
     const rewardAmount = parseEther("1");
     const IS_SETTLEMENT = true;
     const timeLimit = 15 * 60;
-
+    const defaultVersion = 1;
     const timeframes = [
-        { input: "MATCH_INPUT_1", output: "MATCH_OUTPUT_1" },
-        { input: "MATCH_INPUT_2", output: "MATCH_OUTPUT_2" },
-        { input: "MATCH_INPUT_3", output: "MATCH_OUTPUT_3" },
-        { input: "MATCH_INPUT_4", output: "MATCH_OUTPUT_4" },
-        { input: "MATCH_INPUT_5", output: "MATCH_OUTPUT_5" },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_1") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("REPLAYED_MATCH_OUTPUT_1") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_2"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_2") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_3"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_3") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_4"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_4") },
+        { input: ethers.utils.formatBytes32String("MATCH_INPUT_5"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_5") },
     ];
 
     beforeEach(async () => {
         console.log(`\n`);
-        diamondAddress = await deployDiamond(timeLimit, rewardAmount);
+        console.log("inputMatch : ", timeframes[0].input)
+        const [_owner] = await ethers.getSigners();
+
+        //  Mocking claimManager
+        const claimManagerMocked = await deployMockContract(
+            _owner,
+            claimManagerInterface
+        );
+
+        grantRole = async (operatorWallet, role) => {
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(true);
+        };
+
+        revokeRole = async (operatorWallet, role) => {
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(false);
+        };
+
+        const roles = {
+            issuerRole,
+            revokerRole,
+            validatorRole,
+            workerRole,
+        };
+
+        diamondAddress = await deployDiamond(
+            timeLimit,
+            rewardAmount,
+            claimManagerMocked.address,
+            roles
+        );
         diamondCutFacet = await ethers.getContractAt(
             "DiamondCutFacet",
             diamondAddress
@@ -71,38 +107,289 @@ describe("VotingFacet", function () {
         issuerFacet = await ethers.getContractAt("IssuerFacet", diamondAddress);
         matchVoting = await ethers.getContractAt("VotingFacet", diamondAddress);
         [
-            ,
+            owner,
             faucet,
             worker1,
             worker2,
             worker3,
             worker4,
             worker5,
-            worker6,
+            notEnrolledWorker,
             nonWorker,
+            toRemoveWorker,
         ] = await ethers.getSigners();
         counter = 0;
     });
 
     it("should allow to vote whitelisted worker", async () => {
+        await grantRole(worker1, workerRole);
         await matchVoting.addWorker(worker1.address);
-        expect(
-            await matchVoting
+        await expect(
+             matchVoting
                 .connect(worker1)
                 .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
         )
             .to.emit(matchVoting, "WinningMatch")
-            .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 1);
+                .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 1);
 
         expect(
             await matchVoting.getWorkerVote(timeframes[ 0 ].input, worker1.address)
         ).to.equal(timeframes[ 0 ].output);
+
         expect(await matchVoting.getMatch(timeframes[ 0 ].input)).to.equal(
             timeframes[ 0 ].output
         );
     });
 
+    it("should not reveal workers vote before the end of vote", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+    
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[0].output, IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+        
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+        ).to.equal(ethers.constants.Zero);
+    });
+    
+    it("should reveal workers vote after the end of vote", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+        
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+        ).to.equal(ethers.constants.Zero);
+
+        await expect(
+            matchVoting
+                .connect(worker2)
+                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+        ).to.emit(matchVoting, "WinningMatch")
+            .withArgs(timeframes[0].input, timeframes[0].output, 2);
+        
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+        ).to.equal(timeframes[0].output);
+    });
+    
+    it("should not reveal winners before the end of vote", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+
+        expect(
+            await matchVoting.winners(timeframes[0].input)
+        ).to.be.empty;
+            
+        await expect(
+            matchVoting
+                .connect(worker2)
+                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+            )
+            .to.emit(matchVoting, "WinningMatch")
+                .withArgs(timeframes[0].input, timeframes[0].output, 2);
+            
+        expect(
+            await matchVoting.winners(timeframes[0].input)
+        ).to.be.deep.equal([worker1.address, worker2.address]);
+    });
+
+    it("should not reveal winningMatches before the end of vote", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+        await matchVoting.addWorker(worker3.address);
+
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+        
+        //The vote is not ended, hence we should not get the winngMatch
+        expect(
+            await matchVoting.getWinningMatch(timeframes[0].input)
+        ).to.equal(ethers.constants.Zero);
+
+        await expect(
+            matchVoting
+                .connect(worker2)
+                .vote(timeframes[0].input, timeframes[2].output, !IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+
+        //The vote is still not ended, hence we should not get the winngMatch
+        expect(
+            await matchVoting.getWinningMatch(timeframes[0].input)
+        ).to.equal(ethers.constants.Zero);
+
+        await expect(
+            matchVoting
+                .connect(worker3)
+                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+            ).to.emit(matchVoting, "WinningMatch")
+                .withArgs(timeframes[0].input, timeframes[0].output, 2);
+        
+        //The vote ended, hence we should get the winngMatch
+        expect(
+            await matchVoting.getWinningMatch(timeframes[0].input)
+        ).to.equal(timeframes[0].output);
+    });
+
+    it("should allow workers to replay the vote", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+
+        //The vote is not ended, hence we should not get the winngMatch
+        expect(
+            await matchVoting.getWinningMatch(timeframes[0].input)
+        ).to.equal(ethers.constants.Zero);
+
+        //We check that votes are not released before end of vote
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+        ).to.equal(ethers.constants.Zero);
+        
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+        ).to.equal(ethers.constants.Zero);
+
+        //We check that winners are note shown before end of vote
+        expect(
+            await matchVoting.winners(timeframes[0].input)
+        ).to.be.empty;
+        
+        await expect(
+        matchVoting
+            .connect(worker2)
+            .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+        )
+        .to.emit(matchVoting, "WinningMatch")
+            .withArgs(timeframes[0].input, timeframes[0].output, 2);
+        
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+        ).to.equal(timeframes[0].output);
+
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+        ).to.equal(timeframes[0].output);
+
+        expect(
+            await matchVoting.winners(timeframes[0].input)
+        ).to.be.deep.equal([worker1.address, worker2.address]);
+        
+        expect(await matchVoting.getMatch(timeframes[0].input)).to.equal(
+            timeframes[0].output
+        );
+
+        //Replaying vote
+
+        //Worker 1 replay a vote
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[1].output, !IS_SETTLEMENT)
+            ).to.not.emit(matchVoting, "WinningMatch");
+
+        //We verify that the final vote of worker 1 is not updated
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+        ).to.equal(timeframes[0].output);
+
+        //we verify that the winngMatch has not been updated
+        expect(
+            await matchVoting.getWinningMatch(timeframes[0].input)
+        ).to.equal(timeframes[0].output);
+
+        //worker 2 replays vote
+        await expect(
+            matchVoting
+                .connect(worker2)
+                .vote(timeframes[0].input, timeframes[4].output, !IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+
+        //We verify that the final vote of worker 2 is not updated
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+        ).to.equal(timeframes[0].output);
+
+        //we verify that the winngMatch has not been updated
+        expect(
+            await matchVoting.getWinningMatch(timeframes[0].input)
+        ).to.equal(timeframes[0].output);
+
+        //No consensus has been reached on replaying: we adding worker3
+        await matchVoting.addWorker(worker3.address);
+
+        //Worker 3 replays vote like worker 2 : a consensus is reached
+        await expect(
+            matchVoting
+                .connect(worker3)
+                .vote(timeframes[0].input, timeframes[4].output, !IS_SETTLEMENT)
+        ).to.emit(matchVoting, "WinningMatch")
+            .withArgs(timeframes[0].input, timeframes[4].output, 2);
+        
+        //We verify that the final vote for worker 1 is updated
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker1.address)
+        ).to.equal(timeframes[1].output);
+        
+        //We verify that the final vote for worker 2 is updated
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
+        ).to.equal(timeframes[4].output);
+        
+        //We verify that the final vote for worker 3 is updated
+        expect(
+            await matchVoting.getWorkerVote(timeframes[0].input, worker3.address)
+        ).to.equal(timeframes[4].output);
+        
+        //we verify that the winngMatch has correctly been updated
+        expect(
+            await matchVoting.getWinningMatch(timeframes[0].input)
+        ).to.equal(timeframes[4].output);
+    });
+  
+
     it("should not allow to vote not whitelisted worker", async () => {
+        
         expect(await matchVoting.isWorker(nonWorker.address)).to.be.false;
         await expect(
             matchVoting
@@ -111,27 +398,47 @@ describe("VotingFacet", function () {
         ).to.be.revertedWith("NotWhitelisted");
     });
 
+    it("should not register a non enrolled worker", async () => {
+        await revokeRole(notEnrolledWorker, workerRole);
+
+        await expect(
+            matchVoting.addWorker(notEnrolledWorker.address)
+        ).to.be.revertedWith("Access denied: not enrolled as worker");
+    });
+
+    it("should not allow an enrolled worker to unregister", async () => {
+        await grantRole(toRemoveWorker, workerRole);
+
+        // Register a worker
+        await matchVoting.connect(owner).addWorker(toRemoveWorker.address);
+
+        await expect(
+            matchVoting.connect(owner).removeWorker(toRemoveWorker.address)
+        ).to.be.revertedWith("Not allowed: still enrolled as worker");
+    });
+
     it("should get the winner with the most votes", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
 
-        await matchVoting
-            .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
-        expect(
-            await matchVoting
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+        ).to.not.emit(matchVoting, "WinningMatch");
+        
+        await expect(
+            matchVoting
                 .connect(worker2)
                 .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
         )
-            .to.emit(matchVoting, "WinningMatch")
+        .to.emit(matchVoting, "WinningMatch")
             .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 2);
-
-        await expect(
-            matchVoting
-                .connect(worker3)
-                .vote(timeframes[ 0 ].input, timeframes[ 1 ].output, !IS_SETTLEMENT)
-        ).to.be.revertedWith("VotingAlreadyEnded");
 
         expect(await matchVoting.getMatch(timeframes[ 0 ].input)).to.equal(
             timeframes[ 0 ].output
@@ -140,31 +447,49 @@ describe("VotingFacet", function () {
     });
 
     it("consensus can be reached with simple majority", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        await grantRole(worker4, workerRole);
+        await grantRole(worker5, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
         await matchVoting.addWorker(worker4.address);
         await matchVoting.addWorker(worker5.address);
 
-        await matchVoting
-            .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
-        await matchVoting
-            .connect(worker2)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
-        await matchVoting
-            .connect(worker3)
-            .vote(timeframes[ 0 ].input, timeframes[ 1 ].output, !IS_SETTLEMENT);
-        await matchVoting
-            .connect(worker4)
-            .vote(timeframes[ 0 ].input, timeframes[ 2 ].output, !IS_SETTLEMENT);
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+            ).to.not.emit(matchVoting, "WinningMatch");
+
+        await expect(
+            matchVoting
+                .connect(worker2)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+            ).to.not.emit(matchVoting, "WinningMatch");
+
+        await expect(
+            matchVoting
+                .connect(worker3)
+                .vote(timeframes[ 0 ].input, timeframes[ 1 ].output, !IS_SETTLEMENT)
+            ).to.not.emit(matchVoting, "WinningMatch");
+
+        await expect(
+            matchVoting
+                .connect(worker4)
+                .vote(timeframes[ 0 ].input, timeframes[ 2 ].output, !IS_SETTLEMENT)
+            ).to.not.emit(matchVoting, "WinningMatch");
+
         await expect(
             matchVoting
                 .connect(worker5)
                 .vote(timeframes[ 0 ].input, timeframes[ 3 ].output, !IS_SETTLEMENT)
-        )
+            )
             .to.emit(matchVoting, "WinningMatch")
-            .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 2);
+                .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 2);
 
         // Consensus has been reached
         expect(await matchVoting.getMatch(timeframes[ 0 ].input)).to.equal(
@@ -173,16 +498,22 @@ describe("VotingFacet", function () {
     });
 
     it("consensus can be reached with vast majority", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        await grantRole(worker4, workerRole);
+        await grantRole(worker5, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
         await matchVoting.addWorker(worker4.address);
         await matchVoting.addWorker(worker5.address);
+
         await faucet.sendTransaction({
             to: diamondAddress,
-            value: rewardAmount.mul(4), // reward queue balance should be greater then payment
+            value: rewardAmount.mul(4), // reward queue balance should be greater than payment
         });
-        const nonWinnerBalanceBefore = await worker3.getBalance();
 
         await matchVoting
             .connect(worker1)
@@ -227,6 +558,8 @@ describe("VotingFacet", function () {
     });
 
     it("should not be able to add same worker twice", async () => {
+        await grantRole(worker1, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
 
         await expect(matchVoting.addWorker(worker1.address)).to.be.revertedWith(
@@ -235,6 +568,12 @@ describe("VotingFacet", function () {
     });
 
     it("consensus should not be reached when votes are divided evenly", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        await grantRole(worker4, workerRole);
+        
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -272,6 +611,9 @@ describe("VotingFacet", function () {
     });
 
     it("reward should be paid after replenishment of funds", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
 
@@ -303,6 +645,10 @@ describe("VotingFacet", function () {
     });
 
     it("voting which exceeded time limit can be canceled", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+        
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -328,6 +674,10 @@ describe("VotingFacet", function () {
     });
 
     it("voting which exceeded time limit must not be completed", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -355,6 +705,10 @@ describe("VotingFacet", function () {
     });
 
     it("voting can not be cancelled by non owner", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
         await matchVoting.addWorker(worker1.address);
         await matchVoting.addWorker(worker2.address);
         await matchVoting.addWorker(worker3.address);
@@ -367,6 +721,44 @@ describe("VotingFacet", function () {
 
         await expect(
             matchVoting.connect(worker2).cancelExpiredVotings()
-        ).to.be.revertedWith("Ownable: caller is not the owner");
+        ).to.be.revertedWith("LibDiamond: Must be contract owner");
+    });
+
+    it("should allow to remove workers and add it again", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+        await matchVoting.addWorker(worker3.address);
+
+        expect(await matchVoting.isWorker(worker1.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker2.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker3.address)).to.equal(true);
+
+        await revokeRole(worker1, workerRole);
+        await revokeRole(worker2, workerRole);
+        await revokeRole(worker3, workerRole);
+
+        await matchVoting.removeWorker(worker1.address);
+        await matchVoting.removeWorker(worker2.address);
+        await matchVoting.removeWorker(worker3.address);
+
+        expect(await matchVoting.isWorker(worker1.address)).to.equal(false);
+        expect(await matchVoting.isWorker(worker2.address)).to.equal(false);
+        expect(await matchVoting.isWorker(worker3.address)).to.equal(false);
+
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+        await matchVoting.addWorker(worker3.address);
+
+        expect(await matchVoting.isWorker(worker1.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker2.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker3.address)).to.equal(true);
     });
 });
