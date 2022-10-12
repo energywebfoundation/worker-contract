@@ -406,6 +406,12 @@ describe("VotingFacet", function () {
         ).to.be.revertedWith("Access denied: not enrolled as worker");
     });
 
+    it("should revert when we try to remove a not whiteListed worker", async () => {
+        await expect(
+            matchVoting.connect(owner).removeWorker(toRemoveWorker.address)
+        ).to.be.revertedWith(`WorkerWasNotAdded("${toRemoveWorker.address}")`);
+    });
+
     it("should not allow an enrolled worker to unregister", async () => {
         await grantRole(toRemoveWorker, workerRole);
 

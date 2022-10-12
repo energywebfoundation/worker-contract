@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.16;
 
 import {LibDiamond} from "./LibDiamond.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
