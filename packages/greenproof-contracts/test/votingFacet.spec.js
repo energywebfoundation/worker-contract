@@ -410,12 +410,18 @@ describe("VotingFacet", function () {
 
     it("should not allow an enrolled worker to unregister", async () => {
         await grantRole(toRemoveWorker, workerRole);
+        await grantRole(worker1, workerRole);
 
         // Register a worker
         await matchVoting.connect(owner).addWorker(toRemoveWorker.address);
+        await matchVoting.connect(owner).addWorker(worker1.address);
 
         await expect(
             matchVoting.connect(owner).removeWorker(toRemoveWorker.address)
+        ).to.be.revertedWith("Not allowed: still enrolled as worker");
+
+        await expect(
+            matchVoting.connect(worker4).removeWorker(worker1.address)
         ).to.be.revertedWith("Not allowed: still enrolled as worker");
     });
 
@@ -724,6 +730,43 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting.connect(worker2).cancelExpiredVotings()
         ).to.be.revertedWith("LibDiamond: Must be contract owner");
+    });
+
+    it("should allow non owner address to add enrolled workers", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
+        await matchVoting.connect(worker4).addWorker(worker1.address);
+        await matchVoting.connect(worker4).addWorker(worker2.address);
+        await matchVoting.connect(worker4).addWorker(worker3.address);
+
+        expect(await matchVoting.isWorker(worker1.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker2.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker3.address)).to.equal(true);
+    });
+
+    it("should allow non owner address to remove not enrolled workers", async () => {
+        await grantRole(worker1, workerRole);
+        await grantRole(worker2, workerRole);
+        await grantRole(worker3, workerRole);
+
+        await matchVoting.addWorker(worker1.address);
+        await matchVoting.addWorker(worker2.address);
+        await matchVoting.addWorker(worker3.address);
+
+        expect(await matchVoting.isWorker(worker1.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker2.address)).to.equal(true);
+        expect(await matchVoting.isWorker(worker3.address)).to.equal(true);
+
+        await revokeRole(worker1, workerRole);
+        await revokeRole(worker2, workerRole);
+
+        await matchVoting.connect(worker4).removeWorker(worker1.address);
+        await matchVoting.connect(worker4).removeWorker(worker2.address);
+
+        expect(await matchVoting.isWorker(worker1.address)).to.equal(false);
+        expect(await matchVoting.isWorker(worker2.address)).to.equal(false);
     });
 
     it("should allow to remove workers and add it again", async () => {
