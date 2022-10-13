@@ -1,7 +1,0 @@
-node_modules
-.deps
-
-#Hardhat files
-cache
-artifacts
-.env
