@@ -163,8 +163,6 @@ contract VotingFacet is IVoting {
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
     function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
-        //AccessControl
-        LibDiamond.enforceIsContractOwner();
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if (address(workerAddress).isWorker()) {
@@ -182,7 +180,6 @@ contract VotingFacet is IVoting {
      * @dev only the address referenced as the contract owner is allowed to perform this
      */
     function removeWorker(address workerToRemove) external {
-        LibDiamond.enforceIsContractOwner();
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
         LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
 
