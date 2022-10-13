@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/merkle-tree",
-    "packages/greenpoof-contract",
+    "packages/greenpoof-contracts",
     "packages/voting-manager",
     "packages/ddhub-client",
     "packages/worker",
