@@ -48,9 +48,6 @@ const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
 );
-const validatorRole = ethers.utils.namehash(
-  "validator.roles.greenproof.apps.iam.ewc"
-);
 const revokerRole = ethers.utils.namehash(
   "revoker.roles.greenproof.apps.iam.ewc"
 );
@@ -158,7 +155,6 @@ describe("IssuerFacet", function () {
     const roles = {
       issuerRole,
       revokerRole,
-      validatorRole,
       workerRole,
     };
 

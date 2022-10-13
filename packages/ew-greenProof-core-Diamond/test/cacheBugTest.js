@@ -5,7 +5,27 @@ const { deployDiamond } = require("../scripts/deploy.js");
 
 const { FacetCutAction } = require("../scripts/libraries/diamond.js");
 
+const { deployMockContract } = require("ethereum-waffle");
+
 const { assert } = require("chai");
+
+const { parseEther } = require("ethers").utils;
+
+const { claimManagerInterface } = require("./utils");
+
+const issuerRole = ethers.utils.namehash(
+  "minter.roles.greenproof.apps.iam.ewc"
+);
+const revokerRole = ethers.utils.namehash(
+  "revoker.roles.greenproof.apps.iam.ewc"
+);
+const workerRole = ethers.utils.namehash(
+  "workerRole.roles.greenproof.apps.iam.ewc"
+);
+
+const timeLimit = 15 * 60;
+const rewardAmount = parseEther("1");
+
 
 // The diamond example comes with 8 function selectors
 // [cut, loupe, loupe, loupe, loupe, erc165, transferOwnership, owner]
@@ -31,7 +51,9 @@ describe("Cache bug test", async () => {
 
   before(async function () {
     let tx;
+    let owner;
     let receipt;
+
 
     let selectors = [
       sel0,
@@ -47,7 +69,28 @@ describe("Cache bug test", async () => {
       sel10,
     ];
 
-    let diamondAddress = await deployDiamond();
+    [ owner ] = await ethers.getSigners();
+    
+     //  Mocking claimManager
+    const claimManagerMocked = await deployMockContract(
+      owner,
+      claimManagerInterface
+    );
+
+    const roles = {
+      issuerRole,
+      revokerRole,
+      workerRole,
+    };
+
+    // const isDiamondTest = true;
+
+    let diamondAddress = await deployDiamond(
+      timeLimit,
+      rewardAmount,
+      claimManagerMocked.address,
+      roles
+    );
     let diamondCutFacet = await ethers.getContractAt(
       "DiamondCutFacet",
       diamondAddress

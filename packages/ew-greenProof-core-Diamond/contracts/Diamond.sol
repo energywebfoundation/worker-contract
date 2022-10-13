@@ -24,7 +24,6 @@ contract Diamond {
         address _claimManagerAddress,
         bytes32 issuerRole,
         bytes32 revokerRole,
-        bytes32 validatorRole,
         bytes32 workerRole,
         uint256 revocablePeriod
     ) payable {
@@ -44,7 +43,7 @@ contract Diamond {
         LibDiamond.diamondCut(cut, address(0), "");
 
         //Set ClaimManager properties
-        LibClaimManager.init(_claimManagerAddress, issuerRole, revokerRole, validatorRole, workerRole);
+        LibClaimManager.init(_claimManagerAddress, issuerRole, revokerRole, workerRole);
     }
 
     function updateClaimManager(address _newaddress) external returns (address oldAddress) {

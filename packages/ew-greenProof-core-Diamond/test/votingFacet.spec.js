@@ -9,9 +9,6 @@ const { claimManagerInterface } = require("./utils");
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
 );
-const validatorRole = ethers.utils.namehash(
-  "validator.roles.greenproof.apps.iam.ewc"
-);
 const revokerRole = ethers.utils.namehash(
   "revoker.roles.greenproof.apps.iam.ewc"
 );
@@ -82,7 +79,6 @@ describe("VotingFacet", function () {
         const roles = {
             issuerRole,
             revokerRole,
-            validatorRole,
             workerRole,
         };
 
