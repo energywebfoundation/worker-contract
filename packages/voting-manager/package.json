@@ -1,5 +1,5 @@
 {
-  "name": "@energyweb/greenproof-voting-manager",
+  "name": "@energyweb/greenproof-contracts-manager",
   "version": "1.0.8",
   "scripts": {
     "replace-vars": "node substitute-vars.js",
@@ -62,7 +62,7 @@
   },
   "devDependencies": {
     "@leocode/eslint-config": "2.0.0",
-    "@energyweb/greenproof-voting-contract": "1.0.8",
+    "@energyweb/greenproof-contracts": "1.0.0",
     "@typescript-eslint/eslint-plugin": "5.36.2",
     "@typescript-eslint/parser": "5.36.2",
     "eslint": "8.14.0",
@@ -70,6 +70,6 @@
     "eslint-plugin-react-hooks": "4.6.0"
   },
   "peerDependencies": {
-    "@energyweb/greenproof-voting-contract": "1.0.6"
+    "@energyweb/greenproof-contracts": "1.0.0"
   }
 }
