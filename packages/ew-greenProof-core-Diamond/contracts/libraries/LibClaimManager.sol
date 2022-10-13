@@ -14,7 +14,6 @@ library LibClaimManager {
         bytes32 workerRole;
         bytes32 issuerRole;
         bytes32 revokerRole;
-        bytes32 validatorRole;
         mapping(bytes32 => uint256) roleToVersions;
     }
 
@@ -36,7 +35,6 @@ library LibClaimManager {
         address _claimManagerAddress,
         bytes32 _issuerRole,
         bytes32 _revokerRole,
-        bytes32 _validatorRole,
         bytes32 _workerRole
     ) internal {
         ClaimManagerStorage storage claimStore = getStorage();
@@ -46,12 +44,10 @@ library LibClaimManager {
         claimStore.claimManagerAddress = _claimManagerAddress;
         claimStore.issuerRole = _issuerRole;
         claimStore.revokerRole = _revokerRole;
-        claimStore.validatorRole = _validatorRole;
         claimStore.workerRole = _workerRole;
 
         claimStore.roleToVersions[_issuerRole] = 1;
         claimStore.roleToVersions[_revokerRole] = 1;
-        claimStore.roleToVersions[_validatorRole] = 1;
         claimStore.roleToVersions[_workerRole] = 1;
     }
 
@@ -93,12 +89,6 @@ library LibClaimManager {
         ClaimManagerStorage storage claimStore = getStorage();
 
         return hasRole(operator, claimStore.issuerRole, roleVersion);
-    }
-
-    function isValidator(address operator, uint256 roleVersion) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
-
-        return hasRole(operator, claimStore.validatorRole, roleVersion);
     }
 
     function isRevoker(address operator, uint256 roleVersion) internal view returns (bool) {

@@ -8,7 +8,8 @@
 		"test": "npx hardhat test",
 		"compile": "npx hardhat compile",
 		"issuer:test": "npx hardhat test test/IssuerFacet.spec.js",
-		"voting:test": "npx hardhat test test/votingFacet.spec.js"
+		"voting:test": "npx hardhat test test/votingFacet.spec.js",
+		"diamond:test": "npx hardhat test test/diamondTest.js"
 	},
 	"repository": {
 		"type": "git",

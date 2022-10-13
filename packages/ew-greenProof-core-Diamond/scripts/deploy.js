@@ -8,7 +8,6 @@ const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
 const ROLES = {
   issuerRole: ethers.utils.namehash("issuer"),
   revokerRole: ethers.utils.namehash("revoker"),
-  validatorRole: ethers.utils.namehash("validator"),
   workerRole: ethers.utils.namehash("worker"),
 };
 const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
@@ -17,7 +16,8 @@ async function deployDiamond(
   votingTimeLimit,
   rewardAmount,
   claimManagerAddress,
-  roles
+  roles,
+  isDiamondTest = false
 ) {
   const accounts = await ethers.getSigners();
   const contractOwner = accounts[0];
@@ -30,7 +30,7 @@ async function deployDiamond(
   console.log("DiamondCutFacet deployed:", diamondCutFacet.address);
 
   // deploy Diamond
-  const { issuerRole, revokerRole, validatorRole, workerRole } = roles;
+  const { issuerRole, revokerRole, workerRole } = roles;
   console.log("\nRegistered Roles :: ", roles, "\n");
   const DiamondContract = await ethers.getContractFactory("Diamond");
   const diamond = await DiamondContract.deploy(
@@ -41,7 +41,6 @@ async function deployDiamond(
     claimManagerAddress,
     issuerRole,
     revokerRole,
-    validatorRole,
     workerRole,
     revocablePeriod
   );
@@ -59,13 +58,15 @@ async function deployDiamond(
   // deploy facets
   console.log('')
   console.log('Deploying facets')
-  const FacetNames = [
-    "DiamondLoupeFacet",
-    "OwnershipFacet",
-    "IssuerFacet",
-    "VotingFacet",
-    "ProofManagerFacet",
-  ];
+  const FacetNames = isDiamondTest ?
+    [ "DiamondLoupeFacet", "OwnershipFacet", "IssuerFacet" ] :
+    [
+      "DiamondLoupeFacet",
+      "OwnershipFacet",
+      "IssuerFacet",
+      "VotingFacet",
+      "ProofManagerFacet",
+    ];
   const cut = [];
   for (const FacetName of FacetNames) {
     const Facet = await ethers.getContractFactory(FacetName);
