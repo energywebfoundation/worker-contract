@@ -172,16 +172,15 @@ library LibVoting {
             voting.replayedWinningMatch = matchResult;
 
             uint256 nbOfWorkers = IVoting(address(this)).getNumberOfWorkers();
-            uint256 majority = (nbOfWorkers / 2) + 1;
 
-            if (voting.winningMatchReplayedVoteCount >= majority) {
+            if (voting.winningMatchReplayedVoteCount >= _majority()) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
                     winningMatchReplayedVoteCount = voting.winningMatchReplayedVoteCount;
                 }
             }
-            if (voting.winningMatchReplayedVoteCount < majority && voting.numberOfReplayedVotes == nbOfWorkers) {
+            if (voting.winningMatchReplayedVoteCount < _majority() && voting.numberOfReplayedVotes == nbOfWorkers) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
