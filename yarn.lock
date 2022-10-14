@@ -1559,6 +1559,14 @@
   resolved "https://registry.npmjs.org/@emotion/weak-memoize/-/weak-memoize-0.3.0.tgz"
   integrity sha512-AHPmaAx+RYfZz0eYu6Gviiagpmiyw98ySSlQvCUhVGDRtDFe4DBS0x1bSjdF3gqUDYOczB+yYvBTtEylYSdRhg==
 
+"@energyweb/greenproof-ddhub-client@1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@energyweb/greenproof-ddhub-client/-/greenproof-ddhub-client-1.0.4.tgz#e04beb189f57dff5ffbd40ca6798e419f8f31d5c"
+  integrity sha512-w9nIRMDgswGoOpGa6SIzdEzgPd+4NLuD9+dPACeCeDPQtPTpsxH3eI9ts17SFmU7l5b+oMuLRmI5PlPm/WqouQ==
+  dependencies:
+    axios "^0.27.2"
+    zod "^3.18.0"
+
 "@energyweb/greenproof-voting-contract@1.0.8":
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/@energyweb/greenproof-voting-contract/-/greenproof-voting-contract-1.0.8.tgz#16a8b85784742a7e2349c5b241deec544628d8ee"
