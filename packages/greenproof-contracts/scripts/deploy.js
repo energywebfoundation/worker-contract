@@ -1,8 +1,11 @@
 /* global ethers */
 /* eslint prefer-const: "off" */
 
-const { ethers } = require('hardhat')
-const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
+const { ethers } = require('hardhat');
+const { config } = require("dotenv");
+const { getSelectors, FacetCutAction } = require('./libraries/diamond.js');
+
+config();
 
 const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
 const ROLES = {
@@ -11,6 +14,21 @@ const ROLES = {
   workerRole: ethers.utils.namehash("worker"),
 };
 const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
+
+const getRoles = () => {
+  const issuerRole = process.env.ISSUER_ROLE !== "" ? ethers.utils.namehash(process.env.ISSUER_ROLE) : ethers.utils.namehash(process.env.DEFAULT_ROLE)
+  const revokerRole = process.env.REVOKER_ROLE !== "" ? ethers.utils.namehash(process.env.REVOKER_ROLE) : ethers.utils.namehash(process.env.DEFAULT_ROLE)
+  const workerRole = process.env.WORKER_ROLE !== "" ? ethers.utils.namehash(process.env.WORKER_ROLE) : ethers.utils.namehash(process.env.DEFAULT_ROLE)
+
+  return {
+    issuerRole,
+    revokerRole,
+    workerRole
+  };
+}
+
+const runningFromCLI = () => require.main === module
+let FacetNames;
 
 async function deployDiamond(
   votingTimeLimit,
@@ -56,17 +74,23 @@ async function deployDiamond(
   console.log("DiamondInit deployed:", diamondInit.address);
 
   // deploy facets
-  console.log('')
+  console.log('--------------')
   console.log('Deploying facets')
-  const FacetNames = isDiamondTest ?
-    [ "DiamondLoupeFacet", "OwnershipFacet", "IssuerFacet" ] :
-    [
+  if (isDiamondTest) {
+
+    FacetNames = [ "DiamondLoupeFacet", "OwnershipFacet", "IssuerFacet" ];
+  } else {
+
+    FacetNames = [
       "DiamondLoupeFacet",
       "OwnershipFacet",
       "IssuerFacet",
       "VotingFacet",
       "ProofManagerFacet",
     ];
+  }
+    
+  console.log("Facets to add to the diamond :: ", FacetNames);
   const cut = [];
   for (const FacetName of FacetNames) {
     const Facet = await ethers.getContractFactory(FacetName);
@@ -100,14 +124,18 @@ async function deployDiamond(
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-if (require.main === module) {
+if (runningFromCLI()) {
+  const rewardAmount = (
+    process.env.REWARD_AMOUNT_IN_ETHER !== "" ?
+      ethers.utils.parseEther(process.env.REWARD_AMOUNT_IN_ETHER) :
+      ethers.utils.parseEther("1")
+    );
   deployDiamond(
     15 * 60,
-    ethers.utils.parseEther("1"),
+    rewardAmount,
     VOLTA_CLAIM_MANAGER,
-    // claimManagerMocked.address,
-    ROLES,
-    revocablePeriod
+    getRoles(),
+    false
   )
     .then(() => process.exit(0))
     .catch((error) => {
