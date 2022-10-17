@@ -52,8 +52,16 @@ contract Diamond {
     }
 
     //TODO: provide unit tests for RoleVersion update
-    function updateRoleVersion(bytes32 role, uint256 _newVersion) external returns (uint256 oldVersion) {
-        oldVersion = LibClaimManager.setRoleVersion(role, _newVersion);
+    function updateIssuerVersion(uint256 _newVersion) external returns (uint256 oldVersion) {
+        oldVersion = LibClaimManager.setIssuerVersion(_newVersion);
+    }
+
+    function updateRevokerVersion(uint256 _newVersion) external returns (uint256 oldVersion) {
+        oldVersion = LibClaimManager.setRevokerVersion(_newVersion);
+    }
+
+    function updateWorkerVersion(uint256 _newVersion) external returns (uint256 oldVersion) {
+        oldVersion = LibClaimManager.setWorkerVersion(_newVersion);
     }
 
     // Find facet for function that is called and execute the

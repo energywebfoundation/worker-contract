@@ -9,11 +9,10 @@ import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {ERC1155BaseInternal, ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 
 contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
-    modifier onlyRevoker() {
-        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
+    using LibClaimManager for address;
 
-        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.revokerRole];
-        require(LibClaimManager.isRevoker(msg.sender, lastRoleVersion), "Access: Not enrolled as revoker");
+    modifier onlyRevoker() {
+        require(msg.sender.isEnrolledRevoker(), "Access: Not enrolled as revoker");
         _;
     }
 

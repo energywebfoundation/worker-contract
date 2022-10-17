@@ -7,7 +7,6 @@ import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
-
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /**
@@ -22,10 +21,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     using LibClaimManager for address;
 
     modifier onlyIssuer() {
-        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
-
-        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.issuerRole];
-        require(msg.sender.isIssuer(lastRoleVersion), "Access: Not an issuer");
+        require(msg.sender.isEnrolledIssuer(), "Access: Not an issuer");
         _;
     }
 
