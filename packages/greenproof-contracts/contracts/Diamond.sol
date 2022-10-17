@@ -27,9 +27,10 @@ contract Diamond {
         bytes32 workerRole,
         uint256 revocablePeriod
     ) payable {
-        require(_rewardAmount > 0, "Reward amount should be positive");
-        require(_claimManagerAddress != address(0), "Invalid claimManager");
-        require(revocablePeriod > 0, "Invalid revocable period");
+        require(_rewardAmount > 0, "init: Null reward amount");
+        require(_claimManagerAddress != address(0), "init: Invalid claimManager");
+        require(revocablePeriod > 0, "init: Invalid revocable period");
+        require(_contractOwner != address(0), "init: Invalid contract Owner");
         LibVoting.init(_votingTimeLimit);
         LibIssuer.init(revocablePeriod);
         LibReward.initRewards(_rewardAmount);
