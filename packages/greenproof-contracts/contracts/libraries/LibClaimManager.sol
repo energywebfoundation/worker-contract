@@ -9,12 +9,16 @@ library LibClaimManager {
 
     error NotInitializedClaimManager();
 
+    struct Role {
+        bytes32 name;
+        uint256 version;
+    }
+
     struct ClaimManagerStorage {
         address claimManagerAddress;
-        bytes32 workerRole;
-        bytes32 issuerRole;
-        bytes32 revokerRole;
-        mapping(bytes32 => uint256) roleToVersions;
+        Role workerRole;
+        Role issuerRole;
+        Role revokerRole;
     }
 
     function hasRole(
@@ -42,24 +46,39 @@ library LibClaimManager {
         require(claimStore.claimManagerAddress == address(0), "ClaimManager Already initialized");
 
         claimStore.claimManagerAddress = _claimManagerAddress;
-        claimStore.issuerRole = _issuerRole;
-        claimStore.revokerRole = _revokerRole;
-        claimStore.workerRole = _workerRole;
-
-        claimStore.roleToVersions[_issuerRole] = 1;
-        claimStore.roleToVersions[_revokerRole] = 1;
-        claimStore.roleToVersions[_workerRole] = 1;
+        claimStore.issuerRole = Role({name: _issuerRole, version: 1});
+        claimStore.revokerRole = Role({name: _revokerRole, version: 1});
+        claimStore.workerRole = Role({name: _workerRole, version: 1});
     }
 
-    function setRoleVersion(bytes32 _role, uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
+    function setIssuerVersion(uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
         LibDiamond.enforceIsContractOwner();
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.roleToVersions[_role] != 0, "Non existing role");
-        require(claimStore.roleToVersions[_role] != _newVersion, "Same version");
+        require(claimStore.issuerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.issuerRole.version;
 
-        oldRoleVersion = claimStore.roleToVersions[_role];
-        claimStore.roleToVersions[_role] = _newVersion;
+        claimStore.issuerRole.version = _newVersion;
+    }
+
+    function setWorkerVersion(uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
+        LibDiamond.enforceIsContractOwner();
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        require(claimStore.workerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.workerRole.version;
+
+        claimStore.workerRole.version = _newVersion;
+    }
+
+    function setRevokerVersion(uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
+        LibDiamond.enforceIsContractOwner();
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        require(claimStore.revokerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.revokerRole.version;
+
+        claimStore.revokerRole.version = _newVersion;
     }
 
     //TODO: provide unit tests for claimManager Update
@@ -85,21 +104,21 @@ library LibClaimManager {
         }
     }
 
-    function isIssuer(address operator, uint256 roleVersion) internal view returns (bool) {
+    function isEnrolledIssuer(address operator) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        return hasRole(operator, claimStore.issuerRole, roleVersion);
+        return hasRole(operator, claimStore.issuerRole.name, claimStore.issuerRole.version);
     }
 
-    function isRevoker(address operator, uint256 roleVersion) internal view returns (bool) {
+    function isEnrolledRevoker(address operator) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        return hasRole(operator, claimStore.revokerRole, roleVersion);
+        return hasRole(operator, claimStore.revokerRole.name, claimStore.revokerRole.version);
     }
 
-    function isWorker(address operator, uint256 roleVersion) internal view returns (bool) {
+    function isEnrolledWorker(address operator) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        return hasRole(operator, claimStore.workerRole, roleVersion);
+        return hasRole(operator, claimStore.workerRole.name, claimStore.workerRole.version);
     }
 }

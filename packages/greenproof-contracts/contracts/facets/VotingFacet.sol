@@ -21,6 +21,7 @@ contract VotingFacet is IVoting {
      * Instead of LibVoting.isWorker(address) and LibVoting.isNotWorker(address)
      */
     using LibVoting for address;
+    using LibClaimManager for address;
 
     /**
      * @notice Allowing direct calls on LibVoting's functions for Voting type.
@@ -29,11 +30,8 @@ contract VotingFacet is IVoting {
      */
     using LibVoting for LibVoting.Voting;
 
-    modifier onlyEnrolledWorkers(address _operator) {
-        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
-
-        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.workerRole];
-        require(LibClaimManager.isWorker(_operator, lastRoleVersion), "Access denied: not enrolled as worker");
+    modifier onlyEnrolledWorkers(address operator) {
+        require(operator.isEnrolledWorker(), "Access denied: not enrolled as worker");
         _;
     }
 
@@ -181,14 +179,11 @@ contract VotingFacet is IVoting {
      */
     function removeWorker(address workerToRemove) external {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
-        LibClaimManager.ClaimManagerStorage storage claimStore = LibClaimManager.getStorage();
-
-        uint256 lastRoleVersion = claimStore.roleToVersions[claimStore.workerRole];
 
         if (workerToRemove.isNotWorker()) {
             revert LibVoting.WorkerWasNotAdded(workerToRemove);
         }
-        require(LibClaimManager.isWorker(workerToRemove, lastRoleVersion) == false, "Not allowed: still enrolled as worker");
+        require(workerToRemove.isEnrolledWorker() == false, "Not allowed: still enrolled as worker");
 
         if (votingStorage.numberOfWorkers > 1) {
             uint256 workerIndex = votingStorage.workerToIndex[workerToRemove];
