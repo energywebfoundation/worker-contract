@@ -13,7 +13,7 @@ const ROLES = {
   revokerRole: ethers.utils.namehash("revoker"),
   workerRole: ethers.utils.namehash("worker"),
 };
-const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
+const defaultRevocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 
 const getRoles = () => {
   const issuerRole = process.env.ISSUER_ROLE !== "" ? ethers.utils.namehash(process.env.ISSUER_ROLE) : ethers.utils.namehash(process.env.DEFAULT_ROLE)
@@ -35,10 +35,15 @@ async function deployDiamond(
   rewardAmount,
   claimManagerAddress,
   roles,
-  isDiamondTest = false
+  isDiamondTest = false,
+  contractOwner,
+  revocablePeriod = defaultRevocablePeriod
 ) {
   const accounts = await ethers.getSigners();
-  const contractOwner = accounts[0];
+  if (contractOwner === undefined)
+  {
+    contractOwner = accounts[ 0 ].address;
+  }
 
   // deploy DiamondCutFacet
   const diamondCutFacet = await (
@@ -49,10 +54,9 @@ async function deployDiamond(
 
   // deploy Diamond
   const { issuerRole, revokerRole, workerRole } = roles;
-  console.log("\nRegistered Roles :: ", roles, "\n");
   const DiamondContract = await ethers.getContractFactory("Diamond");
   const diamond = await DiamondContract.deploy(
-    contractOwner.address,
+    contractOwner,
     diamondCutFacet.address,
     votingTimeLimit,
     rewardAmount,
