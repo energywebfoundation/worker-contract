@@ -101,10 +101,6 @@ contract VotingFacet is IVoting {
                 voting.workerToVoted[msg.sender] = true;
                 voting.workerToMatchResult[msg.sender] = matchResult;
 
-                if (voting.matchResultToVoteCount[matchResult] == 0) {
-                    voting.matches.push(matchResult);
-                }
-
                 voting.matchResultToVoteCount[matchResult]++;
 
                 if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
@@ -130,10 +126,6 @@ contract VotingFacet is IVoting {
             voting.numberOfVotes++;
             voting.workerToVoted[msg.sender] = true;
             voting.workerToMatchResult[msg.sender] = matchResult;
-
-            if (voting.matchResultToVoteCount[matchResult] == 0) {
-                voting.matches.push(matchResult);
-            }
 
             voting.matchResultToVoteCount[matchResult]++;
 
