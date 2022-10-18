@@ -21,8 +21,6 @@ library LibVoting {
         uint256 winningMatchReplayedVoteCount;
         // Input match
         bytes32 matchInput;
-        // List of all match results with at least one vote
-        bytes32[] matches;
         /// List of all match results with at least one replayed vote
         bytes32[] replayedMatches;
         // Winning match result
@@ -236,7 +234,6 @@ library LibVoting {
     function _cancelVoting(LibVoting.Voting storage voting) internal {
         VotingStorage storage votingStorage = getStorage();
 
-        delete voting.matches;
         for (uint256 i = 0; i < votingStorage.numberOfWorkers; i++) {
             voting.matchResultToVoteCount[voting.workerToMatchResult[votingStorage.workers[i]]] = 0;
             voting.workerToVoted[votingStorage.workers[i]] = false;
