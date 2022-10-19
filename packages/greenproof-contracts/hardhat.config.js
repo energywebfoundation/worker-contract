@@ -1,6 +1,8 @@
 /* global ethers task */
 require("@nomiclabs/hardhat-waffle");
+require("@typechain/hardhat");
 const dotenv = require("dotenv");
+const path = require('path');
 
 dotenv.config();
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -42,5 +44,8 @@ module.exports = {
       enabled: true,
       runs: 200,
     },
+  },
+  typechain: {
+    outDir: path.join(__dirname, "src"),
   },
 };
