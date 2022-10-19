@@ -33,6 +33,7 @@ contract Issuer is Ownable, ERC1155 {
         uint256 end,
         bytes32 producerRef) external onlyMinter {
         bool isRevoked = false;
+        bool isRetired = false;
         IGreenProof.Proof memory greenProof = IGreenProof.Proof(
             lastProofIndex,
             productType,
@@ -40,7 +41,8 @@ contract Issuer is Ownable, ERC1155 {
             start,
             end,
             producerRef,
-            isRevoked
+            isRevoked,
+            isRetired
         );
         mintedProofs[lastProofIndex] = greenProof;
 

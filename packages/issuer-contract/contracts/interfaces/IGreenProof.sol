@@ -10,6 +10,7 @@ interface IGreenProof {
         uint256 endTime;
         bytes32 producerRef;
         bool isRevoked;
+        bool isRetired;
     }
 
 }

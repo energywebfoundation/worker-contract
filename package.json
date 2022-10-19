@@ -5,7 +5,6 @@
     "packages/merkle-tree",
     "packages/voting-contract",
     "packages/issuer-contract",
-    "packages/voting-manager",
     "packages/worker",
     "packages/*"
   ],
