@@ -6,6 +6,9 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 
+import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
+import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
+
 library LibIssuer {
     bytes32 constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
     bytes32 constant DEFAULT_VCREDENTIAL_VALUE = "";
@@ -15,7 +18,6 @@ library LibIssuer {
         uint256 revocablePeriod;
         mapping(bytes32 => uint256) dataToCertificateID;
         mapping(uint256 => IGreenProof.Proof) mintedProofs;
-        mapping(address => IGreenProof.Proof[]) userProofs;
         mapping(bytes32 => mapping(string => string)) disclosedData;
         //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
         mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
@@ -54,8 +56,7 @@ library LibIssuer {
 
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
-        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash);
-        issuer.userProofs[receiver].push(issuer.mintedProofs[proofID]);
+        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash, receiver);
         issuer.dataToCertificateID[dataHash] = proofID;
         issuer.voteToCertificates[voteID][dataHash] = proofID;
     }
