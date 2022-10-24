@@ -20,7 +20,7 @@
   "dependencies": {
     "@energyweb/greenproof-ddhub-client": "1.0.4",
     "@energyweb/greenproof-merkle-tree": "2.0.6",
-    "@energyweb/greenproof-contracts": "1.0.0",
+    "@energyweb/greenproof-voting-contract": "1.0.8",
     "@nestjs/common": "9.0.11",
     "@nestjs/core": "9.0.11",
     "@nestjs/platform-express": "9.0.11",
