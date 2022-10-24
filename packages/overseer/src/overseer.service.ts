@@ -6,7 +6,7 @@ import { BigNumber } from 'ethers';
 import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
 import type { VotingFacet } from '@energyweb/greenproof-contracts';
-import { VotingFacet__factory } from '@energyweb/greenproof-contracts/dist';
+import { VotingFacet__factory } from '@energyweb/greenproof-contracts';
 import {EventEmitter2} from '@nestjs/event-emitter';
 import { ContractEvent, parseEventArgs, WinningMatchEvent } from './events';
 
