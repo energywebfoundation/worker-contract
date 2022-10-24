@@ -6,9 +6,10 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
-import {ERC1155BaseInternal, ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
+// import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
+import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
-contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
+contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     using LibClaimManager for address;
 
     modifier onlyRevoker() {
@@ -52,9 +53,24 @@ contract ProofManagerFacet is IProofManager, ERC1155BaseInternal {
     function getProofsOf(address userAddress) external view override returns (IGreenProof.Proof[] memory) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(issuer.userProofs[userAddress].length != 0, "No proofs for this address");
+        uint256[] memory userTokenList = _tokensByAccount(userAddress);
+        require(userTokenList.length != 0, "No proofs for this address");
+        IGreenProof.Proof[] memory userProofs = new IGreenProof.Proof[](userTokenList.length);
 
-        return issuer.userProofs[userAddress];
+        for (uint256 i = 0; i < userTokenList.length; i++) {
+            uint256 currentTokenID = userTokenList[i];
+            userProofs[i] = IGreenProof.Proof({
+                isRevoked: issuer.mintedProofs[currentTokenID].isRevoked,
+                isRetired: issuer.mintedProofs[currentTokenID].isRetired,
+                certificateID: issuer.mintedProofs[currentTokenID].certificateID,
+                issuanceDate: issuer.mintedProofs[currentTokenID].issuanceDate,
+                volume: _balanceOf(userAddress, currentTokenID) / 10**18,
+                merkleRootHash: issuer.mintedProofs[currentTokenID].merkleRootHash,
+                generator: issuer.mintedProofs[currentTokenID].generator
+            });
+        }
+
+        return userProofs;
     }
 
     function verifyProof(

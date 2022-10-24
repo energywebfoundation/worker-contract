@@ -7,10 +7,11 @@ interface IGreenProof {
     struct Proof {
         bool isRevoked;
         bool isRetired;
-        uint256 index;
+        uint256 certificateID;
         uint256 issuanceDate;
         uint256 volume;
         bytes32 merkleRootHash;
+        address generator;
     }
 
     function requestProofIssuance(
@@ -19,7 +20,8 @@ interface IGreenProof {
         bytes32 dataHash,
         bytes32[] memory dataProof,
         uint256 volume,
-        bytes32[] memory volumeProof
+        bytes32[] memory volumeProof,
+        string memory tokenUri
     ) external;
 
     function discloseData(

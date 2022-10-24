@@ -8,6 +8,8 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
+import {ERC1155Base} from "@solidstate/contracts/token/ERC1155/base/ERC1155Base.sol";
+import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 
 /**
  * @title `IssuerFacet` - The issuance component of the GreenProof core module.
@@ -42,7 +44,8 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32 dataHash,
         bytes32[] memory dataProof,
         uint256 volume,
-        bytes32[] memory volumeProof
+        bytes32[] memory volumeProof,
+        string memory tokenUri
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
@@ -62,6 +65,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex, voteID);
         uint256 volumeInWei = volume * 1 ether;
         _mint(recipient, issuer.lastProofIndex, volumeInWei, "");
+        _setTokenURI(issuer.lastProofIndex, tokenUri);
         emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
     }
 
@@ -96,5 +100,19 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      */
     function getCertificateOwners(uint256 certificateID) external view override returns (address[] memory certificateOwners) {
         certificateOwners = _accountsByToken(certificateID);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) public override(ERC1155Base, IERC1155) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        require(id > 0 && id <= issuer.lastProofIndex, "transfer: wrong tokenId");
+        require(issuer.mintedProofs[id].isRevoked == false || to == issuer.mintedProofs[id].generator, "non tradable revoked proof");
+        super.safeTransferFrom(from, to, id, amount, data);
     }
 }

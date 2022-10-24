@@ -58,6 +58,7 @@ const volume = 42;
 const proofID1 = 1;
 const proofID2 = 2;
 const defaultVersion = 1;
+const tokenURI = "bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq";
 
 const data = [
   {
@@ -241,7 +242,7 @@ describe("IssuerFacet", function () {
       await expect(
           issuerFacet
             .connect(issuer)
-            .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
+            .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
         ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
     });
 
@@ -259,7 +260,7 @@ describe("IssuerFacet", function () {
      await expect(
          issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
+          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
      ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`)
     });
 
@@ -282,7 +283,7 @@ describe("IssuerFacet", function () {
       const ownerCertificateAmount = await issuerFacet.balanceOf(owner.address, lastTokenID);
 
       expect(ownerCertificateAmount).to.equal(parseEther(("2")));
-    })
+    });
 
     it("should get the list of all certificate owners", async () => {
       
@@ -290,6 +291,15 @@ describe("IssuerFacet", function () {
        console.log(`Owners of certificate ID ${lastTokenID} : `, certificateOwners);
        
        expect(certificateOwners).to.be.deep.equal([ receiverAddress, owner.address ]);
+    });
+
+    it("should get all certificates of one owner", async () => {
+      
+      const ownersCertificates = await proofManagerFacet.getProofsOf(owner.address);
+      const generatorCertificates = await proofManagerFacet.getProofsOf(receiver.address);
+       console.log(`${owner.address}' certificates : `, ownersCertificates);
+       console.log(`${receiver.address}' certificates : `, generatorCertificates);
+       
     });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
@@ -313,7 +323,7 @@ describe("IssuerFacet", function () {
       const volumeRootHash = volumeTree.getHexRoot();
 
       await expect(
-        issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, receiverAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof)
+        issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, receiverAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof, tokenURI)
       ).to.be.revertedWith(wrongInputHash);
     });
   });
@@ -391,7 +401,7 @@ describe("IssuerFacet", function () {
       await expect(
          issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data3[1].volume, volumeProof)
+          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data3[1].volume, volumeProof, tokenURI)
       ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
 
       //step3: retire proof
@@ -471,7 +481,7 @@ describe("IssuerFacet", function () {
       const leafLeaf = hash('consumerID' + JSON.stringify(522))
       const leafProof = leafTree.getHexProof(leafLeaf)
       expect(await proofManagerFacet.connect(owner).verifyProof(leafRoot, leafLeaf, leafProof)).to.be.true;
-    })
+    });
 
     it("should successfully verify a proof", async () => {
       merkleInfos = getMerkleProof(data3);
@@ -538,7 +548,7 @@ describe("IssuerFacet", function () {
       const key = "consumerID";
       const value = "500";
 
-      const disclosedDataTree = createPreciseProof(data[0]);
+      const disclosedDataTree = createPreciseProof(data[ 0 ]);
       const dataLeaf = hash(key + value);
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
       const dataRootHash = disclosedDataTree.getHexRoot();
@@ -546,6 +556,6 @@ describe("IssuerFacet", function () {
       await expect(
         issuerFacet.connect(issuer).discloseData(key, value, dataProof, dataRootHash)
       ).to.be.revertedWith("Disclose: data already disclosed");
-    })
+    });
   });
 }); 
