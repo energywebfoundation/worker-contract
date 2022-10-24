@@ -9,7 +9,8 @@ The present package is the onchain module of the Greenproof core SDK of Energywe
 ---
 The on-chain component of the greenProof core module is an upgradable proxied module, implementing the [EIP-2535](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2535.md) standard, which is a standard recommended in the [upgrades section](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1155.md#upgrades) of the EIP-1155 token standard documentation.
 
-This upgradable pattern is called a Diamond standard architecture, where all smart contracts are organized as different facets of one single diamond. It ultimately allows users to trigger any on-chain function of any greePproof component using one single and stable contract address.
+This upgradable pattern is called a Diamond standard architecture, where all smart contracts are organized as different facets of one single diamond.
+It ultimately allows users to trigger any on-chain function of any Greenroof component using one single and stable contract address.
 
 As mentioned in the [Ethereum documentation](https://ethereum.org/en/developers/docs/smart-contracts/upgrading/#diamond-pattern) :
 
