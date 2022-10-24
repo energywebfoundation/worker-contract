@@ -5,8 +5,9 @@ import { providers, Wallet } from 'ethers';
 import type { Config } from '@energyweb/greenproof-ddhub-client';
 import { DDHubClient } from '@energyweb/greenproof-ddhub-client';
 import * as Joi from 'joi';
-import type { MatchVoting} from '@energyweb/greenproof-voting-contract';
-import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
+// TODO: remove /dist
+import type { VotingFacet} from '@energyweb/greenproof-contracts/dist';
+import { VotingFacet__factory } from '@energyweb/greenproof-contracts/dist';
 
 const configSchema = Joi.object<WorkerConfig>({
   privateKey: Joi.string().required().not().empty(),
@@ -39,7 +40,7 @@ export type MerkleTree = {
 
 type Runtime = {
   merkleTree: MerkleTree;
-  getVotingContract: () => MatchVoting;
+  getVotingContract: () => VotingFacet;
   getDDhubClient: () => DDHubClient,
 };
 
@@ -93,9 +94,9 @@ export class GreenProofWorker {
     return value;
   }
 
-  private getContractWithSigner = (): MatchVoting => {
+  private getContractWithSigner = (): VotingFacet => {
     const signer = new Wallet(this.privateKey, this.provider);
-    const contract = MatchVoting__factory.connect(
+    const contract = VotingFacet__factory.connect(
       this.votingContractAddress,
       this.provider.getSigner(),
     );

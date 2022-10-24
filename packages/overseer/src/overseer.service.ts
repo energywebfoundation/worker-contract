@@ -5,8 +5,8 @@ import type { Wallet } from 'ethers';
 import { BigNumber } from 'ethers';
 import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
-import type { MatchVoting} from '@energyweb/greenproof-voting-contract';
-import { MatchVoting__factory } from '@energyweb/greenproof-voting-contract';
+import type { VotingFacet } from '@energyweb/greenproof-contracts';
+import { VotingFacet__factory } from '@energyweb/greenproof-contracts/dist';
 import {EventEmitter2} from '@nestjs/event-emitter';
 import { ContractEvent, parseEventArgs, WinningMatchEvent } from './events';
 
@@ -19,7 +19,7 @@ interface BlockchainConfig {
 @Injectable()
 export class OverseerService implements OnApplicationBootstrap, OnApplicationShutdown {
   private provider: JsonRpcProvider;
-  private contract: MatchVoting;
+  private contract: VotingFacet;
   private wallet: Wallet;
   private logger = new PinoLogger({});
 
@@ -34,7 +34,7 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
 
     this.provider = new ethers.providers.JsonRpcProvider(this.config.rpcHost);
     this.wallet = new ethers.Wallet(this.config.overseerPrivateKey, this.provider);
-    this.contract = MatchVoting__factory.connect(this.config.contractAddress, this.provider.getSigner());
+    this.contract = VotingFacet__factory.connect(this.config.contractAddress, this.provider.getSigner());
     this.contract.connect(this.wallet);
   }
 
