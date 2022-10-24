@@ -6,7 +6,8 @@
 	"types": "dist/index.d.ts",
 	"scripts": {
 		"clean": "npx hardhat clean",
-		"test": "npx hardhat test",
+		"test:e2e": "npx hardhat test",
+		"test:unit": "echo \"No unit tests\"",
 		"compile": "npx hardhat compile",
 		"build": "yarn compile && tsc -p ./tsconfig.build.json",
 		"issuer:test": "npx hardhat test test/IssuerFacet.spec.js",
