@@ -652,6 +652,21 @@ describe("VotingFacet", function () {
         );
     });
 
+    it("reverts when non owner tries to cancel expired votings", async () => {
+        await grantRole(worker1, workerRole);
+        
+        await matchVoting.addWorker(worker1.address);
+
+        await matchVoting
+            .connect(worker1)
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+
+        await timeTravel(2 * timeLimit);
+
+        await expect(matchVoting.connect(worker1).cancelExpiredVotings())
+            .to.be.revertedWith("LibDiamond: Must be contract owner");
+    });
+
     it("voting which exceeded time limit can be canceled", async () => {
         await grantRole(worker1, workerRole);
         await grantRole(worker2, workerRole);
