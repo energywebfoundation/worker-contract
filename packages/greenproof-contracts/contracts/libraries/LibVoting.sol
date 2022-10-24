@@ -188,7 +188,71 @@ library LibVoting {
         }
     }
 
-    function _startVoting(bytes32 matchInput, bool isSettlement) internal {
+    /**
+     * @notice _recordVote: stores worker's vote
+     * @param voting - The current voting session
+     * @param matchResult - the actual vote of the worker
+     */
+    function _recordVote(Voting storage voting, bytes32 matchResult) internal {
+        address voter = msg.sender;
+
+        voting.numberOfVotes++;
+        voting.workerToVoted[voter] = true;
+        voting.matchResultToVoteCount[matchResult]++;
+        voting.workerToMatchResult[voter] = matchResult;
+
+        if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
+            voting.noConsensus = true;
+        } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
+            voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
+            voting.winningMatch = matchResult;
+            voting.noConsensus = false;
+
+            if (voting.winningMatchVoteCount >= LibVoting._majority()) {
+                _endVotingSession(voting);
+            }
+        }
+
+        if (voting.numberOfVotes == getStorage().numberOfWorkers && (voting.winningMatchVoteCount < _majority())) {
+            _endVotingSession(voting);
+        }
+    }
+
+    /**
+     * @notice _updateVoteResult: update the stored vote result after a consensus is reached on a replayed voting session
+     * @param voting - The current voting session
+     * @param newWinningMatch - the new consensus vote result to store
+     * @param newVoteCount - the total number of votes recorded during the replay voting
+     */
+    function _updateVoteResult(
+        Voting storage voting,
+        bytes32 newWinningMatch,
+        uint256 newVoteCount
+    ) internal {
+        VotingStorage storage votingStorage = getStorage();
+        bytes32 matchInput = voting.matchInput;
+
+        voting.winningMatchVoteCount = newVoteCount;
+        bytes32 winMatch = votingStorage.matchInputToVoting[matchInput].winningMatch;
+
+        //we prevent updating if the final winning match did not change
+        if (winMatch != newWinningMatch) {
+            votingStorage.matchInputToVoting[matchInput].winningMatch = newWinningMatch;
+
+            //We update winningMatches list
+            votingStorage.winningMatches[matchInput] = newWinningMatch;
+        }
+
+        // We update the final vote with the replayed vote
+        for (uint256 i; i < voting.replayVoters.length; i++) {
+            address worker = voting.replayVoters[i];
+
+            votingStorage.workerVotes[worker][matchInput] = voting.workerToMatchResult[worker];
+            votingStorage.matchInputToVoting[matchInput].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
+        }
+    }
+
+    function _startVotingSession(bytes32 matchInput, bool isSettlement) internal {
         VotingStorage storage votingStorage = getStorage();
 
         Voting storage voting = votingStorage.matchInputToVoting[matchInput];
@@ -208,11 +272,11 @@ library LibVoting {
         }
     }
 
-    function _completeVoting(Voting storage voting) internal {
+    function _endVotingSession(Voting storage voting) internal {
         VotingStorage storage votingStorage = getStorage();
 
         if (voting.noConsensus) {
-            _cancelVoting(voting);
+            _resetVotingSession(voting);
             emit NoConsensusReached(voting.matchInput);
             return;
         }
@@ -231,7 +295,7 @@ library LibVoting {
     }
 
     /// @notice Deletes voting results
-    function _cancelVoting(LibVoting.Voting storage voting) internal {
+    function _resetVotingSession(LibVoting.Voting storage voting) internal {
         VotingStorage storage votingStorage = getStorage();
 
         for (uint256 i = 0; i < votingStorage.numberOfWorkers; i++) {
@@ -331,10 +395,8 @@ library LibVoting {
         }
     }
 
-    function isExpired(Voting storage voting) internal view returns (bool) {
-        VotingStorage storage votingStorage = getStorage();
-
-        return voting.start + votingStorage.timeLimit < block.timestamp;
+    function _getVote(bytes32 matchInput) internal view returns (Voting storage) {
+        return getStorage().matchInputToVoting[matchInput];
     }
 
     /// @notice Check if this account allowed to vote

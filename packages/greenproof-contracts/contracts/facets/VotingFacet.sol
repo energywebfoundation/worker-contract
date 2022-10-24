@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import {IVoting} from "../interfaces/IVoting.sol";
+import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibDiamond} from "../libraries/LibDiamond.sol";
-import {IVoting} from "../interfaces/IVoting.sol";
-import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 /**
@@ -48,21 +48,25 @@ contract VotingFacet is IVoting {
         bytes32 matchResult,
         bool isSettlement
     ) external {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        address voter = msg.sender;
 
-        if ((msg.sender.isNotWorker())) {
+        if ((voter.isNotWorker())) {
             revert LibVoting.NotWhitelisted();
         }
-        LibVoting.Voting storage voting = votingStorage.matchInputToVoting[matchInput];
+
+        LibVoting.Voting storage voting = LibVoting._getVote(matchInput);
+        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+
         if (voting._isExpired()) {
-            voting._resetVoting();
+            voting._resetVotingSession();
         }
 
-        if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
+        if (voting._isClosed() || voter._hasAlreadyVoted(voting)) {
             // we prevent wasting computation if the vote is the same as the previous one
-            if (votingStorage.workerVotes[msg.sender][matchInput] == matchResult) {
+            if (votingStorage.workerVotes[voter][matchInput] == matchResult) {
                 return;
             }
+
             (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchInput, matchResult);
 
             if (shouldUpdateVote) {
@@ -70,54 +74,18 @@ contract VotingFacet is IVoting {
                 voting._updateWorkersVote();
                 voting._revealWinners();
 
-                voting.winningMatchVoteCount = newVoteCount;
-                bytes32 winMatch = votingStorage.matchInputToVoting[matchInput].winningMatch;
+                voting._updateVoteResult(newWinningMatch, newVoteCount);
 
-                //we prevent updating if the final winning match did not change
-                if (winMatch != newWinningMatch) {
-                    votingStorage.matchInputToVoting[matchInput].winningMatch = newWinningMatch;
+                emit WinningMatch(matchInput, newWinningMatch, newVoteCount);
 
-                    //We update winningMatches list
-                    votingStorage.winningMatches[voting.matchInput] = newWinningMatch;
-                }
-
-                // We update the final vote with the replayed vote
-                for (uint256 i; i < voting.replayVoters.length; i++) {
-                    address worker = voting.replayVoters[i];
-
-                    votingStorage.workerVotes[worker][matchInput] = voting.workerToMatchResult[worker];
-                    votingStorage.matchInputToVoting[matchInput].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
-                }
-
-                emit WinningMatch(voting.matchInput, newWinningMatch, newVoteCount);
-
-                LibVoting._reward(votingStorage.winnersList[voting.matchInput]);
+                LibVoting._reward(votingStorage.winnersList[matchInput]);
             }
         } else {
             if (voting._hasNotStarted()) {
-                LibVoting._startVoting(matchInput, voting.isSettlement);
+                LibVoting._startVotingSession(matchInput, voting.isSettlement);
             }
 
-            voting.numberOfVotes++;
-            voting.workerToVoted[msg.sender] = true;
-            voting.workerToMatchResult[msg.sender] = matchResult;
-
-            voting.matchResultToVoteCount[matchResult]++;
-
-            if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
-                voting.noConsensus = true;
-            } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
-                voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
-                voting.winningMatch = matchResult;
-                voting.noConsensus = false;
-
-                if (voting.winningMatchVoteCount >= LibVoting._majority()) {
-                    LibVoting._completeVoting(voting);
-                }
-            }
-            if (voting.numberOfVotes == votingStorage.numberOfWorkers && (voting.winningMatchVoteCount < LibVoting._majority())) {
-                LibVoting._completeVoting(voting);
-            }
+            voting._recordVote(matchResult);
         }
     }
 
@@ -175,9 +143,9 @@ contract VotingFacet is IVoting {
 
         for (uint256 i = 0; i < votingStorage.matchInputs.length; i++) {
             LibVoting.Voting storage voting = votingStorage.matchInputToVoting[votingStorage.matchInputs[i]];
-            if (voting.status == LibVoting.Status.Active && voting.isExpired()) {
-                emit LibVoting.VotingExpired(votingStorage.matchInputs[i]);
-                voting._resetVoting();
+
+            if (voting._isExpired()) {
+                voting._resetVotingSession();
             }
         }
     }
