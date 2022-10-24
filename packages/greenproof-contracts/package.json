@@ -1,6 +1,6 @@
 {
 	"name": "@energyweb/greenproof-contracts",
-	"version": "1.0.0",
+	"version": "1.0.0-alpha.0",
 	"description": "Onchain module of the Greenproof core SDK of Energyweb Foundation.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
