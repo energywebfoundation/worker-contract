@@ -55,7 +55,7 @@ contract VotingFacet is IVoting {
         }
         LibVoting.Voting storage voting = votingStorage.matchInputToVoting[matchInput];
         if (voting._isExpired()) {
-            voting._cancelVoting();
+            voting._resetVoting();
         }
 
         if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
@@ -92,31 +92,6 @@ contract VotingFacet is IVoting {
                 emit WinningMatch(voting.matchInput, newWinningMatch, newVoteCount);
 
                 LibVoting._reward(votingStorage.winnersList[voting.matchInput]);
-            } else {
-                if (voting._hasNotStarted()) {
-                    LibVoting._startVoting(matchInput, isSettlement);
-                }
-
-                voting.numberOfVotes++;
-                voting.workerToVoted[msg.sender] = true;
-                voting.workerToMatchResult[msg.sender] = matchResult;
-
-                voting.matchResultToVoteCount[matchResult]++;
-
-                if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
-                    voting.noConsensus = true;
-                } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
-                    voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
-                    voting.winningMatch = matchResult;
-                    voting.noConsensus = false;
-
-                    if (voting.winningMatchVoteCount >= LibVoting._majority()) {
-                        voting._completeVoting();
-                    }
-                }
-                if (voting.numberOfVotes == votingStorage.numberOfWorkers && (voting.winningMatchVoteCount < LibVoting._majority())) {
-                    voting._completeVoting();
-                }
             }
         } else {
             if (voting._hasNotStarted()) {
@@ -202,7 +177,7 @@ contract VotingFacet is IVoting {
             LibVoting.Voting storage voting = votingStorage.matchInputToVoting[votingStorage.matchInputs[i]];
             if (voting.status == LibVoting.Status.Active && voting.isExpired()) {
                 emit LibVoting.VotingExpired(votingStorage.matchInputs[i]);
-                voting._cancelVoting();
+                voting._resetVoting();
             }
         }
     }
