@@ -18,7 +18,7 @@ library LibVoting {
         // Number of votes for winning match
         uint256 winningMatchVoteCount;
         /// Number of votes for winning match on replayed votes
-        uint256 winningMatchReplayedVoteCount;
+        uint256 replayedWinningMatchVoteCount;
         // Input match
         bytes32 matchInput;
         /// List of all match results with at least one replayed vote
@@ -138,7 +138,7 @@ library LibVoting {
         returns (
             bool shouldUpdateVoting,
             bytes32 replayedWinningMatch,
-            uint256 winningMatchReplayedVoteCount
+            uint256 replayedWinningMatchVoteCount
         )
     {
         if (voting.workerToReplayedMatchResult[msg.sender] != 0) {
@@ -154,27 +154,27 @@ library LibVoting {
         }
         voting.replayedMatchResultToVoteCount[matchResult]++;
 
-        if (voting.replayedMatchResultToVoteCount[matchResult] == voting.winningMatchReplayedVoteCount) {
+        if (voting.replayedMatchResultToVoteCount[matchResult] == voting.replayedWinningMatchVoteCount) {
             voting.noReplayedConsensus = true;
-        } else if (voting.replayedMatchResultToVoteCount[matchResult] > voting.winningMatchReplayedVoteCount) {
+        } else if (voting.replayedMatchResultToVoteCount[matchResult] > voting.replayedWinningMatchVoteCount) {
             voting.noReplayedConsensus = false;
-            voting.winningMatchReplayedVoteCount = voting.replayedMatchResultToVoteCount[matchResult];
+            voting.replayedWinningMatchVoteCount = voting.replayedMatchResultToVoteCount[matchResult];
             voting.replayedWinningMatch = matchResult;
 
             uint256 nbOfWorkers = IVoting(address(this)).getNumberOfWorkers();
 
-            if (voting.winningMatchReplayedVoteCount >= _majority()) {
+            if (voting.replayedWinningMatchVoteCount >= _majority()) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
-                    winningMatchReplayedVoteCount = voting.winningMatchReplayedVoteCount;
+                    replayedWinningMatchVoteCount = voting.replayedWinningMatchVoteCount;
                 }
             }
-            if (voting.winningMatchReplayedVoteCount < _majority() && voting.numberOfReplayedVotes == nbOfWorkers) {
+            if (voting.replayedWinningMatchVoteCount < _majority() && voting.numberOfReplayedVotes == nbOfWorkers) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
-                    winningMatchReplayedVoteCount = voting.winningMatchReplayedVoteCount;
+                    replayedWinningMatchVoteCount = voting.replayedWinningMatchVoteCount;
                 }
             }
         }
