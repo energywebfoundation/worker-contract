@@ -50,7 +50,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         if (dataHash._isCertified()) {
-            // this prevents dupplicate issuance of the same certificate ID
+            // this prevents duplicate issuance of the same certificate ID
             revert LibIssuer.AlreadyCertifiedData(dataHash);
         }
         bool isVoteInConsensus = LibVoting._isPartOfConsensus(voteID, dataHash, dataProof);
