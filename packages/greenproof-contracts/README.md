@@ -32,7 +32,8 @@ Each smartcontract component provided in `contracts/facets` directory is then a 
 
 Additional utility facets are provided by the [Diamond-2 reference implementation](https://github.com/mudgen/diamond-2-hardhat), which help conforming to the EIP-2535 standard specification:
 
-- The [DiamondCutFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondCutFacet.sol) contract is a facet handling all the upgrading logic. (A cut, in the diamond’s industrie, is an action resulting in new facets creation, removal. This facet will be used to add, replace or remove granularly logic to the greenProof Diamond)
+- The [DiamondCutFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondCutFacet.sol) contract is a facet handling all the upgrading logic.
+(A cut, in the diamond industry, is an action resulting in new facet creation or removal. This facet will be used to granularly add, replace or remove logic to the Greenproof Diamond)
 
 - A dedicated facet is provided with the [OwnershipFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/OwnershipFacet.sol) contract, which handles the implementation of the IEP-173 standard for the Diamond ownership.
 
