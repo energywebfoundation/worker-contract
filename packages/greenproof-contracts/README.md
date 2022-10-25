@@ -35,7 +35,7 @@ Additional utility facets are provided by the [Diamond-2 reference implementatio
 - The [DiamondCutFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondCutFacet.sol) contract is a facet handling all the upgrading logic.
 (A cut, in the diamond industry, is an action resulting in new facet creation or removal. This facet will be used to granularly add, replace or remove logic to the Greenproof Diamond)
 
-- A dedicated facet is provided with the [OwnershipFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/OwnershipFacet.sol) contract, which handles the implementation of the IEP-173 standard for the Diamond ownership.
+- A dedicated facet is provided with the [OwnershipFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/OwnershipFacet.sol) contract, which handles the implementation of the EIP-173 standard for the Diamond ownership.
 
 - A [DiamondLoupeFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondLoupeFacet.sol) provides all standard [loupe functions](https://dev.to/mudgen/why-loupe-functions-for-diamonds-1kc3) for showing what facets and functions the diamond has.
 ---
