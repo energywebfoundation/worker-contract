@@ -48,9 +48,7 @@ contract VotingFacet is IVoting {
         bytes32 matchResult,
         bool isSettlement
     ) external {
-        address voter = msg.sender;
-
-        if ((voter.isNotWorker())) {
+        if ((msg.sender.isNotWorker())) {
             revert LibVoting.NotWhitelisted();
         }
 
@@ -61,9 +59,9 @@ contract VotingFacet is IVoting {
             voting._resetVotingSession();
         }
 
-        if (voting._isClosed() || voter._hasAlreadyVoted(voting)) {
+        if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
             // we prevent wasting computation if the vote is the same as the previous one
-            if (votingStorage.workerVotes[voter][matchInput] == matchResult) {
+            if (votingStorage.workerVotes[msg.sender][matchInput] == matchResult) {
                 return;
             }
 

@@ -141,11 +141,11 @@ library LibVoting {
             uint256 winningMatchReplayedVoteCount
         )
     {
-        if (voting.workerToReplayedMatchResult[msg.sender] == 0) {
-            voting.replayVoters.push(msg.sender);
-        } else {
+        if (voting.workerToReplayedMatchResult[msg.sender] != 0) {
             revert AlreadyVoted();
         }
+
+        voting.replayVoters.push(msg.sender);
         voting.workerToReplayedMatchResult[msg.sender] = matchResult;
         voting.numberOfReplayedVotes++;
 
@@ -186,12 +186,10 @@ library LibVoting {
      * @param matchResult - the actual vote of the worker
      */
     function _recordVote(Voting storage voting, bytes32 matchResult) internal {
-        address voter = msg.sender;
-
         voting.numberOfVotes++;
-        voting.workerToVoted[voter] = true;
+        voting.workerToVoted[msg.sender] = true;
         voting.matchResultToVoteCount[matchResult]++;
-        voting.workerToMatchResult[voter] = matchResult;
+        voting.workerToMatchResult[msg.sender] = matchResult;
 
         if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
             voting.noConsensus = true;
