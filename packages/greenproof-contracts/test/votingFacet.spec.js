@@ -286,7 +286,7 @@ describe("VotingFacet", function () {
             await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
         ).to.equal(ethers.constants.Zero);
 
-        //We check that winners are note shown before end of vote
+        //We check that winners are not shown before end of vote
         expect(
             await matchVoting.winners(timeframes[0].input)
         ).to.be.empty;
@@ -322,7 +322,14 @@ describe("VotingFacet", function () {
             matchVoting
                 .connect(worker1)
                 .vote(timeframes[0].input, timeframes[1].output, !IS_SETTLEMENT)
-            ).to.not.emit(matchVoting, "WinningMatch");
+        ).to.not.emit(matchVoting, "WinningMatch");
+        
+        // We verify that workers cannot pump the same re-vote
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[1].output, !IS_SETTLEMENT)
+        ).to.be.revertedWith("AlreadyVoted()")
 
         //We verify that the final vote of worker 1 is not updated
         expect(
