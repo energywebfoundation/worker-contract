@@ -147,12 +147,11 @@ library LibVoting {
             uint256 winningMatchReplayedVoteCount
         )
     {
-        if (voting.workerToReplayedVoted[msg.sender][matchInput][matchResult]) {
-            revert AlreadyVoted();
-        }
         voting.workerToReplayedVoted[msg.sender][matchInput][matchResult] = true;
         if (voting.workerToReplayedMatchResult[msg.sender] == 0) {
             voting.replayVoters.push(msg.sender);
+        } else {
+            revert AlreadyVoted();
         }
         voting.workerToReplayedMatchResult[msg.sender] = matchResult;
         voting.numberOfReplayedVotes++;
