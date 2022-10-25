@@ -32,7 +32,6 @@ library LibVoting {
         mapping(address => bytes32) workerToReplayedMatchResult;
         // Worker address to voted flag
         mapping(address => bool) workerToVoted;
-        mapping(address => mapping(bytes32 => mapping(bytes32 => bool))) workerToReplayedVoted;
         // Match result to total vote count
         mapping(bytes32 => uint256) matchResultToVoteCount;
         /// Match result to total replayed vote count
@@ -132,14 +131,9 @@ library LibVoting {
     /**
      * @notice _replayVote: Allows workers to update their vote anytime
      * @param voting - The voting session under which we want to revote
-     * @param matchInput - the identifier of the vote
      * @param matchResult - the actual vote of the worker
      */
-    function _replayVote(
-        Voting storage voting,
-        bytes32 matchInput,
-        bytes32 matchResult
-    )
+    function _replayVote(Voting storage voting, bytes32 matchResult)
         internal
         returns (
             bool shouldUpdateVoting,
@@ -147,7 +141,6 @@ library LibVoting {
             uint256 winningMatchReplayedVoteCount
         )
     {
-        voting.workerToReplayedVoted[msg.sender][matchInput][matchResult] = true;
         if (voting.workerToReplayedMatchResult[msg.sender] == 0) {
             voting.replayVoters.push(msg.sender);
         } else {

@@ -67,7 +67,7 @@ contract VotingFacet is IVoting {
                 return;
             }
 
-            (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchInput, matchResult);
+            (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchResult);
 
             if (shouldUpdateVote) {
                 //We update the voting results
