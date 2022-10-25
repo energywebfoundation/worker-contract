@@ -6,7 +6,6 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
-// import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
