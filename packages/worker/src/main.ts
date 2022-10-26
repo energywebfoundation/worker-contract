@@ -70,7 +70,7 @@ export class GreenProofWorker {
     return this._ddhubClient;
   };
 
-  public async enableDDHubCommunication({appNamespace, channelConfig, debugMode, ddhubUrl}: DDHUBConfig) {
+  public async enableDDHubCommunication({appNamespace, channelConfig, debugMode, ddhubUrl}: DDHUBConfig, disableSetup?: boolean) {
     this._ddhubClient = new DDHubClient({
       config: channelConfig,
       ddhubUrl,
@@ -78,6 +78,7 @@ export class GreenProofWorker {
       privateKey: this.privateKey,
       debugModeOn: debugMode ?? false,
     });
+    if (disableSetup) return;
     await this._ddhubClient.setup();
   }
 
