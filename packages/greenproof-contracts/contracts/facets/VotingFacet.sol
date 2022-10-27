@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
+import {IReward} from "../interfaces/IReward.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
@@ -14,7 +15,7 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
  * @notice this facet handles all voting functionalities of the greenProof-core module
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
-contract VotingFacet is IVoting {
+contract VotingFacet is IVoting, IReward {
     /**
      * @notice Allowing direct calls on LibVoting's functions for address type.
      * @dev This improves code readability by writing `address.isWorker()` and `address.isNotWorker()`
@@ -204,5 +205,19 @@ contract VotingFacet is IVoting {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         return votingStorage.matchInputs.length;
+    }
+
+    function replenishRewardPool() external payable override {
+        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
+
+        if (msg.value == 0) {
+            revert NoFundsProvided();
+        }
+
+        emit Replenished(msg.value);
+
+        if (rewardStorage.rewardQueue.length > 0) {
+            LibReward.payReward();
+        }
     }
 }
