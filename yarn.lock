@@ -544,9 +544,16 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@energyweb/greenproof-contracts@1.0.0-alpha.1", "@energyweb/greenproof-contracts@file:/home/jonasz/WebstormProjects/greenproof-sdk/packages/greenproof-contracts":
+"@energyweb/greenproof-contracts@1.0.0-alpha.2":
+  "integrity" "sha512-BH+FxeFmn7+TQb8rHKiqXd944YOA7C90msGQCP13X5HHz3Ct6EqP1+uhUQa2U2WZN9YT1Ykmb1fPeA6qD2QCzQ=="
+  "resolved" "https://registry.npmjs.org/@energyweb/greenproof-contracts/-/greenproof-contracts-1.0.0-alpha.2.tgz"
+  "version" "1.0.0-alpha.2"
+  dependencies:
+    "@solidstate/contracts" "^0.0.40"
+
+"@energyweb/greenproof-contracts@1.0.0-alpha.3", "@energyweb/greenproof-contracts@file:/home/jonasz/WebstormProjects/greenproof-sdk/packages/greenproof-contracts":
   "resolved" "file:packages/greenproof-contracts"
-  "version" "1.0.0-alpha.1"
+  "version" "1.0.0-alpha.3"
   dependencies:
     "@solidstate/contracts" "^0.0.40"
 
@@ -583,9 +590,9 @@
 
 "@energyweb/greenproof-worker@file:/home/jonasz/WebstormProjects/greenproof-sdk/packages/worker":
   "resolved" "file:packages/worker"
-  "version" "6.0.21-alpha.1"
+  "version" "6.0.21-alpha.4"
   dependencies:
-    "@energyweb/greenproof-contracts" "1.0.0-alpha.1"
+    "@energyweb/greenproof-contracts" "1.0.0-alpha.2"
     "@energyweb/greenproof-ddhub-client" "1.0.4"
     "@energyweb/greenproof-merkle-tree" "2.0.6"
     "@nestjs/common" "9.0.11"
