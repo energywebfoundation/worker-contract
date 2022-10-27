@@ -98,11 +98,5 @@ contract Diamond {
     /// @notice Rewards each worker winner by a constant amount set on deployment
     /// If current balance is insufficient to pay reward, then winner will
     /// be rewarded after balance is replenished
-    receive() external payable {
-        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
-
-        if (rewardStorage.rewardQueue.length > 0) {
-            LibReward.payReward();
-        }
-    }
+    receive() external payable {}
 }

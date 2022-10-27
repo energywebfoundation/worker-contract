@@ -644,10 +644,14 @@ describe("VotingFacet", function () {
             worker2.getBalance(),
         ]);
 
-        await faucet.sendTransaction({
-            to: diamondAddress,
-            value: rewardAmount.mul(3),
-        });
+        await expect(
+            matchVoting
+                .connect(faucet).sendWorkersRewards(
+                    {
+                        value: rewardAmount.mul(3),
+                    }
+            )
+        ).to.emit(matchVoting, "RewardsFunded").withArgs(rewardAmount.mul(3));
 
         const balancesAfter = await Promise.all([
             worker1.getBalance(),
