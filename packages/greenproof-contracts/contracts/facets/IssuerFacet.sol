@@ -34,7 +34,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param recipient - The address of the wallet which will receive the minted certificate tokens (i.e - generator's wallet)
      * @param dataHash - The merkleRoot hash of the data we are certifying.
      * @param dataProof - The proofs path to verify that data is part of the vote consensus merkleTree
-     * @param volume - The amount of furniture we want to certify
+     * @param volume - The amount of generated green ressource (electricity / organic gas /..) we want to certify
      * @param volumeProof - the proofs path to verify that the amount of volume we want to certify is part of the `dataHash` merkleTree.
      * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
      */
