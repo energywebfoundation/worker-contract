@@ -4,7 +4,7 @@ pragma solidity ^0.8.16;
 interface IReward {
     error NoFundsProvided();
 
-    event RewardsFunded(uint256 indexed amount);
+    event Replenished(uint256 indexed amount);
 
-    function sendWorkersRewards() external payable;
+    function replenishRewardPool() external payable;
 }
