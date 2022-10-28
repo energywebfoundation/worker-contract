@@ -152,28 +152,14 @@ library LibVoting {
         }
         voting.replayedMatchResultToVoteCount[matchResult]++;
 
-        if (voting.replayedMatchResultToVoteCount[matchResult] == voting.replayedWinningMatchVoteCount) {
-            voting.noReplayedConsensus = true;
-        } else if (voting.replayedMatchResultToVoteCount[matchResult] > voting.replayedWinningMatchVoteCount) {
-            voting.noReplayedConsensus = false;
+        if (voting.replayedMatchResultToVoteCount[matchResult] > voting.replayedWinningMatchVoteCount) {
             voting.replayedWinningMatchVoteCount = voting.replayedMatchResultToVoteCount[matchResult];
             voting.replayedWinningMatch = matchResult;
 
-            uint256 nbOfWorkers = IVoting(address(this)).getNumberOfWorkers();
-
             if (voting.replayedWinningMatchVoteCount >= _majority()) {
-                if (voting.noReplayedConsensus == false) {
-                    shouldUpdateVoting = true;
-                    replayedWinningMatch = voting.replayedWinningMatch;
-                    replayedWinningMatchVoteCount = voting.replayedWinningMatchVoteCount;
-                }
-            }
-            if (voting.replayedWinningMatchVoteCount < _majority() && voting.numberOfReplayedVotes == nbOfWorkers) {
-                if (voting.noReplayedConsensus == false) {
-                    shouldUpdateVoting = true;
-                    replayedWinningMatch = voting.replayedWinningMatch;
-                    replayedWinningMatchVoteCount = voting.replayedWinningMatchVoteCount;
-                }
+                shouldUpdateVoting = true;
+                replayedWinningMatch = voting.replayedWinningMatch;
+                replayedWinningMatchVoteCount = voting.replayedWinningMatchVoteCount;
             }
         }
     }
