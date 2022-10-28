@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-worker",
-  "version": "6.0.21-alpha.5",
+  "version": "6.0.21-alpha.7",
   "license": "MIT",
   "author": "EnergyWeb DevHub GmbH;",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@energyweb/greenproof-ddhub-client": "1.0.4",
+    "@energyweb/greenproof-ddhub-client": "1.0.7",
     "@energyweb/greenproof-merkle-tree": "2.0.6",
     "@energyweb/greenproof-contracts": "1.0.0-alpha.4",
     "@nestjs/common": "9.0.11",
