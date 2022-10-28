@@ -5,7 +5,7 @@ interface IVoting {
     // Event emitted after voting ended
     event WinningMatch(bytes32 matchInput, bytes32 matchResult, uint256 indexed voteCount);
 
-    // Event emitted after voting ended on settlement data
+    // Event emitted after a voting consensus is reached
     event ConsensusReached(bytes32 winningMatch, bytes32 matchInput);
 
     // Winning match result can not be determined

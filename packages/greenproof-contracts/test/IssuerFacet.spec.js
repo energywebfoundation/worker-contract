@@ -41,7 +41,6 @@ let proofManagerFacet;
 let nonAuthorizedOperator;
 
 const timeLimit = 15 * 60;
-const IS_SETTLEMENT = true;
 const rewardAmount = parseEther("1");
 const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 
@@ -227,8 +226,8 @@ describe("IssuerFacet", function () {
       const matchResult = dataTree.getHexRoot();
       const matchResultProof = dataTree.getHexProof(leaves[0]);
 
-      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
-      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
       
       //2 - request proof issuance for the vote ID (inputHash)
 
@@ -312,8 +311,8 @@ describe("IssuerFacet", function () {
       const matchResult = dataTree2.getHexRoot();
       const matchResultProof = dataTree2.getHexProof(leaves2[0]);
 
-      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
-      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
       
       //2 - request proof issuance for the vote ID (inputHash)
 
@@ -387,8 +386,8 @@ describe("IssuerFacet", function () {
       const matchResult = dataTree3.getHexRoot();
       const matchResultProof = dataTree3.getHexProof(leaves3[1]);
 
-      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
-      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
       
       //2 - request proof issuance for the vote ID (inputHash)
 
