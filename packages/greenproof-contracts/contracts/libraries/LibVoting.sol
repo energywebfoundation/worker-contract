@@ -42,8 +42,6 @@ library LibVoting {
         bool noConsensus;
         /// If none of the match results gets more replayed votes than the others
         bool noReplayedConsensus;
-        //flag to indicate if teh vote targerts settlement data
-        bool isSettlement;
         //List of workers replaying the vote: This help updating workerToMatchResult after a replay consensus
         address[] replayVoters;
     }
@@ -242,16 +240,13 @@ library LibVoting {
         }
     }
 
-    function _startVotingSession(bytes32 matchInput, bool isSettlement) internal {
+    function _startVotingSession(bytes32 matchInput) internal {
         VotingStorage storage votingStorage = getStorage();
 
         Voting storage voting = votingStorage.matchInputToVoting[matchInput];
         voting.matchInput = matchInput;
         voting.start = block.timestamp;
         voting.status = Status.Active;
-        if (isSettlement) {
-            voting.isSettlement = true;
-        }
 
         if (
             votingStorage.matchInputToIndex[matchInput] == 0 &&
@@ -276,9 +271,7 @@ library LibVoting {
         _revealVotes(voting);
         _revealWinners(voting);
         votingStorage.winningMatches[voting.matchInput] = voting.winningMatch;
-        if (voting.isSettlement) {
-            emit ConsensusReached(voting.winningMatch, voting.matchInput);
-        }
+        emit ConsensusReached(voting.winningMatch, voting.matchInput);
 
         voting.status = Status.Completed;
         _reward(votingStorage.winnersList[voting.matchInput]);

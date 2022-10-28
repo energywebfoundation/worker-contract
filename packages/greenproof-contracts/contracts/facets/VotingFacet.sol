@@ -40,15 +40,9 @@ contract VotingFacet is IVoting, IReward {
      * @notice `vote` - Each worker votes for a given matchResult, increasing the number of votes for this matchResult.
      * @param matchInput - The identifier of the vote
      * @param matchResult - The actual vote of the worker
-     * @param isSettlement - indicates if the current vote is on settlement data
-     * @dev voting is done one settlement data, a consensus achieved will trigger a `ConsensusReached` event.
      * @dev The winning vote is determined by simple majority. When consensus is not reached the voting is restarted.
      */
-    function vote(
-        bytes32 matchInput,
-        bytes32 matchResult,
-        bool isSettlement
-    ) external {
+    function vote(bytes32 matchInput, bytes32 matchResult) external {
         if ((msg.sender.isNotWorker())) {
             revert LibVoting.NotWhitelisted();
         }
@@ -81,7 +75,7 @@ contract VotingFacet is IVoting, IReward {
             }
         } else {
             if (voting._hasNotStarted()) {
-                LibVoting._startVotingSession(matchInput, voting.isSettlement);
+                LibVoting._startVotingSession(matchInput);
             }
 
             voting._recordVote(matchResult);
