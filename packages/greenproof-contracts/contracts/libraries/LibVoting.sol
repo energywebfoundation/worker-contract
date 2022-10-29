@@ -20,7 +20,7 @@ library LibVoting {
         /// Number of votes for winning match on replayed votes
         uint256 replayedWinningMatchVoteCount;
         // Input match
-        bytes32 matchInput;
+        bytes32 voteID;
         /// List of all match results with at least one replayed vote
         bytes32[] replayedMatches;
         // Winning match result
@@ -54,10 +54,10 @@ library LibVoting {
         uint256 timeLimit; /* limit of duration of a voting session. The vote is considered expired after `votingStartDate` + `timeLimit` */
         uint256 numberOfWorkers; /* Number of workers taking part to vote. This will determine the consensus threshold  */
         address payable[] workers; /* List of all whitelisted workers */
-        bytes32[] matchInputs; /* List of all votes identifiers */
+        bytes32[] voteIDs; /* List of all votes identifiers */
         mapping(address => uint256) workerToIndex; /* Quick access to a specific worker's index inside the `workers` whitelist */
-        mapping(bytes32 => uint256) matchInputToIndex; /* Quick access to a specific vote's index inside the `matchInputs` list */
-        mapping(bytes32 => Voting) matchInputToVoting; /* Associates a specific vote ID to a precise voting session*/
+        mapping(bytes32 => uint256) voteIDToIndex; /* Quick access to a specific vote's index inside the `voteIDs` list */
+        mapping(bytes32 => Voting) voteIDToVoting; /* Associates a specific vote ID to a precise voting session*/
         mapping(bytes32 => bytes32) matches; /* Records the final consensus of a specific voteID */
         mapping(bytes32 => bytes32) winningMatches; /* Keeps track of the current consensus with the most votes */
         mapping(bytes32 => address payable[]) winnersList; /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the rigth workers */
@@ -74,18 +74,18 @@ library LibVoting {
     }
 
     // Event emitted after voting ended
-    event WinningMatch(bytes32 matchInput, bytes32 matchResult, uint256 indexed voteCount);
+    event WinningMatch(bytes32 voteID, bytes32 matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
-    event NoConsensusReached(bytes32 matchInput);
+    event NoConsensusReached(bytes32 voteID);
 
     // Voting lasts more than time limit
-    event VotingExpired(bytes32 matchInput);
+    event VotingExpired(bytes32 voteID);
 
     // Event emitted after match is recorded
-    event MatchRegistered(bytes32 matchInput, bytes32 matchResult);
+    event MatchRegistered(bytes32 voteID, bytes32 matchResult);
 
-    event ConsensusReached(bytes32 winningMatch, bytes32 matchInput);
+    event ConsensusReached(bytes32 winningMatch, bytes32 voteID);
 
     // Worker had already voted for a match result
     error AlreadyVoted();
@@ -119,7 +119,7 @@ library LibVoting {
         VotingStorage storage votingStorage = getStorage();
 
         if (currentVoting.status == Status.Active && (currentVoting.start + votingStorage.timeLimit < block.timestamp)) {
-            emit VotingExpired(currentVoting.matchInput);
+            emit VotingExpired(currentVoting.voteID);
             isVotingExpired = true;
         } else {
             isVotingExpired = false;
@@ -204,42 +204,42 @@ library LibVoting {
         uint256 newVoteCount
     ) internal {
         VotingStorage storage votingStorage = getStorage();
-        bytes32 matchInput = voting.matchInput;
+        bytes32 voteID = voting.voteID;
 
         voting.winningMatchVoteCount = newVoteCount;
-        bytes32 winMatch = votingStorage.matchInputToVoting[matchInput].winningMatch;
+        bytes32 winMatch = votingStorage.voteIDToVoting[voteID].winningMatch;
 
         //we prevent updating if the final winning match did not change
         if (winMatch != newWinningMatch) {
-            votingStorage.matchInputToVoting[matchInput].winningMatch = newWinningMatch;
+            votingStorage.voteIDToVoting[voteID].winningMatch = newWinningMatch;
 
             //We update winningMatches list
-            votingStorage.winningMatches[matchInput] = newWinningMatch;
+            votingStorage.winningMatches[voteID] = newWinningMatch;
         }
 
         // We update the final vote with the replayed vote
         for (uint256 i; i < voting.replayVoters.length; i++) {
             address worker = voting.replayVoters[i];
 
-            votingStorage.workerVotes[worker][matchInput] = voting.workerToMatchResult[worker];
-            votingStorage.matchInputToVoting[matchInput].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
+            votingStorage.workerVotes[worker][voteID] = voting.workerToMatchResult[worker];
+            votingStorage.voteIDToVoting[voteID].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
         }
     }
 
-    function _startVotingSession(bytes32 matchInput) internal {
+    function _startVotingSession(bytes32 voteID) internal {
         VotingStorage storage votingStorage = getStorage();
 
-        Voting storage voting = votingStorage.matchInputToVoting[matchInput];
-        voting.matchInput = matchInput;
+        Voting storage voting = votingStorage.voteIDToVoting[voteID];
+        voting.voteID = voteID;
         voting.start = block.timestamp;
         voting.status = Status.Active;
 
         if (
-            votingStorage.matchInputToIndex[matchInput] == 0 &&
-            (votingStorage.matchInputs.length == 0 || (votingStorage.matchInputs.length > 0 && (votingStorage.matchInputs[0] != matchInput)))
+            votingStorage.voteIDToIndex[voteID] == 0 &&
+            (votingStorage.voteIDs.length == 0 || (votingStorage.voteIDs.length > 0 && (votingStorage.voteIDs[0] != voteID)))
         ) {
-            votingStorage.matchInputToIndex[matchInput] = votingStorage.matchInputs.length;
-            votingStorage.matchInputs.push(matchInput);
+            votingStorage.voteIDToIndex[voteID] = votingStorage.voteIDs.length;
+            votingStorage.voteIDs.push(voteID);
         }
     }
 
@@ -248,19 +248,19 @@ library LibVoting {
 
         if (voting.noConsensus) {
             _resetVotingSession(voting);
-            emit NoConsensusReached(voting.matchInput);
+            emit NoConsensusReached(voting.voteID);
             return;
         }
 
-        registerWinningMatch(voting.matchInput, voting.winningMatch);
-        emit WinningMatch(voting.matchInput, voting.winningMatch, voting.winningMatchVoteCount);
+        registerWinningMatch(voting.voteID, voting.winningMatch);
+        emit WinningMatch(voting.voteID, voting.winningMatch, voting.winningMatchVoteCount);
         _revealVotes(voting);
         _revealWinners(voting);
-        votingStorage.winningMatches[voting.matchInput] = voting.winningMatch;
-        emit ConsensusReached(voting.winningMatch, voting.matchInput);
+        votingStorage.winningMatches[voting.voteID] = voting.winningMatch;
+        emit ConsensusReached(voting.winningMatch, voting.voteID);
 
         voting.status = Status.Completed;
-        _reward(votingStorage.winnersList[voting.matchInput]);
+        _reward(votingStorage.winnersList[voting.voteID]);
     }
 
     /// @notice Deletes voting results
@@ -280,11 +280,11 @@ library LibVoting {
         voting.start = 0;
     }
 
-    function registerWinningMatch(bytes32 matchInput, bytes32 matchResult) internal {
+    function registerWinningMatch(bytes32 voteID, bytes32 matchResult) internal {
         VotingStorage storage votingStorage = getStorage();
 
-        votingStorage.matches[matchInput] = matchResult;
-        emit MatchRegistered(matchInput, matchResult);
+        votingStorage.matches[voteID] = matchResult;
+        emit MatchRegistered(voteID, matchResult);
     }
 
     function _reward(address payable[] memory winners) internal {
@@ -303,7 +303,7 @@ library LibVoting {
         for (uint256 i = 0; i < _votingStorage.workers.length; i++) {
             address payable currentWorker = _votingStorage.workers[i];
 
-            _votingStorage.workerVotes[currentWorker][voting.matchInput] = voting.workerToMatchResult[msg.sender];
+            _votingStorage.workerVotes[currentWorker][voting.voteID] = voting.workerToMatchResult[msg.sender];
         }
     }
 
@@ -312,7 +312,7 @@ library LibVoting {
         VotingStorage storage _votingStorage = getStorage();
 
         uint256 winnerCount = 0;
-        bytes32 matchInput = voting.matchInput;
+        bytes32 voteID = voting.voteID;
         address payable[] memory _winners = new address payable[](voting.winningMatchVoteCount);
 
         for (uint256 i = 0; i < _votingStorage.numberOfWorkers; i++) {
@@ -322,7 +322,7 @@ library LibVoting {
                 winnerCount++;
             }
         }
-        _votingStorage.winnersList[matchInput] = _winners;
+        _votingStorage.winnersList[voteID] = _winners;
     }
 
     function _updateWorkersVote(Voting storage voting) internal {
@@ -348,10 +348,10 @@ library LibVoting {
         return vote.status == Status.Completed;
     }
 
-    function _getWinners(bytes32 matchInput) internal view returns (address payable[] memory _winners) {
+    function _getWinners(bytes32 voteID) internal view returns (address payable[] memory _winners) {
         VotingStorage storage _votingStorage = getStorage();
 
-        Voting storage voting = _votingStorage.matchInputToVoting[matchInput];
+        Voting storage voting = _votingStorage.voteIDToVoting[voteID];
 
         _winners = new address payable[](voting.winningMatchVoteCount);
         uint256 winnerCount = 0;
@@ -364,8 +364,8 @@ library LibVoting {
         }
     }
 
-    function _getVote(bytes32 matchInput) internal view returns (Voting storage) {
-        return getStorage().matchInputToVoting[matchInput];
+    function _getVote(bytes32 voteID) internal view returns (Voting storage) {
+        return getStorage().voteIDToVoting[voteID];
     }
 
     /// @notice Check if this account allowed to vote
