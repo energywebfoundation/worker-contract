@@ -457,7 +457,7 @@ describe("VotingFacet", function () {
         expect(await matchVoting.getMatch(timeframes[ 0 ].input)).to.equal(
             timeframes[ 0 ].output
         );
-        expect(await matchVoting.numberOfMatchInputs()).to.equal(1);
+        expect(await matchVoting.numberOfvotingSessions()).to.equal(1);
     });
 
     it("consensus can be reached with simple majority", async () => {

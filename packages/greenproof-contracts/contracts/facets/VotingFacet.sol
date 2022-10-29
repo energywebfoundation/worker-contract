@@ -38,16 +38,16 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice `vote` - Each worker votes for a given matchResult, increasing the number of votes for this matchResult.
-     * @param matchInput - The identifier of the vote
+     * @param voteID - The identifier of the vote
      * @param matchResult - The actual vote of the worker
      * @dev The winning vote is determined by simple majority. When consensus is not reached the voting is restarted.
      */
-    function vote(bytes32 matchInput, bytes32 matchResult) external {
+    function vote(bytes32 voteID, bytes32 matchResult) external {
         if ((msg.sender.isNotWorker())) {
             revert LibVoting.NotWhitelisted();
         }
 
-        LibVoting.Voting storage voting = LibVoting._getVote(matchInput);
+        LibVoting.Voting storage voting = LibVoting._getVote(voteID);
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if (voting._isExpired()) {
@@ -56,7 +56,7 @@ contract VotingFacet is IVoting, IReward {
 
         if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
             // we prevent wasting computation if the vote is the same as the previous one
-            if (votingStorage.workerVotes[msg.sender][matchInput] == matchResult) {
+            if (votingStorage.workerVotes[msg.sender][voteID] == matchResult) {
                 return;
             }
 
@@ -69,13 +69,13 @@ contract VotingFacet is IVoting, IReward {
 
                 voting._updateVoteResult(newWinningMatch, newVoteCount);
 
-                emit WinningMatch(matchInput, newWinningMatch, newVoteCount);
+                emit WinningMatch(voteID, newWinningMatch, newVoteCount);
 
-                LibVoting._reward(votingStorage.winnersList[matchInput]);
+                LibVoting._reward(votingStorage.winnersList[voteID]);
             }
         } else {
             if (voting._hasNotStarted()) {
-                LibVoting._startVotingSession(matchInput);
+                LibVoting._startVotingSession(voteID);
             }
 
             voting._recordVote(matchResult);
@@ -134,8 +134,8 @@ contract VotingFacet is IVoting, IReward {
         LibDiamond.enforceIsContractOwner();
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        for (uint256 i = 0; i < votingStorage.matchInputs.length; i++) {
-            LibVoting.Voting storage voting = votingStorage.matchInputToVoting[votingStorage.matchInputs[i]];
+        for (uint256 i = 0; i < votingStorage.voteIDs.length; i++) {
+            LibVoting.Voting storage voting = votingStorage.voteIDToVoting[votingStorage.voteIDs[i]];
 
             if (voting._isExpired()) {
                 voting._resetVotingSession();
@@ -145,11 +145,11 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice getWinners - a getter function to retreieve the list of workers who voted for the winning macth
-     * @param matchInput - The identifier of the vote
+     * @param voteID - The identifier of the vote
      * @return winnersList - the List of worker's addresses
      */
-    function getWinners(bytes32 matchInput) external view returns (address payable[] memory winnersList) {
-        winnersList = LibVoting._getWinners(matchInput);
+    function getWinners(bytes32 voteID) external view returns (address payable[] memory winnersList) {
+        winnersList = LibVoting._getWinners(voteID);
     }
 
     function getMatch(bytes32 input) external view returns (bytes32) {
@@ -177,28 +177,28 @@ contract VotingFacet is IVoting, IReward {
         return _workers;
     }
 
-    function winners(bytes32 matchInput) external view override returns (address payable[] memory) {
+    function winners(bytes32 voteID) external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.winnersList[matchInput];
+        return votingStorage.winnersList[voteID];
     }
 
-    function getWinningMatch(bytes32 matchInput) external view returns (bytes32) {
+    function getWinningMatch(bytes32 voteID) external view returns (bytes32) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.winningMatches[matchInput];
+        return votingStorage.winningMatches[voteID];
     }
 
-    function getWorkerVote(bytes32 matchInput, address workerAddress) external view override returns (bytes32 matchResult) {
+    function getWorkerVote(bytes32 voteID, address workerAddress) external view override returns (bytes32 matchResult) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.workerVotes[workerAddress][matchInput];
+        return votingStorage.workerVotes[workerAddress][voteID];
     }
 
-    function numberOfMatchInputs() external view returns (uint256) {
+    function numberOfvotingSessions() external view returns (uint256) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.matchInputs.length;
+        return votingStorage.voteIDs.length;
     }
 
     function replenishRewardPool() external payable override {
