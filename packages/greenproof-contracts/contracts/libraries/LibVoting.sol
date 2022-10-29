@@ -201,10 +201,10 @@ library LibVoting {
         bytes32 voteID = voting.voteID;
 
         voting.winningMatchVoteCount = newVoteCount;
-        bytes32 winMatch = votingStorage.voteIDToVoting[voteID].winningMatch;
+        bytes32 currentWinningMatch = votingStorage.voteIDToVoting[voteID].winningMatch;
 
         //we prevent updating if the final winning match did not change
-        if (winMatch != newWinningMatch) {
+        if (currentWinningMatch != newWinningMatch) {
             votingStorage.voteIDToVoting[voteID].winningMatch = newWinningMatch;
 
             //We update winningMatches list
