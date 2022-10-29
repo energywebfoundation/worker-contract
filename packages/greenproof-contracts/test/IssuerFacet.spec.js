@@ -24,7 +24,7 @@ let worker1;
 let worker2;
 let leaves3;
 let dataTree;
-let receiver;
+let generator;
 let provider;
 let dataTree2;
 let dataTree3;
@@ -34,7 +34,7 @@ let issuerFacet;
 let merkleInfos;
 let votingFacet;
 let diamondAddress;
-let receiverAddress;
+let generatorAddress;
 let testCounter = 0;
 let lastTokenID = 0;
 let proofManagerFacet;
@@ -122,7 +122,7 @@ describe("IssuerFacet", function () {
       owner,
       issuer,
       minter,
-      receiver,
+      generator,
       revoker,
       nonAuthorizedOperator,
       worker1,
@@ -183,7 +183,7 @@ describe("IssuerFacet", function () {
       diamondAddress
     );
 
-    receiverAddress = receiver.address;
+    generatorAddress = generator.address;
 
     leaves = data.map(item => createPreciseProof(item).getHexRoot());
     leaves2 = data2.map(item => createPreciseProof(item).getHexRoot());
@@ -206,7 +206,7 @@ describe("IssuerFacet", function () {
 
     it("checks that the certified generation volume is zero before minting", async () => {
       const nextTokenID = lastTokenID + 1;
-      const amountBeforeMint = await issuerFacet.balanceOf(receiverAddress, nextTokenID);
+      const amountBeforeMint = await issuerFacet.balanceOf(generatorAddress, nextTokenID);
 
       expect(amountBeforeMint).to.equal(0);
     });
@@ -236,13 +236,14 @@ describe("IssuerFacet", function () {
       const volumeLeaf = hash('volume' + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
+      const volumeInWei = parseEther(volume.toString());
 
       lastTokenID++;
       await expect(
           issuerFacet
             .connect(issuer)
-            .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
-        ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
+            .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
+        ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volumeInWei, generatorAddress);
     });
 
     it("reverts when issuers send dupplicate proof issuance requests", async () => {
@@ -259,12 +260,12 @@ describe("IssuerFacet", function () {
      await expect(
          issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
      ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`)
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {
-      const amountMinted = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
+      const amountMinted = await issuerFacet.balanceOf(generatorAddress, lastTokenID);
 
       expect(amountMinted).to.equal(parseEther(volume.toString()));
     });
@@ -272,10 +273,10 @@ describe("IssuerFacet", function () {
     it("should correctly transfer certificates", async () => {
       const data = ethers.utils.formatBytes32String("");
       await expect(
-        issuerFacet.connect(receiver).safeTransferFrom(receiverAddress, owner.address, lastTokenID, parseEther("2"), data)
-      ).to.emit(issuerFacet, "TransferSingle").withArgs(receiverAddress, receiverAddress, owner.address, lastTokenID, parseEther("2"));
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, lastTokenID, parseEther("2"), data)
+      ).to.emit(issuerFacet, "TransferSingle").withArgs(generatorAddress, generatorAddress, owner.address, lastTokenID, parseEther("2"));
 
-      const generatorCertificateAmount = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
+      const generatorCertificateAmount = await issuerFacet.balanceOf(generatorAddress, lastTokenID);
 
       expect(generatorCertificateAmount).to.equal(parseEther((volume - 2).toString()));
 
@@ -289,15 +290,15 @@ describe("IssuerFacet", function () {
       const certificateOwners = await issuerFacet.getCertificateOwners(lastTokenID);
        console.log(`Owners of certificate ID ${lastTokenID} : `, certificateOwners);
        
-       expect(certificateOwners).to.be.deep.equal([ receiverAddress, owner.address ]);
+       expect(certificateOwners).to.be.deep.equal([ generatorAddress, owner.address ]);
     });
 
     it("should get all certificates of one owner", async () => {
       
       const ownersCertificates = await proofManagerFacet.getProofsOf(owner.address);
-      const generatorCertificates = await proofManagerFacet.getProofsOf(receiver.address);
+      const generatorCertificates = await proofManagerFacet.getProofsOf(generator.address);
        console.log(`${owner.address}' certificates : `, ownersCertificates);
-       console.log(`${receiver.address}' certificates : `, generatorCertificates);
+       console.log(`${generator.address}' certificates : `, generatorCertificates);
        
     });
 
@@ -322,7 +323,7 @@ describe("IssuerFacet", function () {
       const volumeRootHash = volumeTree.getHexRoot();
 
       await expect(
-        issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, receiverAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof, tokenURI)
+        issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, generatorAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof, tokenURI)
       ).to.be.revertedWith(wrongInputHash);
     });
   });
@@ -359,6 +360,24 @@ describe("IssuerFacet", function () {
       ).to.emit(proofManagerFacet, "ProofRevoked");
     });
 
+    it("it should revert when transfering reevoked proof to another wallet than generator", async () => {
+      const data = ethers.utils.formatBytes32String("");
+      let generatorCertificateAmount = await issuerFacet.balanceOf(generatorAddress, lastTokenID);
+
+      await expect(
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, proofID1, parseEther("1"), data)
+      ).to.be.revertedWith("non tradable revoked proof");
+    });
+
+    it("it should allow transfer of revoked proof to generator", async () => {
+      const data = ethers.utils.formatBytes32String("");
+      let customerRevokedAmount = await issuerFacet.balanceOf(owner.address, lastTokenID);
+
+      await expect(
+        issuerFacet.connect(owner).safeTransferFrom(owner.address, generatorAddress, lastTokenID, customerRevokedAmount, data)
+      ).to.emit(issuerFacet, "TransferSingle").withArgs(owner.address, owner.address, generatorAddress, lastTokenID, customerRevokedAmount);
+    });
+  
     it("should prevent dupplicate revocation", async () => {
       await grantRole(revoker, revokerRole);
       await expect(
@@ -395,25 +414,26 @@ describe("IssuerFacet", function () {
       const volumeLeaf = hash('volume' + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
+      const volumeInWei = parseEther(volume.toString());
 
       lastTokenID++;
       await expect(
          issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data3[1].volume, volumeProof, tokenURI)
-      ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data3[1].volume, volumeProof, tokenURI)
+      ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volumeInWei, generatorAddress);
 
       //step3: retire proof
-      tx = await proofManagerFacet.connect(receiver).retireProof(lastTokenID, volume);
+      tx = await proofManagerFacet.connect(generator).retireProof(lastTokenID, volume);
       await tx.wait();
 
       const { timestamp } = await provider.getBlock(tx.blockNumber);
-      await expect(tx).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, receiverAddress, timestamp, 42);
+      await expect(tx).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, generatorAddress, timestamp, 42);
     });
 
     it("should revert when retirement amount exceeds owned volume", async () => {
       await expect(
-        proofManagerFacet.connect(receiver).retireProof(lastTokenID, parseEther("100"))
+        proofManagerFacet.connect(generator).retireProof(lastTokenID, parseEther("100"))
       ).to.be.revertedWith("Insufficient volume owned");
       
     });
