@@ -17,8 +17,6 @@ library LibVoting {
         uint256 start;
         // Number of votes for winning match
         uint256 winningMatchVoteCount;
-        /// Number of votes for winning match on replayed votes
-        uint256 replayedWinningMatchVoteCount;
         // Input match
         bytes32 voteID;
         /// List of all match results with at least one replayed vote
@@ -136,7 +134,7 @@ library LibVoting {
         returns (
             bool shouldUpdateVoting,
             bytes32 replayedWinningMatch,
-            uint256 replayedWinningMatchVoteCount
+            uint256 newVoteCount
         )
     {
         if (voting.workerToReplayedMatchResult[msg.sender] != 0) {
@@ -152,15 +150,11 @@ library LibVoting {
         }
         voting.replayedMatchResultToVoteCount[matchResult]++;
 
-        if (voting.replayedMatchResultToVoteCount[matchResult] > voting.replayedWinningMatchVoteCount) {
-            voting.replayedWinningMatchVoteCount = voting.replayedMatchResultToVoteCount[matchResult];
+        if (voting.replayedMatchResultToVoteCount[matchResult] >= _majority()) {
             voting.replayedWinningMatch = matchResult;
-
-            if (voting.replayedWinningMatchVoteCount >= _majority()) {
-                shouldUpdateVoting = true;
-                replayedWinningMatch = voting.replayedWinningMatch;
-                replayedWinningMatchVoteCount = voting.replayedWinningMatchVoteCount;
-            }
+            shouldUpdateVoting = true;
+            replayedWinningMatch = voting.replayedWinningMatch;
+            newVoteCount = voting.replayedMatchResultToVoteCount[matchResult];
         }
     }
 
