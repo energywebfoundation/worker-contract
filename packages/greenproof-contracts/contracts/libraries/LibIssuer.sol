@@ -24,7 +24,7 @@ library LibIssuer {
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
-    event ProofMinted(uint256 indexed proofID, uint256 indexed volume);
+    event ProofMinted(uint256 indexed proofID, uint256 indexed volume, address indexed receiver);
     event IssuanceRequested(uint256 indexed proofID);
     event RequestRejected(uint256 indexed proofID);
 
@@ -46,7 +46,7 @@ library LibIssuer {
 
     function _registerProof(
         bytes32 dataHash,
-        address receiver,
+        address generator,
         uint256 amount,
         uint256 proofID,
         bytes32 voteID
@@ -56,7 +56,7 @@ library LibIssuer {
 
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
-        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash, receiver);
+        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash, generator);
         issuer.dataToCertificateID[dataHash] = proofID;
         issuer.voteToCertificates[voteID][dataHash] = proofID;
     }
@@ -75,7 +75,7 @@ library LibIssuer {
         }
     }
 
-    function _getVolumeHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
+    function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
         string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }

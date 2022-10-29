@@ -31,23 +31,25 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
      * @param voteID - The identifier of the vote
-     * @param recipient - The address of the wallet which will receive the minted certificate tokens (i.e - generator's wallet)
+     * @param generator - The address of the wallet which will receive the minted certificate tokens (i.e - generator's wallet)
      * @param dataHash - The merkleRoot hash of the data we are certifying.
      * @param dataProof - The proofs path to verify that data is part of the vote consensus merkleTree
-     * @param volume - The amount of generated green ressource (electricity / organic gas /..) we want to certify
-     * @param volumeProof - the proofs path to verify that the amount of volume we want to certify is part of the `dataHash` merkleTree.
+     * @param amount - The amount of generated green resource (electricity / organic gas /..) we want to certify
+     * @param amountProof - the proofs path to verify that the amount we want to certify is part of the `dataHash` merkleTree.
      * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
      */
     function requestProofIssuance(
         bytes32 voteID,
-        address recipient,
+        address generator,
         bytes32 dataHash,
         bytes32[] memory dataProof,
-        uint256 volume,
-        bytes32[] memory volumeProof,
+        uint256 amount,
+        bytes32[] memory amountProof,
         string memory tokenUri
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        require(generator != address(0), "issuance to null address forbidden");
 
         if (dataHash._isCertified()) {
             // this prevents duplicate issuance of the same certificate ID
@@ -58,15 +60,15 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
             revert LibIssuer.NotInConsensus(voteID);
         }
 
-        bytes32 volumeHash = volume._getVolumeHash();
-        require(LibProofManager._verifyProof(dataHash, volumeHash, volumeProof), "Volume : Not part of this consensus");
+        bytes32 amountHash = amount._getAmountHash();
+        require(LibProofManager._verifyProof(dataHash, amountHash, amountProof), "amount : Not part of this consensus");
 
         LibIssuer._incrementProofIndex();
-        LibIssuer._registerProof(dataHash, recipient, volume, issuer.lastProofIndex, voteID);
-        uint256 volumeInWei = volume * 1 ether;
-        _mint(recipient, issuer.lastProofIndex, volumeInWei, "");
+        LibIssuer._registerProof(dataHash, generator, amount, issuer.lastProofIndex, voteID);
+        uint256 amountInWei = amount * 1 ether;
+        _mint(generator, issuer.lastProofIndex, amountInWei, "");
         _setTokenURI(issuer.lastProofIndex, tokenUri);
-        emit LibIssuer.ProofMinted(issuer.lastProofIndex, volume);
+        emit LibIssuer.ProofMinted(issuer.lastProofIndex, amountInWei, generator);
     }
 
     /**
@@ -110,9 +112,25 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        super.safeTransferFrom(from, to, id, amount, data);
 
         require(id > 0 && id <= issuer.lastProofIndex, "transfer: wrong tokenId");
         require(issuer.mintedProofs[id].isRevoked == false || to == issuer.mintedProofs[id].generator, "non tradable revoked proof");
-        super.safeTransferFrom(from, to, id, amount, data);
+    }
+
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) public override(ERC1155Base, IERC1155) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            require(ids[i] > 0 && ids[i] <= issuer.lastProofIndex, "transferBatch: wrong tokenId included");
+            require(issuer.mintedProofs[ids[i]].isRevoked == false || to == issuer.mintedProofs[ids[i]].generator, "non tradable revoked proof");
+        }
+        super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
 }
