@@ -16,6 +16,7 @@ library LibClaimManager {
 
     struct ClaimManagerStorage {
         address claimManagerAddress;
+        address claimsRevocationRegistry;
         Role workerRole;
         Role issuerRole;
         Role revokerRole;
@@ -32,23 +33,29 @@ library LibClaimManager {
             revert NotInitializedClaimManager();
         }
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation
-        return IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
+        bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
+        bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(_role, _subject);
+
+        return (isSubjectEnrolled && !isRoleRevoked);
     }
 
     function init(
-        address _claimManagerAddress,
-        bytes32 _issuerRole,
-        bytes32 _revokerRole,
-        bytes32 _workerRole
+        address claimManagerAddress,
+        bytes32 issuerRole,
+        bytes32 revokerRole,
+        bytes32 workerRole,
+        address claimsRevocationRegistry
     ) internal {
         ClaimManagerStorage storage claimStore = getStorage();
 
         require(claimStore.claimManagerAddress == address(0), "ClaimManager Already initialized");
+        require(claimStore.claimsRevocationRegistry == address(0), "claimsRevocationRegistry Already initialized");
 
-        claimStore.claimManagerAddress = _claimManagerAddress;
-        claimStore.issuerRole = Role({name: _issuerRole, version: 1});
-        claimStore.revokerRole = Role({name: _revokerRole, version: 1});
-        claimStore.workerRole = Role({name: _workerRole, version: 1});
+        claimStore.claimManagerAddress = claimManagerAddress;
+        claimStore.claimsRevocationRegistry = claimsRevocationRegistry;
+        claimStore.issuerRole = Role({name: issuerRole, version: 1});
+        claimStore.revokerRole = Role({name: revokerRole, version: 1});
+        claimStore.workerRole = Role({name: workerRole, version: 1});
     }
 
     function setIssuerVersion(uint256 _newVersion) internal returns (uint256 oldRoleVersion) {

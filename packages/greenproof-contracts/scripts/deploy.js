@@ -7,7 +7,6 @@ const { getSelectors, FacetCutAction } = require('./libraries/diamond.js');
 
 config();
 
-const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
 const ROLES = {
   issuerRole: ethers.utils.namehash("issuer"),
   revokerRole: ethers.utils.namehash("revoker"),
@@ -34,6 +33,7 @@ async function deployDiamond(
   votingTimeLimit,
   rewardAmount,
   claimManagerAddress,
+  claimRevocationRegistryAddress,
   roles,
   isDiamondTest = false,
   contractOwner,
@@ -64,7 +64,8 @@ async function deployDiamond(
     issuerRole,
     revokerRole,
     workerRole,
-    revocablePeriod
+    revocablePeriod,
+    claimRevocationRegistryAddress
   );
   await diamond.deployed();
   console.log("Diamond deployed:", diamond.address);
@@ -137,7 +138,8 @@ if (runningFromCLI()) {
   deployDiamond(
     15 * 60,
     rewardAmount,
-    VOLTA_CLAIM_MANAGER,
+    process.env.VOLTA_CLAIM_MANAGER,
+    process.env.VOLTA_CLAIMS_REVOCATION_REGISTRY,
     getRoles(),
     false
   )

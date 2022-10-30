@@ -7,7 +7,7 @@ const {
   deployMockContract,
   solidity,
 } = require("ethereum-waffle");
-const { claimManagerInterface, getMerkleProof } = require("./utils");
+const { claimManagerInterface, getMerkleProof, claimRevocationInterface } = require("./utils");
 const { createMerkleTree, createPreciseProof, hash, stringify } = require('@energyweb/greenproof-merkle-tree')
 chai.use(solidity);
 
@@ -140,16 +140,30 @@ describe("IssuerFacet", function () {
       claimManagerInterface
     );
 
+         //  Mocking claimsRevocationRegistry
+    const claimsRevocationRegistryMocked = await deployMockContract(
+        owner,
+        claimRevocationInterface
+    );
+
     grantRole = async (operatorWallet, role) => {
-      await claimManagerMocked.mock.hasRole
-        .withArgs(operatorWallet.address, role, defaultVersion)
-        .returns(true);
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(true);
+        
+        await claimsRevocationRegistryMocked.mock.isRevoked
+            .withArgs(role, operatorWallet.address)
+            .returns(false);
     };
 
     revokeRole = async (operatorWallet, role) => {
-      await claimManagerMocked.mock.hasRole
-        .withArgs(operatorWallet.address, role, defaultVersion)
-        .returns(false);
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(true);
+        
+        await claimsRevocationRegistryMocked.mock.isRevoked
+            .withArgs(role, operatorWallet.address)
+            .returns(true);
     };
 
     const roles = {
@@ -162,6 +176,7 @@ describe("IssuerFacet", function () {
       timeLimit,
       rewardAmount,
       claimManagerMocked.address,
+      claimsRevocationRegistryMocked.address,
       roles
     );
     diamondCutFacet = await ethers.getContractAt(
