@@ -270,6 +270,25 @@ describe("IssuerFacet", function () {
       expect(amountMinted).to.equal(parseEther(volume.toString()));
     });
 
+    it("should revert when one tries to transfer token ID = 0", async () => {
+      const transferBytesData = ethers.utils.formatBytes32String("");
+      
+      //transferring token ID == 0
+      await expect(
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, 0, parseEther("2"), transferBytesData)
+      ).to.be.revertedWith("transfer: invalid zero token ID");
+    });
+
+    it("should revert when one tries to transfer token ID > lastTokenIndex", async () => {
+      const transferBytesData = ethers.utils.formatBytes32String("");
+      const invalidTokenIndex = 42;
+      
+      //transferring token ID == 42
+      await expect(
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, invalidTokenIndex, parseEther("2"), transferBytesData)
+      ).to.be.revertedWith("transfer: tokenId greater than issuer.lastProofIndex");
+    });
+
     it("should correctly transfer certificates", async () => {
       const data = ethers.utils.formatBytes32String("");
       await expect(
