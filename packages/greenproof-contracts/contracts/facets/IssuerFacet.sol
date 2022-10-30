@@ -112,10 +112,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-        super.safeTransferFrom(from, to, id, amount, data);
 
-        require(id > 0 && id <= issuer.lastProofIndex, "transfer: wrong tokenId");
+        require(id != 0, "transfer: invalid zero token ID");
+        require(id <= issuer.lastProofIndex, "transfer: tokenId greater than issuer.lastProofIndex");
         require(issuer.mintedProofs[id].isRevoked == false || to == issuer.mintedProofs[id].generator, "non tradable revoked proof");
+        super.safeTransferFrom(from, to, id, amount, data);
     }
 
     function safeBatchTransferFrom(
@@ -128,7 +129,8 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         for (uint256 i = 0; i < ids.length; i++) {
-            require(ids[i] > 0 && ids[i] <= issuer.lastProofIndex, "transferBatch: wrong tokenId included");
+            require(ids[i] != 0, "transfer: invalid zero token ID");
+            require(ids[i] <= issuer.lastProofIndex, "transferBatch: tokenId greater than issuer.lastProofIndex");
             require(issuer.mintedProofs[ids[i]].isRevoked == false || to == issuer.mintedProofs[ids[i]].generator, "non tradable revoked proof");
         }
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
