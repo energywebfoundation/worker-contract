@@ -116,7 +116,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
         require(id != 0, "transfer: invalid zero token ID");
         require(id <= issuer.latestCertificateId, "transfer: tokenId greater than issuer.latestCertificateId");
-        require(issuer.mintedProofs[id].isRevoked == false || to == issuer.mintedProofs[id].generator, "non tradable revoked proof");
+        require(issuer.certificates[id].isRevoked == false || to == issuer.certificates[id].generator, "non tradable revoked proof");
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
@@ -132,7 +132,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         for (uint256 i = 0; i < ids.length; i++) {
             require(ids[i] != 0, "transfer: invalid zero token ID");
             require(ids[i] <= issuer.latestCertificateId, "transferBatch: tokenId greater than issuer.latestCertificateId");
-            require(issuer.mintedProofs[ids[i]].isRevoked == false || to == issuer.mintedProofs[ids[i]].generator, "non tradable revoked proof");
+            require(issuer.certificates[ids[i]].isRevoked == false || to == issuer.certificates[ids[i]].generator, "non tradable revoked proof");
         }
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }

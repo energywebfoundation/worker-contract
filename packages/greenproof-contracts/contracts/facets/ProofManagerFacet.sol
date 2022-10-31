@@ -19,7 +19,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     function retireProof(uint256 proofID, uint256 amount) external override {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(issuer.mintedProofs[proofID].isRevoked == false, "proof revoked");
+        require(issuer.certificates[proofID].isRevoked == false, "proof revoked");
         require(_balanceOf(msg.sender, proofID) >= amount, "Insufficient volume owned");
         _burn(msg.sender, proofID, amount);
         emit ProofRetired(proofID, msg.sender, block.timestamp, amount);
@@ -27,45 +27,45 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
     function revokeProof(uint256 proofID) external override onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-        uint256 issuanceDate = issuer.mintedProofs[proofID].issuanceDate;
+        uint256 issuanceDate = issuer.certificates[proofID].issuanceDate;
 
         if (proofID > issuer.latestCertificateId) {
             revert LibIssuer.NonExistingProof(proofID);
         }
-        require(issuer.mintedProofs[proofID].isRevoked == false, "already revoked proof");
+        require(issuer.certificates[proofID].isRevoked == false, "already revoked proof");
         if (issuanceDate + issuer.revocablePeriod < block.timestamp) {
             revert LibIssuer.NonRevokableProof(proofID, issuanceDate, issuanceDate + issuer.revocablePeriod);
         }
-        issuer.mintedProofs[proofID].isRevoked = true;
+        issuer.certificates[proofID].isRevoked = true;
         emit ProofRevoked(proofID);
     }
 
-    function getProof(uint256 proofID) external view override returns (IGreenProof.Proof memory proof) {
+    function getProof(uint256 proofID) external view override returns (IGreenProof.Certificate memory proof) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         if (proofID > issuer.latestCertificateId) {
             revert LibIssuer.NonExistingProof(proofID);
         }
-        proof = issuer.mintedProofs[proofID];
+        proof = issuer.certificates[proofID];
     }
 
-    function getProofsOf(address userAddress) external view override returns (IGreenProof.Proof[] memory) {
+    function getProofsOf(address userAddress) external view override returns (IGreenProof.Certificate[] memory) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         require(userTokenList.length != 0, "No proofs for this address");
-        IGreenProof.Proof[] memory userProofs = new IGreenProof.Proof[](userTokenList.length);
+        IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](userTokenList.length);
 
         for (uint256 i = 0; i < userTokenList.length; i++) {
             uint256 currentTokenID = userTokenList[i];
-            userProofs[i] = IGreenProof.Proof({
-                isRevoked: issuer.mintedProofs[currentTokenID].isRevoked,
-                isRetired: issuer.mintedProofs[currentTokenID].isRetired,
-                certificateID: issuer.mintedProofs[currentTokenID].certificateID,
-                issuanceDate: issuer.mintedProofs[currentTokenID].issuanceDate,
+            userProofs[i] = IGreenProof.Certificate({
+                isRevoked: issuer.certificates[currentTokenID].isRevoked,
+                isRetired: issuer.certificates[currentTokenID].isRetired,
+                certificateID: issuer.certificates[currentTokenID].certificateID,
+                issuanceDate: issuer.certificates[currentTokenID].issuanceDate,
                 volume: _balanceOf(userAddress, currentTokenID) / 10**18,
-                merkleRootHash: issuer.mintedProofs[currentTokenID].merkleRootHash,
-                generator: issuer.mintedProofs[currentTokenID].generator
+                merkleRootHash: issuer.certificates[currentTokenID].merkleRootHash,
+                generator: issuer.certificates[currentTokenID].generator
             });
         }
 

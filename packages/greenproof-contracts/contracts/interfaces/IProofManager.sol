@@ -8,9 +8,9 @@ interface IProofManager {
 
     function retireProof(uint256 proofID, uint256 amount) external;
 
-    function getProof(uint256 proofID) external view returns (IGreenProof.Proof memory proof);
+    function getProof(uint256 proofID) external view returns (IGreenProof.Certificate memory proof);
 
-    function getProofsOf(address userAddress) external view returns (IGreenProof.Proof[] memory);
+    function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory);
 
     event ProofRevoked(uint256 indexed proofID);
 

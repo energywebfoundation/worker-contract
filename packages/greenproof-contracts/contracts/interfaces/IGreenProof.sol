@@ -4,7 +4,7 @@ pragma solidity ^0.8.16;
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 
 interface IGreenProof {
-    struct Proof {
+    struct Certificate {
         bool isRevoked;
         bool isRetired;
         uint256 certificateID;
