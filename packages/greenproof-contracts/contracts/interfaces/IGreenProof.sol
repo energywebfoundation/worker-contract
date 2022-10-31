@@ -6,7 +6,6 @@ import {LibIssuer} from "../libraries/LibIssuer.sol";
 interface IGreenProof {
     struct Certificate {
         bool isRevoked;
-        bool isRetired;
         uint256 certificateID;
         uint256 issuanceDate;
         uint256 volume;

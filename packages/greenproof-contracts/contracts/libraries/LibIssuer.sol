@@ -54,19 +54,11 @@ library LibIssuer {
         bytes32 voteID
     ) internal {
         bool isRevoked = false;
-        bool isRetired = false;
+        // bool isRetired = false;
 
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
-        issuer.certificates[certificateID] = IGreenProof.Certificate(
-            isRevoked,
-            isRetired,
-            certificateID,
-            block.timestamp,
-            amount,
-            dataHash,
-            generator
-        );
+        issuer.certificates[certificateID] = IGreenProof.Certificate(isRevoked, certificateID, block.timestamp, amount, dataHash, generator);
         issuer.dataToCertificateID[dataHash] = certificateID;
         issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }
