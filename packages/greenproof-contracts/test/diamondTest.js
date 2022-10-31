@@ -15,7 +15,7 @@ const { assert, expect } = require("chai");
 
 const { parseEther } = require("ethers").utils;
 
-const { claimManagerInterface } = require("./utils");
+const { claimManagerInterface, claimRevocationInterface } = require("./utils");
 
 const chai = require("chai");
 
@@ -52,6 +52,7 @@ describe("DiamondTest", async function () {
   let result;
   let owner;
   let claimManagerMocked;
+  let claimsRevocationRegistryMocked;
   const addresses = [];
 
 
@@ -63,11 +64,18 @@ describe("DiamondTest", async function () {
       owner,
       claimManagerInterface
     );
+
+    //  Mocking claimsRevocationRegistry
+    claimsRevocationRegistryMocked = await deployMockContract(
+      owner,
+      claimRevocationInterface
+    );
     
     diamondAddress = await deployDiamond(
       timeLimit,
       rewardAmount,
       claimManagerMocked.address,
+      claimsRevocationRegistryMocked.address,
       roles,
       isDiamondTest
     );
@@ -98,6 +106,7 @@ describe("DiamondTest", async function () {
           timeLimit,
           rewardAmount,
           claimManagerMocked.address,
+          claimsRevocationRegistryMocked.address,
           roles,
           isDiamondTest,
           ethers.constants.AddressZero
@@ -112,11 +121,27 @@ describe("DiamondTest", async function () {
           timeLimit,
           rewardAmount,
           ethers.constants.AddressZero,
+          claimsRevocationRegistryMocked.address,
           roles,
           isDiamondTest,
         )
       ).to.be.revertedWith("init: Invalid claimManager");
     });
+
+    it("should revert if claimsRevocationRegistry address is 0", async () => {
+      
+      await expect(
+        deployDiamond(
+          timeLimit,
+          rewardAmount,
+          claimManagerMocked.address,
+          ethers.constants.AddressZero,
+          roles,
+          isDiamondTest,
+        )
+      ).to.be.revertedWith("init: Invalid claimsRevocationRegistry");
+    });
+
 
     it("should revert if rewardAmount is to 0", async () => {
       const nullRewardAmount = 0;
@@ -126,6 +151,7 @@ describe("DiamondTest", async function () {
           timeLimit,
           nullRewardAmount,
           claimManagerMocked.address,
+          claimsRevocationRegistryMocked.address,
           roles,
           isDiamondTest,
         )
@@ -141,6 +167,7 @@ describe("DiamondTest", async function () {
           timeLimit,
           rewardAmount,
           claimManagerMocked.address,
+          claimsRevocationRegistryMocked.address,
           roles,
           isDiamondTest,
           contractOwner,

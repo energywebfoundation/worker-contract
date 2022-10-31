@@ -11,7 +11,7 @@ const { assert } = require("chai");
 
 const { parseEther } = require("ethers").utils;
 
-const { claimManagerInterface } = require("./utils");
+const { claimManagerInterface, claimRevocationInterface } = require("./utils");
 
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
@@ -77,6 +77,12 @@ describe("Cache bug test", async () => {
       claimManagerInterface
     );
 
+    //  Mocking claimsRevocationRegistry
+    const claimsRevocationRegistryMocked = await deployMockContract(
+        owner,
+        claimRevocationInterface
+    );
+
     const roles = {
       issuerRole,
       revokerRole,
@@ -89,6 +95,7 @@ describe("Cache bug test", async () => {
       timeLimit,
       rewardAmount,
       claimManagerMocked.address,
+      claimsRevocationRegistryMocked.address,
       roles
     );
     let diamondCutFacet = await ethers.getContractAt(
