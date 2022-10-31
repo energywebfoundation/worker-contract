@@ -61,7 +61,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
             uint256 currentTokenID = userTokenList[i];
             userProofs[i] = IGreenProof.Certificate({
                 isRevoked: issuer.certificates[currentTokenID].isRevoked,
-                isRetired: issuer.certificates[currentTokenID].isRetired,
+                // isRetired: issuer.certificates[currentTokenID].isRetired,
                 certificateID: issuer.certificates[currentTokenID].certificateID,
                 issuanceDate: issuer.certificates[currentTokenID].issuanceDate,
                 volume: _balanceOf(userAddress, currentTokenID) / 10**18,
