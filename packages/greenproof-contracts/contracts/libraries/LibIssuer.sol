@@ -18,6 +18,8 @@ library LibIssuer {
         uint256 revocablePeriod;
         mapping(bytes32 => uint256) dataToCertificateID;
         mapping(uint256 => IGreenProof.Certificate) certificates;
+        // Mapping from token ID to account balances, to track how much of certificate ID a wallet has claimed
+        mapping(uint256 => mapping(address => uint256)) claimedBalances;
         mapping(bytes32 => mapping(string => string)) disclosedData;
         //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
         mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
@@ -67,6 +69,15 @@ library LibIssuer {
         );
         issuer.dataToCertificateID[dataHash] = certificateID;
         issuer.voteToCertificates[voteID][dataHash] = certificateID;
+    }
+
+    function _registerClaimedProof(
+        uint256 certificateID,
+        address user,
+        uint256 claimedAmount
+    ) internal {
+        IssuerStorage storage issuer = _getStorage();
+        issuer.claimedBalances[certificateID][user] += claimedAmount;
     }
 
     function _isCertified(bytes32 _data) internal view returns (bool) {

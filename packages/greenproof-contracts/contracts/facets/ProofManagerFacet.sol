@@ -21,8 +21,9 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
         require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
         require(_balanceOf(msg.sender, certificateID) >= amount, "Insufficient volume owned");
+        LibIssuer._registerClaimedProof(certificateID, msg.sender, amount);
         _burn(msg.sender, certificateID, amount);
-        emit ProofRetired(certificateID, msg.sender, block.timestamp, amount);
+        emit ProofClaimed(certificateID, msg.sender, block.timestamp, amount);
     }
 
     function revokeProof(uint256 certificateID) external override onlyRevoker {
@@ -70,6 +71,12 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         }
 
         return userProofs;
+    }
+
+    function claimedBalanceOf(address user, uint256 certificateID) external view returns (uint256) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        return issuer.claimedBalances[certificateID][user];
     }
 
     function verifyProof(
