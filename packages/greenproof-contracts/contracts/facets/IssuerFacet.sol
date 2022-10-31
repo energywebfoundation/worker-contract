@@ -37,6 +37,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param amount - The amount of generated green resource (electricity / organic gas /..) we want to certify
      * @param amountProof - the proofs path to verify that the amount we want to certify is part of the `dataHash` merkleTree.
      * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
+     * @dev The generator address can not be the zero address
      */
     function requestProofIssuance(
         bytes32 voteID,
@@ -49,7 +50,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(generator != address(0), "issuance to null address forbidden");
+        require(generator != address(0), "issuance must be non-zero");
 
         if (dataHash._isCertified()) {
             // this prevents duplicate issuance of the same certificate ID

@@ -4,7 +4,7 @@ const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
 const { solidity, deployMockContract } = require("ethereum-waffle");
 const { deployDiamond } = require("../scripts/deploy");
-const { claimManagerInterface } = require("./utils");
+const { claimManagerInterface, claimRevocationInterface } = require("./utils");
 
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
@@ -63,16 +63,30 @@ describe("VotingFacet", function () {
             claimManagerInterface
         );
 
+        //  Mocking claimsRevocationRegistry
+       const claimsRevocationRegistryMocked = await deployMockContract(
+            _owner,
+            claimRevocationInterface
+        );
+
         grantRole = async (operatorWallet, role) => {
-        await claimManagerMocked.mock.hasRole
-            .withArgs(operatorWallet.address, role, defaultVersion)
-            .returns(true);
+            await claimManagerMocked.mock.hasRole
+                .withArgs(operatorWallet.address, role, defaultVersion)
+                .returns(true);
+            
+            await claimsRevocationRegistryMocked.mock.isRevoked
+                .withArgs(role, operatorWallet.address)
+                .returns(false);
         };
 
         revokeRole = async (operatorWallet, role) => {
-        await claimManagerMocked.mock.hasRole
-            .withArgs(operatorWallet.address, role, defaultVersion)
-            .returns(false);
+            await claimManagerMocked.mock.hasRole
+                .withArgs(operatorWallet.address, role, defaultVersion)
+                .returns(true);
+            
+            await claimsRevocationRegistryMocked.mock.isRevoked
+                .withArgs(role, operatorWallet.address)
+                .returns(true);
         };
 
         const roles = {
@@ -85,6 +99,7 @@ describe("VotingFacet", function () {
             timeLimit,
             rewardAmount,
             claimManagerMocked.address,
+            claimsRevocationRegistryMocked.address,
             roles
         );
         diamondCutFacet = await ethers.getContractAt(
