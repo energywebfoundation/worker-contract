@@ -17,7 +17,7 @@ library LibIssuer {
         uint256 latestCertificateId;
         uint256 revocablePeriod;
         mapping(bytes32 => uint256) dataToCertificateID;
-        mapping(uint256 => IGreenProof.Proof) mintedProofs;
+        mapping(uint256 => IGreenProof.Certificate) certificates;
         mapping(bytes32 => mapping(string => string)) disclosedData;
         //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
         mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
@@ -56,7 +56,7 @@ library LibIssuer {
 
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
-        issuer.mintedProofs[proofID] = IGreenProof.Proof(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash, generator);
+        issuer.certificates[proofID] = IGreenProof.Certificate(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash, generator);
         issuer.dataToCertificateID[dataHash] = proofID;
         issuer.voteToCertificates[voteID][dataHash] = proofID;
     }
