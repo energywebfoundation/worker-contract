@@ -24,12 +24,12 @@ library LibIssuer {
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
-    event ProofMinted(uint256 indexed proofID, uint256 indexed volume, address indexed receiver);
-    event IssuanceRequested(uint256 indexed proofID);
-    event RequestRejected(uint256 indexed proofID);
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
+    event IssuanceRequested(uint256 indexed certificateID);
+    event RequestRejected(uint256 indexed certificateID);
 
-    error NonExistingProof(uint256 proofId);
-    error NonRevokableProof(uint256 proofID, uint256 issuanceDate, uint256 revocableDateLimit);
+    error NonExistingCertificate(uint256 certificateID);
+    error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
     error NotInConsensus(bytes32 voteID);
     error AlreadyCertifiedData(bytes32 dataHash);
 
@@ -48,7 +48,7 @@ library LibIssuer {
         bytes32 dataHash,
         address generator,
         uint256 amount,
-        uint256 proofID,
+        uint256 certificateID,
         bytes32 voteID
     ) internal {
         bool isRevoked = false;
@@ -56,9 +56,17 @@ library LibIssuer {
 
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
-        issuer.certificates[proofID] = IGreenProof.Certificate(isRevoked, isRetired, proofID, block.timestamp, amount, dataHash, generator);
-        issuer.dataToCertificateID[dataHash] = proofID;
-        issuer.voteToCertificates[voteID][dataHash] = proofID;
+        issuer.certificates[certificateID] = IGreenProof.Certificate(
+            isRevoked,
+            isRetired,
+            certificateID,
+            block.timestamp,
+            amount,
+            dataHash,
+            generator
+        );
+        issuer.dataToCertificateID[dataHash] = certificateID;
+        issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }
 
     function _isCertified(bytes32 _data) internal view returns (bool) {

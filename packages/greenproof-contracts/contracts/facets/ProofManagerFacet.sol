@@ -16,37 +16,37 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _;
     }
 
-    function retireProof(uint256 proofID, uint256 amount) external override {
+    function claimProof(uint256 certificateID, uint256 amount) external override {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(issuer.certificates[proofID].isRevoked == false, "proof revoked");
-        require(_balanceOf(msg.sender, proofID) >= amount, "Insufficient volume owned");
-        _burn(msg.sender, proofID, amount);
-        emit ProofRetired(proofID, msg.sender, block.timestamp, amount);
+        require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
+        require(_balanceOf(msg.sender, certificateID) >= amount, "Insufficient volume owned");
+        _burn(msg.sender, certificateID, amount);
+        emit ProofRetired(certificateID, msg.sender, block.timestamp, amount);
     }
 
-    function revokeProof(uint256 proofID) external override onlyRevoker {
+    function revokeProof(uint256 certificateID) external override onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-        uint256 issuanceDate = issuer.certificates[proofID].issuanceDate;
+        uint256 issuanceDate = issuer.certificates[certificateID].issuanceDate;
 
-        if (proofID > issuer.latestCertificateId) {
-            revert LibIssuer.NonExistingProof(proofID);
+        if (certificateID > issuer.latestCertificateId) {
+            revert LibIssuer.NonExistingCertificate(certificateID);
         }
-        require(issuer.certificates[proofID].isRevoked == false, "already revoked proof");
+        require(issuer.certificates[certificateID].isRevoked == false, "already revoked proof");
         if (issuanceDate + issuer.revocablePeriod < block.timestamp) {
-            revert LibIssuer.NonRevokableProof(proofID, issuanceDate, issuanceDate + issuer.revocablePeriod);
+            revert LibIssuer.NonRevokableCertificate(certificateID, issuanceDate, issuanceDate + issuer.revocablePeriod);
         }
-        issuer.certificates[proofID].isRevoked = true;
-        emit ProofRevoked(proofID);
+        issuer.certificates[certificateID].isRevoked = true;
+        emit ProofRevoked(certificateID);
     }
 
-    function getProof(uint256 proofID) external view override returns (IGreenProof.Certificate memory proof) {
+    function getProof(uint256 certificateID) external view override returns (IGreenProof.Certificate memory proof) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        if (proofID > issuer.latestCertificateId) {
-            revert LibIssuer.NonExistingProof(proofID);
+        if (certificateID > issuer.latestCertificateId) {
+            revert LibIssuer.NonExistingCertificate(certificateID);
         }
-        proof = issuer.certificates[proofID];
+        proof = issuer.certificates[certificateID];
     }
 
     function getProofsOf(address userAddress) external view override returns (IGreenProof.Certificate[] memory) {
