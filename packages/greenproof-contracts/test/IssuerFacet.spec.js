@@ -226,7 +226,7 @@ describe("IssuerFacet", function () {
       expect(amountBeforeMint).to.equal(0);
     });
 
-    it("Authorized issuers can send proof issuance requests", async () => {
+    it("shoudl reject proof issuance requests if generator is the zero address", async () => {
       await grantRole(issuer, issuerRole);
       
       //1 - Run the voting process with a consensus
@@ -235,6 +235,40 @@ describe("IssuerFacet", function () {
 
       await votingFacet.connect(owner).addWorker(worker1.address);
       await votingFacet.connect(owner).addWorker(worker2.address);
+
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+  
+      const matchResult = dataTree.getHexRoot();
+      const matchResultProof = dataTree.getHexProof(leaves[0]);
+
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
+      
+      //2 - request proof issuance for the vote ID (inputHash)
+
+      console.log("stringifyed volume :: ", JSON.stringify(volume))
+      const volumeTree = createPreciseProof(data[0]);
+      const volumeLeaf = hash('volume' + JSON.stringify(volume));
+      const volumeProof = volumeTree.getHexProof(volumeLeaf);
+      const volumeRootHash = volumeTree.getHexRoot();
+      const volumeInWei = parseEther(volume.toString());
+
+      await expect(
+        issuerFacet
+          .connect(issuer)
+          .requestProofIssuance(inputHash, ethers.constants.AddressZero, volumeRootHash, matchResultProof, data[ 0 ].volume, volumeProof, tokenURI)
+      ).to.be.revertedWith("issuance must be non-zero");
+    });
+
+    it("Authorized issuers can send proof issuance requests", async () => {
+      await grantRole(issuer, issuerRole);
+      
+      //1 - Run the voting process with a consensus
+      // await grantRole(worker1, workerRole);
+      // await grantRole(worker2, workerRole);
+
+      // await votingFacet.connect(owner).addWorker(worker1.address);
+      // await votingFacet.connect(owner).addWorker(worker2.address);
 
       const inputHash = '0x' + hash(stringify(data)).toString('hex');
   
