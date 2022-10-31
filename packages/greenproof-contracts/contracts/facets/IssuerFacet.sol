@@ -65,11 +65,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         require(LibProofManager._verifyProof(dataHash, amountHash, amountProof), "amount : Not part of this consensus");
 
         LibIssuer._incrementProofIndex();
-        LibIssuer._registerProof(dataHash, generator, amount, issuer.lastProofIndex, voteID);
+        LibIssuer._registerProof(dataHash, generator, amount, issuer.latestCertificateId, voteID);
         uint256 amountInWei = amount * 1 ether;
-        _mint(generator, issuer.lastProofIndex, amountInWei, "");
-        _setTokenURI(issuer.lastProofIndex, tokenUri);
-        emit LibIssuer.ProofMinted(issuer.lastProofIndex, amountInWei, generator);
+        _mint(generator, issuer.latestCertificateId, amountInWei, "");
+        _setTokenURI(issuer.latestCertificateId, tokenUri);
+        emit LibIssuer.ProofMinted(issuer.latestCertificateId, amountInWei, generator);
     }
 
     /**
@@ -115,7 +115,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(id != 0, "transfer: invalid zero token ID");
-        require(id <= issuer.lastProofIndex, "transfer: tokenId greater than issuer.lastProofIndex");
+        require(id <= issuer.latestCertificateId, "transfer: tokenId greater than issuer.latestCertificateId");
         require(issuer.mintedProofs[id].isRevoked == false || to == issuer.mintedProofs[id].generator, "non tradable revoked proof");
         super.safeTransferFrom(from, to, id, amount, data);
     }
@@ -131,7 +131,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
         for (uint256 i = 0; i < ids.length; i++) {
             require(ids[i] != 0, "transfer: invalid zero token ID");
-            require(ids[i] <= issuer.lastProofIndex, "transferBatch: tokenId greater than issuer.lastProofIndex");
+            require(ids[i] <= issuer.latestCertificateId, "transferBatch: tokenId greater than issuer.latestCertificateId");
             require(issuer.mintedProofs[ids[i]].isRevoked == false || to == issuer.mintedProofs[ids[i]].generator, "non tradable revoked proof");
         }
         super.safeBatchTransferFrom(from, to, ids, amounts, data);

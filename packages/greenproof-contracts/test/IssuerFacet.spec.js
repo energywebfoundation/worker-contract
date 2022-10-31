@@ -335,7 +335,7 @@ describe("IssuerFacet", function () {
       //transferring token ID == 42
       await expect(
         issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, invalidTokenIndex, parseEther("2"), transferBytesData)
-      ).to.be.revertedWith("transfer: tokenId greater than issuer.lastProofIndex");
+      ).to.be.revertedWith("transfer: tokenId greater than issuer.latestCertificateId");
     });
 
     it("should correctly transfer certificates", async () => {

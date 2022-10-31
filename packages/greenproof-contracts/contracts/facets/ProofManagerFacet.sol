@@ -29,7 +29,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
         uint256 issuanceDate = issuer.mintedProofs[proofID].issuanceDate;
 
-        if (proofID > issuer.lastProofIndex) {
+        if (proofID > issuer.latestCertificateId) {
             revert LibIssuer.NonExistingProof(proofID);
         }
         require(issuer.mintedProofs[proofID].isRevoked == false, "already revoked proof");
@@ -43,7 +43,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     function getProof(uint256 proofID) external view override returns (IGreenProof.Proof memory proof) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        if (proofID > issuer.lastProofIndex) {
+        if (proofID > issuer.latestCertificateId) {
             revert LibIssuer.NonExistingProof(proofID);
         }
         proof = issuer.mintedProofs[proofID];
