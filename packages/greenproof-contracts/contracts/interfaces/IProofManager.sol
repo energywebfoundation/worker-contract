@@ -14,5 +14,5 @@ interface IProofManager {
 
     event ProofRevoked(uint256 indexed certificateID);
 
-    event ProofRetired(uint256 indexed certificateID, address indexed to, uint256 indexed timestamp, uint256 amount);
+    event ProofClaimed(uint256 indexed certificateID, address indexed to, uint256 indexed timestamp, uint256 amount);
 }
