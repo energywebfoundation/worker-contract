@@ -31,7 +31,7 @@ interface IGreenProof {
         bytes32 dataHash
     ) external;
 
-    function getCertificateOwners(uint256 proofID) external view returns (address[] memory);
+    function getCertificateOwners(uint256 certificateID) external view returns (address[] memory);
 
-    event ProofMinted(uint256 indexed proofID, uint256 indexed amount, address indexed receiver);
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed amount, address indexed receiver);
 }
