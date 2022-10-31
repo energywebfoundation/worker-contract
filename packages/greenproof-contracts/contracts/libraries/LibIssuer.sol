@@ -14,7 +14,7 @@ library LibIssuer {
     bytes32 constant DEFAULT_VCREDENTIAL_VALUE = "";
 
     struct IssuerStorage {
-        uint256 lastProofIndex;
+        uint256 latestCertificateId;
         uint256 revocablePeriod;
         mapping(bytes32 => uint256) dataToCertificateID;
         mapping(uint256 => IGreenProof.Proof) mintedProofs;
@@ -41,7 +41,7 @@ library LibIssuer {
 
     function _incrementProofIndex() internal {
         IssuerStorage storage issuer = _getStorage();
-        issuer.lastProofIndex++;
+        issuer.latestCertificateId++;
     }
 
     function _registerProof(
