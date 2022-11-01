@@ -12,6 +12,14 @@ interface IProofManager {
 
     function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory);
 
+    function claimedBalanceOf(address user, uint256 certificateID) external view returns (uint256);
+
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure returns (bool);
+
     event ProofRevoked(uint256 indexed certificateID);
 
     event ProofClaimed(uint256 indexed certificateID, address indexed to, uint256 indexed timestamp, uint256 amount);

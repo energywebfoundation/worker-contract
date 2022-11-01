@@ -494,15 +494,17 @@ describe("IssuerFacet", function () {
       let claimedProofsAmount = await proofManagerFacet.claimedBalanceOf(generatorAddress, lastTokenID);
       expect(claimedProofsAmount).to.equal(0);
       //step3: retire proof
-      tx = await proofManagerFacet.connect(generator).claimProof(lastTokenID, volume);
+      console.log("BEFORE CLAIM: Remaining Tokens balance : ", await proofManagerFacet.getProofsOf(generatorAddress))
+
+      tx = await proofManagerFacet.connect(generator).claimProof(lastTokenID, parseEther((volume - 2).toString()));
       await tx.wait();
 
       const { timestamp } = await provider.getBlock(tx.blockNumber);
-      await expect(tx).to.emit(proofManagerFacet, "ProofClaimed").withArgs(lastTokenID, generatorAddress, timestamp, 42);
+      await expect(tx).to.emit(proofManagerFacet, "ProofClaimed").withArgs(lastTokenID, generatorAddress, timestamp, parseEther((volume - 2).toString()));
 
       claimedProofsAmount = await proofManagerFacet.claimedBalanceOf(generatorAddress, lastTokenID);
-      expect(claimedProofsAmount).to.equal(42);
-      console.log("Remaining Tokens balance : ", await proofManagerFacet.getProofsOf(generatorAddress))
+      expect(claimedProofsAmount).to.equal(parseEther((volume - 2).toString()));
+      console.log("AFTER CLAIM: Remaining Tokens balance : ", await proofManagerFacet.getProofsOf(generatorAddress))
     });
 
     it("should revert when retirement amount exceeds owned volume", async () => {
