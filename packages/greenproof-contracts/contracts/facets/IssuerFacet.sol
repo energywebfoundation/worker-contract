@@ -7,9 +7,9 @@ import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
-import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
-import {ERC1155Base} from "@solidstate/contracts/token/ERC1155/base/ERC1155Base.sol";
 import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {ERC1155Base} from "@solidstate/contracts/token/ERC1155/base/ERC1155Base.sol";
+import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /**
  * @title `IssuerFacet` - The issuance component of the GreenProof core module.

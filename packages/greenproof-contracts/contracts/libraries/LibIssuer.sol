@@ -46,17 +46,21 @@ library LibIssuer {
 
     function _registerProof(
         bytes32 dataHash,
-        address generator,
+        address generatorAddress,
         uint256 amount,
         uint256 certificateID,
         bytes32 voteID
     ) internal {
-        bool isRevoked = false;
-        // bool isRetired = false;
-
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
-        issuer.certificates[certificateID] = IGreenProof.Certificate(isRevoked, certificateID, block.timestamp, amount, dataHash, generator);
+        issuer.certificates[certificateID] = IGreenProof.Certificate({
+            isRevoked: false,
+            certificateID: certificateID,
+            issuanceDate: block.timestamp,
+            volume: amount,
+            merkleRootHash: dataHash,
+            generator: generatorAddress
+        });
         issuer.dataToCertificateID[dataHash] = certificateID;
         issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }

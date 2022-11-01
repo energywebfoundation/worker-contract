@@ -42,7 +42,7 @@ contract VotingFacet is IVoting, IReward {
      * @param matchResult - The actual vote of the worker
      * @dev The winning vote is determined by simple majority. When consensus is not reached the voting is restarted.
      */
-    function vote(bytes32 voteID, bytes32 matchResult) external {
+    function vote(bytes32 voteID, bytes32 matchResult) external override {
         if ((msg.sender.isNotWorker())) {
             revert LibVoting.NotWhitelisted();
         }
@@ -88,7 +88,7 @@ contract VotingFacet is IVoting, IReward {
      * @param workerAddress - The address of the worker we want to remove
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
-    function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
+    function addWorker(address payable workerAddress) external override onlyEnrolledWorkers(workerAddress) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if (address(workerAddress).isWorker()) {
@@ -105,7 +105,7 @@ contract VotingFacet is IVoting, IReward {
      * @param workerToRemove - The address of the worker we want to remove
      * @dev only the address referenced as the contract owner is allowed to perform this
      */
-    function removeWorker(address workerToRemove) external {
+    function removeWorker(address workerToRemove) external override {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if (workerToRemove.isNotWorker()) {
@@ -129,7 +129,7 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Cancels votings that takes longer than time limit
      */
-    function cancelExpiredVotings() external {
+    function cancelExpiredVotings() external override {
         //AccessControl
         LibDiamond.enforceIsContractOwner();
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
@@ -141,15 +141,6 @@ contract VotingFacet is IVoting, IReward {
                 voting._resetVotingSession();
             }
         }
-    }
-
-    /**
-     * @notice getWinners - a getter function to retreieve the list of workers who voted for the winning macth
-     * @param voteID - The identifier of the vote
-     * @return winnersList - the List of worker's addresses
-     */
-    function getWinners(bytes32 voteID) external view returns (address payable[] memory winnersList) {
-        winnersList = LibVoting._getWinners(voteID);
     }
 
     function getMatch(bytes32 input) external view returns (bytes32) {
@@ -177,13 +168,18 @@ contract VotingFacet is IVoting, IReward {
         return _workers;
     }
 
-    function winners(bytes32 voteID) external view override returns (address payable[] memory) {
+    /**
+     * @notice getWinners - a getter function to retreieve the list of workers who voted for the winning macth
+     * @param voteID - The identifier of the vote
+     * @return winnersList - the List of worker's addresses
+     */
+    function getWinners(bytes32 voteID) external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         return votingStorage.winnersList[voteID];
     }
 
-    function getWinningMatch(bytes32 voteID) external view returns (bytes32) {
+    function getWinningMatch(bytes32 voteID) external view override returns (bytes32) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         return votingStorage.winningMatches[voteID];
@@ -195,7 +191,7 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.workerVotes[workerAddress][voteID];
     }
 
-    function numberOfvotingSessions() external view returns (uint256) {
+    function numberOfvotingSessions() external view override returns (uint256) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         return votingStorage.voteIDs.length;

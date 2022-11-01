@@ -64,7 +64,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         return userProofs;
     }
 
-    function claimedBalanceOf(address user, uint256 certificateID) external view returns (uint256) {
+    function claimedBalanceOf(address user, uint256 certificateID) external view override returns (uint256) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         return issuer.claimedBalances[certificateID][user];
@@ -74,7 +74,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         bytes32 rootHash,
         bytes32 leaf,
         bytes32[] memory proof
-    ) external pure returns (bool) {
+    ) external pure override returns (bool) {
         return LibProofManager._verifyProof(rootHash, leaf, proof);
     }
 }

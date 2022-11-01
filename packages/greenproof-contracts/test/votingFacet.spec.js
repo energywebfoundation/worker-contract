@@ -212,7 +212,7 @@ describe("VotingFacet", function () {
         ).to.not.emit(matchVoting, "WinningMatch");
 
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.empty;
             
         await expect(
@@ -224,7 +224,7 @@ describe("VotingFacet", function () {
                 .withArgs(timeframes[0].input, timeframes[0].output, 2);
             
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.deep.equal([worker1.address, worker2.address]);
     });
 
@@ -302,7 +302,7 @@ describe("VotingFacet", function () {
 
         //We check that winners are not shown before end of vote
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.empty;
         
         await expect(
@@ -322,7 +322,7 @@ describe("VotingFacet", function () {
         ).to.equal(timeframes[0].output);
 
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.deep.equal([worker1.address, worker2.address]);
         
         expect(await matchVoting.getMatch(timeframes[0].input)).to.equal(
