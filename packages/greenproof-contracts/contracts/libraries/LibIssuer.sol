@@ -3,9 +3,7 @@ pragma solidity ^0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
-
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-
 import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
@@ -76,6 +74,20 @@ library LibIssuer {
         IssuerStorage storage issuer = _getStorage();
 
         return issuer.dataToCertificateID[_data] != 0;
+    }
+
+    function _getCertificate(uint256 certificateID, uint256 weiToIntBalance) internal view returns (IGreenProof.Certificate memory) {
+        IssuerStorage storage issuer = _getStorage();
+
+        return
+            IGreenProof.Certificate({
+                isRevoked: issuer.certificates[certificateID].isRevoked,
+                certificateID: issuer.certificates[certificateID].certificateID,
+                issuanceDate: issuer.certificates[certificateID].issuanceDate,
+                volume: weiToIntBalance,
+                merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
+                generator: issuer.certificates[certificateID].generator
+            });
     }
 
     function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {

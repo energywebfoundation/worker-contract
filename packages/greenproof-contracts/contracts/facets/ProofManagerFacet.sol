@@ -51,23 +51,14 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function getProofsOf(address userAddress) external view override returns (IGreenProof.Certificate[] memory) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         require(userTokenList.length != 0, "No proofs for this address");
         IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](userTokenList.length);
 
         for (uint256 i = 0; i < userTokenList.length; i++) {
             uint256 currentTokenID = userTokenList[i];
-            userProofs[i] = IGreenProof.Certificate({
-                isRevoked: issuer.certificates[currentTokenID].isRevoked,
-                // isRetired: issuer.certificates[currentTokenID].isRetired,
-                certificateID: issuer.certificates[currentTokenID].certificateID,
-                issuanceDate: issuer.certificates[currentTokenID].issuanceDate,
-                volume: _balanceOf(userAddress, currentTokenID) / 10**18,
-                merkleRootHash: issuer.certificates[currentTokenID].merkleRootHash,
-                generator: issuer.certificates[currentTokenID].generator
-            });
+            uint256 volume = _balanceOf(userAddress, currentTokenID) / 10**18;
+            userProofs[i] = LibIssuer._getCertificate(currentTokenID, volume);
         }
 
         return userProofs;
