@@ -10,14 +10,14 @@ import { VotingFacet__factory } from '@energyweb/greenproof-contracts';
 
 const configSchema = Joi.object<WorkerConfig>({
   privateKey: Joi.string().required().not().empty(),
-  votingContractAddress: Joi.string().required().not().empty(),
+  diamondContractAddress: Joi.string().required().not().empty(),
   rpcUrl: Joi.string().required().not().empty(),
   port: Joi.number().optional().default(3000),
 });
 
 type WorkerConfig = {
   privateKey: string;
-  votingContractAddress: string;
+  diamondContractAddress: string;
   rpcUrl: string;
   port?: number;
 };
@@ -48,16 +48,16 @@ type CallBack = (runtime: Runtime) => Promise<void>;
 export class GreenProofWorker {
   private provider: providers.JsonRpcProvider;
   private privateKey: string;
-  private votingContractAddress: string;
+  private diamondContractAddress: string;
   private merkleTree: MerkleTree;
   private port: number;
   private _ddhubClient: DDHubClient | null = null;
 
   constructor(config: WorkerConfig) {
-    const { privateKey, rpcUrl, votingContractAddress, port } = this.validateConfig(config);
+    const { privateKey, rpcUrl, diamondContractAddress, port } = this.validateConfig(config);
     this.provider = new providers.JsonRpcProvider(rpcUrl);
     this.privateKey = privateKey;
-    this.votingContractAddress = votingContractAddress;
+    this.diamondContractAddress = diamondContractAddress;
 
     this.merkleTree = { createMerkleTree, stringify, verify, createPreciseProof, hash };
     this.port = port ?? 3030;
@@ -96,7 +96,7 @@ export class GreenProofWorker {
   private getContractWithSigner = (): VotingFacet => {
     const signer = new Wallet(this.privateKey, this.provider);
     const contract = VotingFacet__factory.connect(
-      this.votingContractAddress,
+      this.diamondContractAddress,
       this.provider.getSigner(),
     );
     return contract.connect(signer);
