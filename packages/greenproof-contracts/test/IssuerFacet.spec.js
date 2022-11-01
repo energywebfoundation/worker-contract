@@ -1,20 +1,20 @@
 const chai = require("chai");
 const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
-const { ethers, network } = require("hardhat");
-const { deployDiamond, DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy");
+const { ethers } = require("hardhat");
+const { DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy/deployContracts");
 const {
   deployMockContract,
   solidity,
 } = require("ethereum-waffle");
 const { claimManagerInterface, getMerkleProof } = require("./utils");
 const { createMerkleTree, createPreciseProof, hash, stringify } = require('@energyweb/greenproof-merkle-tree')
+const { roles } = require('./utils/roles.utils');
+const { timeTravel } = require('./utils/time.utils');
+const { deployDiamond } = require('../scripts/deploy/deployContracts');
 chai.use(solidity);
 
-const timeTravel = async (seconds) => {
-  await network.provider.send("evm_increaseTime", [seconds]);
-  await network.provider.send("evm_mine", []);
-};
+const { issuerRole, revokerRole, workerRole } = roles;
 
 let VC;
 let owner;
@@ -42,15 +42,6 @@ let nonAuthorizedOperator;
 
 const IS_SETTLEMENT = true;
 
-const issuerRole = ethers.utils.namehash(
-  "minter.roles.greenproof.apps.iam.ewc"
-);
-const revokerRole = ethers.utils.namehash(
-  "revoker.roles.greenproof.apps.iam.ewc"
-);
-const workerRole = ethers.utils.namehash(
-  "workerRole.roles.greenproof.apps.iam.ewc"
-);
 const volume = 42;
 const proofID1 = 1;
 const proofID2 = 2;
@@ -113,7 +104,18 @@ const data3 = [
     },
 ];
 
-describe("IssuerFacet", function () {
+describe('IssuerFacet', function() {
+  let owner;
+  let issuer;
+  let minter;
+  let receiver;
+  let revoker;
+  let nonAuthorizedOperator;
+  let worker1;
+  let worker2;
+  let notEnrolledWorker;
+  let toRemoveWorker;
+
   before(async () => {
     [
       owner,
@@ -147,12 +149,6 @@ describe("IssuerFacet", function () {
       await claimManagerMocked.mock.hasRole
         .withArgs(operatorWallet.address, role, defaultVersion)
         .returns(false);
-    };
-
-    const roles = {
-      issuerRole,
-      revokerRole,
-      workerRole,
     };
 
     ({ diamondAddress } = await deployDiamond({

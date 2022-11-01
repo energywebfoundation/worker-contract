@@ -10,9 +10,9 @@
 		"test:unit": "echo \"No unit tests\"",
 		"compile": "npx hardhat compile",
 		"build": "yarn compile && tsc",
-		"issuer:test": "yarn build && npx hardhat test test/IssuerFacet.spec.js",
-		"voting:test": "yarn build && npx hardhat test test/votingFacet.spec.js",
-		"diamond:test": "yarn build && npx hardhat test test/diamondTest.js"
+		"issuer:test": "npx hardhat test test/IssuerFacet.spec.js",
+		"voting:test": "npx hardhat test test/votingFacet.spec.js",
+		"diamond:test": "npx hardhat test test/diamondTest.js"
 	},
 	"repository": {
 		"type": "git",

@@ -56,6 +56,7 @@ library LibVoting {
     struct VotingStorage {
         uint256 timeLimit; /* limit of duration of a voting session. The vote is considered expired after `votingStartDate` + `timeLimit` */
         uint256 numberOfWorkers; /* Number of workers taking part to vote. This will determine the consensus threshold  */
+        uint256 majorityPercentage; /* Percentage of workers that have to vote on the same result to reach the majority  */
         address payable[] workers; /* List of all whitelisted workers */
         bytes32[] matchInputs; /* List of all votes identifiers */
         mapping(address => uint256) workerToIndex; /* Quick access to a specific worker's index inside the `workers` whitelist */
@@ -106,10 +107,11 @@ library LibVoting {
     error WorkerWasNotAdded(address notWhitListedWorker);
 
     // initialize voting parameters at the diamond construction
-    function init(uint256 _timeLimit) internal {
+    function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
         VotingStorage storage _votingStorage = getStorage();
 
         _votingStorage.timeLimit = _timeLimit;
+        _votingStorage.majorityPercentage = _majorityPercentage;
     }
 
     /**
@@ -171,14 +173,14 @@ library LibVoting {
 
             uint256 nbOfWorkers = IVoting(address(this)).getNumberOfWorkers();
 
-            if (voting.winningMatchReplayedVoteCount >= _majority()) {
+            if (LibVoting._hasReachedMajority(voting.winningMatchReplayedVoteCount)) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
                     winningMatchReplayedVoteCount = voting.winningMatchReplayedVoteCount;
                 }
             }
-            if (voting.winningMatchReplayedVoteCount < _majority() && voting.numberOfReplayedVotes == nbOfWorkers) {
+            if (!LibVoting._hasReachedMajority(voting.winningMatchReplayedVoteCount) && voting.numberOfReplayedVotes == nbOfWorkers) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
@@ -305,10 +307,10 @@ library LibVoting {
     }
 
     // @notice Number of votes sufficient to determine match winner
-    function _majority() internal view returns (uint256) {
+    function _hasReachedMajority(uint256 numberOfVotes) internal view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
 
-        return (votingStorage.numberOfWorkers / 2) + 1;
+        return (100 * numberOfVotes / votingStorage.numberOfWorkers) >= votingStorage.majorityPercentage;
     }
 
     function _isClosed(Voting storage vote) internal view returns (bool) {

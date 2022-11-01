@@ -110,11 +110,11 @@ contract VotingFacet is IVoting {
                     voting.winningMatch = matchResult;
                     voting.noConsensus = false;
 
-                    if (voting.winningMatchVoteCount >= LibVoting._majority()) {
+                    if (LibVoting._hasReachedMajority(voting.winningMatchVoteCount)) {
                         voting._completeVoting();
                     }
                 }
-                if (voting.numberOfVotes == votingStorage.numberOfWorkers && (voting.winningMatchVoteCount < LibVoting._majority())) {
+                if (voting.numberOfVotes == votingStorage.numberOfWorkers && !LibVoting._hasReachedMajority(voting.winningMatchVoteCount)) {
                     voting._completeVoting();
                 }
             }
@@ -136,11 +136,11 @@ contract VotingFacet is IVoting {
                 voting.winningMatch = matchResult;
                 voting.noConsensus = false;
 
-                if (voting.winningMatchVoteCount >= LibVoting._majority()) {
+                if (LibVoting._hasReachedMajority(voting.winningMatchVoteCount)) {
                     LibVoting._completeVoting(voting);
                 }
             }
-            if (voting.numberOfVotes == votingStorage.numberOfWorkers && (voting.winningMatchVoteCount < LibVoting._majority())) {
+            if (voting.numberOfVotes == votingStorage.numberOfWorkers && !LibVoting._hasReachedMajority(voting.winningMatchVoteCount)) {
                 LibVoting._completeVoting(voting);
             }
         }

@@ -1,40 +1,17 @@
-/* global describe it before ethers */
-
 const {
   getSelectors,
   FacetCutAction,
   removeSelectors,
   indexOfAddressInFacets,
-  deployDiamond,
 } = require("../scripts/deploy");
-
 const { deployMockContract, solidity } = require("ethereum-waffle");
-
 const { BigNumber } = require('ethers');
-
 const { ethers } = require('hardhat')
-
 const { assert, expect } = require("chai");
-
 const { claimManagerInterface } = require("./utils");
-
 const chai = require("chai");
-
-const issuerRole = ethers.utils.namehash(
-  "minter.roles.greenproof.apps.iam.ewc"
-);
-const revokerRole = ethers.utils.namehash(
-  "revoker.roles.greenproof.apps.iam.ewc"
-);
-const workerRole = ethers.utils.namehash(
-  "workerRole.roles.greenproof.apps.iam.ewc"
-);
-
-const roles = {
-  issuerRole,
-  revokerRole,
-  workerRole,
-};
+const { roles } = require('./utils/roles.utils');
+const { deployDiamond } = require('../scripts/deploy/deployContracts');
 
 chai.use(solidity);
 
@@ -122,13 +99,13 @@ describe("DiamondTest", async function () {
 
     it("should revert if revocable Period is 0", async () => {
       const zeroRevocablePeriod = 0;
-      const contractOwner = ethers.getSigners()[ 0 ];
+      const contractOwner = (await ethers.getSigners())[0];
 
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
           roles,
-          contractOwner,
+          contractOwner: contractOwner.address,
           revocablePeriod: zeroRevocablePeriod,
         }),
       ).to.be.revertedWith("init: Invalid revocable period");

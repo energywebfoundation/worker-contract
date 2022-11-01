@@ -1,23 +1,12 @@
-/* global ethers describe before it */
-/* eslint-disable prefer-const */
-
-const { deployDiamond, FacetCutAction } = require("../scripts/deploy");
-
+const { FacetCutAction } = require("../scripts/deploy");
 const { deployMockContract } = require("ethereum-waffle");
-
 const { assert } = require("chai");
-
 const { claimManagerInterface } = require("./utils");
-
-const issuerRole = ethers.utils.namehash(
-  "minter.roles.greenproof.apps.iam.ewc"
-);
-const revokerRole = ethers.utils.namehash(
-  "revoker.roles.greenproof.apps.iam.ewc"
-);
-const workerRole = ethers.utils.namehash(
-  "workerRole.roles.greenproof.apps.iam.ewc"
-);
+const { ethers } = require('hardhat');
+const { deployDiamond } = require('../scripts/deploy/deployContracts');
+const issuerRole = ethers.utils.namehash("minter.roles.greenproof.apps.iam.ewc");
+const revokerRole = ethers.utils.namehash("revoker.roles.greenproof.apps.iam.ewc");
+const workerRole = ethers.utils.namehash("workerRole.roles.greenproof.apps.iam.ewc");
 
 // The diamond example comes with 8 function selectors
 // [cut, loupe, loupe, loupe, loupe, erc165, transferOwnership, owner]
