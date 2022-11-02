@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 library LibReward {
     bytes32 constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
+
     struct RewardStorage {
         uint256 rewardAmount;
         address matchVotingAddress;
@@ -15,7 +16,16 @@ library LibReward {
         rs.rewardAmount = _rewardAmount;
     }
 
-    function payReward() internal {
+    function addRewardWinners(address payable[] memory winners) internal {
+        RewardStorage storage rs = getStorage();
+        for (uint256 i = 0; i < winners.length; i++) {
+            rs.rewardQueue.push(winners[i]);
+        }
+
+        executeRewardTransfers();
+    }
+
+    function executeRewardTransfers() internal {
         RewardStorage storage rs = getStorage();
 
         while (rs.rewardQueue.length > 0 && address(this).balance > rs.rewardAmount) {

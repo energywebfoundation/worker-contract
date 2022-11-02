@@ -229,7 +229,7 @@ library LibVoting {
         }
 
         voting.status = Status.Completed;
-        _reward(votingStorage.winnersList[voting.matchInput]);
+        LibReward.addRewardWinners(votingStorage.winnersList[voting.matchInput]);
     }
 
     /// @notice Deletes voting results
@@ -254,15 +254,6 @@ library LibVoting {
 
         votingStorage.matches[matchInput] = matchResult;
         emit MatchRegistered(matchInput, matchResult);
-    }
-
-    function _reward(address payable[] memory winners) internal {
-        LibReward.RewardStorage storage rs = LibReward.getStorage();
-
-        for (uint256 i = 0; i < winners.length; i++) {
-            rs.rewardQueue.push(winners[i]);
-        }
-        LibReward.payReward();
     }
 
     /// @notice Reveals the votes only after the vote is ended

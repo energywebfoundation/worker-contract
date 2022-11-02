@@ -28,7 +28,7 @@ contract Diamond {
         bytes32 workerRole,
         uint256 revocablePeriod
     ) payable {
-        require(_rewardAmount > 0, "init: Null reward amount");
+        require(_rewardAmount >= 0, "init: Reward amount must be 0 or higher");
         require(_claimManagerAddress != address(0), "init: Invalid claimManager");
         require(revocablePeriod > 0, "init: Invalid revocable period");
         require(_contractOwner != address(0), "init: Invalid contract Owner");
@@ -104,7 +104,7 @@ contract Diamond {
         LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
 
         if (rewardStorage.rewardQueue.length > 0) {
-            LibReward.payReward();
+            LibReward.executeRewardTransfers();
         }
     }
 }

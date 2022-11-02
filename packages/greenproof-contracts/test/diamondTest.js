@@ -85,16 +85,16 @@ describe("DiamondTest", async function () {
       ).to.be.revertedWith("init: Invalid claimManager");
     });
 
-    it("should revert if rewardAmount is to 0", async () => {
-      const zeroRewardAmount = BigNumber.from(0);
+    it("should revert if rewardAmount is negative", async () => {
+      const negativeRewardAmount = BigNumber.from(-1);
 
       await expect(
         deployDiamond({
-          rewardAmount: zeroRewardAmount,
+          rewardAmount: negativeRewardAmount,
          claimManagerAddress: claimManagerMocked.address,
           roles,
         })
-      ).to.be.revertedWith("init: Null reward amount");
+      ).to.be.reverted;
     });
 
     it("should revert if revocable Period is 0", async () => {

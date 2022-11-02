@@ -91,7 +91,7 @@ contract VotingFacet is IVoting {
 
                 emit WinningMatch(voting.matchInput, newWinningMatch, newVoteCount);
 
-                LibVoting._reward(votingStorage.winnersList[voting.matchInput]);
+                LibReward.addRewardWinners(votingStorage.winnersList[voting.matchInput]);
             } else {
                 if (voting._hasNotStarted()) {
                     LibVoting._startVoting(matchInput, isSettlement);

@@ -4,7 +4,6 @@ const { ethers } = require('hardhat');
 const { solidity } = require('ethereum-waffle');
 const {
   DEFAULT_VOTING_TIME_LIMIT,
-  DEFAULT_REWARD_AMOUNT,
   deployDiamond,
 } = require('../scripts/deploy/deployContracts');
 const { initMockClaimManager } = require('./utils/claimManager');
@@ -62,6 +61,10 @@ class Worker {
 
   async getVote(input) {
     return await this.votingContract.getWorkerVote(input, this.address);
+  }
+
+  async getBalance() {
+    return await this.wallet.getBalance();
   }
 }
 
@@ -331,46 +334,6 @@ describe('VotingFacet', function() {
     expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
   });
 
-  it('consensus can be reached with vast majority', async () => {
-    await setupVotingContract({
-      participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4]],
-    });
-
-    await faucet.sendTransaction({
-      to: diamondAddress,
-      value: DEFAULT_REWARD_AMOUNT.mul(4), // reward queue balance should be greater than payment
-    });
-
-    workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
-
-    const balancesBefore = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-      workers[2].wallet.getBalance(),
-      workers[3].wallet.getBalance(),
-    ]);
-
-    workers[4].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 });
-
-    // Consensus has been reached
-    expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
-
-    const balancesAfter = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-      workers[2].wallet.getBalance(),
-      workers[3].wallet.getBalance(),
-    ]);
-    const expectedBalances = [
-      balancesBefore[0].add(DEFAULT_REWARD_AMOUNT),
-      balancesBefore[1].add(DEFAULT_REWARD_AMOUNT),
-      balancesBefore[2],
-      balancesBefore[3],
-    ];
-    expect(balancesAfter.every((b, i) => b.eq(expectedBalances[i])));
-  });
-
   it('should not be able to add same worker twice', async () => {
     await setupVotingContract({
       participatingWorkers: [workers[0]],
@@ -394,34 +357,6 @@ describe('VotingFacet', function() {
     workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
     workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
     workers[2].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 });
-  });
-
-  it('reward should be paid after replenishment of funds', async () => {
-    await setupVotingContract({
-      participatingWorkers: [workers[0], workers[1]],
-    });
-
-    workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 });
-
-    const balancesBefore = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-    ]);
-
-    await faucet.sendTransaction({
-      to: diamondAddress,
-      value: DEFAULT_REWARD_AMOUNT.mul(3),
-    });
-
-    const balancesAfter = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-    ]);
-
-    expect(
-      balancesAfter.every((b, i) => b.eq(balancesBefore[i].add(DEFAULT_REWARD_AMOUNT))),
-    );
   });
 
   it('voting which exceeded time limit can be canceled', async () => {
@@ -578,6 +513,74 @@ describe('VotingFacet', function() {
 
   });
 
+  describe('Rewards', function() {
+    const REWARD = ethers.utils.parseEther('1');
+
+    it('pays proper reward to the winners', async () => {
+      await setupVotingContract({
+        participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4]],
+        rewardPool: REWARD.mul(2),
+      });
+
+      workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        losers: [workers[2], workers[3], workers[4]],
+        operation: () => workers[4].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 }),
+      });
+      expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
+    });
+
+
+    it('reward should be paid after replenishment of funds', async () => {
+      await setupVotingContract({
+        participatingWorkers: [workers[0], workers[1]],
+      });
+
+      workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 });
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        operation: () => chargeRewardPool(REWARD.mul(2)),
+      });
+    });
+
+
+    it('rewards should be paid partially and then fully after charging up the pool', async () => {
+      await setupVotingContract({
+        participatingWorkers: [workers[0], workers[1]],
+        rewardPool: REWARD,
+      });
+      workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+
+      await expectToReceiveReward({
+        winners: [workers[0]],
+        operation: () => workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 }),
+      });
+
+      await expectToReceiveReward({
+        winners: [workers[0]],
+        operation: () => chargeRewardPool(REWARD),
+      });
+    });
+
+    const expectToReceiveReward = async ({ winners = [], losers = [], operation, reward }) => {
+      const winnersBefore = await Promise.all(winners.map(w => w.getBalance()));
+      const losersBefore = await Promise.all(losers.map(w => w.getBalance()));
+
+      await operation();
+
+      const winnersAfter = await Promise.all(winners.map(w => w.getBalance()));
+      const losersAfter = await Promise.all(losers.map(w => w.getBalance()));
+
+      expect(winnersAfter.every((b, i) => b.eq(winnersBefore[i] + (reward || REWARD))));
+      expect(losersAfter.every((b, i) => b.eq(losersBefore[i])));
+    };
+  });
+
   const addWorkers = async (workers) => {
     await Promise.all(workers.map(async w => {
       await mockClaimManager.grantRole(w.address, workerRole);
@@ -585,7 +588,14 @@ describe('VotingFacet', function() {
     }));
   };
 
-  const setupVotingContract = async ({ majorityPercentage, participatingWorkers } = {}) => {
+  const chargeRewardPool = async rewardPool => {
+    await faucet.sendTransaction({
+      to: diamondAddress,
+      value: rewardPool,
+    });
+  };
+
+  const setupVotingContract = async ({ majorityPercentage, participatingWorkers, rewardPool } = {}) => {
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: mockClaimManager.address,
       roles,
@@ -593,6 +603,10 @@ describe('VotingFacet', function() {
     }));
     votingContract = await ethers.getContractAt('VotingFacet', diamondAddress);
     workers.forEach(w => w.setVotingContract(votingContract));
+
+    if (rewardPool) {
+      await chargeRewardPool(rewardPool);
+    }
 
     await addWorkers(participatingWorkers || []);
   };
