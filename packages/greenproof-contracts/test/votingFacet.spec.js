@@ -27,36 +27,46 @@ class Worker {
   }
 
   async vote(input, output) {
-    await this.votingContract.vote(input, output, IS_SETTLEMENT);
+    return this.votingContract.vote(input, output, IS_SETTLEMENT);
   }
 
   voteNotWinning(input, output) {
-    expect(this.votingContract.vote(input, output,
-      IS_SETTLEMENT))
+    const voteTx = this.votingContract.vote(input, output, IS_SETTLEMENT);
+    expect(voteTx)
       .to.not.emit(this.votingContract, 'WinningMatch');
+    return voteTx;
   }
 
   voteNoConsensus(input, output) {
-    expect(this.votingContract.vote(input, output, IS_SETTLEMENT))
+    const voteTx = this.votingContract.vote(input, output, IS_SETTLEMENT);
+    expect(voteTx)
       .to.emit(this.votingContract, 'NoConsensusReached')
       .withArgs(input);
+    return voteTx;
   }
 
   voteExpired(input, output) {
-    expect(this.votingContract.vote(input, output, IS_SETTLEMENT))
+    const voteTx = this.votingContract.vote(input, output, IS_SETTLEMENT);
+    expect(voteTx)
       .to.emit(this.votingContract, 'VotingExpired')
       .withArgs(input);
+    return voteTx;
   }
 
   voteWinning(input, output, { voteCount, winningOutput }) {
-    expect(this.votingContract.vote(input, output, IS_SETTLEMENT))
+    const voteTx = this.votingContract.vote(input, output, IS_SETTLEMENT);
+    expect(voteTx)
       .to.emit(this.votingContract, 'WinningMatch')
       .withArgs(input, winningOutput || output, voteCount);
+
+    return voteTx;
   }
 
   voteNotWhitelisted(input, output) {
-    expect(this.votingContract.vote(input, output, IS_SETTLEMENT))
+    const voteTx = this.votingContract.vote(input, output, IS_SETTLEMENT);
+    expect(voteTx)
       .to.be.revertedWith('NotWhitelisted');
+    return voteTx;
   }
 
   async getVote(input) {
@@ -514,10 +524,11 @@ describe('VotingFacet', function() {
   });
 
   describe('Rewards', function() {
-    const REWARD = ethers.utils.parseEther('1');
+    const REWARD = ethers.utils.parseEther('123');
 
     it('pays proper reward to the winners', async () => {
       await setupVotingContract({
+        reward: REWARD,
         participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4]],
         rewardPool: REWARD.mul(2),
       });
@@ -526,8 +537,8 @@ describe('VotingFacet', function() {
       workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
 
       await expectToReceiveReward({
-        winners: [workers[0], workers[1]],
-        losers: [workers[2], workers[3], workers[4]],
+        winners: [workers[0], workers[1], workers[4]],
+        possiblePayouts: 2,
         operation: () => workers[4].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 }),
       });
       expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
@@ -536,6 +547,7 @@ describe('VotingFacet', function() {
 
     it('reward should be paid after replenishment of funds', async () => {
       await setupVotingContract({
+        reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
       });
 
@@ -544,6 +556,7 @@ describe('VotingFacet', function() {
 
       await expectToReceiveReward({
         winners: [workers[0], workers[1]],
+        possiblePayouts: 2,
         operation: () => chargeRewardPool(REWARD.mul(2)),
       });
     });
@@ -551,33 +564,44 @@ describe('VotingFacet', function() {
 
     it('rewards should be paid partially and then fully after charging up the pool', async () => {
       await setupVotingContract({
+        reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
         rewardPool: REWARD,
       });
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
 
       await expectToReceiveReward({
-        winners: [workers[0]],
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 1,
         operation: () => workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 }),
       });
 
       await expectToReceiveReward({
-        winners: [workers[0]],
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 1,
         operation: () => chargeRewardPool(REWARD),
       });
     });
 
-    const expectToReceiveReward = async ({ winners = [], losers = [], operation, reward }) => {
+    const expectToReceiveReward = async ({
+        winners = [],
+        losers = [],
+        // How many workers can be paid with current pool?
+        possiblePayouts = winners.length,
+        operation
+    }) => {
       const winnersBefore = await Promise.all(winners.map(w => w.getBalance()));
       const losersBefore = await Promise.all(losers.map(w => w.getBalance()));
 
-      await operation();
+      const result = await operation();
+      await result.wait();
 
       const winnersAfter = await Promise.all(winners.map(w => w.getBalance()));
       const losersAfter = await Promise.all(losers.map(w => w.getBalance()));
 
-      expect(winnersAfter.every((b, i) => b.eq(winnersBefore[i] + (reward || REWARD))));
-      expect(losersAfter.every((b, i) => b.eq(losersBefore[i])));
+      const currentWinners = winnersAfter.filter((after, i) => after.gt(winnersBefore[i]));
+      expect(currentWinners).to.have.length(possiblePayouts);
+      expect(losersAfter.every((b, i) => b.lt(losersBefore[i]))).to.be.true;
     };
   });
 
@@ -589,17 +613,18 @@ describe('VotingFacet', function() {
   };
 
   const chargeRewardPool = async rewardPool => {
-    await faucet.sendTransaction({
+    return faucet.sendTransaction({
       to: diamondAddress,
       value: rewardPool,
     });
   };
 
-  const setupVotingContract = async ({ majorityPercentage, participatingWorkers, rewardPool } = {}) => {
+  const setupVotingContract = async ({ majorityPercentage, participatingWorkers, rewardPool, reward } = {}) => {
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: mockClaimManager.address,
       roles,
       majorityPercentage,
+      rewardAmount: reward,
     }));
     votingContract = await ethers.getContractAt('VotingFacet', diamondAddress);
     workers.forEach(w => w.setVotingContract(votingContract));

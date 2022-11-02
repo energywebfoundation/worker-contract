@@ -28,7 +28,7 @@ library LibReward {
     function executeRewardTransfers() internal {
         RewardStorage storage rs = getStorage();
 
-        while (rs.rewardQueue.length > 0 && address(this).balance > rs.rewardAmount) {
+        while (rs.rewardQueue.length > 0 && address(this).balance >= rs.rewardAmount) {
             address payable currentWorker = rs.rewardQueue[rs.rewardQueue.length - 1];
             rs.rewardQueue.pop();
             currentWorker.transfer(rs.rewardAmount);
