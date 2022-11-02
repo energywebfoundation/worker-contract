@@ -558,6 +558,14 @@
   dependencies:
     "@solidstate/contracts" "^0.0.40"
 
+"@energyweb/greenproof-ddhub-client@1.0.7":
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/@energyweb/greenproof-ddhub-client/-/greenproof-ddhub-client-1.0.7.tgz#b0675973440a6e62903d1462dc7f8dd3050e235f"
+  integrity sha512-JoGslfVGKiaqwXgEL0Iqu9MDshZGBlYjS0xtT/zfp09qqSYAKp+k9Jjsb0vs7sSe6/M1LnQic19glXO5INqv3A==
+  dependencies:
+    axios "^0.27.2"
+    zod "^3.18.0"
+
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
   resolved "https://registry.npmjs.org/@ensdomains/ens/-/ens-0.4.5.tgz"
@@ -3277,9 +3285,9 @@
     form-data "^3.0.0"
 
 "@types/node@*", "@types/node@>=12":
-  version "18.11.9"
-  resolved "https://registry.npmjs.org/@types/node/-/node-18.11.9.tgz"
-  integrity sha512-CRpX21/kGdzjOpFsZSkcrXMGIBWMGNIHXXBVFSH+ggkftxg+XYP20TESbh+zFvFj3EQOl5byk0HTRn1IL6hbqg==
+  version "18.11.7"
+  resolved "https://registry.npmjs.org/@types/node/-/node-18.11.7.tgz"
+  integrity sha512-LhFTglglr63mNXUSRYD8A+ZAIu5sFqNJ4Y2fPuY7UlrySJH87rRRlhtVmMHplmfk5WkoJGmDjE9oiTfyX94CpQ==
 
 "@types/node@18.7.15":
   version "18.7.15"
@@ -12617,7 +12625,7 @@ natural-compare@^1.4.0:
 
 negotiator@0.6.3, negotiator@^0.6.2:
   version "0.6.3"
-  resolved "https://registry.npmjs.org/negotiator/-/negotiator-0.6.3.tgz"
+  resolved "https://registry.yarnpkg.com/negotiator/-/negotiator-0.6.3.tgz#58e323a72fedc0d6f9cd4d31fe49f51479590ccd"
   integrity sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==
 
 neo-async@^2.6.0, neo-async@^2.6.2:
@@ -12815,7 +12823,7 @@ npm-normalize-package-bin@^1.0.0, npm-normalize-package-bin@^1.0.1:
   resolved "https://registry.npmjs.org/npm-normalize-package-bin/-/npm-normalize-package-bin-1.0.1.tgz"
   integrity sha512-EPfafl6JL5/rU+ot6P3gRSCpPDW5VmIzX959Ob1+ySFUuuYHWHekXpwdUZcKP5C+DS4GEtdJluwBjnsNDl+fSA==
 
-npm-package-arg@^8.0.0, npm-package-arg@^8.0.1, npm-package-arg@^8.1.0, npm-package-arg@^8.1.2, npm-package-arg@^8.1.4, npm-package-arg@^8.1.5:
+npm-package-arg@^8.0.0, npm-package-arg@^8.0.1, npm-package-arg@^8.1.0, npm-package-arg@^8.1.1, npm-package-arg@^8.1.2, npm-package-arg@^8.1.5:
   version "8.1.5"
   resolved "https://registry.npmjs.org/npm-package-arg/-/npm-package-arg-8.1.5.tgz"
   integrity sha512-LhgZrg0n0VgvzVdSm1oiZworPbTxYHUJCgtsJW8mGvlDpxTM1vSJc3m5QZeUkhAHIzbz3VCHd/R4osi1L1Tg/Q==
@@ -13465,7 +13473,7 @@ pac-resolver@^5.0.0:
     ip "^1.1.5"
     netmask "^2.0.2"
 
-pacote@^11.1.11, pacote@^11.2.6, pacote@^11.3.1, pacote@^11.3.4, pacote@^11.3.5:
+pacote@^11.1.11, pacote@^11.2.6, pacote@^11.3.0, pacote@^11.3.1, pacote@^11.3.5:
   version "11.3.5"
   resolved "https://registry.npmjs.org/pacote/-/pacote-11.3.5.tgz"
   integrity sha512-fT375Yczn4zi+6Hkk2TBe1x1sP8FgFsEIZ2/iWaXY2r/NkhDJfxbcn5paz1+RTFCyNf+dPnaoBDJoAxXSU8Bkg==
@@ -15359,7 +15367,7 @@ socks-proxy-agent@^6.0.0:
 
 socks@^2.3.3, socks@^2.6.2:
   version "2.7.1"
-  resolved "https://registry.npmjs.org/socks/-/socks-2.7.1.tgz"
+  resolved "https://registry.yarnpkg.com/socks/-/socks-2.7.1.tgz#d8e651247178fde79c0663043e07240196857d55"
   integrity sha512-7maUZy1N7uo6+WVEX6psASxtNlKaNVMlGQKkG/63nEDdLOWNbiUMoLK7X4uYoLhQstau72mLgfEWcXcwsaHbYQ==
   dependencies:
     ip "^2.0.0"
