@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/merkle-tree",
-    "packages/voting-contract",
+    "packages/greenpoof-contracts",
     "packages/voting-manager",
     "packages/ddhub-client",
     "packages/worker",
@@ -26,7 +26,8 @@
   "devDependencies": {
     "@commitlint/cli": "16.2.4",
     "@commitlint/config-conventional": "16.2.4",
-    "multi-semantic-release": "2.13.0",
-    "husky": "8.0.1"
+    "hardhat": "^2.10.0",
+    "husky": "8.0.1",
+    "multi-semantic-release": "2.13.0"
   }
 }

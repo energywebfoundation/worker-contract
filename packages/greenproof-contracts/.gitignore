@@ -1,0 +1,8 @@
+node_modules
+.deps
+.vscode
+
+#Hardhat files
+cache
+artifacts
+.env
