@@ -1,9 +1,9 @@
 const { FacetCutAction } = require("../scripts/deploy");
 const { deployMockContract } = require("ethereum-waffle");
 const { assert } = require("chai");
-const { claimManagerInterface } = require("./utils");
 const { ethers } = require('hardhat');
 const { deployDiamond } = require('../scripts/deploy/deployContracts');
+const { claimManagerInterface } = require('./utils/claimManager');
 const issuerRole = ethers.utils.namehash("minter.roles.greenproof.apps.iam.ewc");
 const revokerRole = ethers.utils.namehash("revoker.roles.greenproof.apps.iam.ewc");
 const workerRole = ethers.utils.namehash("workerRole.roles.greenproof.apps.iam.ewc");

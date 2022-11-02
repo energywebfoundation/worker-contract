@@ -40,5 +40,6 @@ const initMockClaimManager = async (owner) => {
 
 module.exports = {
   claimManagerABI,
+  claimManagerInterface,
   initMockClaimManager
 };

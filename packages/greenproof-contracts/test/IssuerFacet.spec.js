@@ -7,11 +7,12 @@ const {
   deployMockContract,
   solidity,
 } = require("ethereum-waffle");
-const { claimManagerInterface, getMerkleProof } = require("./utils");
+const { getMerkleProof } = require("./utils");
 const { createMerkleTree, createPreciseProof, hash, stringify } = require('@energyweb/greenproof-merkle-tree')
 const { roles } = require('./utils/roles.utils');
 const { timeTravel } = require('./utils/time.utils');
 const { deployDiamond } = require('../scripts/deploy/deployContracts');
+const { claimManagerInterface } = require('./utils/claimManager');
 chai.use(solidity);
 
 const { issuerRole, revokerRole, workerRole } = roles;

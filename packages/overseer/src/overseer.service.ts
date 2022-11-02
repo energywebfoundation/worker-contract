@@ -34,6 +34,7 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
 
     this.provider = new ethers.providers.JsonRpcProvider(this.config.rpcHost);
     this.wallet = new ethers.Wallet(this.config.overseerPrivateKey, this.provider);
+    this.wallet.getAddress();
     this.contract = VotingFacet__factory.connect(this.config.contractAddress, this.provider.getSigner());
     this.contract.connect(this.wallet);
   }

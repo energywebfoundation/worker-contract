@@ -8,10 +8,10 @@ const { deployMockContract, solidity } = require("ethereum-waffle");
 const { BigNumber } = require('ethers');
 const { ethers } = require('hardhat')
 const { assert, expect } = require("chai");
-const { claimManagerInterface } = require("./utils");
 const chai = require("chai");
 const { roles } = require('./utils/roles.utils');
 const { deployDiamond } = require('../scripts/deploy/deployContracts');
+const { claimManagerInterface } = require('./utils/claimManager');
 
 chai.use(solidity);
 
