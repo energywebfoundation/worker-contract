@@ -4,7 +4,7 @@ const {
   getSelectors,
   FacetCutAction,
   removeSelectors,
-  indexOfAddressInFacets,
+  findIndexOfAddressInFacets,
   deployDiamond,
 } = require("../scripts/deploy");
 
@@ -350,11 +350,11 @@ describe("DiamondTest", async function () {
        assert.equal(facets[2][0], facetAddresses[2], 'third facet')
        assert.equal(facets[3][0], facetAddresses[3], 'fourth facet')
        assert.equal(facets[4][0], facetAddresses[4], 'fifth facet')
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[0], facets)][1], getSelectors(diamondCutFacet))
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[1], facets)][1], diamondLoupeFacetSelectors)
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[2], facets)][1], getSelectors(ownershipFacet))
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[4], facets)][1], getSelectors(Test1Facet))
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[5], facets)][1], getSelectors(Test2Facet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[0], facets)][1], getSelectors(diamondCutFacet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[1], facets)][1], diamondLoupeFacetSelectors)
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[2], facets)][1], getSelectors(ownershipFacet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[4], facets)][1], getSelectors(Test1Facet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[5], facets)][1], getSelectors(Test2Facet))
     });
   });
 
