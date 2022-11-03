@@ -4,15 +4,23 @@ pragma solidity ^0.8.16;
 import {IGreenProof} from "./IGreenProof.sol";
 
 interface IProofManager {
-    function revokeProof(uint256 proofID) external;
+    function revokeProof(uint256 certificateID) external;
 
-    function retireProof(uint256 proofID, uint256 amount) external;
+    function claimProof(uint256 certificateID, uint256 amount) external;
 
-    function getProof(uint256 proofID) external view returns (IGreenProof.Proof memory proof);
+    function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof);
 
-    function getProofsOf(address userAddress) external view returns (IGreenProof.Proof[] memory);
+    function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory);
 
-    event ProofRevoked(uint256 indexed proofID);
+    function claimedBalanceOf(address user, uint256 certificateID) external view returns (uint256);
 
-    event ProofRetired(uint256 indexed proofID, address indexed to, uint256 indexed timestamp, uint256 amount);
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure returns (bool);
+
+    event ProofRevoked(uint256 indexed certificateID);
+
+    event ProofClaimed(uint256 indexed certificateID, address indexed to, uint256 indexed timestamp, uint256 amount);
 }

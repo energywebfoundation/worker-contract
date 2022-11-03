@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 const { solidity, deployMockContract } = require("ethereum-waffle");
 const { deployDiamond, DEFAULT_VOTING_TIME_LIMIT, DEFAULT_REWARD_AMOUNT } = require("../scripts/deploy");
-const { claimManagerInterface } = require("./utils");
+const { claimManagerInterface, claimRevocationInterface } = require("./utils");
 
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
@@ -59,16 +59,30 @@ describe("VotingFacet", function () {
             claimManagerInterface
         );
 
+        //  Mocking claimsRevocationRegistry
+       const claimsRevocationRegistryMocked = await deployMockContract(
+            _owner,
+            claimRevocationInterface
+        );
+
         grantRole = async (operatorWallet, role) => {
-        await claimManagerMocked.mock.hasRole
-            .withArgs(operatorWallet.address, role, defaultVersion)
-            .returns(true);
+            await claimManagerMocked.mock.hasRole
+                .withArgs(operatorWallet.address, role, defaultVersion)
+                .returns(true);
+
+            await claimsRevocationRegistryMocked.mock.isRevoked
+                .withArgs(role, operatorWallet.address)
+                .returns(false);
         };
 
         revokeRole = async (operatorWallet, role) => {
-        await claimManagerMocked.mock.hasRole
-            .withArgs(operatorWallet.address, role, defaultVersion)
-            .returns(false);
+            await claimManagerMocked.mock.hasRole
+                .withArgs(operatorWallet.address, role, defaultVersion)
+                .returns(true);
+
+            await claimsRevocationRegistryMocked.mock.isRevoked
+                .withArgs(role, operatorWallet.address)
+                .returns(true);
         };
 
         const roles = {
@@ -79,9 +93,9 @@ describe("VotingFacet", function () {
 
         ({ diamondAddress } = await deployDiamond({
             claimManagerAddress: claimManagerMocked.address,
+            claimsRevocationRegistryMocked.address,
             roles,
         }));
-
         diamondCutFacet = await ethers.getContractAt(
             "DiamondCutFacet",
             diamondAddress
@@ -117,7 +131,7 @@ describe("VotingFacet", function () {
         await expect(
              matchVoting
                 .connect(worker1)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         )
             .to.emit(matchVoting, "WinningMatch")
                 .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 1);
@@ -141,7 +155,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[0].input, timeframes[0].output, IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
         ).to.not.emit(matchVoting, "WinningMatch");
         
         expect(
@@ -159,7 +173,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
         ).to.not.emit(matchVoting, "WinningMatch");
         
         expect(
@@ -169,7 +183,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
         ).to.emit(matchVoting, "WinningMatch")
             .withArgs(timeframes[0].input, timeframes[0].output, 2);
         
@@ -188,23 +202,23 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
         ).to.not.emit(matchVoting, "WinningMatch");
 
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.empty;
             
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
             )
             .to.emit(matchVoting, "WinningMatch")
                 .withArgs(timeframes[0].input, timeframes[0].output, 2);
             
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.deep.equal([worker1.address, worker2.address]);
     });
 
@@ -220,7 +234,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
         ).to.not.emit(matchVoting, "WinningMatch");
         
         //The vote is not ended, hence we should not get the winngMatch
@@ -231,7 +245,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[0].input, timeframes[2].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[2].output)
         ).to.not.emit(matchVoting, "WinningMatch");
 
         //The vote is still not ended, hence we should not get the winngMatch
@@ -242,7 +256,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker3)
-                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
             ).to.emit(matchVoting, "WinningMatch")
                 .withArgs(timeframes[0].input, timeframes[0].output, 2);
         
@@ -263,7 +277,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[0].output)
         ).to.not.emit(matchVoting, "WinningMatch");
 
         //The vote is not ended, hence we should not get the winngMatch
@@ -280,15 +294,15 @@ describe("VotingFacet", function () {
             await matchVoting.getWorkerVote(timeframes[0].input, worker2.address)
         ).to.equal(ethers.constants.Zero);
 
-        //We check that winners are note shown before end of vote
+        //We check that winners are not shown before end of vote
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.empty;
         
         await expect(
         matchVoting
             .connect(worker2)
-            .vote(timeframes[0].input, timeframes[0].output, !IS_SETTLEMENT)
+            .vote(timeframes[0].input, timeframes[0].output)
         )
         .to.emit(matchVoting, "WinningMatch")
             .withArgs(timeframes[0].input, timeframes[0].output, 2);
@@ -302,7 +316,7 @@ describe("VotingFacet", function () {
         ).to.equal(timeframes[0].output);
 
         expect(
-            await matchVoting.winners(timeframes[0].input)
+            await matchVoting.getWinners(timeframes[0].input)
         ).to.be.deep.equal([worker1.address, worker2.address]);
         
         expect(await matchVoting.getMatch(timeframes[0].input)).to.equal(
@@ -315,8 +329,15 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[0].input, timeframes[1].output, !IS_SETTLEMENT)
-            ).to.not.emit(matchVoting, "WinningMatch");
+                .vote(timeframes[0].input, timeframes[1].output)
+        ).to.not.emit(matchVoting, "WinningMatch");
+
+        // We verify that workers cannot pump the same re-vote
+        await expect(
+            matchVoting
+                .connect(worker1)
+                .vote(timeframes[0].input, timeframes[1].output)
+        ).to.be.revertedWith("AlreadyVoted()")
 
         //We verify that the final vote of worker 1 is not updated
         expect(
@@ -332,7 +353,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[0].input, timeframes[4].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[4].output)
         ).to.not.emit(matchVoting, "WinningMatch");
 
         //We verify that the final vote of worker 2 is not updated
@@ -352,7 +373,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker3)
-                .vote(timeframes[0].input, timeframes[4].output, !IS_SETTLEMENT)
+                .vote(timeframes[0].input, timeframes[4].output)
         ).to.emit(matchVoting, "WinningMatch")
             .withArgs(timeframes[0].input, timeframes[4].output, 2);
         
@@ -384,7 +405,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(nonWorker)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         ).to.be.revertedWith("NotWhitelisted");
     });
 
@@ -431,13 +452,13 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         ).to.not.emit(matchVoting, "WinningMatch");
         
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         )
         .to.emit(matchVoting, "WinningMatch")
             .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 2);
@@ -445,7 +466,7 @@ describe("VotingFacet", function () {
         expect(await matchVoting.getMatch(timeframes[ 0 ].input)).to.equal(
             timeframes[ 0 ].output
         );
-        expect(await matchVoting.numberOfMatchInputs()).to.equal(1);
+        expect(await matchVoting.numberOfvotingSessions()).to.equal(1);
     });
 
     it("consensus can be reached with simple majority", async () => {
@@ -464,31 +485,31 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
             ).to.not.emit(matchVoting, "WinningMatch");
 
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
             ).to.not.emit(matchVoting, "WinningMatch");
 
         await expect(
             matchVoting
                 .connect(worker3)
-                .vote(timeframes[ 0 ].input, timeframes[ 1 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 1 ].output)
             ).to.not.emit(matchVoting, "WinningMatch");
 
         await expect(
             matchVoting
                 .connect(worker4)
-                .vote(timeframes[ 0 ].input, timeframes[ 2 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 2 ].output)
             ).to.not.emit(matchVoting, "WinningMatch");
 
         await expect(
             matchVoting
                 .connect(worker5)
-                .vote(timeframes[ 0 ].input, timeframes[ 3 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 3 ].output)
             )
             .to.emit(matchVoting, "WinningMatch")
                 .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 2);
@@ -519,10 +540,10 @@ describe("VotingFacet", function () {
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
         await matchVoting
             .connect(worker2)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
         const balancesBefore = await Promise.all([
             worker1.getBalance(),
@@ -534,7 +555,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker5)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         )
             .to.emit(matchVoting, "WinningMatch")
             .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 3);
@@ -583,32 +604,32 @@ describe("VotingFacet", function () {
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
         await matchVoting
             .connect(worker2)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
         await matchVoting
             .connect(worker3)
-            .vote(timeframes[ 0 ].input, timeframes[ 1 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 1 ].output);
 
         await expect(
             matchVoting
                 .connect(worker4)
-                .vote(timeframes[ 0 ].input, timeframes[ 1 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 1 ].output)
         )
             .to.emit(matchVoting, "NoConsensusReached")
             .withArgs(timeframes[ 0 ].input);
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
         await matchVoting
             .connect(worker2)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
         await expect(
             matchVoting
                 .connect(worker3)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         ).to.emit(matchVoting, "WinningMatch");
     });
 
@@ -621,20 +642,24 @@ describe("VotingFacet", function () {
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
         await matchVoting
             .connect(worker2)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
         const balancesBefore = await Promise.all([
             worker1.getBalance(),
             worker2.getBalance(),
         ]);
 
-        await faucet.sendTransaction({
-            to: diamondAddress,
-            value: DEFAULT_REWARD_AMOUNT.mul(3),
-        });
+        await expect(
+            matchVoting
+                .connect(faucet).replenishRewardPool(
+                    {
+                        value: DEFAULT_REWARD_AMOUNT.mul(3),
+                    }
+            )
+        ).to.emit(matchVoting, "Replenished").withArgs(rewardAmount.mul(3));
 
         const balancesAfter = await Promise.all([
             worker1.getBalance(),
@@ -644,6 +669,21 @@ describe("VotingFacet", function () {
         expect(
             balancesAfter.every((b, i) => b.eq(balancesBefore[ i ].add(DEFAULT_REWARD_AMOUNT)))
         );
+    });
+
+    it("reverts when non owner tries to cancel expired votings", async () => {
+        await grantRole(worker1, workerRole);
+
+        await matchVoting.addWorker(worker1.address);
+
+        await matchVoting
+            .connect(worker1)
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
+
+        await timeTravel(2 * timeLimit);
+
+        await expect(matchVoting.connect(worker1).cancelExpiredVotings())
+            .to.be.revertedWith("LibDiamond: Must be contract owner");
     });
 
     it("voting which exceeded time limit can be canceled", async () => {
@@ -657,7 +697,7 @@ describe("VotingFacet", function () {
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
         await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
@@ -667,11 +707,11 @@ describe("VotingFacet", function () {
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         ).to.emit(matchVoting, "WinningMatch");
     });
 
@@ -686,7 +726,7 @@ describe("VotingFacet", function () {
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
         await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
@@ -694,7 +734,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker2)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         )
             .to.emit(matchVoting, "VotingExpired")
             .withArgs(timeframes[ 0 ].input);
@@ -702,7 +742,7 @@ describe("VotingFacet", function () {
         await expect(
             matchVoting
                 .connect(worker1)
-                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT)
+                .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
         ).to.emit(matchVoting, "WinningMatch");
     });
 
@@ -717,7 +757,7 @@ describe("VotingFacet", function () {
 
         await matchVoting
             .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output, !IS_SETTLEMENT);
+            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
         await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 

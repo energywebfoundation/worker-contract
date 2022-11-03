@@ -9,7 +9,8 @@ The present package is the onchain module of the Greenproof core SDK of Energywe
 ---
 The on-chain component of the greenProof core module is an upgradable proxied module, implementing the [EIP-2535](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2535.md) standard, which is a standard recommended in the [upgrades section](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1155.md#upgrades) of the EIP-1155 token standard documentation.
 
-This upgradable pattern is called a Diamond standard architecture, where all smart contracts are organized as different facets of one single diamond. It ultimately allows users to trigger any on-chain function of any greePproof component using one single and stable contract address.
+This upgradable pattern is called a Diamond standard architecture, where all smart contracts are organized as different facets of one single diamond.
+It ultimately allows users to trigger any on-chain function of any Greenroof component using one single and stable contract address.
 
 As mentioned in the [Ethereum documentation](https://ethereum.org/en/developers/docs/smart-contracts/upgrading/#diamond-pattern) :
 
@@ -31,9 +32,10 @@ Each smartcontract component provided in `contracts/facets` directory is then a 
 
 Additional utility facets are provided by the [Diamond-2 reference implementation](https://github.com/mudgen/diamond-2-hardhat), which help conforming to the EIP-2535 standard specification:
 
-- The [DiamondCutFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondCutFacet.sol) contract is a facet handling all the upgrading logic. (A cut, in the diamond’s industrie, is an action resulting in new facets creation, removal. This facet will be used to add, replace or remove granularly logic to the greenProof Diamond)
+- The [DiamondCutFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondCutFacet.sol) contract is a facet handling all the upgrading logic.
+(A cut, in the diamond industry, is an action resulting in new facet creation or removal. This facet will be used to granularly add, replace or remove logic to the Greenproof Diamond)
 
-- A dedicated facet is provided with the [OwnershipFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/OwnershipFacet.sol) contract, which handles the implementation of the IEP-173 standard for the Diamond ownership.
+- A dedicated facet is provided with the [OwnershipFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/OwnershipFacet.sol) contract, which handles the implementation of the EIP-173 standard for the Diamond ownership.
 
 - A [DiamondLoupeFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondLoupeFacet.sol) provides all standard [loupe functions](https://dev.to/mudgen/why-loupe-functions-for-diamonds-1kc3) for showing what facets and functions the diamond has.
 ---

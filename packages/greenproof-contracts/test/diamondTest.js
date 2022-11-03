@@ -16,7 +16,7 @@ const { ethers } = require('hardhat')
 
 const { assert, expect } = require("chai");
 
-const { claimManagerInterface } = require("./utils");
+const { claimManagerInterface, claimRevocationInterface } = require("./utils");
 
 const chai = require("chai");
 
@@ -49,6 +49,7 @@ describe("DiamondTest", async function () {
   let result;
   let owner;
   let claimManagerMocked;
+  let claimsRevocationRegistryMocked;
   const addresses = [];
 
 
@@ -60,9 +61,14 @@ describe("DiamondTest", async function () {
       owner,
       claimManagerInterface
     );
+//  Mocking claimsRevocationRegistry
+    claimsRevocationRegistryMocked = await deployMockContract(
+      owner,
+      claimRevocationInterface
+    );
 
     ({ diamondAddress } = await deployDiamond({
-      claimManagerAddress: claimManagerMocked.address,
+      claimManagerAddress: claimManagerMocked.address,claimsRevocationRegistryMocked.address,
       roles,
       facets: ['DiamondLoupeFacet', 'OwnershipFacet', 'IssuerFacet'],
     }))
@@ -92,6 +98,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
+          claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: ethers.constants.AddressZero,
         }),
@@ -103,10 +110,26 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: ethers.constants.AddressZero,
+          claimsRevocationRegistryMocked.address,
           roles,
         })
       ).to.be.revertedWith("init: Invalid claimManager");
     });
+
+    it("should revert if claimsRevocationRegistry address is 0", async () => {
+
+      await expect(
+        deployDiamond(
+          timeLimit,
+          rewardAmount,
+          claimManagerMocked.address,
+          ethers.constants.AddressZero,
+          roles,
+          isDiamondTest,
+        )
+      ).to.be.revertedWith("init: Invalid claimsRevocationRegistry");
+    });
+
 
     it("should revert if rewardAmount is to 0", async () => {
       const zeroRewardAmount = BigNumber.from(0);
@@ -115,6 +138,7 @@ describe("DiamondTest", async function () {
         deployDiamond({
           rewardAmount: zeroRewardAmount,
          claimManagerAddress: claimManagerMocked.address,
+          claimsRevocationRegistryMocked.address,
           roles,
         })
       ).to.be.revertedWith("init: Null reward amount");
@@ -127,6 +151,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
+          claimsRevocationRegistryMocked.address,
           roles,
           contractOwner,
           revocablePeriod: zeroRevocablePeriod,

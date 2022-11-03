@@ -1,5 +1,5 @@
 const { utils } = require("ethers");
-const { claimManagerABI } = require("./claimManager_abi");
+const { claimManagerABI, claimRevocationRegistryABI } = require("./claimManager_abi");
 const { getMerkleProof} = require("./merkleProof.utils");
 const {
   deployMockContract,
@@ -14,6 +14,7 @@ const toBytes32 = (input) => {
 
 const defaultVersion = 1;
 const claimManagerInterface = claimManagerABI;
+const claimRevocationInterface = claimRevocationRegistryABI;
 
 const initMockClaimManager = async () => {
   [owner] = await ethers.getSigners();
@@ -47,4 +48,5 @@ module.exports = {
   getMerkleProof,
   initMockClaimManager,
   claimManagerInterface,
+  claimRevocationInterface,
 };

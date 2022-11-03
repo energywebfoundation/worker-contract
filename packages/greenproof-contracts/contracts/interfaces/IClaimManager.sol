@@ -7,4 +7,6 @@ interface IClaimManager {
         bytes32 role,
         uint256 version
     ) external view returns (bool);
+
+    function isRevoked(bytes32 role, address subject) external view returns (bool);
 }
