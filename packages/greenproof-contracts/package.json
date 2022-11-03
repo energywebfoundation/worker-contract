@@ -1,17 +1,18 @@
 {
 	"name": "@energyweb/greenproof-contracts",
-	"version": "1.0.0",
+	"version": "1.0.0-alpha.4",
 	"description": "Onchain module of the Greenproof core SDK of Energyweb Foundation.",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
+	"main": "scripts/deploy/index.js",
+	"types": "scripts/deploy/index.d.ts",
 	"scripts": {
 		"clean": "npx hardhat clean",
-		"test": "npx hardhat test",
+		"test:e2e": "yarn build && npx hardhat test",
+		"test:unit": "echo \"No unit tests\"",
 		"compile": "npx hardhat compile",
-		"build": "yarn compile && tsc -p ./tsconfig.build.json",
-		"issuer:test": "npx hardhat test test/IssuerFacet.spec.js",
-		"voting:test": "npx hardhat test test/votingFacet.spec.js",
-		"diamond:test": "npx hardhat test test/diamondTest.js"
+		"build": "yarn compile && tsc",
+		"issuer:test": "yarn build && npx hardhat test test/IssuerFacet.spec.js",
+		"voting:test": "yarn build && npx hardhat test test/votingFacet.spec.js",
+		"diamond:test": "yarn build && npx hardhat test test/diamondTest.js"
 	},
 	"repository": {
 		"type": "git",
