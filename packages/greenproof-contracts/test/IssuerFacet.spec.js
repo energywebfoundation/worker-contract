@@ -2,7 +2,7 @@ const chai = require("chai");
 const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
-const { deployDiamond } = require("../scripts/deploy");
+const { deployDiamond, DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy");
 const {
   deployMockContract,
   solidity,
@@ -40,10 +40,7 @@ let lastTokenID = 0;
 let proofManagerFacet;
 let nonAuthorizedOperator;
 
-const timeLimit = 15 * 60;
 const IS_SETTLEMENT = true;
-const rewardAmount = parseEther("1");
-const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 
 const issuerRole = ethers.utils.namehash(
   "minter.roles.greenproof.apps.iam.ewc"
@@ -158,12 +155,11 @@ describe("IssuerFacet", function () {
       workerRole,
     };
 
-    diamondAddress = await deployDiamond(
-      timeLimit,
-      rewardAmount,
-      claimManagerMocked.address,
+    ({ diamondAddress } = await deployDiamond({
+      claimManagerAddress: claimManagerMocked.address,
       roles
-    );
+    }));
+
     diamondCutFacet = await ethers.getContractAt(
       "DiamondCutFacet",
       diamondAddress
@@ -414,13 +410,13 @@ describe("IssuerFacet", function () {
       const issuanceDate = Number(proof.issuanceDate.toString());
       
       //forward time to reach end of revocable period
-      await timeTravel(revocablePeriod);
+      await timeTravel(DEFAULT_REVOCABLE_PERIOD);
       await grantRole(revoker, revokerRole);
         
       tx = proofManagerFacet.connect(revoker).revokeProof(proofID2)
 
       //The certificate should not be revocable anymore
-      await expect(tx).to.be.revertedWith(`NonRevokableProof(${proofID2}, ${issuanceDate}, ${issuanceDate + revocablePeriod})`) //emit(proofManagerFacet, "ProofRevoked");
+      await expect(tx).to.be.revertedWith(`NonRevokableProof(${proofID2}, ${issuanceDate}, ${issuanceDate + DEFAULT_REVOCABLE_PERIOD})`) //emit(proofManagerFacet, "ProofRevoked");
     });
   });
 

@@ -1,15 +1,11 @@
 /* global ethers describe before it */
 /* eslint-disable prefer-const */
 
-const { deployDiamond } = require("../scripts/deploy.js");
-
-const { FacetCutAction } = require("../scripts/libraries/diamond.js");
+const { deployDiamond, FacetCutAction } = require("../scripts/deploy");
 
 const { deployMockContract } = require("ethereum-waffle");
 
 const { assert } = require("chai");
-
-const { parseEther } = require("ethers").utils;
 
 const { claimManagerInterface } = require("./utils");
 
@@ -22,10 +18,6 @@ const revokerRole = ethers.utils.namehash(
 const workerRole = ethers.utils.namehash(
   "workerRole.roles.greenproof.apps.iam.ewc"
 );
-
-const timeLimit = 15 * 60;
-const rewardAmount = parseEther("1");
-
 
 // The diamond example comes with 8 function selectors
 // [cut, loupe, loupe, loupe, loupe, erc165, transferOwnership, owner]
@@ -83,14 +75,11 @@ describe("Cache bug test", async () => {
       workerRole,
     };
 
-    // const isDiamondTest = true;
+    const { diamondAddress } = await deployDiamond({
+      claimManagerAddress: claimManagerMocked.address,
+      roles,
+    });
 
-    let diamondAddress = await deployDiamond(
-      timeLimit,
-      rewardAmount,
-      claimManagerMocked.address,
-      roles
-    );
     let diamondCutFacet = await ethers.getContractAt(
       "DiamondCutFacet",
       diamondAddress
