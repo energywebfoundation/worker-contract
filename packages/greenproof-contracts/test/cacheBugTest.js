@@ -1,7 +1,8 @@
 /* global ethers describe before it */
 /* eslint-disable prefer-const */
 
-const { deployDiamond, FacetCutAction } = require("../scripts/deploy");
+const { deployDiamond } = require("../scripts/deploy/deploy");
+const { FacetCutAction } = require("../scripts/deploy");
 
 const { deployMockContract } = require("ethereum-waffle");
 
@@ -83,16 +84,10 @@ describe("Cache bug test", async () => {
 
     const { diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
+      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
       roles,
     });
 
-    let diamondAddress = await deployDiamond(
-      timeLimit,
-      rewardAmount,
-      claimManagerMocked.address,
-      claimsRevocationRegistryMocked.address,
-      roles
-    );
     let diamondCutFacet = await ethers.getContractAt(
       "DiamondCutFacet",
       diamondAddress

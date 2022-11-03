@@ -29,6 +29,7 @@ type DeployDiamondOptions = {
   };
   contractOwner?: string;
   revocablePeriod?: number;
+  claimRevocationRegistryAddress?: string;
   logger?: Logger;
 };
 
@@ -50,8 +51,8 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
     roles = {},
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     facets = Object.values(Facet),
-    logger = () => {
-    },
+    claimRevocationRegistryAddress = process.env.VOLTA_CLAIMS_REVOCATION_REGISTRY,
+    logger = () => {},
   } = options;
   const deploy = createDeployer(logger);
   const {
@@ -76,6 +77,7 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
       revokerRole,
       workerRole,
       revocablePeriod,
+      claimRevocationRegistryAddress,
     ),
   );
 

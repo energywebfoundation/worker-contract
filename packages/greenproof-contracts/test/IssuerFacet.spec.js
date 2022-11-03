@@ -2,7 +2,7 @@ const chai = require("chai");
 const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
-const { deployDiamond, DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy");
+const { deployDiamond, DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy/deploy");
 const {
   deployMockContract,
   solidity,
@@ -174,7 +174,7 @@ describe("IssuerFacet", function () {
 
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
-      claimsRevocationRegistryMocked.address,
+      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
       roles
     }));
 

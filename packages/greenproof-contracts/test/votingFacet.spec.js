@@ -2,7 +2,7 @@ const chai = require("chai");
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 const { solidity, deployMockContract } = require("ethereum-waffle");
-const { deployDiamond, DEFAULT_VOTING_TIME_LIMIT, DEFAULT_REWARD_AMOUNT } = require("../scripts/deploy");
+const { deployDiamond, DEFAULT_VOTING_TIME_LIMIT, DEFAULT_REWARD_AMOUNT } = require("../scripts/deploy/deploy");
 const { claimManagerInterface, claimRevocationInterface } = require("./utils");
 
 const issuerRole = ethers.utils.namehash(
@@ -39,7 +39,6 @@ describe("VotingFacet", function () {
     let faucet;
     let matchVoting;
 
-    const IS_SETTLEMENT = true;
     const defaultVersion = 1;
     const timeframes = [
         { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_1") },
@@ -93,7 +92,7 @@ describe("VotingFacet", function () {
 
         ({ diamondAddress } = await deployDiamond({
             claimManagerAddress: claimManagerMocked.address,
-            claimsRevocationRegistryMocked.address,
+            claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
             roles,
         }));
         diamondCutFacet = await ethers.getContractAt(
@@ -659,7 +658,7 @@ describe("VotingFacet", function () {
                         value: DEFAULT_REWARD_AMOUNT.mul(3),
                     }
             )
-        ).to.emit(matchVoting, "Replenished").withArgs(rewardAmount.mul(3));
+        ).to.emit(matchVoting, "Replenished").withArgs(DEFAULT_REWARD_AMOUNT.mul(3));
 
         const balancesAfter = await Promise.all([
             worker1.getBalance(),
@@ -680,7 +679,7 @@ describe("VotingFacet", function () {
             .connect(worker1)
             .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
-        await timeTravel(2 * timeLimit);
+        await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
         await expect(matchVoting.connect(worker1).cancelExpiredVotings())
             .to.be.revertedWith("LibDiamond: Must be contract owner");
