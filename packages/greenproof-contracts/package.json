@@ -1,15 +1,18 @@
 {
 	"name": "@energyweb/greenproof-contracts",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Onchain module of the Greenproof core SDK of Energyweb Foundation.",
-	"main": "index.js",
+	"main": "scripts/deploy/index.js",
+	"types": "scripts/deploy/index.d.ts",
 	"scripts": {
 		"clean": "npx hardhat clean",
-		"test": "npx hardhat test",
+		"test:e2e": "yarn build && npx hardhat test",
+		"test:unit": "echo \"No unit tests\"",
 		"compile": "npx hardhat compile",
-		"issuer:test": "npx hardhat test test/IssuerFacet.spec.js",
-		"voting:test": "npx hardhat test test/votingFacet.spec.js",
-		"diamond:test": "npx hardhat test test/diamondTest.js"
+		"build": "yarn compile && tsc",
+		"issuer:test": "yarn build && npx hardhat test test/IssuerFacet.spec.js",
+		"voting:test": "yarn build && npx hardhat test test/votingFacet.spec.js",
+		"diamond:test": "yarn build && npx hardhat test test/diamondTest.js"
 	},
 	"repository": {
 		"type": "git",
@@ -25,6 +28,8 @@
 		"@energyweb/greenproof-merkle-tree": "^2.0.6",
 		"@nomiclabs/hardhat-ethers": "^2.0.2",
 		"@nomiclabs/hardhat-waffle": "^2.0.1",
+		"@typechain/ethers-v5": "10.1.0",
+		"@typechain/hardhat": "6.1.3",
 		"chai": "^4.3.6",
 		"dotenv": "^8.6.0",
 		"ethereum-waffle": "^3.4.0",
@@ -34,7 +39,8 @@
 		"mocha": "^10.0.0",
 		"prettier": "^2.3.2",
 		"prettier-plugin-solidity": "^1.0.0-beta.13",
-		"standard": "^16.0.3"
+		"standard": "^16.0.3",
+		"typechain": "8.1.0"
 	},
 	"dependencies": {
 		"@solidstate/contracts": "^0.0.40",

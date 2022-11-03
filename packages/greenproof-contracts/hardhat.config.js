@@ -2,7 +2,9 @@
 // require("hardhat-diamond-abi");
 require("hardhat-gas-reporter");
 require("@nomiclabs/hardhat-waffle");
+require("@typechain/hardhat");
 const dotenv = require("dotenv");
+const path = require('path');
 
 dotenv.config();
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -40,7 +42,7 @@ module.exports = {
     },
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY]
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     }
   },
   settings: {
@@ -60,4 +62,7 @@ module.exports = {
   //   // (required) The name of your Diamond ABI
   //   name: "GreenproofContracts",
   // },
+  typechain: {
+    outDir: path.join(__dirname, "src"),
+  },
 };
