@@ -2,7 +2,7 @@ const chai = require("chai");
 const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
-const { deployDiamond } = require("../scripts/deploy");
+const { deployDiamond, DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy/deploy");
 const {
   deployMockContract,
   solidity,
@@ -150,7 +150,7 @@ describe("IssuerFacet", function () {
         await claimManagerMocked.mock.hasRole
             .withArgs(operatorWallet.address, role, defaultVersion)
             .returns(true);
-        
+
         await claimsRevocationRegistryMocked.mock.isRevoked
             .withArgs(role, operatorWallet.address)
             .returns(false);
@@ -160,7 +160,7 @@ describe("IssuerFacet", function () {
         await claimManagerMocked.mock.hasRole
             .withArgs(operatorWallet.address, role, defaultVersion)
             .returns(true);
-        
+
         await claimsRevocationRegistryMocked.mock.isRevoked
             .withArgs(role, operatorWallet.address)
             .returns(true);
@@ -172,13 +172,12 @@ describe("IssuerFacet", function () {
       workerRole,
     };
 
-    diamondAddress = await deployDiamond(
-      timeLimit,
-      rewardAmount,
-      claimManagerMocked.address,
-      claimsRevocationRegistryMocked.address,
+    ({ diamondAddress } = await deployDiamond({
+      claimManagerAddress: claimManagerMocked.address,
+      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
       roles
-    );
+    }));
+
     diamondCutFacet = await ethers.getContractAt(
       "DiamondCutFacet",
       diamondAddress
@@ -262,7 +261,7 @@ describe("IssuerFacet", function () {
 
     it("Authorized issuers can send proof issuance requests", async () => {
       await grantRole(issuer, issuerRole);
-      
+
       //1 - Run the voting process with a consensus
       // await grantRole(worker1, workerRole);
       // await grantRole(worker2, workerRole);
@@ -271,13 +270,13 @@ describe("IssuerFacet", function () {
       // await votingFacet.connect(owner).addWorker(worker2.address);
 
       const inputHash = '0x' + hash(stringify(data)).toString('hex');
-  
+
       const matchResult = dataTree.getHexRoot();
       const matchResultProof = dataTree.getHexProof(leaves[0]);
 
       await votingFacet.connect(worker1).vote(inputHash, matchResult);
       await votingFacet.connect(worker2).vote(inputHash, matchResult);
-      
+
       //2 - request proof issuance for the vote ID (inputHash)
 
       console.log("stringifyed volume :: ", JSON.stringify(volume))
@@ -321,7 +320,7 @@ describe("IssuerFacet", function () {
 
     it("should revert when one tries to transfer token ID = 0", async () => {
       const transferBytesData = ethers.utils.formatBytes32String("");
-      
+
       //transferring token ID == 0
       await expect(
         issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, 0, parseEther("2"), transferBytesData)
@@ -331,7 +330,7 @@ describe("IssuerFacet", function () {
     it("should revert when one tries to transfer token ID > lastTokenIndex", async () => {
       const transferBytesData = ethers.utils.formatBytes32String("");
       const invalidTokenIndex = 42;
-      
+
       //transferring token ID == 42
       await expect(
         issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, invalidTokenIndex, parseEther("2"), transferBytesData)
@@ -362,12 +361,12 @@ describe("IssuerFacet", function () {
     });
 
     it("should get all certificates of one owner", async () => {
-      
+
       const ownersCertificates = await proofManagerFacet.getProofsOf(owner.address);
       const generatorCertificates = await proofManagerFacet.getProofsOf(generator.address);
        console.log(`${owner.address}' certificates : `, ownersCertificates);
        console.log(`${generator.address}' certificates : `, generatorCertificates);
-       
+
     });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
@@ -445,7 +444,7 @@ describe("IssuerFacet", function () {
         issuerFacet.connect(owner).safeTransferFrom(owner.address, generatorAddress, lastTokenID, customerRevokedAmount, data)
       ).to.emit(issuerFacet, "TransferSingle").withArgs(owner.address, owner.address, generatorAddress, lastTokenID, customerRevokedAmount);
     });
-  
+
     it("should prevent dupplicate revocation", async () => {
       await grantRole(revoker, revokerRole);
       await expect(
@@ -519,13 +518,13 @@ describe("IssuerFacet", function () {
       const issuanceDate = Number(proof.issuanceDate.toString());
       
       //forward time to reach end of revocable period
-      await timeTravel(revocablePeriod);
+      await timeTravel(DEFAULT_REVOCABLE_PERIOD);
       await grantRole(revoker, revokerRole);
         
       tx = proofManagerFacet.connect(revoker).revokeProof(certificateID2)
 
       //The certificate should not be revocable anymore
-      await expect(tx).to.be.revertedWith(`NonRevokableCertificate(${certificateID2}, ${issuanceDate}, ${issuanceDate + revocablePeriod})`) //emit(proofManagerFacet, "ProofRevoked");
+      await expect(tx).to.be.revertedWith(`NonRevokableCertificate(${certificateID2}, ${issuanceDate}, ${issuanceDate + DEFAULT_REVOCABLE_PERIOD})`) //emit(proofManagerFacet, "ProofRevoked");
     });
   });
 

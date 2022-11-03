@@ -1,9 +1,8 @@
 const chai = require("chai");
 const { expect } = require("chai");
-const { parseEther } = require("ethers").utils;
 const { ethers, network } = require("hardhat");
 const { solidity, deployMockContract } = require("ethereum-waffle");
-const { deployDiamond } = require("../scripts/deploy");
+const { deployDiamond, DEFAULT_VOTING_TIME_LIMIT, DEFAULT_REWARD_AMOUNT } = require("../scripts/deploy/deploy");
 const { claimManagerInterface, claimRevocationInterface } = require("./utils");
 
 const issuerRole = ethers.utils.namehash(
@@ -40,8 +39,6 @@ describe("VotingFacet", function () {
     let faucet;
     let matchVoting;
 
-    const rewardAmount = parseEther("1");
-    const timeLimit = 15 * 60;
     const defaultVersion = 1;
     const timeframes = [
         { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_1") },
@@ -53,8 +50,6 @@ describe("VotingFacet", function () {
     ];
 
     beforeEach(async () => {
-        console.log(`\n`);
-        console.log("inputMatch : ", timeframes[0].input)
         const [_owner] = await ethers.getSigners();
 
         //  Mocking claimManager
@@ -73,7 +68,7 @@ describe("VotingFacet", function () {
             await claimManagerMocked.mock.hasRole
                 .withArgs(operatorWallet.address, role, defaultVersion)
                 .returns(true);
-            
+
             await claimsRevocationRegistryMocked.mock.isRevoked
                 .withArgs(role, operatorWallet.address)
                 .returns(false);
@@ -83,7 +78,7 @@ describe("VotingFacet", function () {
             await claimManagerMocked.mock.hasRole
                 .withArgs(operatorWallet.address, role, defaultVersion)
                 .returns(true);
-            
+
             await claimsRevocationRegistryMocked.mock.isRevoked
                 .withArgs(role, operatorWallet.address)
                 .returns(true);
@@ -95,13 +90,11 @@ describe("VotingFacet", function () {
             workerRole,
         };
 
-        diamondAddress = await deployDiamond(
-            timeLimit,
-            rewardAmount,
-            claimManagerMocked.address,
-            claimsRevocationRegistryMocked.address,
-            roles
-        );
+        ({ diamondAddress } = await deployDiamond({
+            claimManagerAddress: claimManagerMocked.address,
+            claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+            roles,
+        }));
         diamondCutFacet = await ethers.getContractAt(
             "DiamondCutFacet",
             diamondAddress
@@ -337,7 +330,7 @@ describe("VotingFacet", function () {
                 .connect(worker1)
                 .vote(timeframes[0].input, timeframes[1].output)
         ).to.not.emit(matchVoting, "WinningMatch");
-        
+
         // We verify that workers cannot pump the same re-vote
         await expect(
             matchVoting
@@ -541,7 +534,7 @@ describe("VotingFacet", function () {
 
         await faucet.sendTransaction({
             to: diamondAddress,
-            value: rewardAmount.mul(4), // reward queue balance should be greater than payment
+            value: DEFAULT_REWARD_AMOUNT.mul(4), // reward queue balance should be greater than payment
         });
 
         await matchVoting
@@ -578,8 +571,8 @@ describe("VotingFacet", function () {
             worker4.getBalance(),
         ]);
         const expectedBalances = [
-            balancesBefore[ 0 ].add(rewardAmount),
-            balancesBefore[ 1 ].add(rewardAmount),
+            balancesBefore[ 0 ].add(DEFAULT_REWARD_AMOUNT),
+            balancesBefore[ 1 ].add(DEFAULT_REWARD_AMOUNT),
             balancesBefore[ 2 ],
             balancesBefore[ 3 ],
         ];
@@ -662,10 +655,10 @@ describe("VotingFacet", function () {
             matchVoting
                 .connect(faucet).replenishRewardPool(
                     {
-                        value: rewardAmount.mul(3),
+                        value: DEFAULT_REWARD_AMOUNT.mul(3),
                     }
             )
-        ).to.emit(matchVoting, "Replenished").withArgs(rewardAmount.mul(3));
+        ).to.emit(matchVoting, "Replenished").withArgs(DEFAULT_REWARD_AMOUNT.mul(3));
 
         const balancesAfter = await Promise.all([
             worker1.getBalance(),
@@ -673,20 +666,20 @@ describe("VotingFacet", function () {
         ]);
 
         expect(
-            balancesAfter.every((b, i) => b.eq(balancesBefore[ i ].add(rewardAmount)))
+            balancesAfter.every((b, i) => b.eq(balancesBefore[ i ].add(DEFAULT_REWARD_AMOUNT)))
         );
     });
 
     it("reverts when non owner tries to cancel expired votings", async () => {
         await grantRole(worker1, workerRole);
-        
+
         await matchVoting.addWorker(worker1.address);
 
         await matchVoting
             .connect(worker1)
             .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
-        await timeTravel(2 * timeLimit);
+        await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
         await expect(matchVoting.connect(worker1).cancelExpiredVotings())
             .to.be.revertedWith("LibDiamond: Must be contract owner");
@@ -705,7 +698,7 @@ describe("VotingFacet", function () {
             .connect(worker1)
             .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
-        await timeTravel(2 * timeLimit);
+        await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
         await expect(matchVoting.cancelExpiredVotings())
             .to.emit(matchVoting, "VotingExpired")
@@ -734,7 +727,7 @@ describe("VotingFacet", function () {
             .connect(worker1)
             .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
-        await timeTravel(2 * timeLimit);
+        await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
         // voting canceled and restarted
         await expect(
@@ -765,7 +758,7 @@ describe("VotingFacet", function () {
             .connect(worker1)
             .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
 
-        await timeTravel(2 * timeLimit);
+        await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
         await expect(
             matchVoting.connect(worker2).cancelExpiredVotings()
