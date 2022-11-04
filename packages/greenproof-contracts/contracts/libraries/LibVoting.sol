@@ -173,14 +173,14 @@ library LibVoting {
 
             uint256 nbOfWorkers = IVoting(address(this)).getNumberOfWorkers();
 
-            if (LibVoting._hasReachedMajority(voting.winningMatchReplayedVoteCount)) {
+            if (hasReachedMajority(voting, matchResult)) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
                     winningMatchReplayedVoteCount = voting.winningMatchReplayedVoteCount;
                 }
             }
-            if (!LibVoting._hasReachedMajority(voting.winningMatchReplayedVoteCount) && voting.numberOfReplayedVotes == nbOfWorkers) {
+            if (!hasReachedMajority(voting, matchResult) && voting.numberOfReplayedVotes == nbOfWorkers) {
                 if (voting.noReplayedConsensus == false) {
                     shouldUpdateVoting = true;
                     replayedWinningMatch = voting.replayedWinningMatch;
@@ -307,10 +307,11 @@ library LibVoting {
     }
 
     // @notice Number of votes sufficient to determine match winner
-    function _hasReachedMajority(uint256 numberOfVotes) internal view returns (bool) {
+    function hasReachedMajority(Voting storage voting, bytes32 matchResult) internal view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
+        uint256 numberOfWinningVotes = voting.matchResultToVoteCount[matchResult];
 
-        return (100 * numberOfVotes / votingStorage.numberOfWorkers) >= votingStorage.majorityPercentage;
+        return (100 * numberOfWinningVotes / votingStorage.numberOfWorkers) >= votingStorage.majorityPercentage;
     }
 
     function _isClosed(Voting storage vote) internal view returns (bool) {
