@@ -12,7 +12,8 @@ const chai = require("chai");
 
 const { roles } = require('./utils/roles.utils');
 const { deployDiamond } = require('../scripts/deploy/deployContracts');
-const { claimManagerInterface, claimRevocationInterface } = require('./utils/claimManager');
+const { claimManagerInterface, claimRevocationInterface, initMockClaimManager } = require('./utils/claimManager.utils');
+const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
 
 chai.use(solidity);
 
@@ -34,16 +35,8 @@ describe("DiamondTest", async function () {
   before(async function () {
     [owner] = await ethers.getSigners();
   
-    //  Mocking claimManager
-    claimManagerMocked = await deployMockContract(
-      owner,
-      claimManagerInterface
-    );
-//  Mocking claimsRevocationRegistry
-    claimsRevocationRegistryMocked = await deployMockContract(
-      owner,
-      claimRevocationInterface
-    );
+    claimManagerMocked = await initMockClaimManager(owner);
+    claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,

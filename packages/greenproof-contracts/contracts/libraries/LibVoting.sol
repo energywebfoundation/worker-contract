@@ -152,7 +152,7 @@ library LibVoting {
         }
         voting.replayedMatchResultToVoteCount[matchResult]++;
 
-        if (voting.replayedMatchResultToVoteCount[matchResult] >= _majority()) {
+        if (hasReachedMajority(voting, matchResult)) {
             voting.replayedWinningMatch = matchResult;
             shouldUpdateVoting = true;
             replayedWinningMatch = voting.replayedWinningMatch;
@@ -178,12 +178,12 @@ library LibVoting {
             voting.winningMatch = matchResult;
             voting.noConsensus = false;
 
-            if (voting.winningMatchVoteCount >= LibVoting._majority()) {
+            if (hasReachedMajority(voting, matchResult)) {
                 _endVotingSession(voting);
             }
         }
 
-        if (voting.numberOfVotes == getStorage().numberOfWorkers && (voting.winningMatchVoteCount < _majority())) {
+        if (voting.numberOfVotes == getStorage().numberOfWorkers && !hasReachedMajority(voting, matchResult)) {
             _endVotingSession(voting);
         }
     }

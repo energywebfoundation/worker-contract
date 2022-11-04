@@ -1,7 +1,5 @@
-const chai = require("chai");
-const { expect } = require("chai");
-const { solidity, deployMockContract } = require("ethereum-waffle");
-const { claimManagerInterface, claimRevocationInterface } = require("./utils");
+const chai = require('chai');
+const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { solidity } = require('ethereum-waffle');
 const {
@@ -9,7 +7,7 @@ const {
   DEFAULT_REWARD_AMOUNT,
   deployDiamond,
 } = require('../scripts/deploy/deployContracts');
-const { initMockClaimManager } = require('./utils/claimManager');
+const { initMockClaimManager } = require('./utils/claimManager.utils');
 const { roles } = require('./utils/roles.utils');
 const { timeTravel } = require('./utils/time.utils');
 const { itEach } = require('mocha-it-each');
@@ -62,6 +60,11 @@ class Worker {
       .to.be.revertedWith('NotWhitelisted');
   }
 
+  voteAlreadyVoted(input, output) {
+    expect(this.votingContract.vote(input, output, IS_SETTLEMENT))
+      .to.be.revertedWith('AlreadyVoted()');
+  }
+
   async getVote(input) {
     return await this.votingContract.getWorkerVote(input, this.address);
   }
@@ -75,15 +78,32 @@ describe('VotingFacet', function() {
   let mockClaimManager;
   let votingContract;
 
-    const defaultVersion = 1;
-    const timeframes = [
-        { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_1") },
-        { input: ethers.utils.formatBytes32String("MATCH_INPUT_1"), output: ethers.utils.formatBytes32String("REPLAYED_MATCH_OUTPUT_1") },
-        { input: ethers.utils.formatBytes32String("MATCH_INPUT_2"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_2") },
-        { input: ethers.utils.formatBytes32String("MATCH_INPUT_3"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_3") },
-        { input: ethers.utils.formatBytes32String("MATCH_INPUT_4"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_4") },
-        { input: ethers.utils.formatBytes32String("MATCH_INPUT_5"), output: ethers.utils.formatBytes32String("MATCH_OUTPUT_5") },
-    ];
+  const timeframes = [
+    {
+      input: ethers.utils.formatBytes32String('MATCH_INPUT_1'),
+      output: ethers.utils.formatBytes32String('MATCH_OUTPUT_1'),
+    },
+    {
+      input: ethers.utils.formatBytes32String('MATCH_INPUT_1'),
+      output: ethers.utils.formatBytes32String('REPLAYED_MATCH_OUTPUT_1'),
+    },
+    {
+      input: ethers.utils.formatBytes32String('MATCH_INPUT_2'),
+      output: ethers.utils.formatBytes32String('MATCH_OUTPUT_2'),
+    },
+    {
+      input: ethers.utils.formatBytes32String('MATCH_INPUT_3'),
+      output: ethers.utils.formatBytes32String('MATCH_OUTPUT_3'),
+    },
+    {
+      input: ethers.utils.formatBytes32String('MATCH_INPUT_4'),
+      output: ethers.utils.formatBytes32String('MATCH_OUTPUT_4'),
+    },
+    {
+      input: ethers.utils.formatBytes32String('MATCH_INPUT_5'),
+      output: ethers.utils.formatBytes32String('MATCH_OUTPUT_5'),
+    },
+  ];
 
   beforeEach(async () => {
     const [
@@ -202,13 +222,9 @@ describe('VotingFacet', function() {
     workers[0].voteNotWinning(timeframes[0].input, timeframes[1].output);
 
     // We verify that workers cannot pump the same re-vote
-        await expect(
-            matchVoting
-                .connect(worker1)
-                .vote(timeframes[0].input, timeframes[1].output)
-        ).to.be.revertedWith("AlreadyVoted()")
+    workers[0].voteAlreadyVoted(timeframes[0].input, timeframes[1].output);
 
-        //We verify that the final vote of worker 1 is not updated
+    //We verify that the final vote of worker 1 is not updated
     expect(await votingContract.getWorkerVote(timeframes[0].input, workers[0].address)).to.equal(timeframes[0].output);
 
     //we verify that the winngMatch has not been updated
@@ -277,34 +293,18 @@ describe('VotingFacet', function() {
     ).to.be.revertedWith(`WorkerWasNotAdded("${workers[0].address}")`);
   });
 
-    it("should get the winner with the most votes", async () => {
-        await grantRole(worker1, workerRole);
-        await grantRole(worker2, workerRole);
-        await grantRole(worker3, workerRole);
-
-        await matchVoting.addWorker(worker1.address);
-        await matchVoting.addWorker(worker2.address);
-        await matchVoting.addWorker(worker3.address);
-
-        await expect(
-          matchVoting
-            .connect(worker1)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
-        ).to.not.emit(matchVoting, "WinningMatch");
-
-        await expect(
-          matchVoting
-            .connect(worker2)
-            .vote(timeframes[ 0 ].input, timeframes[ 0 ].output)
-        )
-          .to.emit(matchVoting, "WinningMatch")
-          .withArgs(timeframes[ 0 ].input, timeframes[ 0 ].output, 2);
-
-        expect(await matchVoting.getMatch(timeframes[ 0 ].input)).to.equal(
-          timeframes[ 0 ].output
-        );
-        expect(await matchVoting.numberOfvotingSessions()).to.equal(1);
+  it('should get the winner with the most votes', async () => {
+    await setupVotingContract({
+      majorityPercentage: 100,
+      participatingWorkers: [workers[0],workers[1],workers[2]],
     });
+
+    workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output)
+    workers[1].voteWinning(timeframes[0].input, timeframes[0].output, {voteCount: 2})
+
+    expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
+    expect(await votingContract.numberOfvotingSessions()).to.equal(1);
+  });
 
   it('should not allow an enrolled worker to unregister', async () => {
     await setupVotingContract({
@@ -431,12 +431,12 @@ describe('VotingFacet', function() {
     ]);
 
     await expect(
-            matchVoting
-                .connect(faucet).replenishRewardPool(
-      {
-      value: DEFAULT_REWARD_AMOUNT.mul(3),
-    })
-        ).to.emit(matchVoting, "Replenished").withArgs(DEFAULT_REWARD_AMOUNT.mul(3));
+      matchVoting
+        .connect(faucet).replenishRewardPool(
+        {
+          value: DEFAULT_REWARD_AMOUNT.mul(3),
+        }),
+    ).to.emit(matchVoting, 'Replenished').withArgs(DEFAULT_REWARD_AMOUNT.mul(3));
 
     const balancesAfter = await Promise.all([
       workers[0].wallet.getBalance(),
@@ -449,20 +449,20 @@ describe('VotingFacet', function() {
   });
 
 
-    it("reverts when non owner tries to cancel expired votings", async () => {
-        await grantRole(worker1, workerRole);
+  it('reverts when non owner tries to cancel expired votings', async () => {
+    await grantRole(worker1, workerRole);
 
-        await matchVoting.addWorker(worker1.address);
+    await matchVoting.addWorker(worker1.address);
 
-        await matchVoting
-          .connect(worker1)
-          .vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
+    await matchVoting
+      .connect(worker1)
+      .vote(timeframes[0].input, timeframes[0].output);
 
-        await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
+    await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
-        await expect(matchVoting.connect(worker1).cancelExpiredVotings())
-          .to.be.revertedWith("LibDiamond: Must be contract owner");
-    });
+    await expect(matchVoting.connect(worker1).cancelExpiredVotings())
+      .to.be.revertedWith('LibDiamond: Must be contract owner');
+  });
 
   it('voting which exceeded time limit can be canceled', async () => {
     await setupVotingContract({

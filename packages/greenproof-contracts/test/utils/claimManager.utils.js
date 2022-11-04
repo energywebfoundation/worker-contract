@@ -5,16 +5,14 @@ const { FormatTypes, Interface } = utils;
 const abi = [
   "function hasRole(address subject, bytes32 role, uint256 version) public view returns(bool)",
 ];
-const iface = new Interface(abi);
-const claimManagerABI = iface.format(FormatTypes.json);
+const claimManagerABI = new Interface(abi).format(FormatTypes.json);
 
 const defaultVersion = 1;
-const claimManagerInterface = claimManagerABI;
 
 const initMockClaimManager = async (owner) => {
   const contract = await deployMockContract(
     owner,
-    claimManagerInterface
+    claimManagerABI
   );
 
   const grantRole = async (address, role) => {
@@ -40,6 +38,5 @@ const initMockClaimManager = async (owner) => {
 
 module.exports = {
   claimManagerABI,
-  claimManagerInterface,
   initMockClaimManager
 };

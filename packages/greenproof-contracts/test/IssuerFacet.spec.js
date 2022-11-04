@@ -3,15 +3,13 @@ const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
 const { deployDiamond, DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy/deploy");
 const { ethers } = require("hardhat");
-const {
-  deployMockContract,
-  solidity,
-} = require("ethereum-waffle");
-const { getMerkleProof, claimRevocationInterface } = require("./utils");
+const { solidity } = require("ethereum-waffle");
 const { createMerkleTree, createPreciseProof, hash, stringify } = require('@energyweb/greenproof-merkle-tree')
 const { roles } = require('./utils/roles.utils');
 const { timeTravel } = require('./utils/time.utils');
-const { claimManagerInterface } = require('./utils/claimManager');
+const { initMockClaimManager } = require('./utils/claimManager.utils');
+const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
+const { getMerkleProof } = require('./utils/merkleProof.utils');
 chai.use(solidity);
 
 const { issuerRole, revokerRole, workerRole } = roles;
@@ -134,36 +132,17 @@ describe('IssuerFacet', function() {
 
     provider = ethers.provider;
 
-    //  Mocking claimManager
-    const claimManagerMocked = await deployMockContract(
-      owner,
-      claimManagerInterface
-    );
-
-         //  Mocking claimsRevocationRegistry
-    const claimsRevocationRegistryMocked = await deployMockContract(
-        owner,
-        claimRevocationInterface
-    );
+    const claimManagerMocked = await initMockClaimManager(owner);
+    const claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
     grantRole = async (operatorWallet, role) => {
-        await claimManagerMocked.mock.hasRole
-            .withArgs(operatorWallet.address, role, defaultVersion)
-            .returns(true);
-
-        await claimsRevocationRegistryMocked.mock.isRevoked
-            .withArgs(role, operatorWallet.address)
-            .returns(false);
+        await claimManagerMocked.grantRole(operatorWallet, role)
+        await claimsRevocationRegistryMocked.isRevoked(role, operatorWallet.address, false)
     };
 
     revokeRole = async (operatorWallet, role) => {
-        await claimManagerMocked.mock.hasRole
-            .withArgs(operatorWallet.address, role, defaultVersion)
-            .returns(true);
-
-        await claimsRevocationRegistryMocked.mock.isRevoked
-            .withArgs(role, operatorWallet.address)
-            .returns(true);
+      await claimManagerMocked.grantRole(operatorWallet, role)
+      await claimsRevocationRegistryMocked.isRevoked(role, operatorWallet.address, true)
     };
 
     const roles = {
@@ -250,7 +229,6 @@ describe('IssuerFacet', function() {
       const volumeLeaf = hash('volume' + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
-      const volumeInWei = parseEther(volume.toString());
 
       await expect(
         issuerFacet
@@ -429,7 +407,6 @@ describe('IssuerFacet', function() {
 
     it("it should revert when transfering reevoked proof to another wallet than generator", async () => {
       const data = ethers.utils.formatBytes32String("");
-      let generatorCertificateAmount = await issuerFacet.balanceOf(generatorAddress, lastTokenID);
 
       await expect(
         issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, certificateID1, parseEther("1"), data)

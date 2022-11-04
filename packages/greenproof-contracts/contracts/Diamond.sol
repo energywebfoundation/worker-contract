@@ -34,7 +34,7 @@ contract Diamond {
         require(claimManagerAddress != address(0), "init: Invalid claimManager");
         require(claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
         require(revocablePeriod > 0, "init: Invalid revocable period");
-        require(_contractOwner != address(0), "init: Invalid contract Owner");
+        require(contractOwner != address(0), "init: Invalid contract Owner");
         require(majorityPercentage >= 0 && majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
         LibVoting.init(votingTimeLimit, majorityPercentage);
         LibIssuer.init(revocablePeriod);
