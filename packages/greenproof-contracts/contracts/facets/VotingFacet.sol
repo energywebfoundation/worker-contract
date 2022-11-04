@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import {IVoting} from "../interfaces/IVoting.sol";
+import {IReward} from "../interfaces/IReward.sol";
+import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibDiamond} from "../libraries/LibDiamond.sol";
-import {IVoting} from "../interfaces/IVoting.sol";
-import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 /**
@@ -14,7 +15,7 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
  * @notice this facet handles all voting functionalities of the greenProof-core module
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
-contract VotingFacet is IVoting {
+contract VotingFacet is IVoting, IReward {
     /**
      * @notice Allowing direct calls on LibVoting's functions for address type.
      * @dev This improves code readability by writing `address.isWorker()` and `address.isNotWorker()`
@@ -37,112 +38,47 @@ contract VotingFacet is IVoting {
 
     /**
      * @notice `vote` - Each worker votes for a given matchResult, increasing the number of votes for this matchResult.
-     * @param matchInput - The identifier of the vote
+     * @param voteID - The identifier of the vote
      * @param matchResult - The actual vote of the worker
-     * @param isSettlement - indicates if the current vote is on settlement data
-     * @dev voting is done one settlement data, a consensus achieved will trigger a `ConsensusReached` event.
      * @dev The winning vote is determined by simple majority. When consensus is not reached the voting is restarted.
      */
-    function vote(
-        bytes32 matchInput,
-        bytes32 matchResult,
-        bool isSettlement
-    ) external {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
-
+    function vote(bytes32 voteID, bytes32 matchResult) external override {
         if ((msg.sender.isNotWorker())) {
             revert LibVoting.NotWhitelisted();
         }
-        LibVoting.Voting storage voting = votingStorage.matchInputToVoting[matchInput];
+
+        LibVoting.Voting storage voting = LibVoting._getVote(voteID);
+        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+
         if (voting._isExpired()) {
-            voting._cancelVoting();
+            voting._resetVotingSession();
         }
 
         if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
             // we prevent wasting computation if the vote is the same as the previous one
-            if (votingStorage.workerVotes[msg.sender][matchInput] == matchResult) {
+            if (votingStorage.workerVotes[msg.sender][voteID] == matchResult) {
                 return;
             }
-            (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchInput, matchResult);
+
+            (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchResult);
 
             if (shouldUpdateVote) {
                 //We update the voting results
                 voting._updateWorkersVote();
                 voting._revealWinners();
 
-                voting.winningMatchVoteCount = newVoteCount;
-                bytes32 winMatch = votingStorage.matchInputToVoting[matchInput].winningMatch;
+                voting._updateVoteResult(newWinningMatch, newVoteCount);
 
-                //we prevent updating if the final winning match did not change
-                if (winMatch != newWinningMatch) {
-                    votingStorage.matchInputToVoting[matchInput].winningMatch = newWinningMatch;
+                emit WinningMatch(voteID, newWinningMatch, newVoteCount);
 
-                    //We update winningMatches list
-                    votingStorage.winningMatches[voting.matchInput] = newWinningMatch;
-                }
-
-                // We update the final vote with the replayed vote
-                for (uint256 i; i < voting.replayVoters.length; i++) {
-                    address worker = voting.replayVoters[i];
-
-                    votingStorage.workerVotes[worker][matchInput] = voting.workerToMatchResult[worker];
-                    votingStorage.matchInputToVoting[matchInput].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
-                }
-
-                emit WinningMatch(voting.matchInput, newWinningMatch, newVoteCount);
-
-                LibVoting._reward(votingStorage.winnersList[voting.matchInput]);
-            } else {
-                if (voting._hasNotStarted()) {
-                    LibVoting._startVoting(matchInput, isSettlement);
-                }
-
-                voting.numberOfVotes++;
-                voting.workerToVoted[msg.sender] = true;
-                voting.workerToMatchResult[msg.sender] = matchResult;
-
-                voting.matchResultToVoteCount[matchResult]++;
-
-                if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
-                    voting.noConsensus = true;
-                } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
-                    voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
-                    voting.winningMatch = matchResult;
-                    voting.noConsensus = false;
-
-                    if (voting.hasReachedMajority(matchResult)) {
-                        voting._completeVoting();
-                    }
-                }
-                if (voting.numberOfVotes == votingStorage.numberOfWorkers && !voting.hasReachedMajority(matchResult)) {
-                    voting._completeVoting();
-                }
+                LibVoting._reward(votingStorage.winnersList[voteID]);
             }
         } else {
             if (voting._hasNotStarted()) {
-                LibVoting._startVoting(matchInput, voting.isSettlement);
+                LibVoting._startVotingSession(voteID);
             }
 
-            voting.numberOfVotes++;
-            voting.workerToVoted[msg.sender] = true;
-            voting.workerToMatchResult[msg.sender] = matchResult;
-
-            voting.matchResultToVoteCount[matchResult]++;
-
-            if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
-                voting.noConsensus = true;
-            } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
-                voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
-                voting.winningMatch = matchResult;
-                voting.noConsensus = false;
-
-                if (voting.hasReachedMajority(matchResult)) {
-                    LibVoting._completeVoting(voting);
-                }
-            }
-            if (voting.numberOfVotes == votingStorage.numberOfWorkers && !voting.hasReachedMajority(matchResult)) {
-                LibVoting._completeVoting(voting);
-            }
+            voting._recordVote(matchResult);
         }
     }
 
@@ -152,7 +88,7 @@ contract VotingFacet is IVoting {
      * @param workerAddress - The address of the worker we want to remove
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
-    function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
+    function addWorker(address payable workerAddress) external override onlyEnrolledWorkers(workerAddress) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if (address(workerAddress).isWorker()) {
@@ -169,7 +105,7 @@ contract VotingFacet is IVoting {
      * @param workerToRemove - The address of the worker we want to remove
      * @dev only the address referenced as the contract owner is allowed to perform this
      */
-    function removeWorker(address workerToRemove) external {
+    function removeWorker(address workerToRemove) external override {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if (workerToRemove.isNotWorker()) {
@@ -193,27 +129,18 @@ contract VotingFacet is IVoting {
     /**
      * @notice Cancels votings that takes longer than time limit
      */
-    function cancelExpiredVotings() external {
+    function cancelExpiredVotings() external override {
         //AccessControl
         LibDiamond.enforceIsContractOwner();
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        for (uint256 i = 0; i < votingStorage.matchInputs.length; i++) {
-            LibVoting.Voting storage voting = votingStorage.matchInputToVoting[votingStorage.matchInputs[i]];
-            if (voting.status == LibVoting.Status.Active && voting.isExpired()) {
-                emit LibVoting.VotingExpired(votingStorage.matchInputs[i]);
-                voting._cancelVoting();
+        for (uint256 i = 0; i < votingStorage.voteIDs.length; i++) {
+            LibVoting.Voting storage voting = votingStorage.voteIDToVoting[votingStorage.voteIDs[i]];
+
+            if (voting._isExpired()) {
+                voting._resetVotingSession();
             }
         }
-    }
-
-    /**
-     * @notice getWinners - a getter function to retreieve the list of workers who voted for the winning macth
-     * @param matchInput - The identifier of the vote
-     * @return winnersList - the List of worker's addresses
-     */
-    function getWinners(bytes32 matchInput) external view returns (address payable[] memory winnersList) {
-        winnersList = LibVoting._getWinners(matchInput);
     }
 
     function getMatch(bytes32 input) external view returns (bytes32) {
@@ -241,27 +168,46 @@ contract VotingFacet is IVoting {
         return _workers;
     }
 
-    function winners(bytes32 matchInput) external view override returns (address payable[] memory) {
+    /**
+     * @notice getWinners - a getter function to retreieve the list of workers who voted for the winning macth
+     * @param voteID - The identifier of the vote
+     * @return winnersList - the List of worker's addresses
+     */
+    function getWinners(bytes32 voteID) external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.winnersList[matchInput];
+        return votingStorage.winnersList[voteID];
     }
 
-    function getWinningMatch(bytes32 matchInput) external view returns (bytes32) {
+    function getWinningMatch(bytes32 voteID) external view override returns (bytes32) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.winningMatches[matchInput];
+        return votingStorage.winningMatches[voteID];
     }
 
-    function getWorkerVote(bytes32 matchInput, address workerAddress) external view override returns (bytes32 matchResult) {
+    function getWorkerVote(bytes32 voteID, address workerAddress) external view override returns (bytes32 matchResult) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.workerVotes[workerAddress][matchInput];
+        return votingStorage.workerVotes[workerAddress][voteID];
     }
 
-    function numberOfMatchInputs() external view returns (uint256) {
+    function numberOfvotingSessions() external view override returns (uint256) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        return votingStorage.matchInputs.length;
+        return votingStorage.voteIDs.length;
+    }
+
+    function replenishRewardPool() external payable override {
+        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
+
+        if (msg.value == 0) {
+            revert NoFundsProvided();
+        }
+
+        emit Replenished(msg.value);
+
+        if (rewardStorage.rewardQueue.length > 0) {
+            LibReward.payReward();
+        }
     }
 }

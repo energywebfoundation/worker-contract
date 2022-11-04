@@ -3,10 +3,11 @@ const { deployMockContract } = require("ethereum-waffle");
 const { assert } = require("chai");
 const { ethers } = require('hardhat');
 const { deployDiamond } = require('../scripts/deploy/deployContracts');
-const { claimManagerInterface } = require('./utils/claimManager');
+const { claimManagerInterface, claimRevocationInterface } = require('./utils/claimManager');
 const issuerRole = ethers.utils.namehash("minter.roles.greenproof.apps.iam.ewc");
 const revokerRole = ethers.utils.namehash("revoker.roles.greenproof.apps.iam.ewc");
 const workerRole = ethers.utils.namehash("workerRole.roles.greenproof.apps.iam.ewc");
+
 
 // The diamond example comes with 8 function selectors
 // [cut, loupe, loupe, loupe, loupe, erc165, transferOwnership, owner]
@@ -58,6 +59,12 @@ describe("Cache bug test", async () => {
       claimManagerInterface
     );
 
+    //  Mocking claimsRevocationRegistry
+    const claimsRevocationRegistryMocked = await deployMockContract(
+        owner,
+        claimRevocationInterface
+    );
+
     const roles = {
       issuerRole,
       revokerRole,
@@ -66,6 +73,7 @@ describe("Cache bug test", async () => {
 
     const { diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
+      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
       roles,
     });
 

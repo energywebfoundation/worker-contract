@@ -96,17 +96,19 @@ export class DDHubClient {
    * This function sets up all the necessary communication configuration.
    * Needs to be called before any interactions with DDHUB Client.
    */
-  async setup() {
+  async setup(omitSavingPrivateKey: boolean = false) {
 
-    /**
-     * Set the private key for Client Gateway
-     */
-    this.log('Saving private key');
-    await savePrivateKey(
-      { privateKey: this.#privateKey },
-      { baseURL: this.#ddhubUrl },
-    );
-    this.log('Private key saved');
+    if (!omitSavingPrivateKey) {
+      /**
+       * Set the private key for Client Gateway
+       */
+      this.log('Saving private key');
+      await savePrivateKey(
+        { privateKey: this.#privateKey },
+        { baseURL: this.#ddhubUrl },
+      );
+      this.log('Private key saved');
+    }
 
     /**
      * Get all topics configured globally for the app owner

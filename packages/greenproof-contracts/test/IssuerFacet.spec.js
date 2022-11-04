@@ -1,17 +1,16 @@
 const chai = require("chai");
 const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
+const { deployDiamond, DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy/deploy");
 const { ethers } = require("hardhat");
-const { DEFAULT_REVOCABLE_PERIOD } = require("../scripts/deploy/deployContracts");
 const {
   deployMockContract,
   solidity,
 } = require("ethereum-waffle");
-const { getMerkleProof } = require("./utils");
+const { getMerkleProof, claimRevocationInterface } = require("./utils");
 const { createMerkleTree, createPreciseProof, hash, stringify } = require('@energyweb/greenproof-merkle-tree')
 const { roles } = require('./utils/roles.utils');
 const { timeTravel } = require('./utils/time.utils');
-const { deployDiamond } = require('../scripts/deploy/deployContracts');
 const { claimManagerInterface } = require('./utils/claimManager');
 chai.use(solidity);
 
@@ -25,7 +24,7 @@ let worker1;
 let worker2;
 let leaves3;
 let dataTree;
-let receiver;
+let generator;
 let provider;
 let dataTree2;
 let dataTree3;
@@ -35,7 +34,7 @@ let issuerFacet;
 let merkleInfos;
 let votingFacet;
 let diamondAddress;
-let receiverAddress;
+let generatorAddress;
 let testCounter = 0;
 let lastTokenID = 0;
 let proofManagerFacet;
@@ -44,9 +43,10 @@ let nonAuthorizedOperator;
 const IS_SETTLEMENT = true;
 
 const volume = 42;
-const proofID1 = 1;
-const proofID2 = 2;
+const certificateID1 = 1;
+const certificateID2 = 2;
 const defaultVersion = 1;
+const tokenURI = "bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq";
 
 const data = [
   {
@@ -122,7 +122,7 @@ describe('IssuerFacet', function() {
       owner,
       issuer,
       minter,
-      receiver,
+      generator,
       revoker,
       nonAuthorizedOperator,
       worker1,
@@ -140,20 +140,41 @@ describe('IssuerFacet', function() {
       claimManagerInterface
     );
 
+         //  Mocking claimsRevocationRegistry
+    const claimsRevocationRegistryMocked = await deployMockContract(
+        owner,
+        claimRevocationInterface
+    );
+
     grantRole = async (operatorWallet, role) => {
-      await claimManagerMocked.mock.hasRole
-        .withArgs(operatorWallet.address, role, defaultVersion)
-        .returns(true);
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(true);
+
+        await claimsRevocationRegistryMocked.mock.isRevoked
+            .withArgs(role, operatorWallet.address)
+            .returns(false);
     };
 
     revokeRole = async (operatorWallet, role) => {
-      await claimManagerMocked.mock.hasRole
-        .withArgs(operatorWallet.address, role, defaultVersion)
-        .returns(false);
+        await claimManagerMocked.mock.hasRole
+            .withArgs(operatorWallet.address, role, defaultVersion)
+            .returns(true);
+
+        await claimsRevocationRegistryMocked.mock.isRevoked
+            .withArgs(role, operatorWallet.address)
+            .returns(true);
+    };
+
+    const roles = {
+      issuerRole,
+      revokerRole,
+      workerRole,
     };
 
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
+      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
       roles
     }));
 
@@ -176,7 +197,7 @@ describe('IssuerFacet', function() {
       diamondAddress
     );
 
-    receiverAddress = receiver.address;
+    generatorAddress = generator.address;
 
     leaves = data.map(item => createPreciseProof(item).getHexRoot());
     leaves2 = data2.map(item => createPreciseProof(item).getHexRoot());
@@ -199,12 +220,12 @@ describe('IssuerFacet', function() {
 
     it("checks that the certified generation volume is zero before minting", async () => {
       const nextTokenID = lastTokenID + 1;
-      const amountBeforeMint = await issuerFacet.balanceOf(receiverAddress, nextTokenID);
+      const amountBeforeMint = await issuerFacet.balanceOf(generatorAddress, nextTokenID);
 
       expect(amountBeforeMint).to.equal(0);
     });
 
-    it("Authorized issuers can send proof issuance requests", async () => {
+    it("shoudl reject proof issuance requests if generator is the zero address", async () => {
       await grantRole(issuer, issuerRole);
       
       //1 - Run the voting process with a consensus
@@ -219,8 +240,8 @@ describe('IssuerFacet', function() {
       const matchResult = dataTree.getHexRoot();
       const matchResultProof = dataTree.getHexProof(leaves[0]);
 
-      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
-      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
       
       //2 - request proof issuance for the vote ID (inputHash)
 
@@ -229,13 +250,48 @@ describe('IssuerFacet', function() {
       const volumeLeaf = hash('volume' + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
+      const volumeInWei = parseEther(volume.toString());
+
+      await expect(
+        issuerFacet
+          .connect(issuer)
+          .requestProofIssuance(inputHash, ethers.constants.AddressZero, volumeRootHash, matchResultProof, data[ 0 ].volume, volumeProof, tokenURI)
+      ).to.be.revertedWith("issuance must be non-zero");
+    });
+
+    it("Authorized issuers can send proof issuance requests", async () => {
+      await grantRole(issuer, issuerRole);
+
+      //1 - Run the voting process with a consensus
+      // await grantRole(worker1, workerRole);
+      // await grantRole(worker2, workerRole);
+
+      // await votingFacet.connect(owner).addWorker(worker1.address);
+      // await votingFacet.connect(owner).addWorker(worker2.address);
+
+      const inputHash = '0x' + hash(stringify(data)).toString('hex');
+
+      const matchResult = dataTree.getHexRoot();
+      const matchResultProof = dataTree.getHexProof(leaves[0]);
+
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
+
+      //2 - request proof issuance for the vote ID (inputHash)
+
+      console.log("stringifyed volume :: ", JSON.stringify(volume))
+      const volumeTree = createPreciseProof(data[0]);
+      const volumeLeaf = hash('volume' + JSON.stringify(volume));
+      const volumeProof = volumeTree.getHexProof(volumeLeaf);
+      const volumeRootHash = volumeTree.getHexRoot();
+      const volumeInWei = parseEther(volume.toString());
 
       lastTokenID++;
       await expect(
           issuerFacet
             .connect(issuer)
-            .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
-        ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
+            .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
+        ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volumeInWei, generatorAddress);
     });
 
     it("reverts when issuers send dupplicate proof issuance requests", async () => {
@@ -252,37 +308,65 @@ describe('IssuerFacet', function() {
      await expect(
          issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof)
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data[0].volume, volumeProof, tokenURI)
      ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`)
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {
-      const amountMinted = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
+      const amountMinted = await issuerFacet.balanceOf(generatorAddress, lastTokenID);
 
       expect(amountMinted).to.equal(parseEther(volume.toString()));
+    });
+
+    it("should revert when one tries to transfer token ID = 0", async () => {
+      const transferBytesData = ethers.utils.formatBytes32String("");
+
+      //transferring token ID == 0
+      await expect(
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, 0, parseEther("2"), transferBytesData)
+      ).to.be.revertedWith("transfer: invalid zero token ID");
+    });
+
+    it("should revert when one tries to transfer token ID > lastTokenIndex", async () => {
+      const transferBytesData = ethers.utils.formatBytes32String("");
+      const invalidTokenIndex = 42;
+
+      //transferring token ID == 42
+      await expect(
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, invalidTokenIndex, parseEther("2"), transferBytesData)
+      ).to.be.revertedWith("transfer: tokenId greater than issuer.latestCertificateId");
     });
 
     it("should correctly transfer certificates", async () => {
       const data = ethers.utils.formatBytes32String("");
       await expect(
-        issuerFacet.connect(receiver).safeTransferFrom(receiverAddress, owner.address, lastTokenID, parseEther("2"), data)
-      ).to.emit(issuerFacet, "TransferSingle").withArgs(receiverAddress, receiverAddress, owner.address, lastTokenID, parseEther("2"));
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, lastTokenID, parseEther("2"), data)
+      ).to.emit(issuerFacet, "TransferSingle").withArgs(generatorAddress, generatorAddress, owner.address, lastTokenID, parseEther("2"));
 
-      const generatorCertificateAmount = await issuerFacet.balanceOf(receiverAddress, lastTokenID);
+      const generatorCertificateAmount = await issuerFacet.balanceOf(generatorAddress, lastTokenID);
 
       expect(generatorCertificateAmount).to.equal(parseEther((volume - 2).toString()));
 
       const ownerCertificateAmount = await issuerFacet.balanceOf(owner.address, lastTokenID);
 
       expect(ownerCertificateAmount).to.equal(parseEther(("2")));
-    })
+    });
 
     it("should get the list of all certificate owners", async () => {
       
       const certificateOwners = await issuerFacet.getCertificateOwners(lastTokenID);
        console.log(`Owners of certificate ID ${lastTokenID} : `, certificateOwners);
        
-       expect(certificateOwners).to.be.deep.equal([ receiverAddress, owner.address ]);
+       expect(certificateOwners).to.be.deep.equal([ generatorAddress, owner.address ]);
+    });
+
+    it("should get all certificates of one owner", async () => {
+
+      const ownersCertificates = await proofManagerFacet.getProofsOf(owner.address);
+      const generatorCertificates = await proofManagerFacet.getProofsOf(generator.address);
+       console.log(`${owner.address}' certificates : `, ownersCertificates);
+       console.log(`${generator.address}' certificates : `, generatorCertificates);
+
     });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
@@ -295,8 +379,8 @@ describe('IssuerFacet', function() {
       const matchResult = dataTree2.getHexRoot();
       const matchResultProof = dataTree2.getHexProof(leaves2[0]);
 
-      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
-      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
       
       //2 - request proof issuance for the vote ID (inputHash)
 
@@ -306,7 +390,7 @@ describe('IssuerFacet', function() {
       const volumeRootHash = volumeTree.getHexRoot();
 
       await expect(
-        issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, receiverAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof)
+        issuerFacet.connect(issuer).requestProofIssuance(wrongInputHash, generatorAddress, volumeRootHash, matchResultProof, data2[ 0 ].volume, volumeProof, tokenURI)
       ).to.be.revertedWith(wrongInputHash);
     });
   });
@@ -316,7 +400,7 @@ describe('IssuerFacet', function() {
     it("should prevent a non authorized entity from revoking non retired proof", async () => {
       await revokeRole(nonAuthorizedOperator, revokerRole);
       await expect(
-        proofManagerFacet.connect(nonAuthorizedOperator).revokeProof(proofID1)
+        proofManagerFacet.connect(nonAuthorizedOperator).revokeProof(certificateID1)
       ).to.be.revertedWith("Access: Not enrolled as revoker");
     });
 
@@ -326,37 +410,55 @@ describe('IssuerFacet', function() {
       const nonExistingCertificateID = 100;
       await expect(
         proofManagerFacet.connect(revoker).revokeProof(nonExistingCertificateID)
-      ).to.be.revertedWith(`NonExistingProof(${nonExistingCertificateID})`);
+      ).to.be.revertedWith(`NonExistingCertificate(${nonExistingCertificateID})`);
     });
 
     it("should reverts if a non authorized entity tries to revoke a non retired proof", async () => {
       await revokeRole(revoker, revokerRole);
       await expect(
-        proofManagerFacet.connect(revoker).revokeProof(proofID1)
+        proofManagerFacet.connect(revoker).revokeProof(certificateID1)
       ).to.be.revertedWith("Access: Not enrolled as revoker");
     });
 
     it("should allow an authorized entity to revoke a non retired proof", async () => {
       await grantRole(revoker, revokerRole);
       await expect(
-        proofManagerFacet.connect(revoker).revokeProof(proofID1)
+        proofManagerFacet.connect(revoker).revokeProof(certificateID1)
       ).to.emit(proofManagerFacet, "ProofRevoked");
+    });
+
+    it("it should revert when transfering reevoked proof to another wallet than generator", async () => {
+      const data = ethers.utils.formatBytes32String("");
+      let generatorCertificateAmount = await issuerFacet.balanceOf(generatorAddress, lastTokenID);
+
+      await expect(
+        issuerFacet.connect(generator).safeTransferFrom(generatorAddress, owner.address, certificateID1, parseEther("1"), data)
+      ).to.be.revertedWith("non tradable revoked proof");
+    });
+
+    it("it should allow transfer of revoked proof to generator", async () => {
+      const data = ethers.utils.formatBytes32String("");
+      let customerRevokedAmount = await issuerFacet.balanceOf(owner.address, lastTokenID);
+
+      await expect(
+        issuerFacet.connect(owner).safeTransferFrom(owner.address, generatorAddress, lastTokenID, customerRevokedAmount, data)
+      ).to.emit(issuerFacet, "TransferSingle").withArgs(owner.address, owner.address, generatorAddress, lastTokenID, customerRevokedAmount);
     });
 
     it("should prevent dupplicate revocation", async () => {
       await grantRole(revoker, revokerRole);
       await expect(
-        proofManagerFacet.connect(revoker).revokeProof(proofID1)
+        proofManagerFacet.connect(revoker).revokeProof(certificateID1)
       ).to.be.revertedWith("already revoked proof");
     });
 
     it("should revert if one tries to retire a revoked proof", async () => {
       await expect(
-        proofManagerFacet.connect(owner).retireProof(proofID1, 1)
+        proofManagerFacet.connect(owner).claimProof(certificateID1, 1)
       ).to.be.revertedWith("proof revoked");
     });
 
-    it("should allow proof retirement", async () => {
+    it("should allow claiming proofs", async () => {
       let tx;
 
       await grantRole(issuer, issuerRole);
@@ -370,8 +472,8 @@ describe('IssuerFacet', function() {
       const matchResult = dataTree3.getHexRoot();
       const matchResultProof = dataTree3.getHexProof(leaves3[1]);
 
-      await votingFacet.connect(worker1).vote(inputHash, matchResult, IS_SETTLEMENT);
-      await votingFacet.connect(worker2).vote(inputHash, matchResult, IS_SETTLEMENT);
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
       
       //2 - request proof issuance for the vote ID (inputHash)
 
@@ -379,41 +481,50 @@ describe('IssuerFacet', function() {
       const volumeLeaf = hash('volume' + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
+      const volumeInWei = parseEther(volume.toString());
 
       lastTokenID++;
       await expect(
          issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, receiverAddress, volumeRootHash, matchResultProof, data3[1].volume, volumeProof)
-      ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volume);
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data3[1].volume, volumeProof, tokenURI)
+      ).to.emit(issuerFacet, "ProofMinted").withArgs(lastTokenID, volumeInWei, generatorAddress);
 
+      let claimedProofsAmount = await proofManagerFacet.claimedBalanceOf(generatorAddress, lastTokenID);
+      expect(claimedProofsAmount).to.equal(0);
       //step3: retire proof
-      tx = await proofManagerFacet.connect(receiver).retireProof(lastTokenID, volume);
+      console.log("BEFORE CLAIM: Remaining Tokens balance : ", await proofManagerFacet.getProofsOf(generatorAddress))
+
+      tx = await proofManagerFacet.connect(generator).claimProof(lastTokenID, parseEther((volume - 2).toString()));
       await tx.wait();
 
       const { timestamp } = await provider.getBlock(tx.blockNumber);
-      await expect(tx).to.emit(proofManagerFacet, "ProofRetired").withArgs(lastTokenID, receiverAddress, timestamp, 42);
+      await expect(tx).to.emit(proofManagerFacet, "ProofClaimed").withArgs(lastTokenID, generatorAddress, timestamp, parseEther((volume - 2).toString()));
+
+      claimedProofsAmount = await proofManagerFacet.claimedBalanceOf(generatorAddress, lastTokenID);
+      expect(claimedProofsAmount).to.equal(parseEther((volume - 2).toString()));
+      console.log("AFTER CLAIM: Remaining Tokens balance : ", await proofManagerFacet.getProofsOf(generatorAddress))
     });
 
     it("should revert when retirement amount exceeds owned volume", async () => {
       await expect(
-        proofManagerFacet.connect(receiver).retireProof(lastTokenID, parseEther("100"))
+        proofManagerFacet.connect(generator).claimProof(lastTokenID, parseEther("100"))
       ).to.be.revertedWith("Insufficient volume owned");
       
     });
 
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
-      const proof = await proofManagerFacet.connect(owner).getProof(proofID2);
+      const proof = await proofManagerFacet.connect(owner).getProof(certificateID2);
       const issuanceDate = Number(proof.issuanceDate.toString());
       
       //forward time to reach end of revocable period
       await timeTravel(DEFAULT_REVOCABLE_PERIOD);
       await grantRole(revoker, revokerRole);
         
-      tx = proofManagerFacet.connect(revoker).revokeProof(proofID2)
+      tx = proofManagerFacet.connect(revoker).revokeProof(certificateID2)
 
       //The certificate should not be revocable anymore
-      await expect(tx).to.be.revertedWith(`NonRevokableProof(${proofID2}, ${issuanceDate}, ${issuanceDate + DEFAULT_REVOCABLE_PERIOD})`) //emit(proofManagerFacet, "ProofRevoked");
+      await expect(tx).to.be.revertedWith(`NonRevokableCertificate(${certificateID2}, ${issuanceDate}, ${issuanceDate + DEFAULT_REVOCABLE_PERIOD})`) //emit(proofManagerFacet, "ProofRevoked");
     });
   });
 
@@ -464,7 +575,7 @@ describe('IssuerFacet', function() {
       const leafLeaf = hash('consumerID' + JSON.stringify(522))
       const leafProof = leafTree.getHexProof(leafLeaf)
       expect(await proofManagerFacet.connect(owner).verifyProof(leafRoot, leafLeaf, leafProof)).to.be.true;
-    })
+    });
 
     it("should successfully verify a proof", async () => {
       merkleInfos = getMerkleProof(data3);
@@ -531,7 +642,7 @@ describe('IssuerFacet', function() {
       const key = "consumerID";
       const value = "500";
 
-      const disclosedDataTree = createPreciseProof(data[0]);
+      const disclosedDataTree = createPreciseProof(data[ 0 ]);
       const dataLeaf = hash(key + value);
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
       const dataRootHash = disclosedDataTree.getHexRoot();
@@ -539,6 +650,6 @@ describe('IssuerFacet', function() {
       await expect(
         issuerFacet.connect(issuer).discloseData(key, value, dataProof, dataRootHash)
       ).to.be.revertedWith("Disclose: data already disclosed");
-    })
+    });
   });
 }); 
