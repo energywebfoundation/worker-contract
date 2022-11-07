@@ -8,8 +8,10 @@ import { BigNumber, Contract, ContractFactory } from 'ethers';
 config();
 
 export const VOLTA_CLAIM_MANAGER = '0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031';
+export const VOLTA_CLAIM_REVOKER = '0x9876d992D124f8E05e3eB35132226a819aaC840A';
 export const DEFAULT_REVOCABLE_PERIOD = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 export const DEFAULT_VOTING_TIME_LIMIT = 15 * 60;
+export const DEFAULT_MAJORITY_PERCENTAGE = 51;
 export const DEFAULT_REWARD_AMOUNT = ethers.utils.parseEther(
   process.env.REWARD_AMOUNT_IN_ETHER ?? '1',
 );
@@ -21,6 +23,7 @@ type DeployDiamondOptions = {
   votingTimeLimit?: number;
   rewardAmount?: BigNumber;
   claimManagerAddress: string;
+  claimRevokerAddress: string;
   facets?: Facet[];
   roles?: {
     workerRole?: string;
@@ -29,7 +32,7 @@ type DeployDiamondOptions = {
   };
   contractOwner?: string;
   revocablePeriod?: number;
-  claimRevocationRegistryAddress?: string;
+  majorityPercentage?: number;
   logger?: Logger;
 };
 
@@ -48,11 +51,13 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
     votingTimeLimit = DEFAULT_VOTING_TIME_LIMIT,
     revocablePeriod = DEFAULT_REVOCABLE_PERIOD,
     claimManagerAddress = VOLTA_CLAIM_MANAGER,
+    claimRevokerAddress = VOLTA_CLAIM_REVOKER,
     roles = {},
     rewardAmount = DEFAULT_REWARD_AMOUNT,
+    majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
     facets = Object.values(Facet),
-    claimRevocationRegistryAddress = process.env.VOLTA_CLAIMS_REVOCATION_REGISTRY,
-    logger = () => {},
+    logger = () => {
+    },
   } = options;
   const deploy = createDeployer(logger);
   const {
@@ -73,11 +78,12 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
       votingTimeLimit,
       rewardAmount,
       claimManagerAddress,
+      majorityPercentage,
       issuerRole,
       revokerRole,
       workerRole,
       revocablePeriod,
-      claimRevocationRegistryAddress,
+      claimRevokerAddress
     ),
   );
 
@@ -118,6 +124,7 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
 if (runningFromCLI()) {
   deployDiamond({
     claimManagerAddress: VOLTA_CLAIM_MANAGER,
+    claimRevokerAddress: VOLTA_CLAIM_REVOKER,
   })
     .then(() => process.exit(0))
     .catch((error) => {

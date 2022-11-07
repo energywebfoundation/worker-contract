@@ -1,24 +1,10 @@
-/* global ethers describe before it */
-/* eslint-disable prefer-const */
-
-const { deployDiamond } = require("../scripts/deploy/deploy");
 const { FacetCutAction } = require("../scripts/deploy");
-
-const { deployMockContract } = require("ethereum-waffle");
-
 const { assert } = require("chai");
-
-const { claimManagerInterface, claimRevocationInterface } = require("./utils");
-
-const issuerRole = ethers.utils.namehash(
-  "minter.roles.greenproof.apps.iam.ewc"
-);
-const revokerRole = ethers.utils.namehash(
-  "revoker.roles.greenproof.apps.iam.ewc"
-);
-const workerRole = ethers.utils.namehash(
-  "workerRole.roles.greenproof.apps.iam.ewc"
-);
+const { ethers } = require('hardhat');
+const { deployDiamond } = require('../scripts/deploy/deployContracts');
+const { initMockClaimManager } = require('./utils/claimManager.utils');
+const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
+const { roles } = require('./utils/roles.utils');
 
 // The diamond example comes with 8 function selectors
 // [cut, loupe, loupe, loupe, loupe, erc165, transferOwnership, owner]
@@ -64,27 +50,12 @@ describe("Cache bug test", async () => {
 
     [ owner ] = await ethers.getSigners();
     
-     //  Mocking claimManager
-    const claimManagerMocked = await deployMockContract(
-      owner,
-      claimManagerInterface
-    );
-
-    //  Mocking claimsRevocationRegistry
-    const claimsRevocationRegistryMocked = await deployMockContract(
-        owner,
-        claimRevocationInterface
-    );
-
-    const roles = {
-      issuerRole,
-      revokerRole,
-      workerRole,
-    };
+    const claimManagerMocked = await initMockClaimManager(owner)
+    const claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
     const { diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
-      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+      claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
     });
 
