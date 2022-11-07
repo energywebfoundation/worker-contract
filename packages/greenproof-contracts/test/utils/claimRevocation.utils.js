@@ -13,6 +13,8 @@ const initMockClaimRevoker = async (owner) => {
     claimRevocationRegistryABI,
   );
 
+  await contract.deployed();
+
   const isRevoked = async (role, address, isRevoked) =>
     await contract.mock.isRevoked
       .withArgs(role, address)

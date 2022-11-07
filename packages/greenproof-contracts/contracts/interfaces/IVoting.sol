@@ -27,7 +27,7 @@ interface IVoting {
 
     function getNumberOfWorkers() external view returns (uint256);
 
-    function getWorkers() external view returns (address[] memory);
+    function getWorkers() external view returns (address payable[] memory);
 
     function getWinningMatch(bytes32 voteID) external view returns (bytes32);
 

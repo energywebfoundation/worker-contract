@@ -39,7 +39,8 @@ describe("DiamondTest", async function () {
     claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
     ({ diamondAddress } = await deployDiamond({
-      claimManagerAddress: claimManagerMocked.address,claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+      claimManagerAddress: claimManagerMocked.address,
+      claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
       facets: ['DiamondLoupeFacet', 'OwnershipFacet', 'IssuerFacet'],
     }))
@@ -69,7 +70,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: ethers.constants.AddressZero,
         }),
@@ -81,18 +82,17 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: ethers.constants.AddressZero,
-          claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
         })
       ).to.be.revertedWith("init: Invalid claimManager");
     });
 
     it("should revert if claimsRevocationRegistry address is 0", async () => {
-
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress: ethers.constants.AddressZero,
+          claimRevokerAddress: ethers.constants.AddressZero,
         })
       ).to.be.revertedWith("init: Invalid claimsRevocationRegistry");
     });
@@ -105,7 +105,7 @@ describe("DiamondTest", async function () {
         deployDiamond({
           rewardAmount: zeroRewardAmount,
          claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
         })
       ).to.be.revertedWith("init: Null reward amount");
@@ -118,7 +118,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: contractOwner.address,
           revocablePeriod: zeroRevocablePeriod,

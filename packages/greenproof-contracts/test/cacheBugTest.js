@@ -55,7 +55,7 @@ describe("Cache bug test", async () => {
 
     const { diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
-      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+      claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
     });
 

@@ -146,13 +146,14 @@ library LibVoting {
         voting.replayVoters.push(msg.sender);
         voting.workerToReplayedMatchResult[msg.sender] = matchResult;
         voting.numberOfReplayedVotes++;
+        voting.workerToVoted[msg.sender] = true;
 
         if (voting.replayedMatchResultToVoteCount[matchResult] == 0) {
             voting.replayedMatches.push(matchResult);
         }
         voting.replayedMatchResultToVoteCount[matchResult]++;
 
-        if (hasReachedMajority(voting, matchResult)) {
+        if (hasReachedMajorityAfterReplaying(voting, matchResult)) {
             voting.replayedWinningMatch = matchResult;
             shouldUpdateVoting = true;
             replayedWinningMatch = voting.replayedWinningMatch;
@@ -335,8 +336,21 @@ library LibVoting {
 
     // @notice Number of votes sufficient to determine match winner
     function hasReachedMajority(Voting storage voting, bytes32 matchResult) internal view returns (bool) {
-        VotingStorage storage votingStorage = getStorage();
         uint256 numberOfWinningVotes = voting.matchResultToVoteCount[matchResult];
+
+        return hasMajority(numberOfWinningVotes);
+    }
+
+    // @notice Number of votes sufficient to determine match winner
+    function hasReachedMajorityAfterReplaying(Voting storage voting, bytes32 matchResult) internal view returns (bool) {
+        uint256 numberOfWinningVotes = voting.replayedMatchResultToVoteCount[matchResult];
+
+        return hasMajority(numberOfWinningVotes);
+    }
+
+    // @notice Number of votes sufficient to determine match winner
+    function hasMajority(uint256 numberOfWinningVotes) internal view returns (bool) {
+        VotingStorage storage votingStorage = getStorage();
 
         return (100 * numberOfWinningVotes / votingStorage.numberOfWorkers) >= votingStorage.majorityPercentage;
     }
