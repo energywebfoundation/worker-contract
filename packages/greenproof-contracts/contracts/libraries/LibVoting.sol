@@ -17,10 +17,8 @@ library LibVoting {
         uint256 start;
         // Number of votes for winning match
         uint256 winningMatchVoteCount;
-        /// Number of votes for winning match on replayed votes
-        uint256 winningMatchReplayedVoteCount;
         // Input match
-        bytes32 matchInput;
+        bytes32 voteID;
         /// List of all match results with at least one replayed vote
         bytes32[] replayedMatches;
         // Winning match result
@@ -32,7 +30,6 @@ library LibVoting {
         mapping(address => bytes32) workerToReplayedMatchResult;
         // Worker address to voted flag
         mapping(address => bool) workerToVoted;
-        mapping(address => mapping(bytes32 => mapping(bytes32 => bool))) workerToReplayedVoted;
         // Match result to total vote count
         mapping(bytes32 => uint256) matchResultToVoteCount;
         /// Match result to total replayed vote count
@@ -43,8 +40,6 @@ library LibVoting {
         bool noConsensus;
         /// If none of the match results gets more replayed votes than the others
         bool noReplayedConsensus;
-        //flag to indicate if teh vote targerts settlement data
-        bool isSettlement;
         //List of workers replaying the vote: This help updating workerToMatchResult after a replay consensus
         address[] replayVoters;
     }
@@ -58,10 +53,10 @@ library LibVoting {
         uint256 numberOfWorkers; /* Number of workers taking part to vote. This will determine the consensus threshold  */
         uint256 majorityPercentage; /* Percentage of workers that have to vote on the same result to reach the majority  */
         address payable[] workers; /* List of all whitelisted workers */
-        bytes32[] matchInputs; /* List of all votes identifiers */
+        bytes32[] voteIDs; /* List of all votes identifiers */
         mapping(address => uint256) workerToIndex; /* Quick access to a specific worker's index inside the `workers` whitelist */
-        mapping(bytes32 => uint256) matchInputToIndex; /* Quick access to a specific vote's index inside the `matchInputs` list */
-        mapping(bytes32 => Voting) matchInputToVoting; /* Associates a specific vote ID to a precise voting session*/
+        mapping(bytes32 => uint256) voteIDToIndex; /* Quick access to a specific vote's index inside the `voteIDs` list */
+        mapping(bytes32 => Voting) voteIDToVoting; /* Associates a specific vote ID to a precise voting session*/
         mapping(bytes32 => bytes32) matches; /* Records the final consensus of a specific voteID */
         mapping(bytes32 => bytes32) winningMatches; /* Keeps track of the current consensus with the most votes */
         mapping(bytes32 => address payable[]) winnersList; /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the rigth workers */
@@ -78,18 +73,18 @@ library LibVoting {
     }
 
     // Event emitted after voting ended
-    event WinningMatch(bytes32 matchInput, bytes32 matchResult, uint256 indexed voteCount);
+    event WinningMatch(bytes32 voteID, bytes32 matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
-    event NoConsensusReached(bytes32 matchInput);
+    event NoConsensusReached(bytes32 voteID);
 
     // Voting lasts more than time limit
-    event VotingExpired(bytes32 matchInput);
+    event VotingExpired(bytes32 voteID);
 
     // Event emitted after match is recorded
-    event MatchRegistered(bytes32 matchInput, bytes32 matchResult);
+    event MatchRegistered(bytes32 voteID, bytes32 matchResult);
 
-    event ConsensusReached(bytes32 winningMatch, bytes32 matchInput);
+    event ConsensusReached(bytes32 winningMatch, bytes32 voteID);
 
     // Worker had already voted for a match result
     error AlreadyVoted();
@@ -124,7 +119,7 @@ library LibVoting {
         VotingStorage storage votingStorage = getStorage();
 
         if (currentVoting.status == Status.Active && (currentVoting.start + votingStorage.timeLimit < block.timestamp)) {
-            emit VotingExpired(currentVoting.matchInput);
+            emit VotingExpired(currentVoting.voteID);
             isVotingExpired = true;
         } else {
             isVotingExpired = false;
@@ -134,106 +129,139 @@ library LibVoting {
     /**
      * @notice _replayVote: Allows workers to update their vote anytime
      * @param voting - The voting session under which we want to revote
-     * @param matchInput - the identifier of the vote
      * @param matchResult - the actual vote of the worker
      */
-    function _replayVote(
-        Voting storage voting,
-        bytes32 matchInput,
-        bytes32 matchResult
-    )
+    function _replayVote(Voting storage voting, bytes32 matchResult)
         internal
         returns (
             bool shouldUpdateVoting,
             bytes32 replayedWinningMatch,
-            uint256 winningMatchReplayedVoteCount
+            uint256 newVoteCount
         )
     {
-        if (voting.workerToReplayedVoted[msg.sender][matchInput][matchResult]) {
+        if (voting.workerToReplayedMatchResult[msg.sender] != 0) {
             revert AlreadyVoted();
         }
-        voting.workerToReplayedVoted[msg.sender][matchInput][matchResult] = true;
-        if (voting.workerToReplayedMatchResult[msg.sender] == 0) {
-            voting.replayVoters.push(msg.sender);
-        }
+
+        voting.replayVoters.push(msg.sender);
         voting.workerToReplayedMatchResult[msg.sender] = matchResult;
         voting.numberOfReplayedVotes++;
+        voting.workerToVoted[msg.sender] = true;
 
         if (voting.replayedMatchResultToVoteCount[matchResult] == 0) {
             voting.replayedMatches.push(matchResult);
         }
         voting.replayedMatchResultToVoteCount[matchResult]++;
 
-        if (voting.replayedMatchResultToVoteCount[matchResult] == voting.winningMatchReplayedVoteCount) {
-            voting.noReplayedConsensus = true;
-        } else if (voting.replayedMatchResultToVoteCount[matchResult] > voting.winningMatchReplayedVoteCount) {
-            voting.noReplayedConsensus = false;
-            voting.winningMatchReplayedVoteCount = voting.replayedMatchResultToVoteCount[matchResult];
+        if (hasReachedMajorityAfterReplaying(voting, matchResult)) {
             voting.replayedWinningMatch = matchResult;
-
-            uint256 nbOfWorkers = IVoting(address(this)).getNumberOfWorkers();
-
-            if (LibVoting._hasReachedMajority(voting.winningMatchReplayedVoteCount)) {
-                if (voting.noReplayedConsensus == false) {
-                    shouldUpdateVoting = true;
-                    replayedWinningMatch = voting.replayedWinningMatch;
-                    winningMatchReplayedVoteCount = voting.winningMatchReplayedVoteCount;
-                }
-            }
-            if (!LibVoting._hasReachedMajority(voting.winningMatchReplayedVoteCount) && voting.numberOfReplayedVotes == nbOfWorkers) {
-                if (voting.noReplayedConsensus == false) {
-                    shouldUpdateVoting = true;
-                    replayedWinningMatch = voting.replayedWinningMatch;
-                    winningMatchReplayedVoteCount = voting.winningMatchReplayedVoteCount;
-                }
-            }
+            shouldUpdateVoting = true;
+            replayedWinningMatch = voting.replayedWinningMatch;
+            newVoteCount = voting.replayedMatchResultToVoteCount[matchResult];
         }
     }
 
-    function _startVoting(bytes32 matchInput, bool isSettlement) internal {
+    /**
+     * @notice _recordVote: stores worker's vote
+     * @param voting - The current voting session
+     * @param matchResult - the actual vote of the worker
+     */
+    function _recordVote(Voting storage voting, bytes32 matchResult) internal {
+        voting.numberOfVotes++;
+        voting.workerToVoted[msg.sender] = true;
+        voting.matchResultToVoteCount[matchResult]++;
+        voting.workerToMatchResult[msg.sender] = matchResult;
+
+        if (voting.matchResultToVoteCount[matchResult] == voting.winningMatchVoteCount) {
+            voting.noConsensus = true;
+        } else if (voting.matchResultToVoteCount[matchResult] > voting.winningMatchVoteCount) {
+            voting.winningMatchVoteCount = voting.matchResultToVoteCount[matchResult];
+            voting.winningMatch = matchResult;
+            voting.noConsensus = false;
+
+            if (hasReachedMajority(voting, matchResult)) {
+                _endVotingSession(voting);
+            }
+        }
+
+        if (voting.numberOfVotes == getStorage().numberOfWorkers && !hasReachedMajority(voting, matchResult)) {
+            _endVotingSession(voting);
+        }
+    }
+
+    /**
+     * @notice _updateVoteResult: update the stored vote result after a consensus is reached on a replayed voting session
+     * @param voting - The current voting session
+     * @param newWinningMatch - the new consensus vote result to store
+     * @param newVoteCount - the total number of votes recorded during the replay voting
+     */
+    function _updateVoteResult(
+        Voting storage voting,
+        bytes32 newWinningMatch,
+        uint256 newVoteCount
+    ) internal {
+        VotingStorage storage votingStorage = getStorage();
+        bytes32 voteID = voting.voteID;
+
+        voting.winningMatchVoteCount = newVoteCount;
+        bytes32 currentWinningMatch = votingStorage.voteIDToVoting[voteID].winningMatch;
+
+        //we prevent updating if the final winning match did not change
+        if (currentWinningMatch != newWinningMatch) {
+            votingStorage.voteIDToVoting[voteID].winningMatch = newWinningMatch;
+
+            //We update winningMatches list
+            votingStorage.winningMatches[voteID] = newWinningMatch;
+        }
+
+        // We update the final vote with the replayed vote
+        for (uint256 i; i < voting.replayVoters.length; i++) {
+            address worker = voting.replayVoters[i];
+
+            votingStorage.workerVotes[worker][voteID] = voting.workerToMatchResult[worker];
+            votingStorage.voteIDToVoting[voteID].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
+        }
+    }
+
+    function _startVotingSession(bytes32 voteID) internal {
         VotingStorage storage votingStorage = getStorage();
 
-        Voting storage voting = votingStorage.matchInputToVoting[matchInput];
-        voting.matchInput = matchInput;
+        Voting storage voting = votingStorage.voteIDToVoting[voteID];
+        voting.voteID = voteID;
         voting.start = block.timestamp;
         voting.status = Status.Active;
-        if (isSettlement) {
-            voting.isSettlement = true;
-        }
 
         if (
-            votingStorage.matchInputToIndex[matchInput] == 0 &&
-            (votingStorage.matchInputs.length == 0 || (votingStorage.matchInputs.length > 0 && (votingStorage.matchInputs[0] != matchInput)))
+            votingStorage.voteIDToIndex[voteID] == 0 &&
+            (votingStorage.voteIDs.length == 0 || (votingStorage.voteIDs.length > 0 && (votingStorage.voteIDs[0] != voteID)))
         ) {
-            votingStorage.matchInputToIndex[matchInput] = votingStorage.matchInputs.length;
-            votingStorage.matchInputs.push(matchInput);
+            votingStorage.voteIDToIndex[voteID] = votingStorage.voteIDs.length;
+            votingStorage.voteIDs.push(voteID);
         }
     }
 
-    function _completeVoting(Voting storage voting) internal {
+    function _endVotingSession(Voting storage voting) internal {
         VotingStorage storage votingStorage = getStorage();
 
         if (voting.noConsensus) {
-            _cancelVoting(voting);
-            emit NoConsensusReached(voting.matchInput);
+            _resetVotingSession(voting);
+            emit NoConsensusReached(voting.voteID);
             return;
         }
 
-        registerWinningMatch(voting.matchInput, voting.winningMatch);
-        emit WinningMatch(voting.matchInput, voting.winningMatch, voting.winningMatchVoteCount);
+        registerWinningMatch(voting.voteID, voting.winningMatch);
+        emit WinningMatch(voting.voteID, voting.winningMatch, voting.winningMatchVoteCount);
         _revealVotes(voting);
         _revealWinners(voting);
-        votingStorage.winningMatches[voting.matchInput] = voting.winningMatch;
-        if (voting.isSettlement) {
-            emit ConsensusReached(voting.winningMatch, voting.matchInput);
-        }
+        votingStorage.winningMatches[voting.voteID] = voting.winningMatch;
+        emit ConsensusReached(voting.winningMatch, voting.voteID);
 
         voting.status = Status.Completed;
-        LibReward.addRewardWinners(votingStorage.winnersList[voting.matchInput]);
+        LibReward.addRewardWinners(votingStorage.winnersList[voting.voteID]);
     }
 
     /// @notice Deletes voting results
-    function _cancelVoting(LibVoting.Voting storage voting) internal {
+    function _resetVotingSession(LibVoting.Voting storage voting) internal {
         VotingStorage storage votingStorage = getStorage();
 
         for (uint256 i = 0; i < votingStorage.numberOfWorkers; i++) {
@@ -249,11 +277,11 @@ library LibVoting {
         voting.start = 0;
     }
 
-    function registerWinningMatch(bytes32 matchInput, bytes32 matchResult) internal {
+    function registerWinningMatch(bytes32 voteID, bytes32 matchResult) internal {
         VotingStorage storage votingStorage = getStorage();
 
-        votingStorage.matches[matchInput] = matchResult;
-        emit MatchRegistered(matchInput, matchResult);
+        votingStorage.matches[voteID] = matchResult;
+        emit MatchRegistered(voteID, matchResult);
     }
 
     /// @notice Reveals the votes only after the vote is ended
@@ -263,7 +291,7 @@ library LibVoting {
         for (uint256 i = 0; i < _votingStorage.workers.length; i++) {
             address payable currentWorker = _votingStorage.workers[i];
 
-            _votingStorage.workerVotes[currentWorker][voting.matchInput] = voting.workerToMatchResult[msg.sender];
+            _votingStorage.workerVotes[currentWorker][voting.voteID] = voting.workerToMatchResult[msg.sender];
         }
     }
 
@@ -272,7 +300,7 @@ library LibVoting {
         VotingStorage storage _votingStorage = getStorage();
 
         uint256 winnerCount = 0;
-        bytes32 matchInput = voting.matchInput;
+        bytes32 voteID = voting.voteID;
         address payable[] memory _winners = new address payable[](voting.winningMatchVoteCount);
 
         for (uint256 i = 0; i < _votingStorage.numberOfWorkers; i++) {
@@ -282,7 +310,7 @@ library LibVoting {
                 winnerCount++;
             }
         }
-        _votingStorage.winnersList[matchInput] = _winners;
+        _votingStorage.winnersList[voteID] = _winners;
     }
 
     function _updateWorkersVote(Voting storage voting) internal {
@@ -298,20 +326,34 @@ library LibVoting {
     }
 
     // @notice Number of votes sufficient to determine match winner
-    function _hasReachedMajority(uint256 numberOfVotes) internal view returns (bool) {
+    function hasReachedMajority(Voting storage voting, bytes32 matchResult) internal view returns (bool) {
+        uint256 numberOfWinningVotes = voting.matchResultToVoteCount[matchResult];
+
+        return hasMajority(numberOfWinningVotes);
+    }
+
+    // @notice Number of votes sufficient to determine match winner
+    function hasReachedMajorityAfterReplaying(Voting storage voting, bytes32 matchResult) internal view returns (bool) {
+        uint256 numberOfWinningVotes = voting.replayedMatchResultToVoteCount[matchResult];
+
+        return hasMajority(numberOfWinningVotes);
+    }
+
+    // @notice Number of votes sufficient to determine match winner
+    function hasMajority(uint256 numberOfWinningVotes) internal view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
 
-        return (100 * numberOfVotes / votingStorage.numberOfWorkers) >= votingStorage.majorityPercentage;
+        return (100 * numberOfWinningVotes / votingStorage.numberOfWorkers) >= votingStorage.majorityPercentage;
     }
 
     function _isClosed(Voting storage vote) internal view returns (bool) {
         return vote.status == Status.Completed;
     }
 
-    function _getWinners(bytes32 matchInput) internal view returns (address payable[] memory _winners) {
+    function _getWinners(bytes32 voteID) internal view returns (address payable[] memory _winners) {
         VotingStorage storage _votingStorage = getStorage();
 
-        Voting storage voting = _votingStorage.matchInputToVoting[matchInput];
+        Voting storage voting = _votingStorage.voteIDToVoting[voteID];
 
         _winners = new address payable[](voting.winningMatchVoteCount);
         uint256 winnerCount = 0;
@@ -324,10 +366,8 @@ library LibVoting {
         }
     }
 
-    function isExpired(Voting storage voting) internal view returns (bool) {
-        VotingStorage storage votingStorage = getStorage();
-
-        return voting.start + votingStorage.timeLimit < block.timestamp;
+    function _getVote(bytes32 voteID) internal view returns (Voting storage) {
+        return getStorage().voteIDToVoting[voteID];
     }
 
     /// @notice Check if this account allowed to vote

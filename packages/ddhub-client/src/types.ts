@@ -21,6 +21,8 @@ export {
   GetChannelResponseDtoType as ChannelTypeEnum,
   identityControllerPost as savePrivateKey,
   topicsControllerPostTopics as createTopic,
+  topicsControllerDeleteTopics as deleteTopic,
+  channelControllerDelete as deleteChannel,
 } from './client';
 
 

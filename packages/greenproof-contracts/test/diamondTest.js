@@ -2,16 +2,18 @@ const {
   getSelectors,
   FacetCutAction,
   removeSelectors,
-  indexOfAddressInFacets,
+  findIndexOfAddressInFacets,
 } = require("../scripts/deploy");
 const { deployMockContract, solidity } = require("ethereum-waffle");
 const { BigNumber } = require('ethers');
 const { ethers } = require('hardhat')
 const { assert, expect } = require("chai");
 const chai = require("chai");
+
 const { roles } = require('./utils/roles.utils');
 const { deployDiamond } = require('../scripts/deploy/deployContracts');
-const { claimManagerInterface } = require('./utils/claimManager');
+const { claimManagerInterface, claimRevocationInterface, initMockClaimManager } = require('./utils/claimManager.utils');
+const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
 
 chai.use(solidity);
 
@@ -26,20 +28,19 @@ describe("DiamondTest", async function () {
   let result;
   let owner;
   let claimManagerMocked;
+  let claimsRevocationRegistryMocked;
   const addresses = [];
 
 
   before(async function () {
     [owner] = await ethers.getSigners();
   
-    //  Mocking claimManager
-    claimManagerMocked = await deployMockContract(
-      owner,
-      claimManagerInterface
-    );
+    claimManagerMocked = await initMockClaimManager(owner);
+    claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
+      claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
       facets: ['DiamondLoupeFacet', 'OwnershipFacet', 'IssuerFacet'],
     }))
@@ -69,6 +70,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: ethers.constants.AddressZero,
         }),
@@ -80,21 +82,33 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: ethers.constants.AddressZero,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
         })
       ).to.be.revertedWith("init: Invalid claimManager");
     });
 
-    it("should revert if rewardAmount is negative", async () => {
-      const negativeRewardAmount = BigNumber.from(-1);
+    it("should revert if claimsRevocationRegistry address is 0", async () => {
+      await expect(
+        deployDiamond({
+          claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: ethers.constants.AddressZero,
+        })
+      ).to.be.revertedWith("init: Invalid claimsRevocationRegistry");
+    });
+
+
+    it("should revert if rewardAmount is to 0", async () => {
+      const zeroRewardAmount = BigNumber.from(0);
 
       await expect(
         deployDiamond({
-          rewardAmount: negativeRewardAmount,
+          rewardAmount: zeroRewardAmount,
          claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
         })
-      ).to.be.reverted;
+      ).to.be.revertedWith("init: Null reward amount");
     });
 
     it("should revert if revocable Period is 0", async () => {
@@ -104,6 +118,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: contractOwner.address,
           revocablePeriod: zeroRevocablePeriod,
@@ -327,11 +342,11 @@ describe("DiamondTest", async function () {
        assert.equal(facets[2][0], facetAddresses[2], 'third facet')
        assert.equal(facets[3][0], facetAddresses[3], 'fourth facet')
        assert.equal(facets[4][0], facetAddresses[4], 'fifth facet')
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[0], facets)][1], getSelectors(diamondCutFacet))
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[1], facets)][1], diamondLoupeFacetSelectors)
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[2], facets)][1], getSelectors(ownershipFacet))
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[4], facets)][1], getSelectors(Test1Facet))
-       assert.sameMembers(facets[indexOfAddressInFacets(addresses[5], facets)][1], getSelectors(Test2Facet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[0], facets)][1], getSelectors(diamondCutFacet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[1], facets)][1], diamondLoupeFacetSelectors)
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[2], facets)][1], getSelectors(ownershipFacet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[4], facets)][1], getSelectors(Test1Facet))
+       assert.sameMembers(facets[findIndexOfAddressInFacets(addresses[5], facets)][1], getSelectors(Test2Facet))
     });
   });
 

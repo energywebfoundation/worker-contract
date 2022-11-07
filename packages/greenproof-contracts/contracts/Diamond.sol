@@ -2,10 +2,11 @@
 pragma solidity ^0.8.0;
 
 /******************************************************************************\
-* Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
-* EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
+*  Proxy implementing EIP-2535 Diamonds:https://eips.ethereum.org/EIPS/eip-2535
 *
-* Implementation of a diamond.
+* Based on Nick Mudge's Nick Mudge Diamond-2-hardhat implementation
+* https://github.com/mudgen/diamond-2-hardhat
+*
 /******************************************************************************/
 
 import {LibReward} from "./libraries/LibReward.sol";
@@ -17,53 +18,56 @@ import {LibClaimManager} from "./libraries/LibClaimManager.sol";
 
 contract Diamond {
     constructor(
-        address _contractOwner,
-        address _diamondCutFacet,
-        uint256 _votingTimeLimit,
-        uint256 _rewardAmount,
-        address _claimManagerAddress,
+        address contractOwner,
+        address diamondCutFacet,
+        uint256 votingTimeLimit,
+        uint256 rewardAmount,
+        address claimManagerAddress,
+        uint256 majorityPercentage,
         uint256 _majorityPercentage,
         bytes32 issuerRole,
         bytes32 revokerRole,
         bytes32 workerRole,
-        uint256 revocablePeriod
+        uint256 revocablePeriod,
+        address claimsRevocationRegistry
     ) payable {
-        require(_rewardAmount >= 0, "init: Reward amount must be 0 or higher");
-        require(_claimManagerAddress != address(0), "init: Invalid claimManager");
+        require(rewardAmount >= 0, "init: Reward amount must be 0 or higher");
+        require(claimManagerAddress != address(0), "init: Invalid claimManager");
+        require(claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
         require(revocablePeriod > 0, "init: Invalid revocable period");
-        require(_contractOwner != address(0), "init: Invalid contract Owner");
-        require(_majorityPercentage >= 0 && _majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
-        LibVoting.init(_votingTimeLimit, _majorityPercentage);
+        require(contractOwner != address(0), "init: Invalid contract Owner");
+        require(majorityPercentage >= 0 && majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
+        LibVoting.init(votingTimeLimit, majorityPercentage);
         LibIssuer.init(revocablePeriod);
-        LibReward.initRewards(_rewardAmount);
-        LibDiamond.setContractOwner(_contractOwner);
+        LibReward.initRewards(rewardAmount);
+        LibDiamond.setContractOwner(contractOwner);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors = new bytes4[](1);
         functionSelectors[0] = IDiamondCut.diamondCut.selector;
-        cut[0] = IDiamondCut.FacetCut({facetAddress: _diamondCutFacet, action: IDiamondCut.FacetCutAction.Add, functionSelectors: functionSelectors});
+        cut[0] = IDiamondCut.FacetCut({facetAddress: diamondCutFacet, action: IDiamondCut.FacetCutAction.Add, functionSelectors: functionSelectors});
         LibDiamond.diamondCut(cut, address(0), "");
 
         //Set ClaimManager properties
-        LibClaimManager.init(_claimManagerAddress, issuerRole, revokerRole, workerRole);
+        LibClaimManager.init(claimManagerAddress, issuerRole, revokerRole, workerRole, claimsRevocationRegistry);
     }
 
-    function updateClaimManager(address _newaddress) external returns (address oldAddress) {
-        oldAddress = LibClaimManager.setClaimManagerAddress(_newaddress);
+    function updateClaimManager(address newaddress) external returns (address oldAddress) {
+        oldAddress = LibClaimManager.setClaimManagerAddress(newaddress);
     }
 
     //TODO: provide unit tests for RoleVersion update
-    function updateIssuerVersion(uint256 _newVersion) external returns (uint256 oldVersion) {
-        oldVersion = LibClaimManager.setIssuerVersion(_newVersion);
+    function updateIssuerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
+        oldVersion = LibClaimManager.setIssuerVersion(newVersion);
     }
 
-    function updateRevokerVersion(uint256 _newVersion) external returns (uint256 oldVersion) {
-        oldVersion = LibClaimManager.setRevokerVersion(_newVersion);
+    function updateRevokerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
+        oldVersion = LibClaimManager.setRevokerVersion(newVersion);
     }
 
-    function updateWorkerVersion(uint256 _newVersion) external returns (uint256 oldVersion) {
-        oldVersion = LibClaimManager.setWorkerVersion(_newVersion);
+    function updateWorkerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
+        oldVersion = LibClaimManager.setWorkerVersion(newVersion);
     }
 
     // Find facet for function that is called and execute the
@@ -100,11 +104,5 @@ contract Diamond {
     /// @notice Rewards each worker winner by a constant amount set on deployment
     /// If current balance is insufficient to pay reward, then winner will
     /// be rewarded after balance is replenished
-    receive() external payable {
-        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
-
-        if (rewardStorage.rewardQueue.length > 0) {
-            LibReward.executeRewardTransfers();
-        }
-    }
+    receive() external payable {}
 }

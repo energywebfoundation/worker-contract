@@ -4,13 +4,13 @@ pragma solidity ^0.8.16;
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 
 interface IGreenProof {
-    struct Proof {
+    struct Certificate {
         bool isRevoked;
-        bool isRetired;
-        uint256 index;
+        uint256 certificateID;
         uint256 issuanceDate;
         uint256 volume;
         bytes32 merkleRootHash;
+        address generator;
     }
 
     function requestProofIssuance(
@@ -19,7 +19,8 @@ interface IGreenProof {
         bytes32 dataHash,
         bytes32[] memory dataProof,
         uint256 volume,
-        bytes32[] memory volumeProof
+        bytes32[] memory volumeProof,
+        string memory tokenUri
     ) external;
 
     function discloseData(
@@ -29,7 +30,7 @@ interface IGreenProof {
         bytes32 dataHash
     ) external;
 
-    function getCertificateOwners(uint256 proofID) external view returns (address[] memory);
+    function getCertificateOwners(uint256 certificateID) external view returns (address[] memory);
 
-    event ProofMinted(uint256 indexed proofID, uint256 indexed amount);
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed amount, address indexed receiver);
 }

@@ -64,7 +64,7 @@ export const removeSelectors = (selectors: string[], signatures: string[]) => {
 };
 
 // find a particular address position in the return value of diamondLoupeFacet.facets()
-export const indexOfAddressInFacets = (
+export const findIndexOfAddressInFacets = (
   facetAddress: string,
   facets: FacetCut[]
 ) => facets.findIndex((cut) => cut.facetAddress === facetAddress);

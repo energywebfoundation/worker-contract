@@ -5,7 +5,7 @@ interface IVoting {
     // Event emitted after voting ended
     event WinningMatch(bytes32 matchInput, bytes32 matchResult, uint256 indexed voteCount);
 
-    // Event emitted after voting ended on settlement data
+    // Event emitted after a voting consensus is reached
     event ConsensusReached(bytes32 winningMatch, bytes32 matchInput);
 
     // Winning match result can not be determined
@@ -17,13 +17,23 @@ interface IVoting {
     // Event emitted after match is recorded
     event MatchRegistered(bytes32 matchInput, bytes32 matchResult);
 
+    function vote(bytes32 voteID, bytes32 matchResult) external;
+
+    function addWorker(address payable workerAddress) external;
+
+    function removeWorker(address workerToRemove) external;
+
+    function cancelExpiredVotings() external;
+
     function getNumberOfWorkers() external view returns (uint256);
 
-    function getWorkers() external view returns (address[] memory);
+    function getWorkers() external view returns (address payable[] memory);
 
-    function getWinningMatch(bytes32 matchInput) external view returns (bytes32);
+    function getWinningMatch(bytes32 voteID) external view returns (bytes32);
 
-    function winners(bytes32 matchInput) external view returns (address payable[] memory);
+    function getWinners(bytes32 voteID) external view returns (address payable[] memory);
 
-    function getWorkerVote(bytes32 matchInput, address workerAddress) external view returns (bytes32 matchResult);
+    function getWorkerVote(bytes32 voteID, address workerAddress) external view returns (bytes32 matchResult);
+
+    function numberOfvotingSessions() external view returns (uint256);
 }

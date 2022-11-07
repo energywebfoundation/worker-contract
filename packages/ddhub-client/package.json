@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/greenproof-ddhub-client",
-  "version": "1.0.4",
+  "version": "1.0.7",
   "license": "MIT",
   "author": "EnergyWeb DevHub GmbH;",
   "main": "dist/index.js",

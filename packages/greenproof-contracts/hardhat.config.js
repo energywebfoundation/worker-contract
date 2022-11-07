@@ -1,4 +1,6 @@
 /* global ethers task */
+// require("hardhat-diamond-abi");
+require("hardhat-gas-reporter");
 require("@nomiclabs/hardhat-waffle");
 require("@typechain/hardhat");
 const dotenv = require("dotenv");
@@ -38,6 +40,10 @@ module.exports = {
       chainId: 73799,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
+    goerli: {
+      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    }
   },
   settings: {
     optimizer: {
@@ -45,6 +51,17 @@ module.exports = {
       runs: 200,
     },
   },
+  gasReporter: {
+    currency: 'USD',
+    gasPrice: 21,
+    enabled: true,
+    coinmarketcap: process.env.COIN_MARKET_CAP_API,
+    token: "EWT"
+  },
+  // diamondAbi: {
+  //   // (required) The name of your Diamond ABI
+  //   name: "GreenproofContracts",
+  // },
   typechain: {
     outDir: path.join(__dirname, "src"),
   },
