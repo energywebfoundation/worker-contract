@@ -70,9 +70,8 @@ contract VotingFacet is IVoting, IReward {
             if (shouldUpdateVote) {
                 //We update the voting results
                 voting._updateWorkersVote();
-                voting._revealWinners();
-
                 voting._updateVoteResult(newWinningMatch, newVoteCount);
+                voting._revealWinners();
 
                 emit WinningMatch(voteID, newWinningMatch, newVoteCount);
 
@@ -135,7 +134,6 @@ contract VotingFacet is IVoting, IReward {
      * @notice Cancels votings that takes longer than time limit
      */
     function cancelExpiredVotings() external override onlyOwner {
-        //AccessControl
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         for (uint256 i = 0; i < votingStorage.voteIDs.length; i++) {
@@ -163,13 +161,10 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.numberOfWorkers;
     }
 
-    function getWorkers() external view override returns (address[] memory _workers) {
+    function getWorkers() external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        for (uint256 i = 0; i < votingStorage.workers.length; i++) {
-            _workers[i] = address(votingStorage.workers[i]);
-        }
-        return _workers;
+        return votingStorage.workers;
     }
 
     /**

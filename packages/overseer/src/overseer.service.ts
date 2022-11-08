@@ -5,7 +5,7 @@ import type { Wallet } from 'ethers';
 import { BigNumber } from 'ethers';
 import { ethers } from 'ethers';
 import { PinoLogger } from 'nestjs-pino';
-import type { VotingFacet } from '@energyweb/greenproof-contracts';
+import type { VotingFacet} from '@energyweb/greenproof-contracts';
 import { VotingFacet__factory } from '@energyweb/greenproof-contracts';
 import {EventEmitter2} from '@nestjs/event-emitter';
 import { ContractEvent, parseEventArgs, WinningMatchEvent } from './events';
@@ -34,6 +34,7 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
 
     this.provider = new ethers.providers.JsonRpcProvider(this.config.rpcHost);
     this.wallet = new ethers.Wallet(this.config.overseerPrivateKey, this.provider);
+    this.wallet.getAddress();
     this.contract = VotingFacet__factory.connect(this.config.contractAddress, this.provider.getSigner());
     this.contract.connect(this.wallet);
   }

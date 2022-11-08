@@ -1,36 +1,30 @@
 const chai = require("chai");
 const { expect } = require("chai");
 const { parseEther } = require("ethers").utils;
-const { ethers, network } = require("hardhat");
 const {
   deployDiamond,
   DEFAULT_REVOCABLE_PERIOD,
-} = require("../scripts/deploy/deploy");
-const { deployMockContract, solidity } = require("ethereum-waffle");
-const {
-  claimManagerInterface,
-  getMerkleProof,
-  claimRevocationInterface,
-} = require("./utils");
+} = require("../scripts/deploy/deployContracts");
+const { ethers } = require("hardhat");
+const { solidity } = require("ethereum-waffle");
 const {
   createMerkleTree,
   createPreciseProof,
   hash,
   stringify,
 } = require("@energyweb/greenproof-merkle-tree");
+const { roles } = require("./utils/roles.utils");
+const { timeTravel } = require("./utils/time.utils");
+const { initMockClaimManager } = require("./utils/claimManager.utils");
+const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
+const { getMerkleProof } = require("./utils/merkleProof.utils");
 chai.use(solidity);
 
-const timeTravel = async (seconds) => {
-  await network.provider.send("evm_increaseTime", [seconds]);
-  await network.provider.send("evm_mine", []);
-};
+const { issuerRole, revokerRole, workerRole } = roles;
 
 let VC;
-let owner;
 let leaves;
 let leaves2;
-let worker1;
-let worker2;
 let leaves3;
 let dataTree;
 let generator;
@@ -47,25 +41,10 @@ let generatorAddress;
 let testCounter = 0;
 let lastTokenID = 0;
 let proofManagerFacet;
-let nonAuthorizedOperator;
 
-const timeLimit = 15 * 60;
-const rewardAmount = parseEther("1");
-const revocablePeriod = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
-
-const issuerRole = ethers.utils.namehash(
-  "minter.roles.greenproof.apps.iam.ewc"
-);
-const revokerRole = ethers.utils.namehash(
-  "revoker.roles.greenproof.apps.iam.ewc"
-);
-const workerRole = ethers.utils.namehash(
-  "workerRole.roles.greenproof.apps.iam.ewc"
-);
 const volume = 42;
 const certificateID1 = 1;
 const certificateID2 = 2;
-const defaultVersion = 1;
 const tokenURI = "bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq";
 
 const data = [
@@ -126,6 +105,16 @@ const data3 = [
 ];
 
 describe("IssuerFacet", function () {
+  let owner;
+  let issuer;
+  let minter;
+  let revoker;
+  let nonAuthorizedOperator;
+  let worker1;
+  let worker2;
+  let notEnrolledWorker;
+  let toRemoveWorker;
+
   before(async () => {
     [
       owner,
@@ -143,36 +132,25 @@ describe("IssuerFacet", function () {
 
     provider = ethers.provider;
 
-    //  Mocking claimManager
-    const claimManagerMocked = await deployMockContract(
-      owner,
-      claimManagerInterface
-    );
-
-    //  Mocking claimsRevocationRegistry
-    const claimsRevocationRegistryMocked = await deployMockContract(
-      owner,
-      claimRevocationInterface
-    );
+    const claimManagerMocked = await initMockClaimManager(owner);
+    const claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
     grantRole = async (operatorWallet, role) => {
-      await claimManagerMocked.mock.hasRole
-        .withArgs(operatorWallet.address, role, defaultVersion)
-        .returns(true);
-
-      await claimsRevocationRegistryMocked.mock.isRevoked
-        .withArgs(role, operatorWallet.address)
-        .returns(false);
+      await claimManagerMocked.grantRole(operatorWallet.address, role);
+      await claimsRevocationRegistryMocked.isRevoked(
+        role,
+        operatorWallet.address,
+        false
+      );
     };
 
     revokeRole = async (operatorWallet, role) => {
-      await claimManagerMocked.mock.hasRole
-        .withArgs(operatorWallet.address, role, defaultVersion)
-        .returns(true);
-
-      await claimsRevocationRegistryMocked.mock.isRevoked
-        .withArgs(role, operatorWallet.address)
-        .returns(true);
+      await claimManagerMocked.grantRole(operatorWallet.address, role);
+      await claimsRevocationRegistryMocked.isRevoked(
+        role,
+        operatorWallet.address,
+        true
+      );
     };
 
     const roles = {
@@ -183,7 +161,7 @@ describe("IssuerFacet", function () {
 
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
-      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+      claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
     }));
 
@@ -249,7 +227,6 @@ describe("IssuerFacet", function () {
       const volumeLeaf = hash("volume" + JSON.stringify(volume));
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
-      const volumeInWei = parseEther(volume.toString());
 
       await expect(
         issuerFacet
@@ -522,10 +499,6 @@ describe("IssuerFacet", function () {
 
     it("it should revert when transfering reevoked proof to another wallet than generator", async () => {
       const data = ethers.utils.formatBytes32String("");
-      let generatorCertificateAmount = await issuerFacet.balanceOf(
-        generatorAddress,
-        lastTokenID
-      );
 
       await expect(
         issuerFacet

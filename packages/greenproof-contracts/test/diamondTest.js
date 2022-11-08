@@ -1,40 +1,23 @@
-/* global describe it before ethers */
-
-const { deployDiamond } = require("../scripts/deploy/deploy");
 const {
   getSelectors,
   FacetCutAction,
   removeSelectors,
   findIndexOfAddressInFacets,
 } = require("../scripts/deploy");
-
 const { deployMockContract, solidity } = require("ethereum-waffle");
-
 const { BigNumber } = require("ethers");
-
 const { ethers } = require("hardhat");
-
 const { assert, expect } = require("chai");
-
-const { claimManagerInterface, claimRevocationInterface } = require("./utils");
-
 const chai = require("chai");
 
-const issuerRole = ethers.utils.namehash(
-  "minter.roles.greenproof.apps.iam.ewc"
-);
-const revokerRole = ethers.utils.namehash(
-  "revoker.roles.greenproof.apps.iam.ewc"
-);
-const workerRole = ethers.utils.namehash(
-  "workerRole.roles.greenproof.apps.iam.ewc"
-);
-
-const roles = {
-  issuerRole,
-  revokerRole,
-  workerRole,
-};
+const { roles } = require("./utils/roles.utils");
+const { deployDiamond } = require("../scripts/deploy/deployContracts");
+const {
+  claimManagerInterface,
+  claimRevocationInterface,
+  initMockClaimManager,
+} = require("./utils/claimManager.utils");
+const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 
 chai.use(solidity);
 
@@ -52,17 +35,12 @@ describe("DiamondTest", async function () {
   before(async function () {
     [owner] = await ethers.getSigners();
 
-    //  Mocking claimManager
-    claimManagerMocked = await deployMockContract(owner, claimManagerInterface);
-    //  Mocking claimsRevocationRegistry
-    claimsRevocationRegistryMocked = await deployMockContract(
-      owner,
-      claimRevocationInterface
-    );
+    claimManagerMocked = await initMockClaimManager(owner);
+    claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: claimManagerMocked.address,
-      claimRevocationRegistryAddress: claimsRevocationRegistryMocked.address,
+      claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
       facets: ["IssuerFacet"],
     }));
@@ -76,8 +54,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress:
-            claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: ethers.constants.AddressZero,
         })
@@ -88,8 +65,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: ethers.constants.AddressZero,
-          claimRevocationRegistryAddress:
-            claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
         })
       ).to.be.revertedWith("init: Invalid claimManager");
@@ -99,7 +75,7 @@ describe("DiamondTest", async function () {
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress: ethers.constants.AddressZero,
+          claimRevokerAddress: ethers.constants.AddressZero,
         })
       ).to.be.revertedWith("init: Invalid claimsRevocationRegistry");
     });
@@ -111,8 +87,7 @@ describe("DiamondTest", async function () {
         deployDiamond({
           rewardAmount: zeroRewardAmount,
           claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress:
-            claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
         })
       ).to.be.revertedWith("init: Null reward amount");
@@ -120,15 +95,14 @@ describe("DiamondTest", async function () {
 
     it("should revert if revocable Period is 0", async () => {
       const zeroRevocablePeriod = 0;
-      const contractOwner = ethers.getSigners()[0];
+      const contractOwner = (await ethers.getSigners())[0];
 
       await expect(
         deployDiamond({
           claimManagerAddress: claimManagerMocked.address,
-          claimRevocationRegistryAddress:
-            claimsRevocationRegistryMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
-          contractOwner,
+          contractOwner: contractOwner.address,
           revocablePeriod: zeroRevocablePeriod,
         })
       ).to.be.revertedWith("init: Invalid revocable period");
