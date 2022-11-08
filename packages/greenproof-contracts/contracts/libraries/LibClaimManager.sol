@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import {LibDiamond} from "./LibDiamond.sol";
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
 
 library LibClaimManager {
@@ -20,6 +20,11 @@ library LibClaimManager {
         Role workerRole;
         Role issuerRole;
         Role revokerRole;
+    }
+
+    modifier onlyOwner() {
+        require(OwnableStorage.layout().owner == msg.sender, "Greenproof: ClaimManager facet: Must be contract owner");
+        _;
     }
 
     function hasRole(
@@ -58,8 +63,7 @@ library LibClaimManager {
         claimStore.workerRole = Role({name: workerRole, version: 1});
     }
 
-    function setIssuerVersion(uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
-        LibDiamond.enforceIsContractOwner();
+    function setIssuerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         require(claimStore.issuerRole.version != _newVersion, "Same version");
@@ -68,8 +72,7 @@ library LibClaimManager {
         claimStore.issuerRole.version = _newVersion;
     }
 
-    function setWorkerVersion(uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
-        LibDiamond.enforceIsContractOwner();
+    function setWorkerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         require(claimStore.workerRole.version != _newVersion, "Same version");
@@ -78,8 +81,7 @@ library LibClaimManager {
         claimStore.workerRole.version = _newVersion;
     }
 
-    function setRevokerVersion(uint256 _newVersion) internal returns (uint256 oldRoleVersion) {
-        LibDiamond.enforceIsContractOwner();
+    function setRevokerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         require(claimStore.revokerRole.version != _newVersion, "Same version");
@@ -89,8 +91,7 @@ library LibClaimManager {
     }
 
     //TODO: provide unit tests for claimManager Update
-    function setClaimManagerAddress(address _newAddress) internal returns (address oldAddress) {
-        LibDiamond.enforceIsContractOwner();
+    function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         if (claimStore.claimManagerAddress == address(0)) {

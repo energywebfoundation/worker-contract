@@ -3,15 +3,20 @@ import { BaseContract, ethers } from "ethers";
 export const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 
 export type FacetCut = {
-  facetAddress: string;
+  target: string;
   action: typeof FacetCutAction[keyof typeof FacetCutAction];
-  functionSelectors: any;
+  selectors: any;
 };
 
 export function getSelectors(facet: BaseContract) {
   const signatures = Object.keys(facet.interface.functions);
   const functionHashes = signatures.reduce((hashes, fn) => {
-    if (fn !== "init(bytes)") {
+    if (
+      ![
+        "init(bytes)",
+        "supportsInterface(bytes4)", // defined in SolidState facet https://github.com/solidstate-network/solidstate-solidity/blob/e9f741cb1476a066ce92d39600a82dc1c9e06b7d/contracts/proxy/diamond/SolidStateDiamond.sol#L50
+      ].includes(fn)
+    ) {
       hashes.push(facet.interface.getSighash(fn));
     }
     return hashes;
@@ -21,13 +26,15 @@ export function getSelectors(facet: BaseContract) {
 }
 
 export function remove(functionsToRemove: string[]) {
-  const functionHashesToRemove = functionsToRemove.map(fn => getFunctionSighash(this.contract, fn));
-
-  const selectors = this.filter((functionHash: string) =>
-    !functionHashesToRemove.includes(functionHash)
+  const functionHashesToRemove = functionsToRemove.map((fn) =>
+    getFunctionSighash(this.contract, fn)
   );
 
-  return createSelectors(selectors, this.contract)
+  const selectors = this.filter(
+    (functionHash: string) => !functionHashesToRemove.includes(functionHash)
+  );
+
+  return createSelectors(selectors, this.contract);
 }
 
 const createSelectors = (selectors: string[], contract: BaseContract) => {
@@ -36,7 +43,7 @@ const createSelectors = (selectors: string[], contract: BaseContract) => {
   anySelectors.get = get;
   anySelectors.contract = contract;
   return anySelectors;
-}
+};
 
 export function get(functionsToResolve: string[]) {
   const functionsHashesToResolve = functionsToResolve.map((fn) =>
@@ -47,7 +54,7 @@ export function get(functionsToResolve: string[]) {
     functionsHashesToResolve.includes(functionHash)
   );
 
-  return createSelectors(selectors, this.contract)
+  return createSelectors(selectors, this.contract);
 }
 
 const getFunctionSighash = (contract: BaseContract, fn: string) =>
@@ -67,4 +74,4 @@ export const removeSelectors = (selectors: string[], signatures: string[]) => {
 export const findIndexOfAddressInFacets = (
   facetAddress: string,
   facets: FacetCut[]
-) => facets.findIndex((cut) => cut.facetAddress === facetAddress);
+) => facets.findIndex((cut) => cut.target === facetAddress);

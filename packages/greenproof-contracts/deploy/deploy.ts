@@ -1,22 +1,22 @@
-import '@nomiclabs/hardhat-waffle';
-import '@typechain/hardhat';
-import { ethers } from 'hardhat';
-import { config } from 'dotenv';
-import { FacetCutAction, getSelectors } from './libraries/diamond';
-import { BigNumber, Contract, ContractFactory } from 'ethers';
+import "@nomiclabs/hardhat-waffle";
+import "@typechain/hardhat";
+import { ethers } from "hardhat";
+import { config } from "dotenv";
+import { FacetCutAction, getSelectors } from "./libraries/diamond";
+import { BigNumber, Contract, ContractFactory } from "ethers";
 
 config();
 
-export const VOLTA_CLAIM_MANAGER = '0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031';
+export const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
 export const DEFAULT_REVOCABLE_PERIOD = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 export const DEFAULT_VOTING_TIME_LIMIT = 15 * 60;
 export const DEFAULT_REWARD_AMOUNT = ethers.utils.parseEther(
-  process.env.REWARD_AMOUNT_IN_ETHER ?? '1',
+  process.env.REWARD_AMOUNT_IN_ETHER ?? "1"
 );
 
 const runningFromCLI = () => require.main === module;
 
-type Logger = (...msg: any[]) => void
+type Logger = (...msg: any[]) => void;
 type DeployDiamondOptions = {
   votingTimeLimit?: number;
   rewardAmount?: BigNumber;
@@ -34,11 +34,9 @@ type DeployDiamondOptions = {
 };
 
 export enum Facet {
-  DiamondLoupeFacet = 'DiamondLoupeFacet',
-  OwnershipFacet = 'OwnershipFacet',
-  IssuerFacet = 'IssuerFacet',
-  VotingFacet = 'VotingFacet',
-  ProofManagerFacet = 'ProofManagerFacet',
+  IssuerFacet = "IssuerFacet",
+  VotingFacet = "VotingFacet",
+  ProofManagerFacet = "ProofManagerFacet",
 }
 
 export const deployDiamond = async (options: DeployDiamondOptions) => {
@@ -51,25 +49,26 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
     roles = {},
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     facets = Object.values(Facet),
-    claimRevocationRegistryAddress = process.env.VOLTA_CLAIMS_REVOCATION_REGISTRY,
-    logger = () => {},
+    claimRevocationRegistryAddress = process.env
+      .VOLTA_CLAIMS_REVOCATION_REGISTRY,
+    logger = (lbl: string, msg?: unknown) => {
+      console.log(`${lbl} ${msg ? `: ${JSON.stringify(msg)}` : ""}`);
+    },
   } = options;
   const deploy = createDeployer(logger);
   const {
-    issuerRole = ethers.utils.namehash(process.env.ISSUER_ROLE ?? 'issuer'),
-    revokerRole = ethers.utils.namehash(process.env.REVOKER_ROLE ?? 'revoker'),
-    workerRole = ethers.utils.namehash(process.env.WORKER_ROLE ?? 'worker'),
+    issuerRole = ethers.utils.namehash(process.env.ISSUER_ROLE ?? "issuer"),
+    revokerRole = ethers.utils.namehash(process.env.REVOKER_ROLE ?? "revoker"),
+    workerRole = ethers.utils.namehash(process.env.WORKER_ROLE ?? "worker"),
   } = roles;
 
   // deploy DiamondInit
   // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
-  const diamondInit = await deploy('DiamondInit');
-  const diamondCutFacet = await deploy('DiamondCutFacet');
-  const diamond = await deploy('Diamond', (factory) =>
+  const diamondInit = await deploy("DiamondInit");
+  const diamond = await deploy("Diamond", (factory) =>
     factory.deploy(
       contractOwner,
-      diamondCutFacet.address,
       votingTimeLimit,
       rewardAmount,
       claimManagerAddress,
@@ -77,39 +76,40 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
       revokerRole,
       workerRole,
       revocablePeriod,
-      claimRevocationRegistryAddress,
-    ),
+      claimRevocationRegistryAddress
+    )
   );
 
-  logger('Deploying facets...');
+  logger("Deploying facets...");
   const cuts = [];
   for (const facetName of facets) {
     const facet = await deploy(facetName);
 
     cuts.push({
-      facetAddress: facet.address,
+      target: facet.address,
       action: FacetCutAction.Add,
-      functionSelectors: getSelectors(facet),
+      selectors: getSelectors(facet),
     });
   }
 
-  logger('List of Cuts to execute :', cuts);
-  const diamondCut = await ethers.getContractAt('IDiamondCut', diamond.address);
+  logger("List of Cuts to execute", cuts);
+  const diamondCut = await ethers.getContractAt("Diamond", diamond.address);
   // call to init function
-  const functionCall = diamondInit.interface.encodeFunctionData('init');
+  const functionCall = diamondInit.interface.encodeFunctionData("init");
   const tx = await diamondCut.diamondCut(
     cuts,
     diamondInit.address,
-    functionCall,
+    functionCall
   );
-  logger('Diamond cuts tx: ', tx.hash);
+
+  logger("Diamond cuts tx", tx.hash);
   const receipt = await tx.wait();
 
   if (!receipt.status) {
     throw Error(`Diamond upgrade failed: ${tx.hash}`);
   }
 
-  logger('Completed diamond cuts');
+  logger("Completed diamond cuts");
   return { diamondAddress: diamond.address };
 };
 
@@ -126,16 +126,18 @@ if (runningFromCLI()) {
     });
 }
 
-const createDeployer = (logger: Logger) => async (
-  contractName: string,
-  deployFn: (factory: ContractFactory) => Promise<Contract> = (factory) =>
-    factory.deploy(),
-): Promise<Contract> => {
-  const factory = await ethers.getContractFactory(contractName);
+const createDeployer =
+  (logger: Logger) =>
+  async (
+    contractName: string,
+    deployFn: (factory: ContractFactory) => Promise<Contract> = (factory) =>
+      factory.deploy()
+  ): Promise<Contract> => {
+    const factory = await ethers.getContractFactory(contractName);
 
-  const contract = await deployFn(factory);
-  await contract.deployed();
-  logger(`Contract: ${contractName} deployed to ${contract.address}`);
+    const contract = await deployFn(factory);
+    await contract.deployed();
+    logger(`Contract: ${contractName} deployed to`, contract.address);
 
-  return contract;
-};
+    return contract;
+  };
