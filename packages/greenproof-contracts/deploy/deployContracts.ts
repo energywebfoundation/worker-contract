@@ -34,6 +34,7 @@ type DeployDiamondOptions = {
   contractOwner?: string;
   revocablePeriod?: number;
   majorityPercentage?: number;
+  rewardsEnabled?: boolean;
   logger?: Logger;
 };
 
@@ -56,6 +57,7 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
     roles = {},
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
+    rewardsEnabled = true,
     facets = Object.values(Facet),
     logger = () => {},
   } = options;
