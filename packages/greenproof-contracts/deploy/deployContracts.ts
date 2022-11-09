@@ -4,6 +4,7 @@ import { ethers } from 'hardhat';
 import { config } from 'dotenv';
 import { FacetCutAction, getSelectors } from './libraries/diamond';
 import { BigNumber, Contract, ContractFactory } from 'ethers';
+import { Diamond__factory } from '../src';
 
 config();
 
@@ -18,7 +19,7 @@ export const DEFAULT_REWARD_AMOUNT = ethers.utils.parseEther(
 
 const runningFromCLI = () => require.main === module;
 
-type Logger = (...msg: any[]) => void
+type Logger = (...msg: any[]) => void;
 type DeployDiamondOptions = {
   votingTimeLimit?: number;
   rewardAmount?: BigNumber;
@@ -71,21 +72,25 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
   const diamondInit = await deploy('DiamondInit');
   const diamondCutFacet = await deploy('DiamondCutFacet');
-  const diamond = await deploy('Diamond', (factory) =>
-    factory.deploy(
-      contractOwner,
-      diamondCutFacet.address,
-      votingTimeLimit,
-      rewardAmount,
-      claimManagerAddress,
-      majorityPercentage,
-      issuerRole,
-      revokerRole,
-      workerRole,
-      revocablePeriod,
-      claimRevokerAddress
-    ),
-  );
+  const diamond = await deploy('Diamond', (factory) => {
+    const args: Parameters<Diamond__factory['deploy']> = [
+      { diamondCutFacet: diamondCutFacet.address, contractOwner },
+      {
+        votingTimeLimit,
+        rewardAmount,
+        majorityPercentage,
+        revocablePeriod,
+      },
+      {
+        claimManagerAddress,
+        issuerRole,
+        revokerRole,
+        workerRole,
+        claimsRevocationRegistry: claimRevokerAddress,
+      },
+    ];
+    return factory.deploy(...args);
+  });
 
   logger('Deploying facets...');
   const cuts = [];
@@ -133,16 +138,18 @@ if (runningFromCLI()) {
     });
 }
 
-const createDeployer = (logger: Logger) => async (
-  contractName: string,
-  deployFn: (factory: ContractFactory) => Promise<Contract> = (factory) =>
-    factory.deploy(),
-): Promise<Contract> => {
-  const factory = await ethers.getContractFactory(contractName);
+const createDeployer =
+  (logger: Logger) =>
+    async (
+      contractName: string,
+      deployFn: (factory: ContractFactory) => Promise<Contract> = (factory) =>
+        factory.deploy(),
+    ): Promise<Contract> => {
+      const factory = await ethers.getContractFactory(contractName);
 
-  const contract = await deployFn(factory);
-  await contract.deployed();
-  logger(`Contract: ${contractName} deployed to ${contract.address}`);
+      const contract = await deployFn(factory);
+      await contract.deployed();
+      logger(`Contract: ${contractName} deployed to ${contract.address}`);
 
-  return contract;
-};
+      return contract;
+    };

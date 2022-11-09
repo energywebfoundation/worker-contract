@@ -12,73 +12,9 @@ const { roles } = require('./utils/roles.utils');
 const { timeTravel } = require('./utils/time.utils');
 const { itEach } = require('mocha-it-each');
 const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
-
+const { Worker } = require('./utils/worker.utils');
 const { workerRole } = roles;
 chai.use(solidity);
-
-class Worker {
-  static #workerIdCount = 0;
-  #workerId;
-
-  constructor(wallet) {
-    this.wallet = wallet;
-    this.address = wallet.address;
-    this.#workerId = Worker.#workerIdCount++;
-  }
-
-  getWorkerId() {
-    return this.#workerId;
-  }
-
-  resetWorkerIds() {
-    return Worker.#workerId = 0;
-  }
-
-  setVotingContract(votingContract) {
-    this.votingContract = votingContract.connect(this.wallet);
-  }
-
-  async vote(input, output) {
-    await this.votingContract.vote(input, output);
-  }
-
-  voteNotWinning(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.not.emit(this.votingContract, 'WinningMatch');
-  }
-
-  voteNoConsensus(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, 'NoConsensusReached')
-      .withArgs(input);
-  }
-
-  voteExpired(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, 'VotingExpired')
-      .withArgs(input);
-  }
-
-  voteWinning(input, output, { voteCount, winningOutput }) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, 'WinningMatch')
-      .withArgs(input, winningOutput || output, voteCount);
-  }
-
-  voteNotWhitelisted(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.be.revertedWith('NotWhitelisted');
-  }
-
-  voteAlreadyVoted(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.be.revertedWith('AlreadyVoted()');
-  }
-
-  async getVote(input) {
-    return await this.votingContract.getWorkerVote(input, this.address);
-  }
-}
 
 describe('VotingFacet', function() {
   let diamondAddress;
@@ -592,10 +528,7 @@ describe('VotingFacet', function() {
     for (const [workerIndex, vote] of Object.entries(workerVotes)) {
       const worker = workers[workerIndex];
       const workerVote = await votingContract.getWorkerVote(votingInput, worker.address);
-      expect(
-        workerVote,
-        `expected worker ${worker.getWorkerId()} to vote for ${vote}, but it was ${workerVote}`,
-      ).to.equal(vote);
+      expect(workerVote).to.equal(vote);
     }
     expect(await votingContract.getWinners(votingInput)).to.deep.equal(winners);
   };
