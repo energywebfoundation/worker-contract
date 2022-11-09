@@ -35,7 +35,6 @@ contract Diamond {
         uint256 rewardAmount;
         uint256 majorityPercentage;
         uint256 revocablePeriod;
-        bool rewardsEnabled;
     }
 
     constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
@@ -46,14 +45,14 @@ contract Diamond {
         require(votingConfig.majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
         LibIssuer.init(votingConfig.revocablePeriod);
-        LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
+        LibReward.initRewards(votingConfig.rewardAmount);
         LibDiamond.setContractOwner(diamondConfig.contractOwner);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors = new bytes4[](1);
         functionSelectors[0] = IDiamondCut.diamondCut.selector;
-        cut[0] = IDiamondCut.FacetCut({facetAddress : diamondConfig.diamondCutFacet, action : IDiamondCut.FacetCutAction.Add, functionSelectors : functionSelectors});
+        cut[0] = IDiamondCut.FacetCut({facetAddress: diamondConfig.diamondCutFacet, action: IDiamondCut.FacetCutAction.Add, functionSelectors: functionSelectors});
         LibDiamond.diamondCut(cut, address(0), "");
 
         //Set ClaimManager properties
@@ -79,7 +78,7 @@ contract Diamond {
 
     function setRewardsEnabled(bool rewardsEnabled) external {
         LibDiamond.enforceIsContractOwner();
-        
+
         LibReward.setRewardsEnabled(rewardsEnabled);
     }
 
@@ -97,13 +96,13 @@ contract Diamond {
         require(facet != address(0), "Diamond: Function does not exist");
         // Execute external function from facet using delegatecall and return any value.
         assembly {
-        // copy function selector and any arguments
+            // copy function selector and any arguments
             calldatacopy(0, 0, calldatasize())
-        // execute function call using the facet
+            // execute function call using the facet
             let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
-        // get any return value
+            // get any return value
             returndatacopy(0, 0, returndatasize())
-        // return any return value or error back to the caller
+            // return any return value or error back to the caller
             switch result
             case 0 {
                 revert(0, returndatasize())
