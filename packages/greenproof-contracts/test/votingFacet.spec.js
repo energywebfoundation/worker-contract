@@ -4,7 +4,6 @@ const { ethers } = require('hardhat');
 const { solidity } = require('ethereum-waffle');
 const {
   DEFAULT_VOTING_TIME_LIMIT,
-  DEFAULT_REWARD_AMOUNT,
   deployDiamond,
 } = require('../scripts/deploy/deployContracts');
 const { initMockClaimManager } = require('./utils/claimManager.utils');
@@ -12,73 +11,9 @@ const { roles } = require('./utils/roles.utils');
 const { timeTravel } = require('./utils/time.utils');
 const { itEach } = require('mocha-it-each');
 const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
-
+const { Worker } = require('./utils/worker.utils');
 const { workerRole } = roles;
 chai.use(solidity);
-
-class Worker {
-  static #workerIdCount = 0;
-  #workerId;
-
-  constructor(wallet) {
-    this.wallet = wallet;
-    this.address = wallet.address;
-    this.#workerId = Worker.#workerIdCount++;
-  }
-
-  getWorkerId() {
-    return this.#workerId;
-  }
-
-  resetWorkerIds() {
-    return Worker.#workerId = 0;
-  }
-
-  setVotingContract(votingContract) {
-    this.votingContract = votingContract.connect(this.wallet);
-  }
-
-  async vote(input, output) {
-    await this.votingContract.vote(input, output);
-  }
-
-  voteNotWinning(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.not.emit(this.votingContract, 'WinningMatch');
-  }
-
-  voteNoConsensus(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, 'NoConsensusReached')
-      .withArgs(input);
-  }
-
-  voteExpired(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, 'VotingExpired')
-      .withArgs(input);
-  }
-
-  voteWinning(input, output, { voteCount, winningOutput }) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, 'WinningMatch')
-      .withArgs(input, winningOutput || output, voteCount);
-  }
-
-  voteNotWhitelisted(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.be.revertedWith('NotWhitelisted');
-  }
-
-  voteAlreadyVoted(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.be.revertedWith('AlreadyVoted()');
-  }
-
-  async getVote(input) {
-    return await this.votingContract.getWorkerVote(input, this.address);
-  }
-}
 
 describe('VotingFacet', function() {
   let diamondAddress;
@@ -341,32 +276,6 @@ describe('VotingFacet', function() {
     expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
   });
 
-  it('consensus can be reached with vast majority', async () => {
-    await setupVotingContract({
-      participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4]],
-    });
-
-    await faucet.sendTransaction({
-      to: diamondAddress,
-      value: DEFAULT_REWARD_AMOUNT.mul(4), // reward queue balance should be greater than payment
-    });
-
-    workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
-
-    const balancesBefore = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-      workers[2].wallet.getBalance(),
-      workers[3].wallet.getBalance(),
-    ]);
-
-    workers[4].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 });
-
-    // Consensus has been reached
-    expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
-  });
-
   it('should not be able to add same worker twice', async () => {
     await setupVotingContract({
       participatingWorkers: [workers[0]],
@@ -375,21 +284,6 @@ describe('VotingFacet', function() {
     await expect(votingContract.addWorker(workers[0].address)).to.be.revertedWith(
       'WorkerAlreadyAdded',
     );
-  });
-
-    const balancesAfter = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-      workers[2].wallet.getBalance(),
-      workers[3].wallet.getBalance(),
-    ]);
-    const expectedBalances = [
-      balancesBefore[0].add(DEFAULT_REWARD_AMOUNT),
-      balancesBefore[1].add(DEFAULT_REWARD_AMOUNT),
-      balancesBefore[2],
-      balancesBefore[3],
-    ];
-    expect(balancesAfter.every((b, i) => b.eq(expectedBalances[i])));
   });
 
   it('should not be able to add same worker twice', async () => {
@@ -417,42 +311,10 @@ describe('VotingFacet', function() {
     workers[2].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 });
   });
 
-  it('reward should be paid after replenishment of funds', async () => {
-    await setupVotingContract({
-      participatingWorkers: [workers[0], workers[1]],
-    });
-
-    workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 });
-
-    const balancesBefore = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-    ]);
-
-    await expect(
-      votingContract
-        .connect(faucet).replenishRewardPool(
-        {
-          value: DEFAULT_REWARD_AMOUNT.mul(3),
-        }),
-    ).to.emit(votingContract, 'Replenished').withArgs(DEFAULT_REWARD_AMOUNT.mul(3));
-
-    const balancesAfter = await Promise.all([
-      workers[0].wallet.getBalance(),
-      workers[1].wallet.getBalance(),
-    ]);
-
-    expect(
-      balancesAfter.every((b, i) => b.eq(balancesBefore[i].add(DEFAULT_REWARD_AMOUNT))),
-    );
-  });
-
   it('reverts when non owner tries to cancel expired votings', async () => {
     await setupVotingContract({
       participatingWorkers: [workers[0]],
     });
-  };
 
     await votingContract
       .connect(workers[0].wallet)
@@ -463,7 +325,6 @@ describe('VotingFacet', function() {
     await expect(votingContract.connect(workers[0].wallet).cancelExpiredVotings())
       .to.be.revertedWith('LibDiamond: Must be contract owner');
   });
-
 
   it('voting which exceeded time limit can be canceled', async () => {
     await setupVotingContract({
@@ -591,89 +452,150 @@ describe('VotingFacet', function() {
 
   });
 
-
-describe('Rewards', function() {
+  describe('Rewards', function() {
     const REWARD = ethers.utils.parseEther('123');
 
     it('pays proper reward to the winners', async () => {
+      await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4]],
+        rewardPool: REWARD.mul(2),
+      });
+
+      workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1], workers[4]],
+        possiblePayouts: 2,
+        operation: () => workers[4].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 }),
+      });
+
+      expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
+    });
+
+
+    it('reward should be paid after replenishment of funds', async () => {
+      await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+      });
+
+      workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 });
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 2,
+        operation: () => votingContract
+          .connect(faucet).replenishRewardPool(
+            {
+              value: REWARD.mul(2),
+            }),
+      });
+    });
+
+
+    it('rewards should be paid partially and then fully after charging up the pool', async () => {
+      await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+        rewardPool: REWARD,
+      });
+      workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 1,
+        operation: () => workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 }),
+      });
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 1,
+        operation: () => votingContract
+          .connect(faucet).replenishRewardPool(
+            {
+              value: REWARD,
+            }),
+      });
+    });
+
+    describe.only('disabling rewards', function() {
+      it('should not pay the winners if rewards are disabled', async () => {
         await setupVotingContract({
-            reward: REWARD,
-            participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4]],
-            rewardPool: REWARD.mul(2),
+          reward: REWARD,
+          participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4]],
+          rewardPool: REWARD.mul(5),
+          rewardsEnabled: false,
         });
 
         workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
         workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
 
         await expectToReceiveReward({
-            winners: [workers[0], workers[1], workers[4]],
-            possiblePayouts: 2,
-            operation: () => workers[4].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 }),
+          winners: [],
+          possiblePayouts: 0,
+          operation: () => workers[4].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 3 }),
         });
+
         expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
-    });
+      });
 
-
-    it('reward should be paid after replenishment of funds', async () => {
+      it('should pay the rewards after enabling rewards', async () => {
         await setupVotingContract({
-            reward: REWARD,
-            participatingWorkers: [workers[0], workers[1]],
+          reward: REWARD,
+          participatingWorkers: [workers[0], workers[1]],
+          rewardPool: REWARD.mul(5),
+          rewardsEnabled: false,
         });
 
-        workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
-        workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 });
-
+        await workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
         await expectToReceiveReward({
-            winners: [workers[0], workers[1]],
-            possiblePayouts: 2,
-            operation: () => chargeRewardPool(REWARD.mul(2)),
+          winners: [],
+          possiblePayouts: 0,
+          operation: () => workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 }),
         });
+
+        const diamondContract = await ethers.getContractAt('Diamond', diamondAddress);
+        const tx = await diamondContract.setRewardsEnabled(true, { gasPrice: 10_000_000});
+        await tx.wait();
+
+        await workers[0].voteNotWinning(timeframes[1].input, timeframes[0].output);
+        await expectToReceiveReward({
+          winners: [workers[0],workers[1]],
+          possiblePayouts: 2,
+          operation: () => workers[1].voteWinning(timeframes[1].input, timeframes[0].output, { voteCount: 2 }),
+        });
+
+        expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
+      });
     });
 
+    const expectToReceiveReward = async (
+      {
+        winners = [],
+        losers = [],
+        // How many workers can be paid with current pool?
+        possiblePayouts = winners.length,
+        operation,
+      }) => {
+      const winnersBefore = await Promise.all(winners.map(w => w.getBalance()));
+      const losersBefore = await Promise.all(losers.map(w => w.getBalance()));
 
-    it('rewards should be paid partially and then fully after charging up the pool', async () => {
-        await setupVotingContract({
-            reward: REWARD,
-            participatingWorkers: [workers[0], workers[1]],
-            rewardPool: REWARD,
-        });
-        workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      const result = await operation();
+      await result.wait();
 
-        await expectToReceiveReward({
-            winners: [workers[0], workers[1]],
-            possiblePayouts: 1,
-            operation: () => workers[1].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 2 }),
-        });
+      const winnersAfter = await Promise.all(winners.map(w => w.getBalance()));
+      const losersAfter = await Promise.all(losers.map(w => w.getBalance()));
 
-        await expectToReceiveReward({
-            winners: [workers[0], workers[1]],
-            possiblePayouts: 1,
-            operation: () => chargeRewardPool(REWARD),
-        });
-    });
-
-    const expectToReceiveReward = async ({
-                                             winners = [],
-                                             losers = [],
-                                             // How many workers can be paid with current pool?
-                                             possiblePayouts = winners.length,
-                                             operation
-                                         }) => {
-        const winnersBefore = await Promise.all(winners.map(w => w.getBalance()));
-        const losersBefore = await Promise.all(losers.map(w => w.getBalance()));
-
-        const result = await operation();
-        await result.wait();
-
-        const winnersAfter = await Promise.all(winners.map(w => w.getBalance()));
-        const losersAfter = await Promise.all(losers.map(w => w.getBalance()));
-
-        const currentWinners = winnersAfter.filter((after, i) => after.gt(winnersBefore[i]));
-        expect(currentWinners).to.have.length(possiblePayouts);
-        expect(losersAfter.every((b, i) => b.lt(losersBefore[i]))).to.be.true;
+      const currentWinners = winnersAfter.filter((after, i) => after.gt(winnersBefore[i]));
+      expect(currentWinners).to.have.length(possiblePayouts);
+      expect(losersAfter.every((b, i) => b.lt(losersBefore[i]))).to.be.true;
     };
+  });
 
-const addWorkers = async (workers) => {
+  const addWorkers = async (workers) => {
     await Promise.all(workers.map(async w => {
       await mockClaimManager.grantRole(w.address, workerRole);
       await mockClaimRevoker.isRevoked(workerRole, w.address, false);
@@ -686,10 +608,7 @@ const addWorkers = async (workers) => {
     for (const [workerIndex, vote] of Object.entries(workerVotes)) {
       const worker = workers[workerIndex];
       const workerVote = await votingContract.getWorkerVote(votingInput, worker.address);
-      expect(
-        workerVote,
-        `expected worker ${worker.getWorkerId()} to vote for ${vote}, but it was ${workerVote}`,
-      ).to.equal(vote);
+      expect(workerVote).to.equal(vote);
     }
     expect(await votingContract.getWinners(votingInput)).to.deep.equal(winners);
   };
@@ -702,15 +621,22 @@ const addWorkers = async (workers) => {
     }));
   };
 
-  const setupVotingContract = async ({ majorityPercentage, participatingWorkers } = {}) => {
+  const setupVotingContract = async ({ majorityPercentage, participatingWorkers, rewardPool, reward, rewardsEnabled } = {}) => {
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: mockClaimManager.address,
       claimRevokerAddress: mockClaimRevoker.address,
       roles,
       majorityPercentage,
+      rewardAmount: reward,
+      rewardsEnabled
     }));
     votingContract = await ethers.getContractAt('VotingFacet', diamondAddress);
     workers.forEach(w => w.setVotingContract(votingContract));
+
+    if (rewardPool) {
+      await votingContract
+        .connect(faucet).replenishRewardPool({ value: rewardPool });
+    }
 
     await addWorkers(participatingWorkers || []);
   };

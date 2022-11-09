@@ -17,40 +17,47 @@ import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {LibClaimManager} from "./libraries/LibClaimManager.sol";
 
 contract Diamond {
-    constructor(
-        address contractOwner,
-        address diamondCutFacet,
-        uint256 votingTimeLimit,
-        uint256 rewardAmount,
-        address claimManagerAddress,
-        uint256 majorityPercentage,
-        uint256 _majorityPercentage,
-        bytes32 issuerRole,
-        bytes32 revokerRole,
-        bytes32 workerRole,
-        uint256 revocablePeriod,
-        address claimsRevocationRegistry
-    ) payable {
-        require(rewardAmount >= 0, "init: Reward amount must be 0 or higher");
-        require(claimManagerAddress != address(0), "init: Invalid claimManager");
-        require(claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
-        require(revocablePeriod > 0, "init: Invalid revocable period");
-        require(contractOwner != address(0), "init: Invalid contract Owner");
-        require(majorityPercentage >= 0 && majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
-        LibVoting.init(votingTimeLimit, majorityPercentage);
-        LibIssuer.init(revocablePeriod);
-        LibReward.initRewards(rewardAmount);
-        LibDiamond.setContractOwner(contractOwner);
+    struct DiamondConfig {
+        address contractOwner;
+        address diamondCutFacet;
+    }
+
+    struct RolesConfig {
+        bytes32 issuerRole;
+        bytes32 revokerRole;
+        bytes32 workerRole;
+        address claimManagerAddress;
+        address claimsRevocationRegistry;
+    }
+
+    struct VotingConfig {
+        uint256 votingTimeLimit;
+        uint256 rewardAmount;
+        uint256 majorityPercentage;
+        uint256 revocablePeriod;
+        bool rewardsEnabled;
+    }
+
+    constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
+        require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
+        require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
+        require(votingConfig.revocablePeriod > 0, "init: Invalid revocable period");
+        require(diamondConfig.contractOwner != address(0), "init: Invalid contract Owner");
+        require(votingConfig.majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
+        LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
+        LibIssuer.init(votingConfig.revocablePeriod);
+        LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
+        LibDiamond.setContractOwner(diamondConfig.contractOwner);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors = new bytes4[](1);
         functionSelectors[0] = IDiamondCut.diamondCut.selector;
-        cut[0] = IDiamondCut.FacetCut({facetAddress: diamondCutFacet, action: IDiamondCut.FacetCutAction.Add, functionSelectors: functionSelectors});
+        cut[0] = IDiamondCut.FacetCut({facetAddress : diamondConfig.diamondCutFacet, action : IDiamondCut.FacetCutAction.Add, functionSelectors : functionSelectors});
         LibDiamond.diamondCut(cut, address(0), "");
 
         //Set ClaimManager properties
-        LibClaimManager.init(claimManagerAddress, issuerRole, revokerRole, workerRole, claimsRevocationRegistry);
+        LibClaimManager.init(rolesConfig.claimManagerAddress, rolesConfig.issuerRole, rolesConfig.revokerRole, rolesConfig.workerRole, rolesConfig.claimsRevocationRegistry);
     }
 
     function updateClaimManager(address newaddress) external returns (address oldAddress) {
@@ -70,6 +77,12 @@ contract Diamond {
         oldVersion = LibClaimManager.setWorkerVersion(newVersion);
     }
 
+    function setRewardsEnabled(bool rewardsEnabled) external {
+        LibDiamond.enforceIsContractOwner();
+        
+        LibReward.setRewardsEnabled(rewardsEnabled);
+    }
+
     // Find facet for function that is called and execute the
     // function if a facet is found and return any value.
     fallback() external payable {
@@ -84,19 +97,19 @@ contract Diamond {
         require(facet != address(0), "Diamond: Function does not exist");
         // Execute external function from facet using delegatecall and return any value.
         assembly {
-            // copy function selector and any arguments
+        // copy function selector and any arguments
             calldatacopy(0, 0, calldatasize())
-            // execute function call using the facet
+        // execute function call using the facet
             let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
-            // get any return value
+        // get any return value
             returndatacopy(0, 0, returndatasize())
-            // return any return value or error back to the caller
+        // return any return value or error back to the caller
             switch result
             case 0 {
                 revert(0, returndatasize())
             }
             default {
-                return(0, returndatasize())
+                return (0, returndatasize())
             }
         }
     }
