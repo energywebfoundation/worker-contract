@@ -521,7 +521,7 @@ describe('VotingFacet', function() {
       });
     });
 
-    describe.only('disabling rewards', function() {
+    describe('disabling rewards', function() {
       it('should not pay the winners if rewards are disabled', async () => {
         await setupVotingContract({
           reward: REWARD,

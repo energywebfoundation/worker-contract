@@ -35,6 +35,7 @@ contract Diamond {
         uint256 rewardAmount;
         uint256 majorityPercentage;
         uint256 revocablePeriod;
+        bool rewardsEnabled;
     }
 
     constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
@@ -45,7 +46,7 @@ contract Diamond {
         require(votingConfig.majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
         LibIssuer.init(votingConfig.revocablePeriod);
-        LibReward.initRewards(votingConfig.rewardAmount);
+        LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         LibDiamond.setContractOwner(diamondConfig.contractOwner);
 
         // Add the diamondCut external function from the diamondCutFacet
