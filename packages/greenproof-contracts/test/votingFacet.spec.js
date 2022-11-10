@@ -83,16 +83,26 @@ describe('VotingFacet', function() {
 
   it('should emit winning event only once', async () => {
     await setupVotingContract({
-      majorityPercentage: 0,
-      participatingWorkers: [workers[0], workers[1]],
+      majorityPercentage: 30,
+      participatingWorkers: workers,
     });
 
-    await workers[0].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 1 });
-    await workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
+    const events = (await Promise.all(workers.map(async worker => {
+      const tx = await worker.vote(timeframes[0].input, timeframes[0].output);
+      const receipt = await tx.wait();
+      return receipt.events;
+    }))).flat()
+    const winningEvents = events.filter(Boolean).filter(e => e.event === 'WinningMatch')
 
-    expect(await workers[0].getVote(timeframes[0].input)).to.equal(timeframes[0].output);
-    expect(await workers[1].getVote(timeframes[0].input)).to.equal(timeframes[0].output);
-    expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
+    const replayEvents = (await Promise.all(workers.map(async worker => {
+      const tx = await worker.vote(timeframes[0].input, timeframes[1].output);
+      const receipt = await tx.wait();
+      return receipt.events;
+    }))).flat()
+    const winningReplayEvents = replayEvents.filter(Boolean).filter(e => e.event === 'WinningMatch')
+
+    expect(winningEvents).to.have.length(1)
+    expect(winningReplayEvents).to.have.length(1)
   });
 
   it('should not reveal workers vote before the end of vote', async () => {
