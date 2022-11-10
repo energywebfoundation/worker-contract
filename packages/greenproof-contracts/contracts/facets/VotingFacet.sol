@@ -65,10 +65,12 @@ contract VotingFacet is IVoting, IReward {
             if (shouldUpdateVote) {
                 //We update the voting results
                 voting._updateWorkersVote();
-                voting._updateVoteResult(newWinningMatch, newVoteCount);
+                (bool differentWinningMatch) = voting._updateVoteResult(newWinningMatch, newVoteCount);
                 voting._revealWinners();
 
-                emit WinningMatch(voteID, newWinningMatch, newVoteCount);
+                if(differentWinningMatch) {
+                    emit WinningMatch(voteID, newWinningMatch, newVoteCount);
+                }
 
                 LibVoting._reward(votingStorage.winnersList[voteID]);
             }
