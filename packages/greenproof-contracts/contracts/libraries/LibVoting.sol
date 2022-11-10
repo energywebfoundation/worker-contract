@@ -199,7 +199,7 @@ library LibVoting {
         Voting storage voting,
         bytes32 newWinningMatch,
         uint256 newVoteCount
-    ) internal {
+    ) internal returns (bool differentWinningMatch) {
         VotingStorage storage votingStorage = getStorage();
         bytes32 voteID = voting.voteID;
 
@@ -207,7 +207,8 @@ library LibVoting {
         bytes32 currentWinningMatch = votingStorage.voteIDToVoting[voteID].winningMatch;
 
         //we prevent updating if the final winning match did not change
-        if (currentWinningMatch != newWinningMatch) {
+        bool hasDifferentWinningMatch = currentWinningMatch != newWinningMatch;
+        if (hasDifferentWinningMatch) {
             votingStorage.voteIDToVoting[voteID].winningMatch = newWinningMatch;
 
             //We update winningMatches list
@@ -221,6 +222,8 @@ library LibVoting {
             votingStorage.workerVotes[worker][voteID] = voting.workerToMatchResult[worker];
             votingStorage.voteIDToVoting[voteID].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
         }
+
+        return hasDifferentWinningMatch;
     }
 
     function _startVotingSession(bytes32 voteID) internal {
