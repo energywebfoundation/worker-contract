@@ -39,7 +39,7 @@ class Worker {
   }
 
   async vote(input, output) {
-    await this.votingContract.vote(input, output);
+    return await this.votingContract.vote(input, output);
   }
 
   voteNotWinning(input, output) {
@@ -468,6 +468,30 @@ describe("VotingFacet", function () {
     await expect(
       votingContract.addWorker(workers[0].address)
     ).to.be.revertedWith("WorkerAlreadyAdded");
+  });
+
+  it('should emit winning event only once', async () => {
+    await setupVotingContract({
+      majorityPercentage: 30,
+      participatingWorkers: workers,
+    });
+
+    const events = (await Promise.all(workers.map(async worker => {
+      const tx = await worker.vote(timeframes[0].input, timeframes[0].output);
+      const receipt = await tx.wait();
+      return receipt.events;
+    }))).flat()
+    const winningEvents = events.filter(Boolean).filter(e => e.event === 'WinningMatch')
+
+    const replayEvents = (await Promise.all(workers.map(async worker => {
+      const tx = await worker.vote(timeframes[0].input, timeframes[1].output);
+      const receipt = await tx.wait();
+      return receipt.events;
+    }))).flat()
+    const winningReplayEvents = replayEvents.filter(Boolean).filter(e => e.event === 'WinningMatch')
+
+    expect(winningEvents).to.have.length(1)
+    expect(winningReplayEvents).to.have.length(1)
   });
 
   it("consensus should not be reached when votes are divided evenly", async () => {
