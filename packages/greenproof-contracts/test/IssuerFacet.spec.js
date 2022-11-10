@@ -18,11 +18,13 @@ let VC;
 let leaves;
 let leaves2;
 let leaves3;
+let leaves4;
 let dataTree;
 let generator;
 let provider;
 let dataTree2;
 let dataTree3;
+let dataTree4;
 let grantRole;
 let revokeRole;
 let issuerFacet;
@@ -37,6 +39,7 @@ let proofManagerFacet;
 const volume = 42;
 const certificateID1 = 1;
 const certificateID2 = 2;
+const certificateID3 = 3;
 const tokenURI = "bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq";
 
 const data = [
@@ -94,6 +97,21 @@ const data3 = [
       volume: 10,
       consumerID: 51
     },
+];
+
+const data4 = [
+  {
+    id: 1,
+    generatorID: 2,
+    volume,
+    consumerID: 500
+  },
+  {
+    id: 2,
+    generatorID: 3,
+    volume: 21,
+    consumerID: 522
+  }
 ];
 
 describe('IssuerFacet', function() {
@@ -173,10 +191,12 @@ describe('IssuerFacet', function() {
     leaves = data.map(item => createPreciseProof(item).getHexRoot());
     leaves2 = data2.map(item => createPreciseProof(item).getHexRoot());
     leaves3 = data3.map(item => createPreciseProof(item).getHexRoot());
+    leaves4 = data4.map(item => createPreciseProof(item).getHexRoot());
 
     dataTree = createMerkleTree(leaves);
     dataTree2 = createMerkleTree(leaves2);
     dataTree3 = createMerkleTree(leaves3);
+    dataTree4 = createMerkleTree(leaves4);
   });
 
   beforeEach(async () => {
@@ -494,6 +514,37 @@ describe('IssuerFacet', function() {
 
       //The certificate should not be revocable anymore
       await expect(tx).to.be.revertedWith(`NonRevokableCertificate(${certificateID2}, ${issuanceDate}, ${issuanceDate + DEFAULT_REVOCABLE_PERIOD})`) //emit(proofManagerFacet, "ProofRevoked");
+    });
+
+    it('allows to reissue revoked certificate', async () => {
+      await grantRole(revoker, revokerRole);
+
+      const inputHash = '0x' + hash(stringify(data4)).toString('hex');
+
+      const matchResultProof = dataTree.getHexProof(leaves4[0]);
+
+      const volumeTree = createPreciseProof(data4[0]);
+      const volumeLeaf = hash('volume' + JSON.stringify(volume));
+      const volumeProof = volumeTree.getHexProof(volumeLeaf);
+      const volumeRootHash = volumeTree.getHexRoot();
+
+      await expect(
+        issuerFacet
+          .connect(issuer)
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data4[0].volume, volumeProof, tokenURI),
+      )
+
+      await expect(
+        issuerFacet
+          .connect(issuer)
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data4[0].volume, volumeProof, tokenURI),
+      ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`);
+
+      await proofManagerFacet.connect(revoker).revokeProof(certificateID3);
+
+      await issuerFacet
+        .connect(issuer)
+        .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data4[0].volume, volumeProof, tokenURI);
     });
   });
 
