@@ -81,6 +81,20 @@ describe('VotingFacet', function() {
     expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
   });
 
+  it('should emit winning event only once', async () => {
+    await setupVotingContract({
+      majorityPercentage: 0,
+      participatingWorkers: [workers[0], workers[1]],
+    });
+
+    await workers[0].voteWinning(timeframes[0].input, timeframes[0].output, { voteCount: 1 });
+    await workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
+
+    expect(await workers[0].getVote(timeframes[0].input)).to.equal(timeframes[0].output);
+    expect(await workers[1].getVote(timeframes[0].input)).to.equal(timeframes[0].output);
+    expect(await votingContract.getMatch(timeframes[0].input)).to.equal(timeframes[0].output);
+  });
+
   it('should not reveal workers vote before the end of vote', async () => {
     await setupVotingContract({
       majorityPercentage: 100,
@@ -558,12 +572,12 @@ describe('VotingFacet', function() {
         });
 
         const diamondContract = await ethers.getContractAt('Diamond', diamondAddress);
-        const tx = await diamondContract.setRewardsEnabled(true, { gasPrice: 10_000_000});
+        const tx = await diamondContract.setRewardsEnabled(true, { gasPrice: 10_000_000 });
         await tx.wait();
 
         await workers[0].voteNotWinning(timeframes[1].input, timeframes[0].output);
         await expectToReceiveReward({
-          winners: [workers[0],workers[1]],
+          winners: [workers[0], workers[1]],
           possiblePayouts: 2,
           operation: () => workers[1].voteWinning(timeframes[1].input, timeframes[0].output, { voteCount: 2 }),
         });
@@ -621,14 +635,20 @@ describe('VotingFacet', function() {
     }));
   };
 
-  const setupVotingContract = async ({ majorityPercentage, participatingWorkers, rewardPool, reward, rewardsEnabled } = {}) => {
+  const setupVotingContract = async ({
+                                       majorityPercentage,
+                                       participatingWorkers,
+                                       rewardPool,
+                                       reward,
+                                       rewardsEnabled,
+                                     } = {}) => {
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: mockClaimManager.address,
       claimRevokerAddress: mockClaimRevoker.address,
       roles,
       majorityPercentage,
       rewardAmount: reward,
-      rewardsEnabled
+      rewardsEnabled,
     }));
     votingContract = await ethers.getContractAt('VotingFacet', diamondAddress);
     workers.forEach(w => w.setVotingContract(votingContract));
