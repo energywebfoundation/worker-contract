@@ -50,6 +50,12 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         proof = issuer.certificates[certificateID];
     }
 
+    function getProofIdByDataHash(bytes32 dataHash) external view override returns (uint256 proofId) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        return issuer.dataToCertificateID[dataHash];
+    }
+
     function getProofsOf(address userAddress) external view override returns (IGreenProof.Certificate[] memory) {
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         require(userTokenList.length != 0, "No proofs for this address");

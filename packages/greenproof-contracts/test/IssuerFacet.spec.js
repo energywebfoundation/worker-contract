@@ -18,6 +18,8 @@ const { timeTravel } = require("./utils/time.utils");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 const { getMerkleProof } = require("./utils/merkleProof.utils");
+const { generateProofData } = require('./utils/issuer.utils');
+const { BigNumber } = require('ethers');
 chai.use(solidity);
 
 const { issuerRole, revokerRole, workerRole } = roles;
@@ -26,13 +28,11 @@ let VC;
 let leaves;
 let leaves2;
 let leaves3;
-let leaves4;
 let dataTree;
 let generator;
 let provider;
 let dataTree2;
 let dataTree3;
-let dataTree4;
 let grantRole;
 let revokeRole;
 let issuerFacet;
@@ -47,7 +47,6 @@ let proofManagerFacet;
 const volume = 42;
 const certificateID1 = 1;
 const certificateID2 = 2;
-const certificateID3 = 3;
 const tokenURI = "bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq";
 
 const data = [
@@ -105,21 +104,6 @@ const data3 = [
     volume: 10,
     consumerID: 51,
   },
-];
-
-const data4 = [
-  {
-    id: 1,
-    generatorID: 2,
-    volume,
-    consumerID: 500
-  },
-  {
-    id: 2,
-    generatorID: 3,
-    volume: 21,
-    consumerID: 522
-  }
 ];
 
 describe("IssuerFacet", function() {
@@ -195,12 +179,14 @@ describe("IssuerFacet", function() {
     leaves = data.map(item => createPreciseProof(item).getHexRoot());
     leaves2 = data2.map(item => createPreciseProof(item).getHexRoot());
     leaves3 = data3.map(item => createPreciseProof(item).getHexRoot());
-    leaves4 = data4.map(item => createPreciseProof(item).getHexRoot());
 
     dataTree = createMerkleTree(leaves);
     dataTree2 = createMerkleTree(leaves2);
     dataTree3 = createMerkleTree(leaves3);
-    dataTree4 = createMerkleTree(leaves4);
+
+    // TODO: contract and roles should be probably set up before each test
+    await prepareRoles();
+    await addWorkers();
   });
 
   beforeEach(async () => {
@@ -210,6 +196,18 @@ describe("IssuerFacet", function() {
   afterEach(async () => {
     console.log("\t----------");
   });
+
+  const addWorkers = async () => {
+    await votingFacet.connect(owner).addWorker(worker1.address);
+    await votingFacet.connect(owner).addWorker(worker2.address);
+  };
+
+  const prepareRoles = async () => {
+    await grantRole(worker1, workerRole);
+    await grantRole(worker2, workerRole);
+    await grantRole(revoker, revokerRole);
+    await grantRole(issuer, issuerRole);
+  };
 
   describe("\n** Proof issuance tests **\n", () => {
     it("checks that the certified generation volume is zero before minting", async () => {
@@ -224,13 +222,6 @@ describe("IssuerFacet", function() {
 
     it("shoudl reject proof issuance requests if generator is the zero address", async () => {
       await grantRole(issuer, issuerRole);
-
-      //1 - Run the voting process with a consensus
-      await grantRole(worker1, workerRole);
-      await grantRole(worker2, workerRole);
-
-      await votingFacet.connect(owner).addWorker(worker1.address);
-      await votingFacet.connect(owner).addWorker(worker2.address);
 
       const inputHash = "0x" + hash(stringify(data)).toString("hex");
 
@@ -265,13 +256,6 @@ describe("IssuerFacet", function() {
 
     it("Authorized issuers can send proof issuance requests", async () => {
       await grantRole(issuer, issuerRole);
-
-      //1 - Run the voting process with a consensus
-      // await grantRole(worker1, workerRole);
-      // await grantRole(worker2, workerRole);
-
-      // await votingFacet.connect(owner).addWorker(worker1.address);
-      // await votingFacet.connect(owner).addWorker(worker2.address);
 
       const inputHash = "0x" + hash(stringify(data)).toString("hex");
 
@@ -683,33 +667,49 @@ describe("IssuerFacet", function() {
 
     it('allows to reissue revoked certificate', async () => {
       await grantRole(revoker, revokerRole);
+      const {
+        inputHash, volumeRootHash, matchResultProof, volume, volumeProof, matchResult,
+      } = generateProofData();
 
-      const inputHash = '0x' + hash(stringify(data4)).toString('hex');
-
-      const matchResultProof = dataTree.getHexProof(leaves4[0]);
-
-      const volumeTree = createPreciseProof(data4[0]);
-      const volumeLeaf = hash('volume' + JSON.stringify(volume));
-      const volumeProof = volumeTree.getHexProof(volumeLeaf);
-      const volumeRootHash = volumeTree.getHexRoot();
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
 
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data4[0].volume, volumeProof, tokenURI),
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI),
       )
 
+      const certificateId = await proofManagerFacet.connect(revoker).getProofIdByDataHash(volumeRootHash);
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data4[0].volume, volumeProof, tokenURI),
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI),
       ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`);
 
-      await proofManagerFacet.connect(revoker).revokeProof(certificateID3);
+      await proofManagerFacet.connect(revoker).revokeProof(certificateId);
 
       await issuerFacet
         .connect(issuer)
-        .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, data4[0].volume, volumeProof, tokenURI);
+        .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI);
+    });
+
+    it('allows to get proof ID by data hash', async () => {
+      const {
+        inputHash, volumeRootHash, matchResultProof, volume, volumeProof, matchResult
+      } = generateProofData();
+      await votingFacet.connect(worker1).vote(inputHash, matchResult);
+      await votingFacet.connect(worker2).vote(inputHash, matchResult);
+
+      await expect(
+        issuerFacet
+          .connect(issuer)
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI),
+      ).to.emit(issuerFacet, "ProofMinted")
+
+      const certificateId = await proofManagerFacet.connect(issuer).getProofIdByDataHash(volumeRootHash);
+
+      expect(BigNumber.from(certificateId).toNumber()).to.be.gt(0)
     });
   });
 
