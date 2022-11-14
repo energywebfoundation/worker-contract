@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IReward} from "../interfaces/IReward.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
-import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 /**
@@ -33,6 +33,11 @@ contract VotingFacet is IVoting, IReward {
 
     modifier onlyEnrolledWorkers(address operator) {
         require(operator.isEnrolledWorker(), "Access denied: not enrolled as worker");
+        _;
+    }
+
+    modifier onlyOwner() {
+        require(OwnableStorage.layout().owner == msg.sender, "Greenproof: Voting facet: Only owner allowed");
         _;
     }
 
@@ -65,11 +70,12 @@ contract VotingFacet is IVoting, IReward {
             if (shouldUpdateVote) {
                 //We update the voting results
                 voting._updateWorkersVote();
+                (bool differentWinningMatch) = voting._updateVoteResult(newWinningMatch, newVoteCount);
                 voting._revealWinners();
 
-                voting._updateVoteResult(newWinningMatch, newVoteCount);
-
-                emit WinningMatch(voteID, newWinningMatch, newVoteCount);
+                if(differentWinningMatch) {
+                    emit WinningMatch(voteID, newWinningMatch, newVoteCount);
+                }
 
                 LibVoting._reward(votingStorage.winnersList[voteID]);
             }
@@ -129,9 +135,7 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Cancels votings that takes longer than time limit
      */
-    function cancelExpiredVotings() external override {
-        //AccessControl
-        LibDiamond.enforceIsContractOwner();
+    function cancelExpiredVotings() external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         for (uint256 i = 0; i < votingStorage.voteIDs.length; i++) {
@@ -159,13 +163,10 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.numberOfWorkers;
     }
 
-    function getWorkers() external view override returns (address[] memory _workers) {
+    function getWorkers() external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        for (uint256 i = 0; i < votingStorage.workers.length; i++) {
-            _workers[i] = address(votingStorage.workers[i]);
-        }
-        return _workers;
+        return votingStorage.workers;
     }
 
     /**
@@ -206,7 +207,7 @@ contract VotingFacet is IVoting, IReward {
 
         emit Replenished(msg.value);
 
-        if (rewardStorage.rewardQueue.length > 0) {
+        if (rewardStorage.rewardsEnabled && rewardStorage.rewardQueue.length > 0) {
             LibReward.payReward();
         }
     }

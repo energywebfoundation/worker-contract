@@ -76,8 +76,13 @@ library LibIssuer {
 
     function _isCertified(bytes32 _data) internal view returns (bool) {
         IssuerStorage storage issuer = _getStorage();
+        uint256 certificateId = issuer.dataToCertificateID[_data];
 
-        return issuer.dataToCertificateID[_data] != 0;
+        if(certificateId == 0) {
+            return false;
+        }
+
+        return !issuer.certificates[certificateId].isRevoked;
     }
 
     function _getCertificate(uint256 certificateID, uint256 weiToIntBalance) internal view returns (IGreenProof.Certificate memory) {

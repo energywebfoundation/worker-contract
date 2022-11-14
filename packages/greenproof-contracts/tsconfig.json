@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "outDir": "scripts",
+    "baseUrl": "./deploy",
+    "declaration": true,
+    "skipLibCheck": true,
+    "noImplicitThis": false
+  },
+  "include": [
+    "./deploy"
+  ]
+}

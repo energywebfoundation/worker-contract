@@ -51,6 +51,7 @@ library LibVoting {
     struct VotingStorage {
         uint256 timeLimit; /* limit of duration of a voting session. The vote is considered expired after `votingStartDate` + `timeLimit` */
         uint256 numberOfWorkers; /* Number of workers taking part to vote. This will determine the consensus threshold  */
+        uint256 majorityPercentage; /* Percentage of workers that have to vote on the same result to reach the majority  */
         address payable[] workers; /* List of all whitelisted workers */
         bytes32[] voteIDs; /* List of all votes identifiers */
         mapping(address => uint256) workerToIndex; /* Quick access to a specific worker's index inside the `workers` whitelist */
@@ -101,10 +102,11 @@ library LibVoting {
     error WorkerWasNotAdded(address notWhitListedWorker);
 
     // initialize voting parameters at the diamond construction
-    function init(uint256 _timeLimit) internal {
+    function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
         VotingStorage storage _votingStorage = getStorage();
 
         _votingStorage.timeLimit = _timeLimit;
+        _votingStorage.majorityPercentage = _majorityPercentage;
     }
 
     /**
@@ -144,13 +146,14 @@ library LibVoting {
         voting.replayVoters.push(msg.sender);
         voting.workerToReplayedMatchResult[msg.sender] = matchResult;
         voting.numberOfReplayedVotes++;
+        voting.workerToVoted[msg.sender] = true;
 
         if (voting.replayedMatchResultToVoteCount[matchResult] == 0) {
             voting.replayedMatches.push(matchResult);
         }
         voting.replayedMatchResultToVoteCount[matchResult]++;
 
-        if (voting.replayedMatchResultToVoteCount[matchResult] >= _majority()) {
+        if (hasReachedMajorityAfterReplaying(voting, matchResult)) {
             voting.replayedWinningMatch = matchResult;
             shouldUpdateVoting = true;
             replayedWinningMatch = voting.replayedWinningMatch;
@@ -176,12 +179,12 @@ library LibVoting {
             voting.winningMatch = matchResult;
             voting.noConsensus = false;
 
-            if (voting.winningMatchVoteCount >= LibVoting._majority()) {
+            if (hasReachedMajority(voting, matchResult)) {
                 _endVotingSession(voting);
             }
         }
 
-        if (voting.numberOfVotes == getStorage().numberOfWorkers && (voting.winningMatchVoteCount < _majority())) {
+        if (voting.numberOfVotes == getStorage().numberOfWorkers && !hasReachedMajority(voting, matchResult)) {
             _endVotingSession(voting);
         }
     }
@@ -196,7 +199,7 @@ library LibVoting {
         Voting storage voting,
         bytes32 newWinningMatch,
         uint256 newVoteCount
-    ) internal {
+    ) internal returns (bool differentWinningMatch) {
         VotingStorage storage votingStorage = getStorage();
         bytes32 voteID = voting.voteID;
 
@@ -204,7 +207,8 @@ library LibVoting {
         bytes32 currentWinningMatch = votingStorage.voteIDToVoting[voteID].winningMatch;
 
         //we prevent updating if the final winning match did not change
-        if (currentWinningMatch != newWinningMatch) {
+        bool hasDifferentWinningMatch = currentWinningMatch != newWinningMatch;
+        if (hasDifferentWinningMatch) {
             votingStorage.voteIDToVoting[voteID].winningMatch = newWinningMatch;
 
             //We update winningMatches list
@@ -218,6 +222,8 @@ library LibVoting {
             votingStorage.workerVotes[worker][voteID] = voting.workerToMatchResult[worker];
             votingStorage.voteIDToVoting[voteID].workerToMatchResult[worker] = voting.workerToMatchResult[worker];
         }
+
+        return hasDifferentWinningMatch;
     }
 
     function _startVotingSession(bytes32 voteID) internal {
@@ -284,6 +290,10 @@ library LibVoting {
     function _reward(address payable[] memory winners) internal {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
 
+        if(!rs.rewardsEnabled) {
+            return;
+        }
+
         for (uint256 i = 0; i < winners.length; i++) {
             rs.rewardQueue.push(winners[i]);
         }
@@ -332,10 +342,24 @@ library LibVoting {
     }
 
     // @notice Number of votes sufficient to determine match winner
-    function _majority() internal view returns (uint256) {
+    function hasReachedMajority(Voting storage voting, bytes32 matchResult) internal view returns (bool) {
+        uint256 numberOfWinningVotes = voting.matchResultToVoteCount[matchResult];
+
+        return hasMajority(numberOfWinningVotes);
+    }
+
+    // @notice Number of votes sufficient to determine match winner
+    function hasReachedMajorityAfterReplaying(Voting storage voting, bytes32 matchResult) internal view returns (bool) {
+        uint256 numberOfWinningVotes = voting.replayedMatchResultToVoteCount[matchResult];
+
+        return hasMajority(numberOfWinningVotes);
+    }
+
+    // @notice Number of votes sufficient to determine match winner
+    function hasMajority(uint256 numberOfWinningVotes) internal view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
 
-        return (votingStorage.numberOfWorkers / 2) + 1;
+        return (100 * numberOfWinningVotes / votingStorage.numberOfWorkers) >= votingStorage.majorityPercentage;
     }
 
     function _isClosed(Voting storage vote) internal view returns (bool) {
