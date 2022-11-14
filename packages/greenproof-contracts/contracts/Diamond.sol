@@ -26,6 +26,7 @@ contract Diamond is SolidStateDiamond {
         uint256 rewardAmount;
         uint256 majorityPercentage;
         uint256 revocablePeriod;
+        bool rewardsEnabled;
     }
 
     constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
@@ -38,7 +39,7 @@ contract Diamond is SolidStateDiamond {
 
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
         LibIssuer.init(votingConfig.revocablePeriod);
-        LibReward.initRewards(votingConfig.rewardAmount);
+        LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         OwnableStorage.layout().owner = diamondConfig.contractOwner;
 
         LibClaimManager.init(rolesConfig.claimManagerAddress, rolesConfig.issuerRole, rolesConfig.revokerRole, rolesConfig.workerRole, rolesConfig.claimsRevocationRegistry);
@@ -59,5 +60,11 @@ contract Diamond is SolidStateDiamond {
 
     function updateWorkerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
         oldVersion = LibClaimManager.setWorkerVersion(newVersion);
+    }
+
+    function setRewardsEnabled(bool rewardsEnabled) external {
+        LibDiamond.enforceIsContractOwner();
+
+        LibReward.setRewardsEnabled(rewardsEnabled);
     }
 }

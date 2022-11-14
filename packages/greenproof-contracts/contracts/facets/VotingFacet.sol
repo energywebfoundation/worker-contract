@@ -207,7 +207,7 @@ contract VotingFacet is IVoting, IReward {
 
         emit Replenished(msg.value);
 
-        if (rewardStorage.rewardQueue.length > 0) {
+        if (rewardStorage.rewardsEnabled && rewardStorage.rewardQueue.length > 0) {
             LibReward.payReward();
         }
     }

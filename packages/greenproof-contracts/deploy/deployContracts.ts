@@ -5,6 +5,7 @@ import { config } from "dotenv";
 import { FacetCutAction, getSelectors } from "./libraries/diamond";
 import { BigNumber, Contract, ContractFactory } from "ethers";
 import { Diamond__factory } from '../src';
+import { Diamond__factory } from '../src';
 
 config();
 
@@ -34,6 +35,7 @@ type DeployDiamondOptions = {
   contractOwner?: string;
   revocablePeriod?: number;
   majorityPercentage?: number;
+  rewardsEnabled?: boolean;
   logger?: Logger;
 };
 
@@ -54,9 +56,9 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
     roles = {},
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
+    rewardsEnabled = true,
     facets = Object.values(Facet),
-    logger = () => {
-    },
+    logger = () => {},
   } = options;
   const deploy = createDeployer(logger);
   const {
@@ -77,6 +79,7 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
         rewardAmount,
         majorityPercentage,
         revocablePeriod,
+        rewardsEnabled,
       },
       {
         claimManagerAddress,
