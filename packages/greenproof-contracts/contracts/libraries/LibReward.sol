@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
+
 library LibReward {
     bytes32 constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
 
@@ -14,6 +16,11 @@ library LibReward {
         address payable[] rewardQueue;
     }
 
+    modifier onlyOwner() {
+        require(OwnableStorage.layout().owner == msg.sender, "Greenproof: LibReward facet: Must be contract owner");
+        _;
+    }
+
     function initRewards(uint256 _rewardAmount, bool _rewardsEnabled) internal {
         RewardStorage storage rs = getStorage();
 
@@ -21,7 +28,7 @@ library LibReward {
         rs.rewardsEnabled = _rewardsEnabled;
     }
 
-    function setRewardsEnabled(bool rewardsEnabled) internal {
+    function setRewardsEnabled(bool rewardsEnabled) internal onlyOwner {
         RewardStorage storage rs = getStorage();
 
         if(rs.rewardsEnabled != rewardsEnabled) {

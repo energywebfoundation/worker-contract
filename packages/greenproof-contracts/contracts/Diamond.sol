@@ -63,8 +63,6 @@ contract Diamond is SolidStateDiamond {
     }
 
     function setRewardsEnabled(bool rewardsEnabled) external {
-        LibDiamond.enforceIsContractOwner();
-
         LibReward.setRewardsEnabled(rewardsEnabled);
     }
 }

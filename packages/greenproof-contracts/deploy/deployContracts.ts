@@ -5,7 +5,6 @@ import { config } from "dotenv";
 import { FacetCutAction, getSelectors } from "./libraries/diamond";
 import { BigNumber, Contract, ContractFactory } from "ethers";
 import { Diamond__factory } from '../src';
-import { Diamond__factory } from '../src';
 
 config();
 
