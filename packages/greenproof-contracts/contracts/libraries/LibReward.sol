@@ -24,7 +24,9 @@ library LibReward {
     function setRewardsEnabled(bool rewardsEnabled) internal {
         RewardStorage storage rs = getStorage();
 
-        rs.rewardsEnabled = rewardsEnabled;
+        if(rs.rewardsEnabled != rewardsEnabled) {
+            rs.rewardsEnabled = rewardsEnabled;
+        }
     }
 
     function payReward() internal {
