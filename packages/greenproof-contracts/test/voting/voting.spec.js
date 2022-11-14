@@ -6,6 +6,7 @@ const { deployDiamond } = require("../../scripts/deploy/deployContracts");
 const { initMockClaimManager } = require("../utils/claimManager.utils");
 const { roles } = require("../utils/roles.utils");
 const { initMockClaimRevoker } = require("../utils/claimRevocation.utils");
+const { Worker } = require("../utils/worker.utils");
 const { permissionsTests } = require("./permissions");
 const { resultsTests } = require("./results");
 const { replayingTests } = require("./replaying");
@@ -14,74 +15,6 @@ const { consensusTests } = require("./consensus");
 
 const { workerRole } = roles;
 chai.use(solidity);
-
-class Worker {
-  static #workerIdCount = 0;
-  #workerId;
-
-  constructor(wallet) {
-    this.wallet = wallet;
-    this.address = wallet.address;
-    this.#workerId = Worker.#workerIdCount++;
-  }
-
-  getWorkerId() {
-    return this.#workerId;
-  }
-
-  resetWorkerIds() {
-    return (Worker.#workerId = 0);
-  }
-
-  setVotingContract(votingContract) {
-    this.votingContract = votingContract.connect(this.wallet);
-  }
-
-  async vote(input, output) {
-    return await this.votingContract.vote(input, output);
-  }
-
-  voteNotWinning(input, output) {
-    expect(this.votingContract.vote(input, output)).to.not.emit(
-      this.votingContract,
-      "WinningMatch"
-    );
-  }
-
-  voteNoConsensus(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, "NoConsensusReached")
-      .withArgs(input);
-  }
-
-  voteExpired(input, output) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, "VotingExpired")
-      .withArgs(input);
-  }
-
-  voteWinning(input, output, { voteCount, winningOutput }) {
-    expect(this.votingContract.vote(input, output))
-      .to.emit(this.votingContract, "WinningMatch")
-      .withArgs(input, winningOutput || output, voteCount);
-  }
-
-  voteNotWhitelisted(input, output) {
-    expect(this.votingContract.vote(input, output)).to.be.revertedWith(
-      "NotWhitelisted"
-    );
-  }
-
-  voteAlreadyVoted(input, output) {
-    expect(this.votingContract.vote(input, output)).to.be.revertedWith(
-      "AlreadyVoted()"
-    );
-  }
-
-  async getVote(input) {
-    return await this.votingContract.getWorkerVote(input, this.address);
-  }
-}
 
 describe("Voting", function () {
   let diamondAddress;
@@ -180,10 +113,7 @@ describe("Voting", function () {
         votingInput,
         worker.address
       );
-      expect(
-        workerVote,
-        `expected worker ${worker.getWorkerId()} to vote for ${vote}, but it was ${workerVote}`
-      ).to.equal(vote);
+      expect(workerVote).to.equal(vote);
     }
     expect(await votingContract.getWinners(votingInput)).to.deep.equal(winners);
   };
@@ -201,17 +131,29 @@ describe("Voting", function () {
   const setupVotingContract = async ({
     majorityPercentage,
     participatingWorkers,
+    rewardPool,
+    reward,
+    rewardsEnabled,
   } = {}) => {
     ({ diamondAddress } = await deployDiamond({
       claimManagerAddress: mockClaimManager.address,
       claimRevokerAddress: mockClaimRevoker.address,
       roles,
       majorityPercentage,
+      rewardAmount: reward,
+      rewardsEnabled,
     }));
     votingContract = await ethers.getContractAt("VotingFacet", diamondAddress);
     workers.forEach((w) => w.setVotingContract(votingContract));
 
+    if (rewardPool) {
+      await votingContract
+        .connect(faucet)
+        .replenishRewardPool({ value: rewardPool });
+    }
+
     await addWorkers(participatingWorkers || []);
+
     return { votingContract, diamondAddress };
   };
 });
