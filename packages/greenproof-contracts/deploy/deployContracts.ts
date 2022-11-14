@@ -71,7 +71,7 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
   const diamondInit = await deploy('DiamondInit');
   const diamond = await deploy('Diamond', (factory) => {
     const args: Parameters<Diamond__factory['deploy']> = [
-      { diamondCutFacet: diamondCutFacet.address, contractOwner },
+      { contractOwner },
       {
         votingTimeLimit,
         rewardAmount,

@@ -11,7 +11,6 @@ import {LibClaimManager} from "./libraries/LibClaimManager.sol";
 contract Diamond is SolidStateDiamond {
     struct DiamondConfig {
         address contractOwner;
-        address diamondCutFacet;
     }
 
     struct RolesConfig {
@@ -29,18 +28,7 @@ contract Diamond is SolidStateDiamond {
         uint256 revocablePeriod;
     }
 
-    constructor(
-        address owner,
-        uint256 votingTimeLimit,
-        uint256 rewardAmount,
-        address claimManagerAddress,
-        uint256 majorityPercentage,
-        bytes32 issuerRole,
-        bytes32 revokerRole,
-        bytes32 workerRole,
-        uint256 revocablePeriod,
-        address claimsRevocationRegistry
-    ) payable {
+    constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
         require(votingConfig.rewardAmount > 0, "init: Null reward amount");
         require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
         require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
@@ -51,7 +39,7 @@ contract Diamond is SolidStateDiamond {
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
         LibIssuer.init(votingConfig.revocablePeriod);
         LibReward.initRewards(votingConfig.rewardAmount);
-        OwnableStorage.layout().owner = owner;
+        OwnableStorage.layout().owner = diamondConfig.contractOwner;
 
         LibClaimManager.init(rolesConfig.claimManagerAddress, rolesConfig.issuerRole, rolesConfig.revokerRole, rolesConfig.workerRole, rolesConfig.claimsRevocationRegistry);
     }
