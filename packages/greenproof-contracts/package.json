@@ -11,7 +11,7 @@
 		"compile": "npx hardhat compile",
 		"build": "yarn compile && tsc",
 		"issuer:test": "yarn build && npx hardhat test test/IssuerFacet.spec.js",
-		"voting:test": "yarn build && npx hardhat test test/votingFacet.spec.js",
+		"voting:test": "yarn build && npx hardhat test test/voting.spec.js",
 		"diamond:test": "yarn build && npx hardhat test test/diamondTest.js"
 	},
 	"repository": {
