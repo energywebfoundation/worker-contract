@@ -106,7 +106,7 @@ const data3 = [
   },
 ];
 
-describe("IssuerFacet", function() {
+describe.only("IssuerFacet", function() {
   let owner;
   let issuer;
   let minter;
@@ -221,8 +221,6 @@ describe("IssuerFacet", function() {
     });
 
     it("shoudl reject proof issuance requests if generator is the zero address", async () => {
-      await grantRole(issuer, issuerRole);
-
       const inputHash = "0x" + hash(stringify(data)).toString("hex");
 
       const matchResult = dataTree.getHexRoot();
@@ -255,8 +253,6 @@ describe("IssuerFacet", function() {
     });
 
     it("Authorized issuers can send proof issuance requests", async () => {
-      await grantRole(issuer, issuerRole);
-
       const inputHash = "0x" + hash(stringify(data)).toString("hex");
 
       const matchResult = dataTree.getHexRoot();
@@ -477,8 +473,6 @@ describe("IssuerFacet", function() {
     });
 
     it("should prevent revocation of non existing certificates", async () => {
-      await grantRole(revoker, revokerRole);
-
       const nonExistingCertificateID = 100;
       await expect(
         proofManagerFacet.connect(revoker).revokeProof(nonExistingCertificateID)
@@ -488,14 +482,13 @@ describe("IssuerFacet", function() {
     });
 
     it("should reverts if a non authorized entity tries to revoke a non retired proof", async () => {
-      await revokeRole(revoker, revokerRole);
+      await revokeRole(nonAuthorizedOperator, revokerRole);
       await expect(
-        proofManagerFacet.connect(revoker).revokeProof(certificateID1)
+        proofManagerFacet.connect(nonAuthorizedOperator).revokeProof(certificateID1)
       ).to.be.revertedWith("Access: Not enrolled as revoker");
     });
 
     it("should allow an authorized entity to revoke a non retired proof", async () => {
-      await grantRole(revoker, revokerRole);
       await expect(
         proofManagerFacet.connect(revoker).revokeProof(certificateID1)
       ).to.emit(proofManagerFacet, "ProofRevoked");
@@ -546,7 +539,6 @@ describe("IssuerFacet", function() {
     });
 
     it("should prevent dupplicate revocation", async () => {
-      await grantRole(revoker, revokerRole);
       await expect(
         proofManagerFacet.connect(revoker).revokeProof(certificateID1)
       ).to.be.revertedWith("already revoked proof");
@@ -560,12 +552,6 @@ describe("IssuerFacet", function() {
 
     it("should allow claiming proofs", async () => {
       let tx;
-
-      await grantRole(issuer, issuerRole);
-
-      //1 - Run the voting process with a consensus
-      await grantRole(worker1, workerRole);
-      await grantRole(worker2, workerRole);
 
       const inputHash = "0x" + hash(stringify(data3)).toString("hex");
 
@@ -653,7 +639,6 @@ describe("IssuerFacet", function() {
 
       //forward time to reach end of revocable period
       await timeTravel(DEFAULT_REVOCABLE_PERIOD);
-      await grantRole(revoker, revokerRole);
 
       tx = proofManagerFacet.connect(revoker).revokeProof(certificateID2);
 
@@ -666,7 +651,6 @@ describe("IssuerFacet", function() {
     });
 
     it('allows to reissue revoked certificate', async () => {
-      await grantRole(revoker, revokerRole);
       const {
         inputHash, volumeRootHash, matchResultProof, volume, volumeProof, matchResult,
       } = generateProofData();
@@ -803,8 +787,6 @@ describe("IssuerFacet", function() {
     });
 
     it("should allow authorized user to disclose data", async () => {
-      await grantRole(issuer, issuerRole);
-
       const key = "consumerID";
       const value = "500";
 
@@ -819,8 +801,6 @@ describe("IssuerFacet", function() {
     });
 
     it("should revert when one tries to disclose not verified data", async () => {
-      await grantRole(issuer, issuerRole);
-
       const wrongKey = "NotExistingKey";
       const value = "500";
 
