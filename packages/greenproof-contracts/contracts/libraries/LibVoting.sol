@@ -287,6 +287,10 @@ library LibVoting {
     function _reward(address payable[] memory winners) internal {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
 
+        if(!rs.rewardsEnabled) {
+            return;
+        }
+
         for (uint256 i = 0; i < winners.length; i++) {
             rs.rewardQueue.push(winners[i]);
         }

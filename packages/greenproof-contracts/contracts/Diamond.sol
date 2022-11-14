@@ -35,10 +35,10 @@ contract Diamond {
         uint256 rewardAmount;
         uint256 majorityPercentage;
         uint256 revocablePeriod;
+        bool rewardsEnabled;
     }
 
     constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
-        require(votingConfig.rewardAmount > 0, "init: Null reward amount");
         require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
         require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
         require(votingConfig.revocablePeriod > 0, "init: Invalid revocable period");
@@ -46,14 +46,14 @@ contract Diamond {
         require(votingConfig.majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
         LibIssuer.init(votingConfig.revocablePeriod);
-        LibReward.initRewards(votingConfig.rewardAmount);
+        LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         LibDiamond.setContractOwner(diamondConfig.contractOwner);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors = new bytes4[](1);
         functionSelectors[0] = IDiamondCut.diamondCut.selector;
-        cut[0] = IDiamondCut.FacetCut({facetAddress : diamondConfig.diamondCutFacet, action : IDiamondCut.FacetCutAction.Add, functionSelectors : functionSelectors});
+        cut[0] = IDiamondCut.FacetCut({facetAddress: diamondConfig.diamondCutFacet, action: IDiamondCut.FacetCutAction.Add, functionSelectors: functionSelectors});
         LibDiamond.diamondCut(cut, address(0), "");
 
         //Set ClaimManager properties
@@ -75,6 +75,12 @@ contract Diamond {
 
     function updateWorkerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
         oldVersion = LibClaimManager.setWorkerVersion(newVersion);
+    }
+
+    function setRewardsEnabled(bool rewardsEnabled) external {
+        LibDiamond.enforceIsContractOwner();
+
+        LibReward.setRewardsEnabled(rewardsEnabled);
     }
 
     // Find facet for function that is called and execute the
@@ -103,7 +109,7 @@ contract Diamond {
                 revert(0, returndatasize())
             }
             default {
-                return(0, returndatasize())
+                return (0, returndatasize())
             }
         }
     }
