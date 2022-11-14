@@ -27,6 +27,6 @@
     "@commitlint/config-conventional": "16.2.4",
     "hardhat": "^2.10.0",
     "husky": "8.0.1",
-    "multi-semantic-release": "2.13.0"
+    "multi-semantic-release": "3.0.1"
   }
 }
