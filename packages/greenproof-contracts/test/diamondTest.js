@@ -80,19 +80,6 @@ describe("DiamondTest", async function () {
       ).to.be.revertedWith("init: Invalid claimsRevocationRegistry");
     });
 
-    it("should revert if rewardAmount is to 0", async () => {
-      const zeroRewardAmount = BigNumber.from(0);
-
-      await expect(
-        deployDiamond({
-          rewardAmount: zeroRewardAmount,
-          claimManagerAddress: claimManagerMocked.address,
-          claimRevokerAddress: claimsRevocationRegistryMocked.address,
-          roles,
-        })
-      ).to.be.revertedWith("init: Null reward amount");
-    });
-
     it("should revert if revocable Period is 0", async () => {
       const zeroRevocablePeriod = 0;
       const contractOwner = (await ethers.getSigners())[0];
