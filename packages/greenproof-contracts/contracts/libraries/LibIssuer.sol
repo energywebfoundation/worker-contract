@@ -108,7 +108,7 @@ library LibIssuer {
     }
 
     function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
-        string memory volumeString = UintUtils.toString(volume);
+        string memory volumeString = UintUtils.toString(volume / 1 ether);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }
 }
