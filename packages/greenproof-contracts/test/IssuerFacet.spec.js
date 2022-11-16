@@ -44,7 +44,7 @@ let testCounter = 0;
 let lastTokenID = 0;
 let proofManagerFacet;
 
-const volume = 42;
+const volume = parseEther('42');
 const certificateID1 = 1;
 const certificateID2 = 2;
 const tokenURI = "bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq";
@@ -59,7 +59,7 @@ const data = [
   {
     id: 2,
     generatorID: 3,
-    volume: 21,
+    volume: parseEther('21'),
     consumerID: 522,
   },
 ];
@@ -68,19 +68,19 @@ const data2 = [
   {
     id: 3,
     generatorID: 4,
-    volume: 10,
+    volume: parseEther('10'),
     consumerID: 52,
   },
   {
     id: 4,
     generatorID: 5,
-    volume: 10,
+    volume: parseEther('10'),
     consumerID: 53,
   },
   {
     id: 5,
     generatorID: 5,
-    volume: 10,
+    volume: parseEther('10'),
     consumerID: 51,
   },
 ];
@@ -89,7 +89,7 @@ const data3 = [
   {
     id: 3,
     generatorID: 4,
-    volume: 10,
+    volume: parseEther('10'),
     consumerID: 52,
   },
   {
@@ -101,12 +101,12 @@ const data3 = [
   {
     id: 5,
     generatorID: 5,
-    volume: 10,
+    volume: parseEther('10'),
     consumerID: 51,
   },
 ];
 
-describe.only("IssuerFacet", function() {
+describe("IssuerFacet", function() {
   let owner;
   let issuer;
   let minter;
@@ -703,31 +703,31 @@ describe.only("IssuerFacet", function() {
         {
           id: 1,
           generatorID: 2,
-          volume: 10,
+          volume: parseEther('10'),
           consumerID: 500,
         },
         {
           id: 2,
           generatorID: 3,
-          volume: 10,
+          volume: parseEther('10'),
           consumerID: 522,
         },
         {
           id: 3,
           generatorID: 4,
-          volume: 10,
+          volume: parseEther('10'),
           consumerID: 52,
         },
         {
           id: 4,
           generatorID: 5,
-          volume: 10,
+          volume: parseEther('10'),
           consumerID: 53,
         },
         {
           id: 5,
           generatorID: 5,
-          volume: 10,
+          volume: parseEther('10'),
           consumerID: 51,
         },
       ];
