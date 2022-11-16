@@ -85,7 +85,7 @@ library LibIssuer {
         return !issuer.certificates[certificateId].isRevoked;
     }
 
-    function _getCertificate(uint256 certificateID, uint256 weiToIntBalance) internal view returns (IGreenProof.Certificate memory) {
+    function _getCertificate(uint256 certificateID, uint256 volume) internal view returns (IGreenProof.Certificate memory) {
         IssuerStorage storage issuer = _getStorage();
 
         return
@@ -93,7 +93,7 @@ library LibIssuer {
                 isRevoked: issuer.certificates[certificateID].isRevoked,
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
-                volume: weiToIntBalance,
+                volume: volume,
                 merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
                 generator: issuer.certificates[certificateID].generator
             });
