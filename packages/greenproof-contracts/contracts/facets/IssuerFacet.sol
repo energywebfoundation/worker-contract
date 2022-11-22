@@ -66,10 +66,10 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
         LibIssuer._incrementProofIndex();
         LibIssuer._registerProof(dataHash, generator, amount, issuer.latestCertificateId, voteID);
-
-        _mint(generator, issuer.latestCertificateId, amount, "");
+        uint256 amountInWei = amount * 1 ether;
+        _mint(generator, issuer.latestCertificateId, amountInWei, "");
         _setTokenURI(issuer.latestCertificateId, tokenUri);
-        emit LibIssuer.ProofMinted(issuer.latestCertificateId, amount, generator);
+        emit LibIssuer.ProofMinted(issuer.latestCertificateId, amountInWei, generator);
     }
 
     /**

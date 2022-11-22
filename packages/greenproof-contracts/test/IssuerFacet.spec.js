@@ -106,7 +106,7 @@ const data3 = [
   },
 ];
 
-describe("IssuerFacet", function() {
+describe.only("IssuerFacet", function() {
   let owner;
   let issuer;
   let minter;
@@ -245,7 +245,7 @@ describe("IssuerFacet", function() {
             ethers.constants.AddressZero,
             volumeRootHash,
             matchResultProof,
-            parseEther(data[0].volume.toString()),
+            data[0].volume,
             volumeProof,
             tokenURI
           )
@@ -279,7 +279,7 @@ describe("IssuerFacet", function() {
             generatorAddress,
             volumeRootHash,
             matchResultProof,
-            parseEther(data[0].volume.toString()),
+            data[0].volume,
             volumeProof,
             tokenURI
           )
@@ -306,7 +306,7 @@ describe("IssuerFacet", function() {
             generatorAddress,
             volumeRootHash,
             matchResultProof,
-            parseEther(data[0].volume.toString()),
+            data[0].volume,
             volumeProof,
             tokenURI
           )
@@ -454,7 +454,7 @@ describe("IssuerFacet", function() {
             generatorAddress,
             volumeRootHash,
             matchResultProof,
-            parseEther(data2[0].volume.toString()),
+            data2[0].volume,
             volumeProof,
             tokenURI
           )
@@ -578,7 +578,7 @@ describe("IssuerFacet", function() {
             generatorAddress,
             volumeRootHash,
             matchResultProof,
-            parseEther(data3[1].volume.toString()),
+            data3[1].volume,
             volumeProof,
             tokenURI
           )
@@ -661,21 +661,21 @@ describe("IssuerFacet", function() {
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI),
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI),
       )
 
       const certificateId = await proofManagerFacet.connect(revoker).getProofIdByDataHash(volumeRootHash);
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI),
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI),
       ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`);
 
       await proofManagerFacet.connect(revoker).revokeProof(certificateId);
 
       await issuerFacet
         .connect(issuer)
-        .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI);
+        .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI);
     });
 
     it('allows to get proof ID by data hash', async () => {
@@ -688,7 +688,7 @@ describe("IssuerFacet", function() {
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI),
+          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, volume, volumeProof, tokenURI),
       ).to.emit(issuerFacet, "ProofMinted")
 
       const certificateId = await proofManagerFacet.connect(issuer).getProofIdByDataHash(volumeRootHash);

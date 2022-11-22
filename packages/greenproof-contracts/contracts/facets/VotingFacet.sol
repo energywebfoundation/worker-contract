@@ -7,6 +7,7 @@ import {IReward} from "../interfaces/IReward.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
+import {LibReplayVoting} from "../libraries/LibReplayVoting.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 /**
@@ -16,6 +17,8 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
 contract VotingFacet is IVoting, IReward {
+    bool _isReplayingEnabled;
+
     /**
      * @notice Allowing direct calls on LibVoting's functions for address type.
      * @dev This improves code readability by writing `address.isWorker()` and `address.isNotWorker()`
@@ -24,12 +27,15 @@ contract VotingFacet is IVoting, IReward {
     using LibVoting for address;
     using LibClaimManager for address;
 
+    error ReplayingIsNotEnabled();
+
     /**
      * @notice Allowing direct calls on LibVoting's functions for Voting type.
      * @dev This improves code readability by writing voting.isExpired() or voting.cancelVoting()
      * Instead of LibVoting.isExpired(voting) or LibVoting.cancelVoting(voting) respectively
      */
     using LibVoting for LibVoting.Voting;
+    using LibReplayVoting for LibVoting.Voting;
 
     modifier onlyEnrolledWorkers(address operator) {
         require(operator.isEnrolledWorker(), "Access denied: not enrolled as worker");
@@ -53,38 +59,47 @@ contract VotingFacet is IVoting, IReward {
         }
 
         LibVoting.Voting storage voting = LibVoting._getVote(voteID);
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        if (voting._isCompleted()) {
+            revert LibVoting.VotingCompleted();
+        }
+
+        if (voting._hasNotStarted()) {
+            LibVoting._startVotingSession(voteID);
+        }
+
+        // LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         if (voting._isExpired()) {
             voting._resetVotingSession();
         }
 
-        if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
-            // we prevent wasting computation if the vote is the same as the previous one
-            if (votingStorage.workerVotes[msg.sender][voteID] == matchResult) {
+        if (!msg.sender._hasAlreadyVoted(voting)) {
+            voting._recordVote(matchResult);
+        } else {
+            if (!_isReplayingEnabled) {
+                revert ReplayingIsNotEnabled();
+            }
+
+            // skip replaying if worker mistakenly replays with same match result
+            // if (votingStorage.workerVotes[msg.sender][voteID] == matchResult) {
+            if (voting.workerToMatchResult[msg.sender] == matchResult) {
                 return;
             }
 
-            (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchResult);
-
-            if (shouldUpdateVote) {
+            LibVoting.Voting storage replayedVoting = voting._replayVote(matchResult);
+            if (replayedVoting.status == LibVoting.Status.Completed) {
                 //We update the voting results
-                voting._updateWorkersVote();
-                (bool differentWinningMatch) = voting._updateVoteResult(newWinningMatch, newVoteCount);
-                voting._revealWinners();
+                // voting._replaceOriginalVotesWithRelayed();
+                // bool differentWinningMatch = voting._updateVoteResult(newWinningMatch, newVoteCount);
+                // voting._revealWinners();
 
-                if(differentWinningMatch) {
-                    emit WinningMatch(voteID, newWinningMatch, newVoteCount);
-                }
+                // if (differentWinningMatch) {
+                //     emit WinningMatch(voteID, newWinningMatch, newVoteCount);
+                // }
 
-                LibVoting._reward(votingStorage.winnersList[voteID]);
+                // LibVoting._reward(votingStorage.winnersList[voteID]);
+                voting._replayVoting();
             }
-        } else {
-            if (voting._hasNotStarted()) {
-                LibVoting._startVotingSession(voteID);
-            }
-
-            voting._recordVote(matchResult);
         }
     }
 

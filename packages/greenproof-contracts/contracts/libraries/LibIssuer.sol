@@ -85,7 +85,7 @@ library LibIssuer {
         return !issuer.certificates[certificateId].isRevoked;
     }
 
-    function _getCertificate(uint256 certificateID, uint256 volume) internal view returns (IGreenProof.Certificate memory) {
+    function _getCertificate(uint256 certificateID, uint256 weiToIntBalance) internal view returns (IGreenProof.Certificate memory) {
         IssuerStorage storage issuer = _getStorage();
 
         return
@@ -93,7 +93,7 @@ library LibIssuer {
                 isRevoked: issuer.certificates[certificateID].isRevoked,
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
-                volume: volume,
+                volume: weiToIntBalance,
                 merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
                 generator: issuer.certificates[certificateID].generator
             });
@@ -108,7 +108,7 @@ library LibIssuer {
     }
 
     function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
-        string memory volumeString = UintUtils.toString(volume / 1 ether);
+        string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }
 }

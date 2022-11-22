@@ -38,7 +38,7 @@
     "rxjs": "7.5.6"
   },
   "devDependencies": {
-    "@energyweb/greenproof-contracts": "1.0.5",
+    "@energyweb/greenproof-contracts": "1.0.4",
     "@leocode/eslint-config": "2.0.0",
     "@nestjs/cli": "9.1.2",
     "@nestjs/schematics": "9.0.3",
