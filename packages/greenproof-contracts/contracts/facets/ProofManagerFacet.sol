@@ -63,7 +63,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
         for (uint256 i = 0; i < userTokenList.length; i++) {
             uint256 currentTokenID = userTokenList[i];
-            uint256 volume = _balanceOf(userAddress, currentTokenID);
+            uint256 volume = _balanceOf(userAddress, currentTokenID) / 10**18;
             userProofs[i] = LibIssuer._getCertificate(currentTokenID, volume);
         }
 
