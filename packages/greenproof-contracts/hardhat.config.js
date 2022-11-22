@@ -54,7 +54,7 @@ module.exports = {
   gasReporter: {
     currency: 'USD',
     gasPrice: 21,
-    enabled: true,
+    enabled: false,
     coinmarketcap: process.env.COIN_MARKET_CAP_API,
     token: "EWT"
   },
