@@ -18,8 +18,8 @@ const { timeTravel } = require("./utils/time.utils");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 const { getMerkleProof } = require("./utils/merkleProof.utils");
-const { generateProofData } = require('./utils/issuer.utils');
-const { BigNumber } = require('ethers');
+const { generateProofData } = require("./utils/issuer.utils");
+const { BigNumber } = require("ethers");
 chai.use(solidity);
 
 const { issuerRole, revokerRole, workerRole } = roles;
@@ -106,7 +106,7 @@ const data3 = [
   },
 ];
 
-describe("IssuerFacet", function() {
+describe("IssuerFacet", function () {
   let owner;
   let issuer;
   let minter;
@@ -176,9 +176,9 @@ describe("IssuerFacet", function() {
 
     generatorAddress = generator.address;
 
-    leaves = data.map(item => createPreciseProof(item).getHexRoot());
-    leaves2 = data2.map(item => createPreciseProof(item).getHexRoot());
-    leaves3 = data3.map(item => createPreciseProof(item).getHexRoot());
+    leaves = data.map((item) => createPreciseProof(item).getHexRoot());
+    leaves2 = data2.map((item) => createPreciseProof(item).getHexRoot());
+    leaves3 = data3.map((item) => createPreciseProof(item).getHexRoot());
 
     dataTree = createMerkleTree(leaves);
     dataTree2 = createMerkleTree(leaves2);
@@ -237,19 +237,26 @@ describe("IssuerFacet", function() {
       const volumeProof = volumeTree.getHexProof(volumeLeaf);
       const volumeRootHash = volumeTree.getHexRoot();
 
-      await expect(
-        issuerFacet
-          .connect(issuer)
-          .requestProofIssuance(
-            inputHash,
-            ethers.constants.AddressZero,
-            volumeRootHash,
-            matchResultProof,
-            parseEther(data[0].volume.toString()),
-            volumeProof,
-            tokenURI
-          )
-      ).to.be.revertedWith("issuance must be non-zero");
+      return Promise.all(
+        [
+          expect(
+            issuerFacet
+              .connect(issuer)
+              .requestProofIssuance(
+                inputHash,
+                ethers.constants.AddressZero,
+                volumeRootHash,
+                matchResultProof,
+                parseEther(data[0].volume.toString()),
+                volumeProof,
+                tokenURI
+              )
+          ).to.be.revertedWith("issuance must be non-zero"),
+        ],
+        expect(
+          issuerFacet.getCertificateIdByDataHash(inputHash)
+        ).to.eventually.equal(0)
+      );
     });
 
     it("Authorized issuers can send proof issuance requests", async () => {
@@ -286,6 +293,9 @@ describe("IssuerFacet", function() {
       )
         .to.emit(issuerFacet, "ProofMinted")
         .withArgs(lastTokenID, volumeInWei, generatorAddress);
+      return expect(
+        issuerFacet.getCertificateIdByDataHash(inputHash)
+      ).to.eventually.equal(lastTokenID);
     });
 
     it("reverts when issuers send dupplicate proof issuance requests", async () => {
@@ -484,7 +494,9 @@ describe("IssuerFacet", function() {
     it("should reverts if a non authorized entity tries to revoke a non retired proof", async () => {
       await revokeRole(nonAuthorizedOperator, revokerRole);
       await expect(
-        proofManagerFacet.connect(nonAuthorizedOperator).revokeProof(certificateID1)
+        proofManagerFacet
+          .connect(nonAuthorizedOperator)
+          .revokeProof(certificateID1)
       ).to.be.revertedWith("Access: Not enrolled as revoker");
     });
 
@@ -650,9 +662,14 @@ describe("IssuerFacet", function() {
       ); //emit(proofManagerFacet, "ProofRevoked");
     });
 
-    it('allows to reissue revoked certificate', async () => {
+    it("allows to reissue revoked certificate", async () => {
       const {
-        inputHash, volumeRootHash, matchResultProof, volume, volumeProof, matchResult,
+        inputHash,
+        volumeRootHash,
+        matchResultProof,
+        volume,
+        volumeProof,
+        matchResult,
       } = generateProofData();
 
       await votingFacet.connect(worker1).vote(inputHash, matchResult);
@@ -661,26 +678,57 @@ describe("IssuerFacet", function() {
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI),
-      )
+          .requestProofIssuance(
+            inputHash,
+            generatorAddress,
+            volumeRootHash,
+            matchResultProof,
+            parseEther(volume.toString()),
+            volumeProof,
+            tokenURI
+          )
+      );
 
-      const certificateId = await proofManagerFacet.connect(revoker).getProofIdByDataHash(volumeRootHash);
+      const certificateId = await proofManagerFacet
+        .connect(revoker)
+        .getProofIdByDataHash(volumeRootHash);
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI),
+          .requestProofIssuance(
+            inputHash,
+            generatorAddress,
+            volumeRootHash,
+            matchResultProof,
+            parseEther(volume.toString()),
+            volumeProof,
+            tokenURI
+          )
       ).to.be.revertedWith(`AlreadyCertifiedData("${volumeRootHash}")`);
 
       await proofManagerFacet.connect(revoker).revokeProof(certificateId);
 
       await issuerFacet
         .connect(issuer)
-        .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI);
+        .requestProofIssuance(
+          inputHash,
+          generatorAddress,
+          volumeRootHash,
+          matchResultProof,
+          parseEther(volume.toString()),
+          volumeProof,
+          tokenURI
+        );
     });
 
-    it('allows to get proof ID by data hash', async () => {
+    it("allows to get proof ID by data hash", async () => {
       const {
-        inputHash, volumeRootHash, matchResultProof, volume, volumeProof, matchResult
+        inputHash,
+        volumeRootHash,
+        matchResultProof,
+        volume,
+        volumeProof,
+        matchResult,
       } = generateProofData();
       await votingFacet.connect(worker1).vote(inputHash, matchResult);
       await votingFacet.connect(worker2).vote(inputHash, matchResult);
@@ -688,12 +736,22 @@ describe("IssuerFacet", function() {
       await expect(
         issuerFacet
           .connect(issuer)
-          .requestProofIssuance(inputHash, generatorAddress, volumeRootHash, matchResultProof, parseEther(volume.toString()), volumeProof, tokenURI),
-      ).to.emit(issuerFacet, "ProofMinted")
+          .requestProofIssuance(
+            inputHash,
+            generatorAddress,
+            volumeRootHash,
+            matchResultProof,
+            parseEther(volume.toString()),
+            volumeProof,
+            tokenURI
+          )
+      ).to.emit(issuerFacet, "ProofMinted");
 
-      const certificateId = await proofManagerFacet.connect(issuer).getProofIdByDataHash(volumeRootHash);
+      const certificateId = await proofManagerFacet
+        .connect(issuer)
+        .getProofIdByDataHash(volumeRootHash);
 
-      expect(BigNumber.from(certificateId).toNumber()).to.be.gt(0)
+      expect(BigNumber.from(certificateId).toNumber()).to.be.gt(0);
     });
   });
 

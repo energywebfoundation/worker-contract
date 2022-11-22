@@ -105,6 +105,15 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         certificateOwners = _accountsByToken(certificateID);
     }
 
+    /**
+     * @notice `getCertificateIdByDataHash` - Returns identifier of the certificate issued to prove `dataHash`
+     * @param dataHash - hash of the proved data
+     * @return certificateId - id of the certificate
+     */
+    function getCertificateIdByDataHash(bytes32 dataHash) external view returns (uint256 certificateId) {
+        return LibIssuer._getStorage().dataToCertificateID[dataHash];
+    }
+
     function safeTransferFrom(
         address from,
         address to,
