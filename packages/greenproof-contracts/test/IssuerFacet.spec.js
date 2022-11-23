@@ -27,6 +27,7 @@ describe('IssuerFacet', function() {
   let issuer;
   let worker;
   let revoker;
+  let claimer;
   let wallets;
 
   let diamondAddress;
@@ -43,6 +44,7 @@ describe('IssuerFacet', function() {
       issuer,
       worker,
       revoker,
+      claimer,
       ...wallets
     ] = await ethers.getSigners();
 
@@ -84,6 +86,7 @@ describe('IssuerFacet', function() {
     await votingContract.addWorker(worker.address);
     await grantRole(issuer, roles.issuerRole);
     await grantRole(revoker, roles.revokerRole);
+    await grantRole(claimer, roles.claimerRole);
   });
 
   describe('Proof issuance tests', () => {
@@ -257,8 +260,8 @@ describe('IssuerFacet', function() {
 
   const claimVolume = async (minter, claimedVolume) => {
     const tx = await proofManagerContract
-      .connect(minter)
-      .claimProof(1, claimedVolume);
+      .connect(claimer)
+      .claimProof(1, minter.address, claimedVolume);
     await tx.wait();
 
     const { timestamp } = await ethers.provider.getBlock(tx.blockNumber);
@@ -342,14 +345,14 @@ describe('IssuerFacet', function() {
     it('should revert if one tries to retire a revoked proof', async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, revoker);
+      await mintProof(1, proofData, owner);
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(1),
       ).to.emit(proofManagerContract, 'ProofRevoked');
 
       await expect(
-        proofManagerContract.connect(owner).claimProof(1, 1),
+        proofManagerContract.connect(claimer).claimProof(1, owner.address, 1),
       ).to.be.revertedWith('proof revoked');
     });
 
@@ -383,8 +386,8 @@ describe('IssuerFacet', function() {
 
       await expect(
         proofManagerContract
-          .connect(minter)
-          .claimProof(1, claimedVolume),
+          .connect(claimer)
+          .claimProof(1, minter.address, claimedVolume),
       ).to.be.revertedWith('Insufficient volume owned');
     });
 

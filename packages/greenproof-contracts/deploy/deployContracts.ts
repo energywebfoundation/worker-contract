@@ -30,6 +30,7 @@ type DeployDiamondOptions = {
     workerRole?: string;
     issuerRole?: string;
     revokerRole?: string;
+    claimerRole?: string;
   };
   contractOwner?: string;
   revocablePeriod?: number;
@@ -64,6 +65,7 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
     issuerRole = ethers.utils.namehash(process.env.ISSUER_ROLE ?? "issuer"),
     revokerRole = ethers.utils.namehash(process.env.REVOKER_ROLE ?? "revoker"),
     workerRole = ethers.utils.namehash(process.env.WORKER_ROLE ?? "worker"),
+    claimerRole = ethers.utils.namehash(process.env.CLAIMER_ROLE ?? "claimer"),
   } = roles;
 
   // deploy DiamondInit
@@ -85,6 +87,7 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
         issuerRole,
         revokerRole,
         workerRole,
+        claimerRole,
         claimsRevocationRegistry: claimRevokerAddress,
       },
     ];
