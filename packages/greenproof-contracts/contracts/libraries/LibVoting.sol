@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
+
 import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 
@@ -132,12 +133,12 @@ library LibVoting {
      * @param matchResult - the actual vote of the worker
      */
     function _replayVote(Voting storage voting, bytes32 matchResult)
-        internal
-        returns (
-            bool shouldUpdateVoting,
-            bytes32 replayedWinningMatch,
-            uint256 newVoteCount
-        )
+    internal
+    returns (
+        bool shouldUpdateVoting,
+        bytes32 replayedWinningMatch,
+        uint256 newVoteCount
+    )
     {
         if (voting.workerToReplayedMatchResult[msg.sender] != 0) {
             revert AlreadyVoted();
@@ -253,13 +254,13 @@ library LibVoting {
         }
 
         registerWinningMatch(voting.voteID, voting.winningMatch);
-        emit WinningMatch(voting.voteID, voting.winningMatch, voting.winningMatchVoteCount);
         _revealVotes(voting);
         _revealWinners(voting);
         votingStorage.winningMatches[voting.voteID] = voting.winningMatch;
-        emit ConsensusReached(voting.winningMatch, voting.voteID);
-
         voting.status = Status.Completed;
+
+        emit WinningMatch(voting.voteID, voting.winningMatch, voting.winningMatchVoteCount);
+        emit ConsensusReached(voting.winningMatch, voting.voteID);
         _reward(votingStorage.winnersList[voting.voteID]);
     }
 
@@ -290,7 +291,7 @@ library LibVoting {
     function _reward(address payable[] memory winners) internal {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
 
-        if(!rs.rewardsEnabled) {
+        if (!rs.rewardsEnabled) {
             return;
         }
 
