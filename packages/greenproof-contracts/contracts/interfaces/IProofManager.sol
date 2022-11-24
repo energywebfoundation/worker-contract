@@ -6,7 +6,9 @@ import {IGreenProof} from "./IGreenProof.sol";
 interface IProofManager {
     function revokeProof(uint256 certificateID) external;
 
-    function claimProof(uint256 certificateID, address owner, uint256 amount) external;
+    function claimProof(uint256 certificateID, uint256 amount) external;
+
+    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external;
 
     function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof);
 

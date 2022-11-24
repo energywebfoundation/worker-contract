@@ -21,14 +21,23 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _;
     }
 
-    function claimProof(uint256 certificateID, address owner, uint256 amount) external override onlyClaimer {
+    function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
         require(_balanceOf(owner, certificateID) >= amount, "Insufficient volume owned");
+
         LibIssuer._registerClaimedProof(certificateID, owner, amount);
         _burn(owner, certificateID, amount);
         emit ProofClaimed(certificateID, owner, block.timestamp, amount);
+    }
+
+    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
+        _claimProof(certificateID, owner, amount);
+    }
+
+    function claimProof(uint256 certificateID, uint256 amount) external override {
+        _claimProof(certificateID, msg.sender, amount);
     }
 
     function revokeProof(uint256 certificateID) external override onlyRevoker {

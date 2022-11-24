@@ -82,6 +82,7 @@ describe('IssuerFacet', function() {
     votingContract = await ethers.getContractAt('VotingFacet', diamondAddress);
     proofManagerContract = await ethers.getContractAt('ProofManagerFacet', diamondAddress);
 
+    await resetRoles();
     await grantRole(worker, roles.workerRole);
     await votingContract.addWorker(worker.address);
     await grantRole(issuer, roles.issuerRole);
@@ -253,23 +254,10 @@ describe('IssuerFacet', function() {
 
       const wrongData = { ...proofData, inputHash: someOtherHash };
 
-      await requestMinting(wrongData, receiver)
+      await expect(requestMinting(wrongData, receiver))
         .to.be.revertedWith(someOtherHash);
     });
   });
-
-  const claimVolume = async (minter, claimedVolume) => {
-    const tx = await proofManagerContract
-      .connect(claimer)
-      .claimProof(1, minter.address, claimedVolume);
-    await tx.wait();
-
-    const { timestamp } = await ethers.provider.getBlock(tx.blockNumber);
-    await expect(tx)
-      .to.emit(proofManagerContract, 'ProofClaimed')
-      .withArgs(1, minter.address, timestamp, claimedVolume);
-    return tx;
-  };
 
   describe('Proof revocation tests', () => {
     it('should prevent a non authorized entity from revoking non retired proof', async () => {
@@ -342,7 +330,7 @@ describe('IssuerFacet', function() {
       ).to.be.revertedWith('already revoked proof');
     });
 
-    it('should revert if one tries to retire a revoked proof', async () => {
+    it('should revert if claimer tries to retire a revoked proof', async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, owner);
@@ -352,8 +340,43 @@ describe('IssuerFacet', function() {
       ).to.emit(proofManagerContract, 'ProofRevoked');
 
       await expect(
-        proofManagerContract.connect(claimer).claimProof(1, owner.address, 1),
+        proofManagerContract.connect(claimer).claimProofFor(1, owner.address, 1),
       ).to.be.revertedWith('proof revoked');
+    });
+
+    it('should revert if owner tries to retire a revoked proof', async () => {
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(1, proofData, issuer, issuer);
+      await grantRole(issuer, roles.claimerRole);
+
+      await expect(
+        proofManagerContract.connect(revoker).revokeProof(1),
+      ).to.emit(proofManagerContract, 'ProofRevoked');
+
+      await expect(
+        proofManagerContract.connect(issuer).claimProof(1, 1),
+      ).to.be.revertedWith('proof revoked');
+    });
+
+    it('should allow claiming proofs for others', async () => {
+      const mintedVolume = 5;
+      const proofData = generateProofData({ volume: mintedVolume });
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const minter = wallets[0];
+      await mintProof(1, proofData, minter);
+      const claimedVolume = parseEther((proofData.volume - 2).toString());
+
+      const initialClaimedAmount = await proofManagerContract.claimedBalanceOf(minter.address, 1);
+      expect(initialClaimedAmount).to.equal(0);
+
+      await claimVolumeFor(minter, claimedVolume);
+
+      const claimedProofsAmount = await proofManagerContract.claimedBalanceOf(minter.address, 1);
+      expect(claimedProofsAmount).to.equal(claimedVolume);
+
+      const remainingVolume = await proofManagerContract.getProofsOf(minter.address);
+      expect(remainingVolume[0].volume).to.equal(parseEther(`${mintedVolume}`).sub(claimedVolume));
     });
 
     it('should allow claiming proofs', async () => {
@@ -376,7 +399,7 @@ describe('IssuerFacet', function() {
       expect(remainingVolume[0].volume).to.equal(parseEther(`${mintedVolume}`).sub(claimedVolume));
     });
 
-    it('should revert when retirement amount exceeds owned volume', async () => {
+    it('should revert when retirement for others amount exceeds owned volume', async () => {
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -387,7 +410,23 @@ describe('IssuerFacet', function() {
       await expect(
         proofManagerContract
           .connect(claimer)
-          .claimProof(1, minter.address, claimedVolume),
+          .claimProofFor(1, minter.address, claimedVolume),
+      ).to.be.revertedWith('Insufficient volume owned');
+    });
+
+
+    it('should revert when retirement amount exceeds owned volume', async () => {
+      const mintedVolume = 5;
+      const proofData = generateProofData({ volume: mintedVolume });
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const minter = wallets[0];
+      await mintProof(1, proofData, minter);
+      const claimedVolume = parseEther('6');
+
+      await expect(
+        proofManagerContract
+          .connect(minter)
+          .claimProof(1, claimedVolume),
       ).to.be.revertedWith('Insufficient volume owned');
     });
 
@@ -402,7 +441,7 @@ describe('IssuerFacet', function() {
         .connect(owner)
         .getProof(1);
       const issuanceDate = Number(proof.issuanceDate.toString());
-      await claimVolume(minter, claimedVolume);
+      await claimVolumeFor(minter, claimedVolume);
 
       //forward time to reach end of revocable period
       await timeTravel(revokablePeriod);
@@ -573,13 +612,43 @@ describe('IssuerFacet', function() {
     });
   });
 
+  const claimVolumeFor = async (minter, claimedVolume) => {
+    const tx = await proofManagerContract
+      .connect(claimer)
+      .claimProofFor(1, minter.address, claimedVolume);
+    await tx.wait();
+
+    const { timestamp } = await ethers.provider.getBlock(tx.blockNumber);
+    await expect(tx)
+      .to.emit(proofManagerContract, 'ProofClaimed')
+      .withArgs(1, minter.address, timestamp, claimedVolume);
+    return tx;
+  };
+
+  const claimVolume = async (minter, claimedVolume) => {
+    const tx = await proofManagerContract
+      .connect(minter)
+      .claimProof(1, claimedVolume);
+    await tx.wait();
+
+    const { timestamp } = await ethers.provider.getBlock(tx.blockNumber);
+    await expect(tx)
+      .to.emit(proofManagerContract, 'ProofClaimed')
+      .withArgs(1, minter.address, timestamp, claimedVolume);
+    return tx;
+  };
+
   const reachConsensus = async (inputHash, matchResult) => {
     await votingContract.connect(worker).vote(inputHash, matchResult);
   };
 
-  const requestMinting = ({ inputHash, volumeRootHash, matchResultProof, volume, volumeProof }, receiver) => expect(
+  const requestMinting = (
+    { inputHash, volumeRootHash, matchResultProof, volume, volumeProof },
+    receiver,
+    minter = issuer,
+  ) =>
     issuerContract
-      .connect(issuer)
+      .connect(minter)
       .requestProofIssuance(
         inputHash,
         receiver.address,
@@ -588,11 +657,10 @@ describe('IssuerFacet', function() {
         parseEther(volume.toString()),
         volumeProof,
         tokenURI,
-      ),
-  );
+      )
 
-  const mintProof = async (id, proofData, receiver = wallets[1]) => {
-    await requestMinting(proofData, receiver)
+  const mintProof = async (id, proofData, receiver = wallets[1], minter = issuer) => {
+    await expect(requestMinting(proofData, receiver, minter))
       .to.emit(issuerContract, 'ProofMinted')
       .withArgs(id, parseEther(proofData.volume.toString()), receiver.address);
   };
@@ -602,7 +670,7 @@ describe('IssuerFacet', function() {
   };
 
   const expectAlreadyCertified = async (proofData) => {
-    await requestMinting(proofData, wallets[0])
+    await expect(requestMinting(proofData, wallets[0]))
       .to.be.revertedWith(`AlreadyCertifiedData("${proofData.volumeRootHash}")`);
   };
 
@@ -628,5 +696,18 @@ describe('IssuerFacet', function() {
         1,
         transferVolume,
       );
+  };
+
+  const resetRoles = async () => {
+    const wallets = await ethers.getSigners();
+    await Promise.all(
+      wallets.map(async wallet =>
+        Promise.all(
+          Object.values(roles).map(async role =>
+            revokeRole(wallet, role)
+          )
+        )
+      )
+    );
   };
 });
