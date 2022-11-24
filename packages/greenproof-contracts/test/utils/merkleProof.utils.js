@@ -26,18 +26,12 @@ const getMerkleProof = (dataObject) => {
     });
   });
 
-  console.log("Data : ", dataObject);
-  console.log("RootHash ==> ", merkleRoot);
-  console.log("Data proofs ==> ", proofs);
-
-  const merkleProof = {
+  return {
     merkle,
     proofs,
     hexLeaves,
     merkleRoot
-  }
-
-  return merkleProof;
+  };
 }
 
 module.exports = {
