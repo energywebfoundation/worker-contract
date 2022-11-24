@@ -551,9 +551,17 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@energyweb/greenproof-contracts@1.0.5", "@energyweb/greenproof-contracts@file:/home/jonasz/WebstormProjects/greenproof-sdk/packages/greenproof-contracts":
-  version "1.0.5"
+"@energyweb/greenproof-contracts@1.0.5-alpha.1", "@energyweb/greenproof-contracts@file:/home/jonasz/WebstormProjects/greenproof-sdk/packages/greenproof-contracts":
+  version "1.0.5-alpha.1"
   resolved "file:packages/greenproof-contracts"
+  dependencies:
+    "@solidstate/contracts" "^0.0.40"
+    hardhat-diamond-abi "^3.0.1"
+
+"@energyweb/greenproof-contracts@1.0.5":
+  version "1.0.5"
+  resolved "https://registry.npmjs.org/@energyweb/greenproof-contracts/-/greenproof-contracts-1.0.5.tgz"
+  integrity sha512-s0VxzjJEVzV+IABc95buFDVK/QACGoiiiwPMZ2Yb5zldfFg4/ijbJDYARtxo4v4/MueRZzBCB2utbGPh0/gwIw==
   dependencies:
     "@solidstate/contracts" "^0.0.40"
     hardhat-diamond-abi "^3.0.1"
@@ -590,7 +598,7 @@
     rxjs "7.5.6"
 
 "@energyweb/greenproof-worker@file:/home/jonasz/WebstormProjects/greenproof-sdk/packages/worker":
-  version "6.0.31"
+  version "6.0.31-alpha.1"
   resolved "file:packages/worker"
   dependencies:
     "@energyweb/greenproof-contracts" "1.0.5"
