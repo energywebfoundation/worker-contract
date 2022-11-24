@@ -17,6 +17,7 @@ contract Diamond is SolidStateDiamond {
         bytes32 issuerRole;
         bytes32 revokerRole;
         bytes32 workerRole;
+        bytes32 claimerRole;
         address claimManagerAddress;
         address claimsRevocationRegistry;
     }
@@ -42,7 +43,7 @@ contract Diamond is SolidStateDiamond {
         LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         OwnableStorage.layout().owner = diamondConfig.contractOwner;
 
-        LibClaimManager.init(rolesConfig.claimManagerAddress, rolesConfig.issuerRole, rolesConfig.revokerRole, rolesConfig.workerRole, rolesConfig.claimsRevocationRegistry);
+        LibClaimManager.init(rolesConfig.claimManagerAddress, rolesConfig.issuerRole, rolesConfig.revokerRole, rolesConfig.workerRole, rolesConfig.claimerRole, rolesConfig.claimsRevocationRegistry);
     }
 
     function updateClaimManager(address newaddress) external returns (address oldAddress) {
