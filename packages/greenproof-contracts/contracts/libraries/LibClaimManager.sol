@@ -20,6 +20,7 @@ library LibClaimManager {
         Role workerRole;
         Role issuerRole;
         Role revokerRole;
+        Role claimerRole;
     }
 
     modifier onlyOwner() {
@@ -49,6 +50,7 @@ library LibClaimManager {
         bytes32 issuerRole,
         bytes32 revokerRole,
         bytes32 workerRole,
+        bytes32 claimerRole,
         address claimsRevocationRegistry
     ) internal {
         ClaimManagerStorage storage claimStore = getStorage();
@@ -61,6 +63,7 @@ library LibClaimManager {
         claimStore.issuerRole = Role({name: issuerRole, version: 1});
         claimStore.revokerRole = Role({name: revokerRole, version: 1});
         claimStore.workerRole = Role({name: workerRole, version: 1});
+        claimStore.claimerRole = Role({name: claimerRole, version: 1});
     }
 
     function setIssuerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
@@ -88,6 +91,15 @@ library LibClaimManager {
         oldRoleVersion = claimStore.revokerRole.version;
 
         claimStore.revokerRole.version = _newVersion;
+    }
+
+    function setClaimerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        require(claimStore.claimerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.claimerRole.version;
+
+        claimStore.claimerRole.version = _newVersion;
     }
 
     //TODO: provide unit tests for claimManager Update
@@ -122,6 +134,12 @@ library LibClaimManager {
         ClaimManagerStorage storage claimStore = getStorage();
 
         return hasRole(operator, claimStore.revokerRole.name, claimStore.revokerRole.version);
+    }
+
+    function isEnrolledClaimer(address operator) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        return hasRole(operator, claimStore.claimerRole.name, claimStore.claimerRole.version);
     }
 
     function isEnrolledWorker(address operator) internal view returns (bool) {

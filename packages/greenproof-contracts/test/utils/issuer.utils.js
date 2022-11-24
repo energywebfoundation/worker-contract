@@ -34,6 +34,8 @@ const generateProofData = (
     matchResultProof,
     volume,
     volumeProof,
+    volumeTree,
+    consumerID,
     matchResult,
   };
 };
