@@ -351,16 +351,6 @@ describe('VotingFacet', function() {
     );
   });
 
-  it("should not be able to add same worker twice", async () => {
-    await setupVotingContract({
-      participatingWorkers: [workers[0]],
-    });
-
-    await expect(
-      votingContract.addWorker(workers[0].address)
-    ).to.be.revertedWith("WorkerAlreadyAdded");
-  });
-
   it('should emit winning event only once', async () => {
     await setupVotingContract({
       majorityPercentage: 30,
