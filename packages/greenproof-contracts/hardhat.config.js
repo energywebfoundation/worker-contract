@@ -56,7 +56,8 @@ module.exports = {
     gasPrice: 21,
     enabled: false,
     coinmarketcap: process.env.COIN_MARKET_CAP_API,
-    token: "EWT"
+    token: "EWT",
+    enabled: true
   },
   // diamondAbi: {
   //   // (required) The name of your Diamond ABI
