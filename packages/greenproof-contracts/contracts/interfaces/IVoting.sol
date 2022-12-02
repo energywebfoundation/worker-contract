@@ -2,38 +2,37 @@
 pragma solidity ^0.8.16;
 
 interface IVoting {
-    // Event emitted after voting ended
-    event WinningMatch(bytes32 matchInput, bytes32 matchResult, uint256 indexed voteCount);
-
-    // Event emitted after a voting consensus is reached
-    event ConsensusReached(bytes32 winningMatch, bytes32 matchInput);
+    // Event emitted when consensus in voting session has been reached
+    event WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
-    event NoConsensusReached(bytes32 matchInput);
+    event NoConsensusReached(bytes32 votingID, bytes32 sessionID);
 
-    // Voting lasts more then time limit
-    event VotingExpired(bytes32 matchInput);
+    // Voting lasts more than time limit
+    event VotingSessionExpired(bytes32 votingID, bytes32 sessionID);
 
     // Event emitted after match is recorded
-    event MatchRegistered(bytes32 matchInput, bytes32 matchResult);
+    event MatchRegistered(bytes32 votingID, bytes32 matchResult);
 
-    function vote(bytes32 voteID, bytes32 matchResult) external;
+    event ConsensusReached(bytes32 winningMatch, bytes32 votingID);
+
+    function vote(bytes32 votingID, bytes32 matchResult) external;
 
     function addWorker(address payable workerAddress) external;
 
     function removeWorker(address workerToRemove) external;
 
-    function cancelExpiredVotings() external;
+    function getWorkerVotes(bytes32 inputHash, address worker) external returns (bytes32[] memory matchResults);
 
     function getNumberOfWorkers() external view returns (uint256);
 
     function getWorkers() external view returns (address payable[] memory);
 
-    function getWinningMatch(bytes32 voteID) external view returns (bytes32);
+    function getWinners(bytes32 votingID, bytes32 matchResult) external view returns (address payable[] memory);
 
-    function getWinners(bytes32 voteID) external view returns (address payable[] memory);
+    function getWinningMatches(bytes32 votingID) external view returns (bytes32[] memory);
 
-    function getWorkerVote(bytes32 voteID, address workerAddress) external view returns (bytes32 matchResult);
+    function numberOfVotings() external view returns (uint256);
 
-    function numberOfvotingSessions() external view returns (uint256);
+    function cancelExpiredVotings() external;
 }
