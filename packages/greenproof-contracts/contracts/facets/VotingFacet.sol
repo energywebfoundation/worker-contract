@@ -16,20 +16,7 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
 contract VotingFacet is IVoting, IReward {
-    /**
-     * @notice Allowing direct calls on LibVoting's functions for address type.
-     * @dev This improves code readability by writing `address.isWorker()` and `address.isNotWorker()`
-     * Instead of LibVoting.isWorker(address) and LibVoting.isNotWorker(address)
-     */
-    using LibVoting for address;
     using LibClaimManager for address;
-
-    /**
-     * @notice Allowing direct calls on LibVoting's functions for Voting type.
-     * @dev This improves code readability by writing voting.isExpired() or voting.cancelVoting()
-     * Instead of LibVoting.isExpired(voting) or LibVoting.cancelVoting(voting) respectively
-     */
-    using LibVoting for LibVoting.Voting;
 
     modifier onlyEnrolledWorkers(address operator) {
         require(operator.isEnrolledWorker(), "Access denied: not enrolled as worker");
@@ -41,51 +28,39 @@ contract VotingFacet is IVoting, IReward {
         _;
     }
 
-    /**
-     * @notice `vote` - Each worker votes for a given matchResult, increasing the number of votes for this matchResult.
-     * @param voteID - The identifier of the vote
-     * @param matchResult - The actual vote of the worker
-     * @dev The winning vote is determined by simple majority. When consensus is not reached the voting is restarted.
-     */
-    function vote(bytes32 voteID, bytes32 matchResult) external override {
-        if ((msg.sender.isNotWorker())) {
+    modifier onlyWhitelistedWorker() {
+        if (!isWhitelistedWorker(msg.sender)) {
             revert LibVoting.NotWhitelisted();
         }
+        _;
+    }
 
-        LibVoting.Voting storage voting = LibVoting._getVote(voteID);
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+    /**
+     * @notice Increases the number of votes for this matchResult. Voting completes when that vote leads to consensus or when voting expires
+     */
+    function vote(bytes32 votingID, bytes32 matchResult) external override onlyWhitelistedWorker {
+        bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
+        LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
 
-        if (voting._isExpired()) {
-            voting._resetVotingSession();
+        if (session.status == LibVoting.Status.Completed) {
+            revert LibVoting.SessionCannotBeRestarted(votingID, matchResult);
         }
 
-        if (voting._isClosed() || msg.sender._hasAlreadyVoted(voting)) {
-            // we prevent wasting computation if the vote is the same as the previous one
-            if (votingStorage.workerVotes[msg.sender][voteID] == matchResult) {
-                return;
-            }
-
-            (bool shouldUpdateVote, bytes32 newWinningMatch, uint256 newVoteCount) = voting._replayVote(matchResult);
-
-            if (shouldUpdateVote) {
-                //We update the voting results
-                voting._updateWorkersVote();
-                (bool differentWinningMatch) = voting._updateVoteResult(newWinningMatch, newVoteCount);
-                voting._revealWinners();
-
-                if(differentWinningMatch) {
-                    emit WinningMatch(voteID, newWinningMatch, newVoteCount);
-                }
-
-                LibVoting._reward(votingStorage.winnersList[voteID]);
-            }
-        } else {
-            if (voting._hasNotStarted()) {
-                LibVoting._startVotingSession(voteID);
-            }
-
-            voting._recordVote(matchResult);
+        if (LibVoting._isSessionExpired(votingID, sessionID)) {
+            LibVoting._completeSession(votingID, sessionID);
+            emit VotingSessionExpired(votingID, matchResult);
+            return;
         }
+
+        if (session.status == LibVoting.Status.NotStarted) {
+            LibVoting._startSession(votingID, matchResult);
+        }
+
+        if (session.workerToVoted[msg.sender] == true) {
+            revert LibVoting.AlreadyVoted();
+        }
+
+        LibVoting._recordVote(votingID, sessionID);
     }
 
     /**
@@ -95,9 +70,9 @@ contract VotingFacet is IVoting, IReward {
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
     function addWorker(address payable workerAddress) external override onlyEnrolledWorkers(workerAddress) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        if (address(workerAddress).isWorker()) {
+        if (isWhitelistedWorker(workerAddress)) {
             revert LibVoting.WorkerAlreadyAdded();
         }
         votingStorage.workerToIndex[workerAddress] = votingStorage.numberOfWorkers;
@@ -112,9 +87,9 @@ contract VotingFacet is IVoting, IReward {
      * @dev only the address referenced as the contract owner is allowed to perform this
      */
     function removeWorker(address workerToRemove) external override {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        if (workerToRemove.isNotWorker()) {
+        if (!isWhitelistedWorker(workerToRemove)) {
             revert LibVoting.WorkerWasNotAdded(workerToRemove);
         }
         require(workerToRemove.isEnrolledWorker() == false, "Not allowed: still enrolled as worker");
@@ -136,66 +111,93 @@ contract VotingFacet is IVoting, IReward {
      * @notice Cancels votings that takes longer than time limit
      */
     function cancelExpiredVotings() external override onlyOwner {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        for (uint256 i = 0; i < votingStorage.voteIDs.length; i++) {
-            LibVoting.Voting storage voting = votingStorage.voteIDToVoting[votingStorage.voteIDs[i]];
-
-            if (voting._isExpired()) {
-                voting._resetVotingSession();
+        for (uint256 i = 0; i < votingStorage.votingIDs.length; i++) {
+            bytes32 votingID = votingStorage.votingIDs[i];
+            LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
+            for (uint256 j = 0; j < voting.sessionIDs.length; j++) {
+                bytes32 sessionID = voting.sessionIDs[i];
+                if (LibVoting._isSessionExpired(votingID, sessionID)) {
+                    LibVoting._completeSession(votingID, sessionID);
+                    emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
+                }
             }
         }
     }
 
-    function getMatch(bytes32 input) external view returns (bytes32) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
-
-        return votingStorage.matches[input];
-    }
-
-    function isWorker(address addressToCheck) external view returns (bool) {
-        return LibVoting.isWorker(addressToCheck);
-    }
-
     function getNumberOfWorkers() external view override returns (uint256) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.numberOfWorkers;
     }
 
     function getWorkers() external view override returns (address payable[] memory) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.workers;
     }
 
+    function isWhitelistedWorker(address worker) public view returns (bool) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
+        uint256 workerIndex = votingStorage.workerToIndex[worker];
+        return workerIndex < votingStorage.numberOfWorkers && votingStorage.workers[workerIndex] == worker;
+    }
+
     /**
-     * @notice getWinners - a getter function to retreieve the list of workers who voted for the winning macth
-     * @param voteID - The identifier of the vote
-     * @return winnersList - the List of worker's addresses
+     * @notice Returns match results of the worker in the sessions, which has been reached consensus
      */
-    function getWinners(bytes32 voteID) external view override returns (address payable[] memory) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+    function getWorkerVotes(bytes32 votingID, address worker) external view returns (bytes32[] memory votes) {
+        bytes32[] memory winningMatches = getWinningMatches(votingID);
+        bytes32[] memory votesContainer = new bytes32[](winningMatches.length);
+        uint256 numberOfVotes;
 
-        return votingStorage.winnersList[voteID];
+        for (uint256 i = 0; i < winningMatches.length; i++) {
+            LibVoting.VotingSession storage session = LibVoting._getSession(votingID, LibVoting._getSessionID(votingID, winningMatches[i]));
+            if (session.workerToVoted[worker] == true) {
+                votesContainer[numberOfVotes] = winningMatches[i];
+                numberOfVotes++;
+            }
+        }
+
+        votes = new bytes32[](numberOfVotes);
+        for (uint i = 0; i < numberOfVotes; i++) {
+            votes[i] = votesContainer[i];
+        }
     }
 
-    function getWinningMatch(bytes32 voteID) external view override returns (bytes32) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+    /**
+     * @notice Retreieves the list of workers who voted for the winning macth
+     */
+    function getWinners(bytes32 votingID, bytes32 matchResult) external view override returns (address payable[] memory) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
+        bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
 
-        return votingStorage.winningMatches[voteID];
+        return votingStorage.winners[votingID][sessionID];
     }
 
-    function getWorkerVote(bytes32 voteID, address workerAddress) external view override returns (bytes32 matchResult) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+    function getWinningMatches(bytes32 votingID) public view returns (bytes32[] memory winningMatches) {
+        LibVoting.Voting storage voting = LibVoting._getStorage().votingIDToVoting[votingID];
+        uint256 numberOfWinningSessions;
+        bytes32[] memory winningSessionsIDs = new bytes32[](voting.sessionIDs.length);
 
-        return votingStorage.workerVotes[workerAddress][voteID];
+        for (uint256 i = 0; i < voting.sessionIDs.length; i++) {
+            if (voting.sessionIDToSession[voting.sessionIDs[i]].consensus == true) {
+                winningSessionsIDs[numberOfWinningSessions] = voting.sessionIDs[i];
+                numberOfWinningSessions++;
+            }
+        }
+
+        winningMatches = new bytes32[](numberOfWinningSessions);
+        for (uint256 i = 0; i < numberOfWinningSessions; i++) {
+            winningMatches[i] = voting.sessionIDToSession[winningSessionsIDs[i]].matchResult;
+        }
     }
 
-    function numberOfvotingSessions() external view override returns (uint256) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
+    function numberOfVotings() external view override returns (uint256) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        return votingStorage.voteIDs.length;
+        return votingStorage.votingIDs.length;
     }
 
     function replenishRewardPool() external payable override {

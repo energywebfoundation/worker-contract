@@ -6,27 +6,32 @@ module.exports.replayingTests = function () {
   let timeframes;
   let addWorkers;
   let setupVotingContract;
-  let expectResults;
+  let expectVotingResults;
 
   beforeEach(function () {
-    ({ workers, timeframes, addWorkers, setupVotingContract, expectResults } =
-      this);
+    ({
+      workers,
+      timeframes,
+      addWorkers,
+      setupVotingContract,
+      expectVotingResults,
+    } = this);
   });
 
   it("should allow workers to replay the vote", async () => {
-    ({votingContract} = await setupVotingContract({
+    votingContract = await setupVotingContract({
       majorityPercentage: 51,
       participatingWorkers: [workers[0], workers[1]],
-    }));
+    });
 
     await workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
     //The vote is not ended, hence we should not get the winngMatch
-    await expectResults({
-      winningMatch: ethers.constants.Zero,
+    await expectVotingResults({
       votingInput: timeframes[0].input,
-      workerVotes: {
-        0: ethers.constants.Zero,
-        1: ethers.constants.Zero,
+      winningMatches: [],
+      votes: {
+        0: [],
+        1: [],
       },
       winners: [],
     });
@@ -35,14 +40,14 @@ module.exports.replayingTests = function () {
       voteCount: 2,
     });
 
-    await expectResults({
+    await expectVotingResults({
       votingInput: timeframes[0].input,
-      winningMatch: timeframes[0].output,
-      winners: [workers[0].address, workers[1].address],
-      workerVotes: {
-        0: timeframes[0].output,
-        1: timeframes[0].output,
+      winningMatches: [timeframes[0].output],
+      votes: {
+        0: [timeframes[0].output],
+        1: [timeframes[0].output],
       },
+      winners: [[workers[0].address, workers[1].address]],
     });
 
     //No consensus has been reached on replaying: we adding workers[2]
@@ -55,14 +60,14 @@ module.exports.replayingTests = function () {
       timeframes[1].output
     );
     expect(
-      await votingContract.getWorkerVote(
+      await votingContract.getWorkerVotes(
         timeframes[0].input,
         workers[0].address
       )
-    ).to.equal(timeframes[0].output);
-    expect(await votingContract.getWinningMatch(timeframes[0].input)).to.equal(
-      timeframes[0].output
-    );
+    ).to.deep.equal([timeframes[0].output]);
+    expect(
+      await votingContract.getWinningMatches(timeframes[0].input)
+    ).to.deep.equal([timeframes[0].output]);
 
     await workers[1].voteNotWinning(timeframes[0].input, timeframes[4].output);
     await workers[1].voteAlreadyVoted(
@@ -70,28 +75,31 @@ module.exports.replayingTests = function () {
       timeframes[4].output
     );
     expect(
-      await votingContract.getWorkerVote(
+      await votingContract.getWorkerVotes(
         timeframes[0].input,
         workers[1].address
       )
-    ).to.equal(timeframes[0].output);
-    expect(await votingContract.getWinningMatch(timeframes[0].input)).to.equal(
-      timeframes[0].output
-    );
+    ).to.deep.equal([timeframes[0].output]);
+    expect(
+      await votingContract.getWinningMatches(timeframes[0].input)
+    ).to.deep.equal([timeframes[0].output]);
 
     //Worker 3 replays vote like worker 2 : a consensus is reached
     await workers[2].voteWinning(timeframes[0].input, timeframes[4].output, {
       voteCount: 2,
     });
 
-    await expectResults({
+    await expectVotingResults({
       votingInput: timeframes[0].input,
-      winningMatch: timeframes[4].output,
-      winners: [workers[1].address, workers[2].address],
-      workerVotes: {
-        0: timeframes[1].output,
-        1: timeframes[4].output,
-        2: timeframes[4].output,
+      winningMatches: [timeframes[0].output, timeframes[4].output],
+      winners: [
+        [workers[0].address, workers[1].address],
+        [workers[1].address, workers[2].address],
+      ],
+      votes: {
+        0: [timeframes[0].output],
+        1: [timeframes[0].output, timeframes[4].output],
+        2: [timeframes[4].output],
       },
     });
   });

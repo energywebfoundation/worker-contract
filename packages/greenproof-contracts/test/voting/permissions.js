@@ -30,28 +30,28 @@ module.exports.permissionsTests = function () {
   });
 
   it("should allow to vote whitelisted worker", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0]],
-    }));
+    });
 
     workers[0].voteWinning(timeframes[0].input, timeframes[0].output, {
       voteCount: 1,
     });
 
-    expect(await workers[0].getVote(timeframes[0].input)).to.equal(
-      timeframes[0].output
-    );
-    expect(await votingContract.getMatch(timeframes[0].input)).to.equal(
-      timeframes[0].output
-    );
+    expect(await workers[0].getVotes(timeframes[0].input)).to.deep.equal([
+      timeframes[0].output,
+    ]);
+    expect(
+      await votingContract.getWinningMatches(timeframes[0].input)
+    ).to.deep.equal([timeframes[0].output]);
   });
 
   it("should not allow to vote not whitelisted worker", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [],
-    }));
+    });
 
     expect(await votingContract.isWorker(workers[0].address)).to.be.false;
 
@@ -59,10 +59,10 @@ module.exports.permissionsTests = function () {
   });
 
   it("should not register a non enrolled worker", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [],
-    }));
+    });
 
     await mockClaimManager.revokeRole(workers[0].address, workerRole);
     await expect(
@@ -71,10 +71,10 @@ module.exports.permissionsTests = function () {
   });
 
   it("should revert when we try to remove a not whiteListed worker", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [],
-    }));
+    });
 
     await expect(
       votingContract.connect(owner).removeWorker(workers[0].address)
@@ -82,10 +82,10 @@ module.exports.permissionsTests = function () {
   });
 
   it("should not allow an enrolled worker to unregister", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0], workers[1]],
-    }));
+    });
 
     await expect(
       votingContract.connect(owner).removeWorker(workers[0].address)
@@ -97,9 +97,9 @@ module.exports.permissionsTests = function () {
   });
 
   it("should not be able to add same worker twice", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       participatingWorkers: [workers[0]],
-    }));
+    });
 
     await expect(
       votingContract.addWorker(workers[0].address)
@@ -107,7 +107,7 @@ module.exports.permissionsTests = function () {
   });
 
   it("should allow non owner address to add enrolled workers", async () => {
-    ({ votingContract } = await setupVotingContract());
+    votingContract = await setupVotingContract();
     await mockClaimManager.grantRole(workers[0].address, workerRole);
     await mockClaimManager.grantRole(workers[1].address, workerRole);
     await mockClaimManager.grantRole(workers[2].address, workerRole);
@@ -128,7 +128,7 @@ module.exports.permissionsTests = function () {
   });
 
   it("should allow non owner address to remove not enrolled workers", async () => {
-    ({ votingContract } = await setupVotingContract());
+    votingContract = await setupVotingContract();
     await addWorkers([workers[0], workers[1], workers[2]]);
 
     expect(await votingContract.isWorker(workers[0].address)).to.equal(true);
@@ -142,7 +142,7 @@ module.exports.permissionsTests = function () {
   });
 
   it("should allow to remove workers and add it again", async () => {
-    ({ votingContract } = await setupVotingContract());
+    votingContract = await setupVotingContract();
 
     await addWorkers([workers[0], workers[1], workers[2]]);
     expect(await votingContract.isWorker(workers[0].address)).to.equal(true);
@@ -163,9 +163,9 @@ module.exports.permissionsTests = function () {
   });
 
   it("voting can not be cancelled by non owner", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
-    }));
+    });
 
     workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
 
@@ -177,9 +177,9 @@ module.exports.permissionsTests = function () {
   });
 
   it("reverts when non owner tries to cancel expired votings", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       participatingWorkers: [workers[0]],
-    }));
+    });
 
     await votingContract
       .connect(workers[0].wallet)
