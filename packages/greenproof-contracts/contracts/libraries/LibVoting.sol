@@ -42,8 +42,9 @@ library LibVoting {
         bytes32[] votingIDs /* List of all voting identifiers */;
         mapping(bytes32 => Voting) votingIDToVoting /* Quick access to a specific voting */;
         mapping(address => uint256) workerToIndex /* Quick access to a specific worker's index inside the `workers` whitelist */;
-        mapping(bytes32 => mapping(bytes32 => bytes32)) matches /* Records the final consensus of a specific votingID/sessionID */;
-        mapping(bytes32 => mapping(bytes32 => address payable[])) winners /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the rigth workers */;
+        // Next two fields are used to expose result of completed voting session
+        mapping(bytes32 => mapping(bytes32 => bytes32)) matches /* Records the consensus of a specific votingID/sessionID */;
+        mapping(bytes32 => mapping(bytes32 => address payable[])) winners /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the right workers */;
     }
 
     enum Status {
