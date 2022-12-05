@@ -76,7 +76,7 @@ contract VotingFacet is IVoting, IReward {
             revert LibVoting.WorkerAlreadyAdded();
         }
         votingStorage.workerToIndex[workerAddress] = votingStorage.numberOfWorkers;
-        votingStorage.workers.push(workerAddress);
+        votingStorage.whitelistedWorkers.push(workerAddress);
         votingStorage.numberOfWorkers = votingStorage.numberOfWorkers + 1;
     }
 
@@ -97,13 +97,13 @@ contract VotingFacet is IVoting, IReward {
         if (votingStorage.numberOfWorkers > 1) {
             uint256 workerIndex = votingStorage.workerToIndex[workerToRemove];
             // Copy last element to fill the missing place in array
-            address payable workerToMove = votingStorage.workers[votingStorage.numberOfWorkers - 1];
-            votingStorage.workers[workerIndex] = workerToMove;
+            address payable workerToMove = votingStorage.whitelistedWorkers[votingStorage.numberOfWorkers - 1];
+            votingStorage.whitelistedWorkers[workerIndex] = workerToMove;
             votingStorage.workerToIndex[workerToMove] = workerIndex;
         }
 
         delete votingStorage.workerToIndex[workerToRemove];
-        votingStorage.workers.pop();
+        votingStorage.whitelistedWorkers.pop();
         votingStorage.numberOfWorkers = votingStorage.numberOfWorkers - 1;
     }
 
@@ -135,13 +135,13 @@ contract VotingFacet is IVoting, IReward {
     function getWorkers() external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        return votingStorage.workers;
+        return votingStorage.whitelistedWorkers;
     }
 
     function isWhitelistedWorker(address worker) public view returns (bool) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
-        return workerIndex < votingStorage.numberOfWorkers && votingStorage.workers[workerIndex] == worker;
+        return workerIndex < votingStorage.numberOfWorkers && votingStorage.whitelistedWorkers[workerIndex] == worker;
     }
 
     /**
@@ -182,7 +182,7 @@ contract VotingFacet is IVoting, IReward {
         bytes32[] memory winningSessionsIDs = new bytes32[](voting.sessionIDs.length);
 
         for (uint256 i = 0; i < voting.sessionIDs.length; i++) {
-            if (voting.sessionIDToSession[voting.sessionIDs[i]].consensus == true) {
+            if (voting.sessionIDToSession[voting.sessionIDs[i]].isConsensusReached == true) {
                 winningSessionsIDs[numberOfWinningSessions] = voting.sessionIDs[i];
                 numberOfWinningSessions++;
             }
