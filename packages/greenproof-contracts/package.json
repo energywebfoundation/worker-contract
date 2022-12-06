@@ -40,6 +40,7 @@
     "mocha-it-each": "1.0.2",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
+    "solidity-coverage": "^0.8.2",
     "standard": "^16.0.3",
     "typechain": "8.1.0"
   },
