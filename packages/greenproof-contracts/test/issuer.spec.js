@@ -566,6 +566,10 @@ describe("IssuerFacet", function () {
         ).to.be.true;
       }
     });
+
+    it("should revert when one tries to retrieve a non existing proof", async () => {
+      await expect(proofManagerContract.getProof(42)).to.be.revertedWith("NonExistingCertificate")
+    });
   });
 
   describe("Data disclosure tests", () => {
