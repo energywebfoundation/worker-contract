@@ -15,37 +15,29 @@ module.exports.expirationTests = function () {
   });
 
   it("voting which exceeded time limit can be canceled", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
-    }));
+    });
 
     await workers[0].vote(timeframes[0].input, timeframes[0].output);
 
     await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
     await expect(votingContract.cancelExpiredVotings())
-      .to.emit(votingContract, "VotingExpired")
-      .withArgs(timeframes[0].input);
-
-    await workers[0].vote(timeframes[0].input, timeframes[0].output);
-    await workers[1].voteWinning(timeframes[0].input, timeframes[0].output, {
-      voteCount: 2,
-    });
+      .to.emit(votingContract, "VotingSessionExpired")
+      .withArgs(timeframes[0].input, timeframes[0].output);
   });
 
   it("voting which exceeded time limit must not be completed", async () => {
-    ({ votingContract } = await setupVotingContract({
+    votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
-    }));
+    });
 
     await workers[0].vote(timeframes[0].input, timeframes[0].output);
 
     await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
 
-    // voting canceled and restarted
+    // voting canceled
     workers[1].voteExpired(timeframes[0].input, timeframes[0].output);
-    workers[0].voteWinning(timeframes[0].input, timeframes[0].output, {
-      voteCount: 2,
-    });
   });
 };
