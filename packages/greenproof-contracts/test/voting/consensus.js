@@ -35,10 +35,10 @@ module.exports.consensusTests = function () {
       );
       const winningVoteWorker = participatingWorkers[expectWinAfterVotes - 1];
 
-      ({ votingContract } = await setupVotingContract({
+      votingContract = await setupVotingContract({
         participatingWorkers,
         majorityPercentage: majority,
-      }));
+      });
 
       for (const notWinningWorker of notWinningWorkers) {
         notWinningWorker.voteNotWinning(
@@ -51,21 +51,4 @@ module.exports.consensusTests = function () {
       });
     }
   );
-
-  it("consensus should not be reached when votes are divided evenly", async () => {
-    ({ votingContract } = await setupVotingContract({
-      participatingWorkers: [workers[0], workers[1], workers[2], workers[3]],
-    }));
-
-    workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[2].voteNotWinning(timeframes[0].input, timeframes[1].output);
-    workers[3].voteNoConsensus(timeframes[0].input, timeframes[1].output);
-
-    workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
-    workers[2].voteWinning(timeframes[0].input, timeframes[0].output, {
-      voteCount: 3,
-    });
-  });
 };

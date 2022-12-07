@@ -1,28 +1,29 @@
-const chai = require('chai');
-const { expect } = require('chai');
-const { parseEther } = require('ethers').utils;
+const chai = require("chai");
+const { expect } = require("chai");
+const { parseEther } = require("ethers").utils;
+const { deployDiamond } = require("../scripts/deploy/deployContracts");
+const { ethers } = require("hardhat");
+const { solidity } = require("ethereum-waffle");
+const { roles } = require("./utils/roles.utils");
+const { initMockClaimManager } = require("./utils/claimManager.utils");
+const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
+const { generateProofData } = require("./utils/issuer.utils");
+const { BigNumber } = require("ethers");
+const { timeTravel } = require("./utils/time.utils");
 const {
-  deployDiamond,
-} = require('../scripts/deploy/deployContracts');
-const { ethers } = require('hardhat');
-const { solidity } = require('ethereum-waffle');
-const { roles } = require('./utils/roles.utils');
-const { initMockClaimManager } = require('./utils/claimManager.utils');
-const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
-const { generateProofData } = require('./utils/issuer.utils');
-const { BigNumber } = require('ethers');
-const { timeTravel } = require('./utils/time.utils');
-const { createPreciseProof, createMerkleTree, hash } = require('@energyweb/greenproof-merkle-tree');
-const { getMerkleProof } = require('./utils/merkleProof.utils');
+  createPreciseProof,
+  createMerkleTree,
+  hash,
+} = require("@energyweb/greenproof-merkle-tree");
+const { getMerkleProof } = require("./utils/merkleProof.utils");
 
 chai.use(solidity);
 
-const tokenURI = 'bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq';
-const transferBytesData = ethers.utils.formatBytes32String('');
+const tokenURI = "bafkreihzks3jsrfqn4wm6jtc3hbfsikq52eutvkvrhd454jztna73cpaaq";
+const transferBytesData = ethers.utils.formatBytes32String("");
 const revokablePeriod = 60 * 60 * 24;
 
-
-describe('IssuerFacet', function() {
+describe("IssuerFacet", function () {
   let owner;
   let issuer;
   let worker;
@@ -39,14 +40,8 @@ describe('IssuerFacet', function() {
   let revokeRole;
 
   beforeEach(async () => {
-    [
-      owner,
-      issuer,
-      worker,
-      revoker,
-      claimer,
-      ...wallets
-    ] = await ethers.getSigners();
+    [owner, issuer, worker, revoker, claimer, ...wallets] =
+      await ethers.getSigners();
 
     const claimManagerMocked = await initMockClaimManager(owner);
     const claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
@@ -56,7 +51,7 @@ describe('IssuerFacet', function() {
       await claimsRevocationRegistryMocked.isRevoked(
         role,
         wallet.address,
-        false,
+        false
       );
     };
 
@@ -65,7 +60,7 @@ describe('IssuerFacet', function() {
       await claimsRevocationRegistryMocked.isRevoked(
         role,
         wallet.address,
-        true,
+        true
       );
     };
 
@@ -78,9 +73,12 @@ describe('IssuerFacet', function() {
       revocablePeriod: revokablePeriod,
     }));
 
-    issuerContract = await ethers.getContractAt('IssuerFacet', diamondAddress);
-    votingContract = await ethers.getContractAt('VotingFacet', diamondAddress);
-    proofManagerContract = await ethers.getContractAt('ProofManagerFacet', diamondAddress);
+    issuerContract = await ethers.getContractAt("IssuerFacet", diamondAddress);
+    votingContract = await ethers.getContractAt("VotingFacet", diamondAddress);
+    proofManagerContract = await ethers.getContractAt(
+      "ProofManagerFacet",
+      diamondAddress
+    );
 
     await resetRoles();
     await grantRole(worker, roles.workerRole);
@@ -90,14 +88,14 @@ describe('IssuerFacet', function() {
     await grantRole(claimer, roles.claimerRole);
   });
 
-  describe('Proof issuance tests', () => {
-    it('checks that the every one has 0 balance initially', async () => {
+  describe("Proof issuance tests", () => {
+    it("checks that the every one has 0 balance initially", async () => {
       for (const wallet of await ethers.getSigners()) {
         const first20TokenIds = new Array(20).fill(0).map((_, i) => i);
         for (const tokenId of first20TokenIds) {
           const balance = await issuerContract.balanceOf(
             wallet.address,
-            tokenId,
+            tokenId
           );
 
           expect(balance).to.equal(0);
@@ -105,8 +103,14 @@ describe('IssuerFacet', function() {
       }
     });
 
-    it('should reject proof issuance requests if generator is the zero address', async () => {
-      const { inputHash, volumeRootHash, matchResultProof, volume, volumeProof } = generateProofData();
+    it("should reject proof issuance requests if generator is the zero address", async () => {
+      const {
+        inputHash,
+        volumeRootHash,
+        matchResultProof,
+        volume,
+        volumeProof,
+      } = generateProofData();
 
       await expect(
         issuerContract
@@ -118,19 +122,19 @@ describe('IssuerFacet', function() {
             matchResultProof,
             parseEther(volume.toString(10)),
             volumeProof,
-            tokenURI,
-          ),
-      ).to.be.revertedWith('issuance must be non-zero');
+            tokenURI
+          )
+      ).to.be.revertedWith("issuance must be non-zero");
     });
 
-    it('Authorized issuers can send proof issuance requests', async () => {
+    it("Authorized issuers can send proof issuance requests", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData);
     });
 
-    it('reverts when issuers send duplicate proof issuance requests', async () => {
+    it("reverts when issuers send duplicate proof issuance requests", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
@@ -138,7 +142,7 @@ describe('IssuerFacet', function() {
       await expectAlreadyCertified(proofData);
     });
 
-    it('checks that the certified generation volume is correct after minting', async () => {
+    it("checks that the certified generation volume is correct after minting", async () => {
       const receiver = wallets[1];
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -149,8 +153,8 @@ describe('IssuerFacet', function() {
       expect(amountMinted).to.equal(parseEther(proofData.volume.toString()));
     });
 
-    it('should revert when one tries to transfer token ID = 0', async () => {
-      const transferBytesData = ethers.utils.formatBytes32String('');
+    it("should revert when one tries to transfer token ID = 0", async () => {
+      const transferBytesData = ethers.utils.formatBytes32String("");
 
       await expect(
         issuerContract
@@ -159,13 +163,13 @@ describe('IssuerFacet', function() {
             wallets[0].address,
             owner.address,
             0,
-            parseEther('2'),
-            transferBytesData,
-          ),
-      ).to.be.revertedWith('transfer: invalid zero token ID');
+            parseEther("2"),
+            transferBytesData
+          )
+      ).to.be.revertedWith("transfer: invalid zero token ID");
     });
 
-    it('should revert when one tries to transfer token ID > lastTokenIndex', async () => {
+    it("should revert when one tries to transfer token ID > lastTokenIndex", async () => {
       const invalidTokenIndex = 1;
 
       await expect(
@@ -175,18 +179,18 @@ describe('IssuerFacet', function() {
             wallets[0].address,
             owner.address,
             invalidTokenIndex,
-            parseEther('2'),
-            transferBytesData,
-          ),
+            parseEther("2"),
+            transferBytesData
+          )
       ).to.be.revertedWith(
-        'transfer: tokenId greater than issuer.latestCertificateId',
+        "transfer: tokenId greater than issuer.latestCertificateId"
       );
     });
 
-    it('should correctly transfer certificates', async () => {
+    it("should correctly transfer certificates", async () => {
       const minter = wallets[0];
       const receiver = wallets[1];
-      const transferVolume = parseEther('2');
+      const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -195,15 +199,20 @@ describe('IssuerFacet', function() {
       await transfer(minter, receiver, transferVolume);
 
       const minterBalance = await issuerContract.balanceOf(minter.address, 1);
-      const receiverBalance = await issuerContract.balanceOf(receiver.address, 1);
-      expect(minterBalance).to.equal(parseEther(`${mintedVolume}`).sub(transferVolume));
+      const receiverBalance = await issuerContract.balanceOf(
+        receiver.address,
+        1
+      );
+      expect(minterBalance).to.equal(
+        parseEther(`${mintedVolume}`).sub(transferVolume)
+      );
       expect(receiverBalance).to.equal(transferVolume);
     });
 
-    it('should get the list of all certificate owners', async () => {
+    it("should get the list of all certificate owners", async () => {
       const minter = wallets[0];
       const receiver = wallets[1];
-      const transferVolume = parseEther('2');
+      const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -218,13 +227,16 @@ describe('IssuerFacet', function() {
       ]);
     });
 
-    it('should get all certificates of one owner', async () => {
+    it("should get all certificates of one owner", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, wallets[0]);
 
       const secondProofData = generateProofData();
-      await reachConsensus(secondProofData.inputHash, secondProofData.matchResult);
+      await reachConsensus(
+        secondProofData.inputHash,
+        secondProofData.matchResult
+      );
       await mintProof(2, secondProofData, wallets[0]);
 
       const certs = await proofManagerContract.getProofsOf(wallets[0].address);
@@ -243,10 +255,9 @@ describe('IssuerFacet', function() {
       expect(secondCert.volume).to.eql(parseEther(`${secondProofData.volume}`));
       expect(secondCert.merkleRootHash).to.eql(secondProofData.volumeRootHash);
       expect(secondCert.generator).to.eql(wallets[0].address);
-
     });
 
-    it('Should reject issuance requests for wrongs voteIDs', async () => {
+    it("Should reject issuance requests for wrongs voteIDs", async () => {
       const { inputHash: someOtherHash } = generateProofData();
       const receiver = wallets[0];
       const proofData = generateProofData();
@@ -254,13 +265,14 @@ describe('IssuerFacet', function() {
 
       const wrongData = { ...proofData, inputHash: someOtherHash };
 
-      await expect(requestMinting(wrongData, receiver))
-        .to.be.revertedWith(someOtherHash);
+      await expect(requestMinting(wrongData, receiver)).to.be.revertedWith(
+        someOtherHash
+      );
     });
   });
 
-  describe('Proof revocation tests', () => {
-    it('should prevent a non authorized entity from revoking non retired proof', async () => {
+  describe("Proof revocation tests", () => {
+    it("should prevent a non authorized entity from revoking non retired proof", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       const unauthorizedOperator = wallets[0];
@@ -268,98 +280,96 @@ describe('IssuerFacet', function() {
       await revokeRole(unauthorizedOperator, roles.revokerRole);
 
       await expect(
-        proofManagerContract
-          .connect(unauthorizedOperator)
-          .revokeProof(1),
-      ).to.be.revertedWith('Access: Not enrolled as revoker');
+        proofManagerContract.connect(unauthorizedOperator).revokeProof(1)
+      ).to.be.revertedWith("Access: Not enrolled as revoker");
     });
 
-    it('should prevent revocation of non existing certificates', async () => {
+    it("should prevent revocation of non existing certificates", async () => {
       const nonExistingCertificateID = 1;
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(nonExistingCertificateID),
+        proofManagerContract
+          .connect(revoker)
+          .revokeProof(nonExistingCertificateID)
       ).to.be.revertedWith(
-        `NonExistingCertificate(${nonExistingCertificateID})`,
+        `NonExistingCertificate(${nonExistingCertificateID})`
       );
     });
 
-    it('should allow an authorized entity to revoke a non retired proof', async () => {
+    it("should allow an authorized entity to revoke a non retired proof", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, revoker);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1),
-      ).to.emit(proofManagerContract, 'ProofRevoked');
+        proofManagerContract.connect(revoker).revokeProof(1)
+      ).to.emit(proofManagerContract, "ProofRevoked");
     });
 
-    it('should revert when transfering reevoked proof', async () => {
+    it("should revert when transfering reevoked proof", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, revoker);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1),
-      ).to.emit(proofManagerContract, 'ProofRevoked');
-
+        proofManagerContract.connect(revoker).revokeProof(1)
+      ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        issuerContract
-          .safeTransferFrom(
-            revoker.address,
-            owner.address,
-            1,
-            parseEther('1'),
-            transferBytesData,
-          ),
-      ).to.be.revertedWith('non tradable revoked proof');
+        issuerContract.safeTransferFrom(
+          revoker.address,
+          owner.address,
+          1,
+          parseEther("1"),
+          transferBytesData
+        )
+      ).to.be.revertedWith("non tradable revoked proof");
     });
 
-    it('should prevent duplicate revocation', async () => {
+    it("should prevent duplicate revocation", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, revoker);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1),
-      ).to.emit(proofManagerContract, 'ProofRevoked');
+        proofManagerContract.connect(revoker).revokeProof(1)
+      ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1),
-      ).to.be.revertedWith('already revoked proof');
+        proofManagerContract.connect(revoker).revokeProof(1)
+      ).to.be.revertedWith("already revoked proof");
     });
 
-    it('should revert if claimer tries to retire a revoked proof', async () => {
+    it("should revert if claimer tries to retire a revoked proof", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, owner);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1),
-      ).to.emit(proofManagerContract, 'ProofRevoked');
+        proofManagerContract.connect(revoker).revokeProof(1)
+      ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        proofManagerContract.connect(claimer).claimProofFor(1, owner.address, 1),
-      ).to.be.revertedWith('proof revoked');
+        proofManagerContract.connect(claimer).claimProofFor(1, owner.address, 1)
+      ).to.be.revertedWith("proof revoked");
     });
 
-    it('should revert if owner tries to retire a revoked proof', async () => {
+    it("should revert if owner tries to retire a revoked proof", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, issuer, issuer);
       await grantRole(issuer, roles.claimerRole);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1),
-      ).to.emit(proofManagerContract, 'ProofRevoked');
+        proofManagerContract.connect(revoker).revokeProof(1)
+      ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        proofManagerContract.connect(issuer).claimProof(1, 1),
-      ).to.be.revertedWith('proof revoked');
+        proofManagerContract.connect(issuer).claimProof(1, 1)
+      ).to.be.revertedWith("proof revoked");
     });
 
-    it('should allow claiming proofs for others', async () => {
+    it("should allow claiming proofs for others", async () => {
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -367,19 +377,29 @@ describe('IssuerFacet', function() {
       await mintProof(1, proofData, minter);
       const claimedVolume = parseEther((proofData.volume - 2).toString());
 
-      const initialClaimedAmount = await proofManagerContract.claimedBalanceOf(minter.address, 1);
+      const initialClaimedAmount = await proofManagerContract.claimedBalanceOf(
+        minter.address,
+        1
+      );
       expect(initialClaimedAmount).to.equal(0);
 
       await claimVolumeFor(minter, claimedVolume);
 
-      const claimedProofsAmount = await proofManagerContract.claimedBalanceOf(minter.address, 1);
+      const claimedProofsAmount = await proofManagerContract.claimedBalanceOf(
+        minter.address,
+        1
+      );
       expect(claimedProofsAmount).to.equal(claimedVolume);
 
-      const remainingVolume = await proofManagerContract.getProofsOf(minter.address);
-      expect(remainingVolume[0].volume).to.equal(parseEther(`${mintedVolume}`).sub(claimedVolume));
+      const remainingVolume = await proofManagerContract.getProofsOf(
+        minter.address
+      );
+      expect(remainingVolume[0].volume).to.equal(
+        parseEther(`${mintedVolume}`).sub(claimedVolume)
+      );
     });
 
-    it('should allow claiming proofs', async () => {
+    it("should allow claiming proofs", async () => {
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -387,59 +407,64 @@ describe('IssuerFacet', function() {
       await mintProof(1, proofData, minter);
       const claimedVolume = parseEther((proofData.volume - 2).toString());
 
-      const initialClaimedAmount = await proofManagerContract.claimedBalanceOf(minter.address, 1);
+      const initialClaimedAmount = await proofManagerContract.claimedBalanceOf(
+        minter.address,
+        1
+      );
       expect(initialClaimedAmount).to.equal(0);
 
       await claimVolume(minter, claimedVolume);
 
-      const claimedProofsAmount = await proofManagerContract.claimedBalanceOf(minter.address, 1);
+      const claimedProofsAmount = await proofManagerContract.claimedBalanceOf(
+        minter.address,
+        1
+      );
       expect(claimedProofsAmount).to.equal(claimedVolume);
 
-      const remainingVolume = await proofManagerContract.getProofsOf(minter.address);
-      expect(remainingVolume[0].volume).to.equal(parseEther(`${mintedVolume}`).sub(claimedVolume));
+      const remainingVolume = await proofManagerContract.getProofsOf(
+        minter.address
+      );
+      expect(remainingVolume[0].volume).to.equal(
+        parseEther(`${mintedVolume}`).sub(claimedVolume)
+      );
     });
 
-    it('should revert when retirement for others amount exceeds owned volume', async () => {
+    it("should revert when retirement for others amount exceeds owned volume", async () => {
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       const minter = wallets[0];
       await mintProof(1, proofData, minter);
-      const claimedVolume = parseEther('6');
+      const claimedVolume = parseEther("6");
 
       await expect(
         proofManagerContract
           .connect(claimer)
-          .claimProofFor(1, minter.address, claimedVolume),
-      ).to.be.revertedWith('Insufficient volume owned');
+          .claimProofFor(1, minter.address, claimedVolume)
+      ).to.be.revertedWith("Insufficient volume owned");
     });
 
-
-    it('should revert when retirement amount exceeds owned volume', async () => {
+    it("should revert when retirement amount exceeds owned volume", async () => {
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       const minter = wallets[0];
       await mintProof(1, proofData, minter);
-      const claimedVolume = parseEther('6');
+      const claimedVolume = parseEther("6");
 
       await expect(
-        proofManagerContract
-          .connect(minter)
-          .claimProof(1, claimedVolume),
-      ).to.be.revertedWith('Insufficient volume owned');
+        proofManagerContract.connect(minter).claimProof(1, claimedVolume)
+      ).to.be.revertedWith("Insufficient volume owned");
     });
 
-    it('should prevent authorized revoker from revoking a retired proof after the revocable Period', async () => {
+    it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       const minter = wallets[0];
       await mintProof(1, proofData, minter);
-      const claimedVolume = parseEther('5');
-      const proof = await proofManagerContract
-        .connect(owner)
-        .getProof(1);
+      const claimedVolume = parseEther("5");
+      const proof = await proofManagerContract.connect(owner).getProof(1);
       const issuanceDate = Number(proof.issuanceDate.toString());
       await claimVolumeFor(minter, claimedVolume);
 
@@ -452,37 +477,41 @@ describe('IssuerFacet', function() {
       await expect(tx).to.be.revertedWith(
         `NonRevokableCertificate(${1}, ${issuanceDate}, ${
           issuanceDate + revokablePeriod
-        })`,
+        })`
       );
     });
 
-    it('allows to reissue revoked certificate', async () => {
+    it("allows to reissue revoked certificate", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData, revoker);
       await expectAlreadyCertified(proofData);
 
-      const certificateId = await proofManagerContract.connect(revoker).getProofIdByDataHash(proofData.volumeRootHash);
+      const certificateId = await proofManagerContract
+        .connect(revoker)
+        .getProofIdByDataHash(proofData.volumeRootHash);
       await proofManagerContract.connect(revoker).revokeProof(certificateId);
 
       await mintProof(2, proofData, revoker);
     });
 
-    it('allows to get proof ID by data hash', async () => {
+    it("allows to get proof ID by data hash", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData, revoker);
 
-      const certificateId = await proofManagerContract.connect(issuer).getProofIdByDataHash(proofData.volumeRootHash);
+      const certificateId = await proofManagerContract
+        .connect(issuer)
+        .getProofIdByDataHash(proofData.volumeRootHash);
 
       expect(BigNumber.from(certificateId).toNumber()).to.be.gt(0);
     });
   });
 
-  describe('Proof verification tests', () => {
-    it('should verify all kinds of proofs', async () => {
+  describe("Proof verification tests", () => {
+    it("should verify all kinds of proofs", async () => {
       const data = [
         { id: 1, generatorID: 2, volume: 10, consumerID: 500 },
         { id: 2, generatorID: 3, volume: 10, consumerID: 522 },
@@ -497,24 +526,28 @@ describe('IssuerFacet', function() {
       for (let leaf of leaves) {
         const proof = tree.getHexProof(leaf);
         expect(
-          await proofManagerContract.connect(owner).verifyProof(root, leaf, proof),
+          await proofManagerContract
+            .connect(owner)
+            .verifyProof(root, leaf, proof)
         ).to.be.true;
       }
 
       for (let dataLeaf of data) {
         const leafTree = createPreciseProof(dataLeaf);
         const leafRoot = leafTree.getHexRoot();
-        const leafLeaf = hash('consumerID' + JSON.stringify(dataLeaf.consumerID));
+        const leafLeaf = hash(
+          "consumerID" + JSON.stringify(dataLeaf.consumerID)
+        );
         const leafProof = leafTree.getHexProof(leafLeaf);
         expect(
           await proofManagerContract
             .connect(owner)
-            .verifyProof(leafRoot, leafLeaf, leafProof),
+            .verifyProof(leafRoot, leafLeaf, leafProof)
         ).to.be.true;
       }
     });
 
-    it('should successfully verify a proof', async () => {
+    it("should successfully verify a proof", async () => {
       const data = [
         { id: 7, generatorID: 4735, volume: 7, consumerID: 7408562 },
         { id: 7408562, generatorID: 7408562, volume: 4735, consumerID: 7 },
@@ -529,22 +562,18 @@ describe('IssuerFacet', function() {
         expect(
           await proofManagerContract
             .connect(owner)
-            .verifyProof(
-              merkleRoot,
-              proof.hexLeaf,
-              proof.leafProof,
-            ),
+            .verifyProof(merkleRoot, proof.hexLeaf, proof.leafProof)
         ).to.be.true;
       }
     });
   });
 
-  describe('Data disclosure tests', () => {
-    it('should revert when non authorized user tries to disclose data', async () => {
+  describe("Data disclosure tests", () => {
+    it("should revert when non authorized user tries to disclose data", async () => {
       const unauthorizedOperator = wallets[0];
       await revokeRole(unauthorizedOperator, roles.issuerRole);
       const proofData = generateProofData();
-      const key = 'consumerID';
+      const key = "consumerID";
 
       const disclosedDataTree = proofData.volumeTree;
       const dataLeaf = hash(key + proofData.volume);
@@ -554,13 +583,13 @@ describe('IssuerFacet', function() {
       await expect(
         issuerContract
           .connect(unauthorizedOperator)
-          .discloseData(key, proofData.volume, dataProof, dataRootHash),
-      ).to.be.revertedWith('Access: Not an issuer');
+          .discloseData(key, proofData.volume, dataProof, dataRootHash)
+      ).to.be.revertedWith("Access: Not an issuer");
     });
 
-    it('should allow authorized user to disclose data', async () => {
+    it("should allow authorized user to disclose data", async () => {
       const proofData = generateProofData();
-      const key = 'consumerID';
+      const key = "consumerID";
       const dataLeaf = hash(key + `${proofData.consumerID}`);
       const disclosedDataTree = proofData.volumeTree;
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
@@ -571,31 +600,41 @@ describe('IssuerFacet', function() {
         .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash);
     });
 
-    it('should revert when one tries to disclose not verified data', async () => {
+    it("should revert when one tries to disclose not verified data", async () => {
       const proofData = generateProofData();
-      const key = 'consumerID';
+      const key = "consumerID";
       const dataLeaf = hash(key + `${proofData.consumerID}`);
       const disclosedDataTree = proofData.volumeTree;
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
       const dataRootHash = disclosedDataTree.getHexRoot();
 
       const notExistingConsumerID = proofData.consumerID + 1;
-      const notExistingKey = key + 'xD';
+      const notExistingKey = key + "xD";
       await expect(
         issuerContract
           .connect(issuer)
-          .discloseData(key, `${notExistingConsumerID}`, dataProof, dataRootHash),
-      ).to.be.revertedWith('Disclose : data not verified');
+          .discloseData(
+            key,
+            `${notExistingConsumerID}`,
+            dataProof,
+            dataRootHash
+          )
+      ).to.be.revertedWith("Disclose : data not verified");
       await expect(
         issuerContract
           .connect(issuer)
-          .discloseData(notExistingKey, `${proofData.consumerID}`, dataProof, dataRootHash),
-      ).to.be.revertedWith('Disclose : data not verified');
+          .discloseData(
+            notExistingKey,
+            `${proofData.consumerID}`,
+            dataProof,
+            dataRootHash
+          )
+      ).to.be.revertedWith("Disclose : data not verified");
     });
 
-    it('should revert when one tries to disclose already disclosed data', async () => {
+    it("should revert when one tries to disclose already disclosed data", async () => {
       const proofData = generateProofData();
-      const key = 'consumerID';
+      const key = "consumerID";
       const dataLeaf = hash(key + `${proofData.consumerID}`);
       const disclosedDataTree = proofData.volumeTree;
       const dataProof = disclosedDataTree.getHexProof(dataLeaf);
@@ -607,8 +646,8 @@ describe('IssuerFacet', function() {
       expect(
         issuerContract
           .connect(issuer)
-          .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash),
-      ).to.be.revertedWith('Disclose: data already disclosed');
+          .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash)
+      ).to.be.revertedWith("Disclose: data already disclosed");
     });
   });
 
@@ -620,7 +659,7 @@ describe('IssuerFacet', function() {
 
     const { timestamp } = await ethers.provider.getBlock(tx.blockNumber);
     await expect(tx)
-      .to.emit(proofManagerContract, 'ProofClaimed')
+      .to.emit(proofManagerContract, "ProofClaimed")
       .withArgs(1, minter.address, timestamp, claimedVolume);
     return tx;
   };
@@ -633,7 +672,7 @@ describe('IssuerFacet', function() {
 
     const { timestamp } = await ethers.provider.getBlock(tx.blockNumber);
     await expect(tx)
-      .to.emit(proofManagerContract, 'ProofClaimed')
+      .to.emit(proofManagerContract, "ProofClaimed")
       .withArgs(1, minter.address, timestamp, claimedVolume);
     return tx;
   };
@@ -645,7 +684,7 @@ describe('IssuerFacet', function() {
   const requestMinting = (
     { inputHash, volumeRootHash, matchResultProof, volume, volumeProof },
     receiver,
-    minter = issuer,
+    minter = issuer
   ) =>
     issuerContract
       .connect(minter)
@@ -656,22 +695,30 @@ describe('IssuerFacet', function() {
         matchResultProof,
         parseEther(volume.toString()),
         volumeProof,
-        tokenURI,
-      )
+        tokenURI
+      );
 
-  const mintProof = async (id, proofData, receiver = wallets[1], minter = issuer) => {
+  const mintProof = async (
+    id,
+    proofData,
+    receiver = wallets[1],
+    minter = issuer
+  ) => {
     await expect(requestMinting(proofData, receiver, minter))
-      .to.emit(issuerContract, 'ProofMinted')
+      .to.emit(issuerContract, "ProofMinted")
       .withArgs(id, parseEther(proofData.volume.toString()), receiver.address);
   };
 
   const approveForTransfer = async (minter, wallet) => {
-    await issuerContract.connect(minter).setApprovalForAll(wallet.address, true);
+    await issuerContract
+      .connect(minter)
+      .setApprovalForAll(wallet.address, true);
   };
 
   const expectAlreadyCertified = async (proofData) => {
-    await expect(requestMinting(proofData, wallets[0]))
-      .to.be.revertedWith(`AlreadyCertifiedData("${proofData.volumeRootHash}")`);
+    await expect(requestMinting(proofData, wallets[0])).to.be.revertedWith(
+      `AlreadyCertifiedData("${proofData.volumeRootHash}")`
+    );
   };
 
   const transfer = async (minter, receiver, transferVolume) => {
@@ -685,27 +732,25 @@ describe('IssuerFacet', function() {
           receiver.address,
           1,
           transferVolume,
-          transferBytesData,
-        ),
+          transferBytesData
+        )
     )
-      .to.emit(issuerContract, 'TransferSingle')
+      .to.emit(issuerContract, "TransferSingle")
       .withArgs(
         minter.address,
         minter.address,
         receiver.address,
         1,
-        transferVolume,
+        transferVolume
       );
   };
 
   const resetRoles = async () => {
     const wallets = await ethers.getSigners();
     await Promise.all(
-      wallets.map(async wallet =>
+      wallets.map(async (wallet) =>
         Promise.all(
-          Object.values(roles).map(async role =>
-            revokeRole(wallet, role)
-          )
+          Object.values(roles).map(async (role) => revokeRole(wallet, role))
         )
       )
     );

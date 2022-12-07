@@ -16,14 +16,14 @@ const { consensusTests } = require("./consensus");
 const { workerRole } = roles;
 chai.use(solidity);
 
+let diamondAddress;
+let votingContract;
 describe("Voting", function () {
-  let diamondAddress;
   let owner;
   let workers;
   let faucet;
   let mockClaimManager;
   let mockClaimRevoker;
-  let votingContract;
 
   const timeframes = [
     {
@@ -75,7 +75,7 @@ describe("Voting", function () {
       timeframes,
       addWorkers,
       removeWorkers,
-      expectResults,
+      expectVotingResults,
       setupVotingContract,
     });
   });
@@ -98,24 +98,28 @@ describe("Voting", function () {
     );
   };
 
-  const expectResults = async ({
+  const expectVotingResults = async ({
     votingInput,
-    workerVotes,
+    winningMatches,
+    votes,
     winners,
-    winningMatch,
   }) => {
-    expect(await votingContract.getWinningMatch(votingInput)).to.equal(
-      winningMatch
+    expect(await votingContract.getWinningMatches(votingInput)).to.deep.equal(
+      winningMatches
     );
-    for (const [workerIndex, vote] of Object.entries(workerVotes)) {
+
+    for (const [workerIndex, workerVotes] of Object.entries(votes)) {
       const worker = workers[workerIndex];
-      const workerVote = await votingContract.getWorkerVote(
-        votingInput,
-        worker.address
-      );
-      expect(workerVote).to.equal(vote);
+      expect(
+        await votingContract.getWorkerVotes(votingInput, worker.address)
+      ).to.deep.equal(workerVotes);
     }
-    expect(await votingContract.getWinners(votingInput)).to.deep.equal(winners);
+
+    for (const [i, match] of Object.entries(winningMatches)) {
+      expect(await votingContract.getWinners(votingInput, match)).to.deep.equal(
+        winners[i]
+      );
+    }
   };
 
   const removeWorkers = async (workers) => {
@@ -143,6 +147,7 @@ describe("Voting", function () {
       rewardAmount: reward,
       rewardsEnabled,
     }));
+    module.exports.diamondAddress = diamondAddress;
     votingContract = await ethers.getContractAt("VotingFacet", diamondAddress);
     workers.forEach((w) => w.setVotingContract(votingContract));
 
@@ -154,6 +159,6 @@ describe("Voting", function () {
 
     await addWorkers(participatingWorkers || []);
 
-    return { votingContract, diamondAddress };
+    return votingContract;
   };
 });
