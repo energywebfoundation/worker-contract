@@ -457,6 +457,22 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("Insufficient volume owned");
     });
 
+    it("should allow authorized revoker to revoke a retired proof during the revocable Period", async () => {
+      const mintedVolume = 5;
+      const proofData = generateProofData({ volume: mintedVolume });
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const minter = wallets[0];
+      await mintProof(1, proofData, minter);
+      const claimedVolume = parseEther("5");
+      const proof = await proofManagerContract.connect(owner).getProof(1);
+      const issuanceDate = Number(proof.issuanceDate.toString());
+      await claimVolumeFor(minter, claimedVolume);
+
+      const tx = proofManagerContract.connect(revoker).revokeProof(1);
+
+      await expect(tx).to.emit(proofManagerContract, "ProofRevoked");
+    });
+
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
@@ -565,10 +581,6 @@ describe("IssuerFacet", function () {
             .verifyProof(merkleRoot, proof.hexLeaf, proof.leafProof)
         ).to.be.true;
       }
-    });
-
-    it("should revert when one tries to retrieve a non existing proof", async () => {
-      await expect(proofManagerContract.getProof(42)).to.be.revertedWith("NonExistingCertificate")
     });
   });
 
