@@ -30,6 +30,12 @@ module.exports = {
     compilers: [
       {
         version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100000,
+          },
+        }
       },
     ],
   },
@@ -47,12 +53,12 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     }
   },
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 100000,
-    },
-  },
+  // settings: {
+  //   optimizer: {
+  //     enabled: true,
+  //     runs: 2100,
+  //   },
+  // },
   gasReporter: {
     currency: 'USD',
     gasPrice: 21,
