@@ -36,7 +36,6 @@ library LibVoting {
      */
     struct VotingStorage {
         uint256 timeLimit /* limit of duration of a voting session. The vote is considered expired after `startTimestamp` + `timeLimit` */;
-        uint256 numberOfWorkers /* Number of workers taking part to vote. This will determine the consensus threshold  */;
         uint256 majorityPercentage /* Percentage of workers that have to vote on the same result to reach the majority  */;
         address payable[] whitelistedWorkers /* List of all whitelisted workers */;
         bytes32[] votingIDs /* List of all voting identifiers */;
@@ -208,11 +207,17 @@ library LibVoting {
     function _hasMajority(uint256 numberOfWinningVotes) internal view returns (bool) {
         VotingStorage storage votingStorage = _getStorage();
 
-        return ((100 * numberOfWinningVotes) / _getStorage().numberOfWorkers) >= votingStorage.majorityPercentage;
+        return ((100 * numberOfWinningVotes) / _getNumberOfWorkers()) >= votingStorage.majorityPercentage;
     }
 
     function _isClosed(VotingSession storage vote) internal view returns (bool) {
         return vote.status == Status.Completed;
+    }
+
+    function _getNumberOfWorkers() internal view returns (uint256) {
+        VotingStorage storage votingStorage = _getStorage();
+
+        return votingStorage.whitelistedWorkers.length;
     }
 
     function _getVoters(bytes32 votingID, bytes32 sessionID) internal view returns (address payable[] memory _voters) {
@@ -220,10 +225,13 @@ library LibVoting {
 
         VotingSession storage session = _votingStorage.votingIDToVoting[votingID].sessionIDToSession[sessionID];
 
+        uint256 numberOfWorkers = _getNumberOfWorkers();
+        address payable[] memory workersList = _votingStorage.whitelistedWorkers;
+
         _voters = new address payable[](session.votesCount);
         uint256 votersCount = 0;
-        for (uint256 i = 0; i < _votingStorage.numberOfWorkers; i++) {
-            address payable worker = _votingStorage.whitelistedWorkers[i];
+        for (uint256 i = 0; i < numberOfWorkers; i++) {
+            address payable worker = workersList[i];
             if (session.workerToVoted[worker]) {
                 _voters[votersCount] = worker;
                 votersCount++;

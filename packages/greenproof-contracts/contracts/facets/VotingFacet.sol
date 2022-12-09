@@ -75,9 +75,8 @@ contract VotingFacet is IVoting, IReward {
         if (isWhitelistedWorker(workerAddress)) {
             revert LibVoting.WorkerAlreadyAdded();
         }
-        votingStorage.workerToIndex[workerAddress] = votingStorage.numberOfWorkers;
+        votingStorage.workerToIndex[workerAddress] = LibVoting._getNumberOfWorkers();
         votingStorage.whitelistedWorkers.push(workerAddress);
-        votingStorage.numberOfWorkers = votingStorage.numberOfWorkers + 1;
     }
 
     /**
@@ -88,23 +87,23 @@ contract VotingFacet is IVoting, IReward {
      */
     function removeWorker(address workerToRemove) external override {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
+        uint256 numberOfWorkers = LibVoting._getNumberOfWorkers();
 
         if (!isWhitelistedWorker(workerToRemove)) {
             revert LibVoting.WorkerWasNotAdded(workerToRemove);
         }
         require(workerToRemove.isEnrolledWorker() == false, "Not allowed: still enrolled as worker");
 
-        if (votingStorage.numberOfWorkers > 1) {
+        if (numberOfWorkers > 1) {
             uint256 workerIndex = votingStorage.workerToIndex[workerToRemove];
             // Copy last element to fill the missing place in array
-            address payable workerToMove = votingStorage.whitelistedWorkers[votingStorage.numberOfWorkers - 1];
+            address payable workerToMove = votingStorage.whitelistedWorkers[numberOfWorkers - 1];
             votingStorage.whitelistedWorkers[workerIndex] = workerToMove;
             votingStorage.workerToIndex[workerToMove] = workerIndex;
         }
 
         delete votingStorage.workerToIndex[workerToRemove];
         votingStorage.whitelistedWorkers.pop();
-        votingStorage.numberOfWorkers = votingStorage.numberOfWorkers - 1;
     }
 
     /**
@@ -126,12 +125,6 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
-    function getNumberOfWorkers() external view override returns (uint256) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
-
-        return votingStorage.numberOfWorkers;
-    }
-
     function getWorkers() external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
@@ -141,7 +134,7 @@ contract VotingFacet is IVoting, IReward {
     function isWhitelistedWorker(address worker) public view returns (bool) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
-        return workerIndex < votingStorage.numberOfWorkers && votingStorage.whitelistedWorkers[workerIndex] == worker;
+        return workerIndex < LibVoting._getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
     }
 
     /**
