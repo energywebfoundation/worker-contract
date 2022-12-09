@@ -118,6 +118,45 @@ module.exports.resultsTests = function () {
     ).to.deep.equal([timeframes[0].output]);
   });
 
+  it("should be able to get the list of whiteListed workers", async () => {
+    votingContract = await setupVotingContract({
+      participatingWorkers: [workers[0]],
+    });
+    let expectedList = [workers[0].address]
+
+    expect(await votingContract.getWorkers()).to.deep.equal(expectedList);
+    
+    votingContract = await setupVotingContract({
+      participatingWorkers: [workers[0], workers[2], workers[3]],
+    });
+    expectedList = [workers[0].address, workers[2].address, workers[3].address]
+
+    expect(await votingContract.getWorkers()).to.deep.equal(expectedList);
+  });
+
+  it("should get the number of voteIDs casted in the system", async () => {
+    votingContract = await setupVotingContract({
+      participatingWorkers: [workers[0], workers[1], workers[2]],
+    });
+
+    expect(
+      await votingContract.numberOfVotings()
+    ).to.be.equal(0);
+
+    await votingContract.connect(workers[0].wallet).vote(timeframes[0].input, timeframes[0].output)
+   
+    expect(
+      await votingContract.numberOfVotings()
+    ).to.be.equal(1);
+    
+    await votingContract.connect(workers[ 1 ].wallet).vote(timeframes[ 1 ].input, timeframes[ 2 ].output)
+    await votingContract.connect(workers[2].wallet).vote(timeframes[2].input, timeframes[1].output)
+
+    expect(
+      await votingContract.numberOfVotings()
+    ).to.be.equal(3);
+  });
+
   it("should not be able to restart session", async () => {
     votingContract = await setupVotingContract({
       majorityPercentage: 50,
