@@ -171,6 +171,32 @@ describe("IssuerFacet", function () {
       ]);
     });
 
+    it("should get details of a minted certificate", async () => {
+      const mintedVolume = 5;
+      const certificaID = 1;
+      const proofData = generateProofData({ volume: mintedVolume });
+  
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const minter = wallets[0];
+      const mintTx = await mintProof(certificaID, proofData, minter);
+      const proof = await proofManagerContract.connect(owner).getProof(1);
+
+      const { timestamp } = await ethers.provider.getBlock(mintTx.blockNumber);
+    
+      expect(proof.issuanceDate).to.equal(timestamp);
+      expect(proof.certificateID).to.equal(certificaID);
+      expect(proof.generator).to.equal(minter.address);
+      expect(proof.volume).to.equal(parseEther(mintedVolume.toString()));
+      expect(proof.merkleRootHash).to.be.deep.equal(proofData.volumeRootHash);
+    });
+
+    it("should revert when asking details for an invalid certificateID", async () => {
+     const invalidCertificateID = 42;
+      await expect(
+        proofManagerContract.connect(owner).getProof(invalidCertificateID)
+      ).to.be.revertedWith("NonExistingCertificate")
+    });
+
     it("should get all certificates of one owner", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -861,9 +887,11 @@ describe("IssuerFacet", function () {
     receiver = wallets[1],
     minter = issuer
   ) => {
-    await expect(requestMinting(proofData, receiver, minter))
+    const mintingTx = requestMinting(proofData, receiver, minter);
+    await expect(mintingTx)
       .to.emit(issuerContract, "ProofMinted")
       .withArgs(id, parseEther(proofData.volume.toString()), receiver.address);
+    return mintingTx;
   };
 
   const approveForTransfer = async (minter, wallet) => {
