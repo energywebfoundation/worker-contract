@@ -28,12 +28,13 @@ describe("DiamondTest", async function () {
   let tx;
   let receipt;
   let owner;
+  let nonOwner;
   let claimManagerMocked;
   let claimsRevocationRegistryMocked;
   const addresses = [];
 
   before(async function () {
-    [owner] = await ethers.getSigners();
+    [owner, nonOwner] = await ethers.getSigners();
 
     claimManagerMocked = await initMockClaimManager(owner);
     claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
@@ -108,6 +109,15 @@ describe("DiamondTest", async function () {
       it("should revert when updating claimManager with same address", async () => {
         await expect(diamond.updateClaimManager(claimManagerMocked.address))
           .to.be.revertedWith("Same address");
+      });
+
+      it("should revert when non owner tries to update claimManager Address", async () => {
+        const oldClaimManagerAddress = claimManagerMocked.address;
+        const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+        
+        await expect(
+          diamond.connect(nonOwner).updateClaimManager(newClaimManagerAddress)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
       });
 
       it("should update claimManager Address", async () => {
