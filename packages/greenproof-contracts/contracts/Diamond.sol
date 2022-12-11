@@ -30,6 +30,12 @@ contract Diamond is SolidStateDiamond {
         bool rewardsEnabled;
     }
 
+    event IssuerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
+    event WorkerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
+    event RevokerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
+    event ClaimerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
+    event ClaimManagerUpdated(address indexed oldAddress, address indexed newAddress);
+
     constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
         require(votingConfig.rewardAmount > 0, "init: Null reward amount");
         require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
@@ -43,24 +49,35 @@ contract Diamond is SolidStateDiamond {
         LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         OwnableStorage.layout().owner = diamondConfig.contractOwner;
 
-        LibClaimManager.init(rolesConfig.claimManagerAddress, rolesConfig.issuerRole, rolesConfig.revokerRole, rolesConfig.workerRole, rolesConfig.claimerRole, rolesConfig.claimsRevocationRegistry);
+        LibClaimManager.init(
+            rolesConfig.claimManagerAddress,
+            rolesConfig.issuerRole,
+            rolesConfig.revokerRole,
+            rolesConfig.workerRole,
+            rolesConfig.claimerRole,
+            rolesConfig.claimsRevocationRegistry
+        );
     }
 
-    function updateClaimManager(address newaddress) external returns (address oldAddress) {
-        oldAddress = LibClaimManager.setClaimManagerAddress(newaddress);
+    function updateClaimManager(address newAddress) external {
+        address oldAddress = LibClaimManager.setClaimManagerAddress(newAddress);
+        emit ClaimManagerUpdated(oldAddress, newAddress);
     }
 
     //TODO: provide unit tests for RoleVersion update
-    function updateIssuerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
-        oldVersion = LibClaimManager.setIssuerVersion(newVersion);
+    function updateIssuerVersion(uint256 newVersion) external {
+        uint256 oldVersion = LibClaimManager.setIssuerVersion(newVersion);
+        emit IssuerVersionUpdated(oldVersion, newVersion);
     }
 
-    function updateRevokerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
-        oldVersion = LibClaimManager.setRevokerVersion(newVersion);
+    function updateRevokerVersion(uint256 newVersion) external {
+        uint256 oldVersion = LibClaimManager.setRevokerVersion(newVersion);
+        emit RevokerVersionUpdated(oldVersion, newVersion);
     }
 
-    function updateWorkerVersion(uint256 newVersion) external returns (uint256 oldVersion) {
-        oldVersion = LibClaimManager.setWorkerVersion(newVersion);
+    function updateWorkerVersion(uint256 newVersion) external {
+        uint256 oldVersion = LibClaimManager.setWorkerVersion(newVersion);
+        emit WorkerVersionUpdated(oldVersion, newVersion);
     }
 
     function setRewardsEnabled(bool rewardsEnabled) external {
