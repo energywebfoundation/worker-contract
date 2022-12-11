@@ -28,11 +28,7 @@ library LibClaimManager {
         _;
     }
 
-    function hasRole(
-        address _subject,
-        bytes32 _role,
-        uint256 _version
-    ) internal view returns (bool) {
+    function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         if (claimStore.claimManagerAddress == address(0)) {
