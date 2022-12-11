@@ -103,10 +103,24 @@ describe("DiamondTest", async function () {
         const zeroAddress = ethers.constants.AddressZero;
         await expect(diamond.updateClaimManager(zeroAddress))
           .to.be.revertedWith("Cannot update to null address");
-      })
+      });
+
+      it("should revert when updating claimManager with same address", async () => {
+        await expect(diamond.updateClaimManager(claimManagerMocked.address))
+          .to.be.revertedWith("Same address");
+      });
+
+      it("should update claimManager Address", async () => {
+        const oldClaimManagerAddress = claimManagerMocked.address;
+        const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+        
+        await expect(diamond.updateClaimManager(newClaimManagerAddress))
+          .to.emit(diamond, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
+      });
 
     })
   })
+
 
   describe("\n****** Proxy setting tests ******", () => {
     it("should have four facets -- call to facetAddresses function", async () => {
