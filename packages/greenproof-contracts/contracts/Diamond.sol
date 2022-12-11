@@ -80,6 +80,11 @@ contract Diamond is SolidStateDiamond {
         emit WorkerVersionUpdated(oldVersion, newVersion);
     }
 
+    function updateClaimerVersion(uint256 newVersion) external {
+        uint256 oldVersion = LibClaimManager.setClaimerVersion(newVersion);
+        emit ClaimerVersionUpdated(oldVersion, newVersion);
+    }
+
     function setRewardsEnabled(bool rewardsEnabled) external {
         LibReward.setRewardsEnabled(rewardsEnabled);
     }

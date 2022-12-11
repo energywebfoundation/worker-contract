@@ -7,7 +7,7 @@ const {
 const { deployMockContract, solidity } = require("ethereum-waffle");
 const { BigNumber } = require("ethers");
 const { ethers } = require("hardhat");
-const { assert, expect } = require("chai");
+const { assert, expect, util } = require("chai");
 const chai = require("chai");
 
 const { roles } = require("./utils/roles.utils");
@@ -95,6 +95,18 @@ describe("DiamondTest", async function () {
       ).to.be.revertedWith("init: Invalid revocable period");
     });
   });
+
+  describe("Proxy roles updates", () => {
+
+    describe("- ClaimManagerAddress updates", () => {
+      it("should revert when updating claimManager with Zero address", async () => {
+        const zeroAddress = ethers.constants.AddressZero;
+        await expect(diamond.updateClaimManager(zeroAddress))
+          .to.be.revertedWith("Cannot update to null address");
+      })
+
+    })
+  })
 
   describe("\n****** Proxy setting tests ******", () => {
     it("should have four facets -- call to facetAddresses function", async () => {
@@ -301,7 +313,6 @@ describe("DiamondTest", async function () {
     });
 
     it("add most functions and facets", async () => {
-      // const diamondLoupeFacetSelectors = getSelectors(diamondLoupeFacet);
       const IssuerFacet = await ethers.getContractFactory("IssuerFacet");
       const Test1Facet = await ethers.getContractFactory("Test1Facet");
       const Test2Facet = await ethers.getContractFactory("Test2Facet");
