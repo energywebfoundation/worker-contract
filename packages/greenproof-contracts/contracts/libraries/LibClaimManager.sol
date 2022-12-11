@@ -102,9 +102,6 @@ library LibClaimManager {
     function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.claimManagerAddress == address(0)) {
-            revert NotInitializedClaimManager();
-        }
         require(_newAddress != address(0), "Cannot update to null address");
         require(claimStore.claimManagerAddress != _newAddress, "Same address");
 
