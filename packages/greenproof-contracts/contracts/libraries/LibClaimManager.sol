@@ -98,7 +98,6 @@ library LibClaimManager {
         claimStore.claimerRole.version = _newVersion;
     }
 
-    //TODO: provide unit tests for claimManager Update
     function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
