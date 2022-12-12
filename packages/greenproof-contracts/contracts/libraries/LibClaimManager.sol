@@ -31,9 +31,6 @@ library LibClaimManager {
     function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.claimManagerAddress == address(0)) {
-            revert NotInitializedClaimManager();
-        }
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation
         bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
         bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(_role, _subject);
