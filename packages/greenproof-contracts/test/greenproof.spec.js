@@ -97,12 +97,12 @@ describe("GreenproofTest", async function () {
     describe("- ClaimManagerAddress update tests", () => {
       it("should revert when updating claimManager with Zero address", async () => {
         const zeroAddress = ethers.constants.AddressZero;
-        await expect(diamond.updateClaimManager(zeroAddress))
+        await expect(greenproof.updateClaimManager(zeroAddress))
           .to.be.revertedWith("Cannot update to null address");
       });
 
       it("should revert when updating claimManager with same address", async () => {
-        await expect(diamond.updateClaimManager(claimManagerMocked.address))
+        await expect(greenproof.updateClaimManager(claimManagerMocked.address))
           .to.be.revertedWith("Same address");
       });
 
@@ -111,7 +111,7 @@ describe("GreenproofTest", async function () {
         const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
         
         await expect(
-          diamond.connect(nonOwner).updateClaimManager(newClaimManagerAddress)
+          greenproof.connect(nonOwner).updateClaimManager(newClaimManagerAddress)
         ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
       });
 
@@ -119,8 +119,8 @@ describe("GreenproofTest", async function () {
         const oldClaimManagerAddress = claimManagerMocked.address;
         const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
         
-        await expect(diamond.updateClaimManager(newClaimManagerAddress))
-          .to.emit(diamond, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
+        await expect(greenproof.updateClaimManager(newClaimManagerAddress))
+          .to.emit(greenproof, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
       });
 
     });
@@ -128,7 +128,7 @@ describe("GreenproofTest", async function () {
     describe("- ClaimerRole update tests", () => {
       it("should revert when updating claimerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(diamond.updateClaimerVersion(sameRoleVersion))
+        await expect(greenproof.updateClaimerVersion(sameRoleVersion))
           .to.be.revertedWith("Same version");
       });
 
@@ -136,7 +136,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
         
         await expect(
-          diamond.connect(nonOwner).updateClaimerVersion(newRoleVersion)
+          greenproof.connect(nonOwner).updateClaimerVersion(newRoleVersion)
         ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
       });
 
@@ -144,8 +144,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
         
-        await expect(diamond.updateClaimerVersion(newRoleVersion))
-          .to.emit(diamond, "ClaimerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+        await expect(greenproof.updateClaimerVersion(newRoleVersion))
+          .to.emit(greenproof, "ClaimerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
       });
 
     });
@@ -153,7 +153,7 @@ describe("GreenproofTest", async function () {
     describe("- workerRole update tests", () => {
       it("should revert when updating workerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(diamond.updateWorkerVersion(sameRoleVersion))
+        await expect(greenproof.updateWorkerVersion(sameRoleVersion))
           .to.be.revertedWith("Same version");
       });
 
@@ -161,7 +161,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
         
         await expect(
-          diamond.connect(nonOwner).updateWorkerVersion(newRoleVersion)
+          greenproof.connect(nonOwner).updateWorkerVersion(newRoleVersion)
         ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
       });
 
@@ -169,8 +169,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
         
-        await expect(diamond.updateWorkerVersion(newRoleVersion))
-          .to.emit(diamond, "WorkerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+        await expect(greenproof.updateWorkerVersion(newRoleVersion))
+          .to.emit(greenproof, "WorkerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
       });
 
     });
@@ -178,7 +178,7 @@ describe("GreenproofTest", async function () {
     describe("- RevokerRole update tests", () => {
       it("should revert when updating revokerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(diamond.updateRevokerVersion(sameRoleVersion))
+        await expect(greenproof.updateRevokerVersion(sameRoleVersion))
           .to.be.revertedWith("Same version");
       });
 
@@ -186,7 +186,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
         
         await expect(
-          diamond.connect(nonOwner).updateRevokerVersion(newRoleVersion)
+          greenproof.connect(nonOwner).updateRevokerVersion(newRoleVersion)
         ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
       });
 
@@ -194,8 +194,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
         
-        await expect(diamond.updateRevokerVersion(newRoleVersion))
-          .to.emit(diamond, "RevokerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+        await expect(greenproof.updateRevokerVersion(newRoleVersion))
+          .to.emit(greenproof, "RevokerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
       });
 
     });
@@ -203,7 +203,7 @@ describe("GreenproofTest", async function () {
     describe("- IssuerRole update tests", () => {
       it("should revert when updating IssuerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(diamond.updateIssuerVersion(sameRoleVersion))
+        await expect(greenproof.updateIssuerVersion(sameRoleVersion))
           .to.be.revertedWith("Same version");
       });
 
@@ -211,7 +211,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
         
         await expect(
-          diamond.connect(nonOwner).updateIssuerVersion(newRoleVersion)
+          greenproof.connect(nonOwner).updateIssuerVersion(newRoleVersion)
         ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
       });
 
@@ -219,8 +219,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
         
-        await expect(diamond.updateIssuerVersion(newRoleVersion))
-          .to.emit(diamond, "IssuerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+        await expect(greenproof.updateIssuerVersion(newRoleVersion))
+          .to.emit(greenproof, "IssuerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
       });
 
     });
@@ -232,7 +232,7 @@ describe("GreenproofTest", async function () {
         addresses.push(address);
       }
 
-      assert.equal(addresses.length, 2); // SolidState https://github.com/solidstate-network/solidstate-solidity/blob/e9f741cb1476a066ce92d39600a82dc1c9e06b7d/contracts/proxy/diamond/SolidStateDiamond.sol#L72 and Issuer facets
+      assert.equal(addresses.length, 2); // SolidState https://github.com/solidstate-network/solidstate-solidity/blob/e9f741cb1476a066ce92d39600a82dc1c9e06b7d/contracts/proxy/diamond/SolidStategreenproof.sol#L72 and Issuer facets
     });
 
     it("facets should have the right function selectors -- call to facetFunctionSelectors function", async () => {
