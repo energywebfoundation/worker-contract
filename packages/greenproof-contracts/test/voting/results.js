@@ -189,6 +189,7 @@ module.exports.resultsTests = function () {
           workers[4],
         ],
         rewardPool: REWARD.mul(2),
+        rewardsEnabled: true
       });
 
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
@@ -229,7 +230,7 @@ module.exports.resultsTests = function () {
       });
     });
 
-    it("should revet when calling replenishment of funds with no funds", async () => {
+    it("should revert when calling replenishment of funds with no funds", async () => {
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
@@ -242,11 +243,27 @@ module.exports.resultsTests = function () {
       ).to.be.revertedWith("NoFundsProvided");
     });
 
+    it("should revert when calling replenishment of funds with rewards disabled", async () => {
+      
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+        rewardsEnabled: false,
+      });
+
+      await expect(
+        votingContract.connect(faucet).replenishRewardPool({
+            value: REWARD.mul(2),
+        })
+      ).to.be.revertedWith("RewardsDisabled()");
+    });
+
     it("rewards should be paid partially and then fully after charging up the pool", async () => {
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
         rewardPool: REWARD,
+        rewardsEnabled: true,
       });
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
 
@@ -305,7 +322,6 @@ module.exports.resultsTests = function () {
         votingContract = await setupVotingContract({
           reward: REWARD,
           participatingWorkers: [workers[0], workers[1]],
-          rewardPool: REWARD.mul(5),
           rewardsEnabled: false,
         });
         const { diamondAddress } = require("./voting.spec");
@@ -314,40 +330,39 @@ module.exports.resultsTests = function () {
           timeframes[0].input,
           timeframes[0].output
         );
-        await expectToReceiveReward({
-          winners: [],
-          possiblePayouts: 0,
-          operation: () =>
-            workers[1].voteWinning(timeframes[0].input, timeframes[0].output, {
-              voteCount: 2,
-            }),
-        });
+
+        await workers[1].voteWinning(
+          timeframes[0].input,
+          timeframes[0].output,
+          { voteCount: 2}
+        );
 
         const diamondContract = await ethers.getContractAt(
           "Diamond",
           diamondAddress
         );
-        const tx = await diamondContract.setRewardsEnabled(true, {
-          gasPrice: 10_000_000,
-        });
+        const tx = await diamondContract.setRewardsEnabled(true);
         await tx.wait();
 
         await workers[0].voteNotWinning(
           timeframes[1].input,
           timeframes[0].output
         );
-        await expectToReceiveReward({
-          winners: [workers[0], workers[1]],
-          possiblePayouts: 2,
-          operation: () =>
-            workers[1].voteWinning(timeframes[1].input, timeframes[0].output, {
-              voteCount: 2,
-            }),
-        });
 
-        expect(
-          await votingContract.getWinningMatches(timeframes[0].input)
-        ).to.deep.equal([timeframes[0].output]);
+        await workers[1].voteWinning(
+          timeframes[1].input,
+          timeframes[0].output,
+          { voteCount: 2}
+        );
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 2,
+        operation: () =>
+          votingContract.connect(faucet).replenishRewardPool({
+            value: REWARD.mul(2),
+          }),
+      });
       });
     });
 

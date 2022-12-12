@@ -38,9 +38,6 @@ library LibReward {
 
     function payReward() internal {
         RewardStorage storage rs = getStorage();
-        if(!rs.rewardsEnabled) {
-            revert RewardsDisabled();
-        }
 
         while (rs.rewardQueue.length > 0 && address(this).balance >= rs.rewardAmount) {
             address payable currentWorker = rs.rewardQueue[rs.rewardQueue.length - 1];

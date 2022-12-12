@@ -196,13 +196,17 @@ contract VotingFacet is IVoting, IReward {
     function replenishRewardPool() external payable override {
         LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
 
+        if (rewardStorage.rewardsEnabled == false) {
+            revert LibReward.RewardsDisabled();
+        }
+        
         if (msg.value == 0) {
             revert NoFundsProvided();
         }
 
         emit Replenished(msg.value);
 
-        if (rewardStorage.rewardsEnabled && rewardStorage.rewardQueue.length > 0) {
+        if (rewardStorage.rewardQueue.length > 0) {
             LibReward.payReward();
         }
     }
