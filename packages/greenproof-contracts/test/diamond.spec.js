@@ -97,9 +97,9 @@ describe("DiamondTest", async function () {
     });
   });
 
-  describe("Proxy roles updates", () => {
+  describe("Proxy roles updates tests", () => {
 
-    describe("- ClaimManagerAddress updates", () => {
+    describe("- ClaimManagerAddress update tests", () => {
       it("should revert when updating claimManager with Zero address", async () => {
         const zeroAddress = ethers.constants.AddressZero;
         await expect(diamond.updateClaimManager(zeroAddress))
@@ -128,9 +128,108 @@ describe("DiamondTest", async function () {
           .to.emit(diamond, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
       });
 
-    })
-  })
+    });
 
+    describe("- ClaimerRole update tests", () => {
+      it("should revert when updating claimerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(diamond.updateClaimerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update claimerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          diamond.connect(nonOwner).updateClaimerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update claimerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(diamond.updateClaimerVersion(newRoleVersion))
+          .to.emit(diamond, "ClaimerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+
+    describe("- workerRole update tests", () => {
+      it("should revert when updating workerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(diamond.updateWorkerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update workerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          diamond.connect(nonOwner).updateWorkerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update workerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(diamond.updateWorkerVersion(newRoleVersion))
+          .to.emit(diamond, "WorkerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+
+    describe("- RevokerRole update tests", () => {
+      it("should revert when updating revokerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(diamond.updateRevokerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update revokerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          diamond.connect(nonOwner).updateRevokerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update revokerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(diamond.updateRevokerVersion(newRoleVersion))
+          .to.emit(diamond, "RevokerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+
+    describe("- IssuerRole update tests", () => {
+      it("should revert when updating IssuerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(diamond.updateIssuerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update IssuerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          diamond.connect(nonOwner).updateIssuerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update IssuerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(diamond.updateIssuerVersion(newRoleVersion))
+          .to.emit(diamond, "IssuerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+  })
 
   describe("\n****** Proxy setting tests ******", () => {
     it("should have four facets -- call to facetAddresses function", async () => {
@@ -196,12 +295,31 @@ describe("DiamondTest", async function () {
       assert.sameMembers(selectors, expectedSelectors);
     });
 
-    it("should test function call", async () => {
+    it("should test function calls", async () => {
       const test1Facet = await ethers.getContractAt(
         "Test1Facet",
         diamondAddress
       );
+      await test1Facet.test1Func1();
+      await test1Facet.test1Func2();
+      await test1Facet.test1Func3();
+      await test1Facet.test1Func4();
+      await test1Facet.test1Func5();
+      await test1Facet.test1Func6();
+      await test1Facet.test1Func7();
+      await test1Facet.test1Func8();
+      await test1Facet.test1Func9();
       await test1Facet.test1Func10();
+      await test1Facet.test1Func11();
+      await test1Facet.test1Func12();
+      await test1Facet.test1Func13();
+      await test1Facet.test1Func14();
+      await test1Facet.test1Func15();
+      await test1Facet.test1Func16();
+      await test1Facet.test1Func17();
+      await test1Facet.test1Func18();
+      await test1Facet.test1Func19();
+      await test1Facet.test1Func20();
     });
 
     it("should add test2 functions", async () => {
@@ -230,6 +348,27 @@ describe("DiamondTest", async function () {
         await diamond.facetFunctionSelectors(test2Facet.address),
         selectors
       );
+
+      await test2Facet.test2Func1();
+      await test2Facet.test2Func2();
+      await test2Facet.test2Func3();
+      await test2Facet.test2Func4();
+      await test2Facet.test2Func5();
+      await test2Facet.test2Func6();
+      await test2Facet.test2Func7();
+      await test2Facet.test2Func8();
+      await test2Facet.test2Func9();
+      await test2Facet.test2Func10();
+      await test2Facet.test2Func11();
+      await test2Facet.test2Func12();
+      await test2Facet.test2Func13();
+      await test2Facet.test2Func14();
+      await test2Facet.test2Func15();
+      await test2Facet.test2Func16();
+      await test2Facet.test2Func17();
+      await test2Facet.test2Func18();
+      await test2Facet.test2Func19();
+      await test2Facet.test2Func20();
     });
 
     it("should remove some test2 functions", async () => {
