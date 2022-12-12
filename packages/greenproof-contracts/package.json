@@ -12,7 +12,7 @@
     "build": "yarn compile && tsc",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
-    "diamond:test": "yarn build && npx hardhat test test/diamond.spec.js"
+    "greenproof:test": "yarn build && npx hardhat test test/greenproof.spec.js"
   },
   "repository": {
     "type": "git",

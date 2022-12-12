@@ -2,9 +2,9 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import { ethers } from "hardhat";
 import { config } from "dotenv";
-import { FacetCutAction, getSelectors } from "./libraries/diamond";
+import { FacetCutAction, getSelectors } from "./libraries/greenproof";
 import { BigNumber, Contract, ContractFactory } from "ethers";
-import { Diamond__factory } from "../src";
+import { Greenproof__factory } from "../src";
 
 config();
 
@@ -20,7 +20,7 @@ export const DEFAULT_REWARD_AMOUNT = ethers.utils.parseEther(
 const runningFromCLI = () => require.main === module;
 
 type Logger = (...msg: any[]) => void;
-type DeployDiamondOptions = {
+type DeployGreeproofOptions = {
   votingTimeLimit?: number;
   rewardAmount?: BigNumber;
   claimManagerAddress: string;
@@ -45,7 +45,7 @@ export enum Facet {
   ProofManagerFacet = "ProofManagerFacet",
 }
 
-export const deployDiamond = async (options: DeployDiamondOptions) => {
+export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   const contractOwner =
     options.contractOwner ?? (await ethers.getSigners())[0].address;
   const {
@@ -68,12 +68,12 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
     claimerRole = ethers.utils.namehash(process.env.CLAIMER_ROLE ?? "claimer"),
   } = roles;
 
-  // deploy DiamondInit
-  // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
+  // deploy GreenproofInit
+  // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
-  const diamondInit = await deploy("DiamondInit");
-  const diamond = await deploy("Diamond", (factory) => {
-    const args: Parameters<Diamond__factory["deploy"]> = [
+  const greeproofInit = await deploy("GreenproofInit");
+  const greenproof = await deploy("Greenproof", (factory) => {
+    const args: Parameters<Greenproof__factory["deploy"]> = [
       { contractOwner },
       {
         votingTimeLimit,
@@ -107,12 +107,12 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
   }
 
   logger("List of Cuts to execute", cuts);
-  const diamondCut = await ethers.getContractAt("Diamond", diamond.address);
+  // const greenproof = await ethers.getContractAt("Greenproof", greenproof.address);
   // call to init function
-  const functionCall = diamondInit.interface.encodeFunctionData("init");
-  const tx = await diamondCut.diamondCut(
+  const functionCall = greeproofInit.interface.encodeFunctionData("init");
+  const tx = await greenproof.diamondCut(
     cuts,
-    diamondInit.address,
+    greeproofInit.address,
     functionCall
   );
 
@@ -120,17 +120,17 @@ export const deployDiamond = async (options: DeployDiamondOptions) => {
   const receipt = await tx.wait();
 
   if (!receipt.status) {
-    throw Error(`Diamond upgrade failed: ${tx.hash}`);
+    throw Error(`Greenproof upgrade failed: ${tx.hash}`);
   }
 
   logger("Completed diamond cuts");
-  return { diamondAddress: diamond.address };
+  return { greenproofAddress: greenproof.address };
 };
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 if (runningFromCLI()) {
-  deployDiamond({
+  deployGreenproof({
     claimManagerAddress: VOLTA_CLAIM_MANAGER,
     claimRevokerAddress: VOLTA_CLAIM_REVOKER,
   })
