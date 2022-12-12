@@ -266,10 +266,6 @@ library LibVoting {
         return session.workerToVoted[operator];
     }
 
-    function _compareStrings(string memory a, string memory b) internal pure returns (bool) {
-        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
-    }
-
     function _getStorage() internal pure returns (VotingStorage storage _votingStorage) {
         bytes32 position = VOTING_STORAGE_POSITION;
 
