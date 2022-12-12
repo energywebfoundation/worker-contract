@@ -42,7 +42,7 @@ contract VotingFacet is IVoting, IReward {
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
         LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
 
-        if (session.status == LibVoting.Status.Completed) {
+        if (LibVoting._isClosed(session)) {
             revert LibVoting.SessionCannotBeRestarted(votingID, matchResult);
         }
 
@@ -147,7 +147,7 @@ contract VotingFacet is IVoting, IReward {
 
         for (uint256 i = 0; i < winningMatches.length; i++) {
             LibVoting.VotingSession storage session = LibVoting._getSession(votingID, LibVoting._getSessionID(votingID, winningMatches[i]));
-            if (session.workerToVoted[worker] == true) {
+            if (LibVoting._hasAlreadyVoted(worker, session)) {
                 votesContainer[numberOfVotes] = winningMatches[i];
                 numberOfVotes++;
             }
