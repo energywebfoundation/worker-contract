@@ -89,7 +89,7 @@ describe("IssuerFacet", function () {
   });
 
   describe("Proof issuance tests", () => {
-    it("checks that the every one has 0 balance initially", async () => {
+    it("checks that every one has 0 balance initially", async () => {
       for (const wallet of await ethers.getSigners()) {
         const first20TokenIds = new Array(20).fill(0).map((_, i) => i);
         for (const tokenId of first20TokenIds) {
