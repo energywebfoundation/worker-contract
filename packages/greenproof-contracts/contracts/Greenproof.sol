@@ -8,8 +8,8 @@ import {LibVoting} from "./libraries/LibVoting.sol";
 import {LibIssuer} from "./libraries/LibIssuer.sol";
 import {LibClaimManager} from "./libraries/LibClaimManager.sol";
 
-contract Diamond is SolidStateDiamond {
-    struct DiamondConfig {
+contract Greenproof is SolidStateDiamond {
+    struct GreenproofConfig {
         address contractOwner;
     }
 
@@ -36,7 +36,7 @@ contract Diamond is SolidStateDiamond {
     event ClaimerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
     event ClaimManagerUpdated(address indexed oldAddress, address indexed newAddress);
 
-    constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
+    constructor(GreenproofConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
         require(votingConfig.rewardAmount > 0, "init: Null reward amount");
         require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
         require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");

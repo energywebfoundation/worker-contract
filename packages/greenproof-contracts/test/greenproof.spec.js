@@ -4,26 +4,21 @@ const {
   removeSelectors,
   findIndexOfAddressInFacets,
 } = require("../scripts/deploy");
-const { deployMockContract, solidity } = require("ethereum-waffle");
-const { BigNumber } = require("ethers");
+const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
 const { assert, expect, util } = require("chai");
 const chai = require("chai");
 
 const { roles } = require("./utils/roles.utils");
-const { deployDiamond } = require("../scripts/deploy/deployContracts");
-const {
-  claimManagerInterface,
-  claimRevocationInterface,
-  initMockClaimManager,
-} = require("./utils/claimManager.utils");
+const { deployGreenproof } = require("../scripts/deploy/deployContracts");
+const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 
 chai.use(solidity);
 
-describe("DiamondTest", async function () {
-  let diamondAddress;
-  let diamond;
+describe("GreenproofTest", async function () {
+  let greenproofAddress;
+  let greenproof;
   let issuerFacet;
   let tx;
   let receipt;
@@ -39,21 +34,21 @@ describe("DiamondTest", async function () {
     claimManagerMocked = await initMockClaimManager(owner);
     claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
 
-    ({ diamondAddress } = await deployDiamond({
+    ({ greenproofAddress } = await deployGreenproof({
       claimManagerAddress: claimManagerMocked.address,
       claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
       facets: ["IssuerFacet"],
     }));
 
-    diamond = await ethers.getContractAt("Diamond", diamondAddress);
-    issuerFacet = await ethers.getContractAt("IssuerFacet", diamondAddress);
+    greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+    issuerFacet = await ethers.getContractAt("IssuerFacet", greenproofAddress);
   });
 
   describe("\n****** Deployement failure tests ******\n", () => {
     it("should revert if admin address is 0", async () => {
       await expect(
-        deployDiamond({
+        deployGreenproof({
           claimManagerAddress: claimManagerMocked.address,
           claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
@@ -64,7 +59,7 @@ describe("DiamondTest", async function () {
 
     it("should revert if claimManager address is 0", async () => {
       await expect(
-        deployDiamond({
+        deployGreenproof({
           claimManagerAddress: ethers.constants.AddressZero,
           claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
@@ -74,7 +69,7 @@ describe("DiamondTest", async function () {
 
     it("should revert if claimsRevocationRegistry address is 0", async () => {
       await expect(
-        deployDiamond({
+        deployGreenproof({
           claimManagerAddress: claimManagerMocked.address,
           claimRevokerAddress: ethers.constants.AddressZero,
         })
@@ -86,7 +81,7 @@ describe("DiamondTest", async function () {
       const contractOwner = (await ethers.getSigners())[0];
 
       await expect(
-        deployDiamond({
+        deployGreenproof({
           claimManagerAddress: claimManagerMocked.address,
           claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
@@ -233,7 +228,7 @@ describe("DiamondTest", async function () {
 
   describe("\n****** Proxy setting tests ******", () => {
     it("should have four facets -- call to facetAddresses function", async () => {
-      for (const address of await diamond.facetAddresses()) {
+      for (const address of await greenproof.facetAddresses()) {
         addresses.push(address);
       }
 
@@ -242,7 +237,7 @@ describe("DiamondTest", async function () {
 
     it("facets should have the right function selectors -- call to facetFunctionSelectors function", async () => {
       const expectedIssuerSelectors = getSelectors(issuerFacet);
-      const issuerSelectors = await diamond.facetFunctionSelectors(
+      const issuerSelectors = await greenproof.facetFunctionSelectors(
         addresses[1]
       );
       assert.sameMembers(issuerSelectors, expectedIssuerSelectors);
@@ -254,7 +249,7 @@ describe("DiamondTest", async function () {
       );
       assert.equal(
         addresses[1],
-        await diamond.facetAddress(requestProofIssuanceSelector)
+        await greenproof.facetAddress(requestProofIssuanceSelector)
       );
 
       const discloseDataSelector = issuerFacet.interface.getSighash(
@@ -262,7 +257,7 @@ describe("DiamondTest", async function () {
       );
       assert.equal(
         addresses[1],
-        await diamond.facetAddress(discloseDataSelector)
+        await greenproof.facetAddress(discloseDataSelector)
       );
     });
 
@@ -273,7 +268,7 @@ describe("DiamondTest", async function () {
       addresses.push(test1Facet.address);
       const expectedSelectors = getSelectors(test1Facet);
 
-      tx = await diamond.diamondCut(
+      tx = await greenproof.diamondCut(
         [
           {
             target: test1Facet.address,
@@ -289,7 +284,7 @@ describe("DiamondTest", async function () {
       if (!receipt.status) {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
-      const selectors = await diamond.facetFunctionSelectors(
+      const selectors = await greenproof.facetFunctionSelectors(
         test1Facet.address
       );
       assert.sameMembers(selectors, expectedSelectors);
@@ -298,7 +293,7 @@ describe("DiamondTest", async function () {
     it("should test function calls", async () => {
       const test1Facet = await ethers.getContractAt(
         "Test1Facet",
-        diamondAddress
+        greenproofAddress
       );
       await test1Facet.test1Func1();
       await test1Facet.test1Func2();
@@ -328,7 +323,7 @@ describe("DiamondTest", async function () {
       await test2Facet.deployed();
       addresses.push(test2Facet.address);
       const selectors = getSelectors(test2Facet);
-      tx = await diamond.diamondCut(
+      tx = await greenproof.diamondCut(
         [
           {
             target: test2Facet.address,
@@ -345,7 +340,7 @@ describe("DiamondTest", async function () {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
       assert.sameMembers(
-        await diamond.facetFunctionSelectors(test2Facet.address),
+        await greenproof.facetFunctionSelectors(test2Facet.address),
         selectors
       );
 
@@ -374,7 +369,7 @@ describe("DiamondTest", async function () {
     it("should remove some test2 functions", async () => {
       const test2Facet = await ethers.getContractAt(
         "Test2Facet",
-        diamondAddress
+        greenproofAddress
       );
       const functionsToKeep = [
         "test2Func1()",
@@ -384,7 +379,7 @@ describe("DiamondTest", async function () {
         "test2Func20()",
       ];
       const selectors = getSelectors(test2Facet).remove(functionsToKeep);
-      tx = await diamond.diamondCut(
+      tx = await greenproof.diamondCut(
         [
           {
             target: ethers.constants.AddressZero,
@@ -401,7 +396,7 @@ describe("DiamondTest", async function () {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
       assert.sameMembers(
-        await diamond.facetFunctionSelectors(addresses[3]),
+        await greenproof.facetFunctionSelectors(addresses[3]),
         getSelectors(test2Facet).get(functionsToKeep)
       );
     });
@@ -409,7 +404,7 @@ describe("DiamondTest", async function () {
     it("should remove some test1 functions", async () => {
       const test1Facet = await ethers.getContractAt(
         "Test1Facet",
-        diamondAddress
+        greenproofAddress
       );
       const functionsToKeep = [
         "test1Func2()",
@@ -417,7 +412,7 @@ describe("DiamondTest", async function () {
         "test1Func12()",
       ];
       const selectors = getSelectors(test1Facet).remove(functionsToKeep);
-      tx = await diamond.diamondCut(
+      tx = await greenproof.diamondCut(
         [
           {
             target: ethers.constants.AddressZero,
@@ -434,14 +429,14 @@ describe("DiamondTest", async function () {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
       assert.sameMembers(
-        await diamond.facetFunctionSelectors(addresses[2]),
+        await greenproof.facetFunctionSelectors(addresses[2]),
         getSelectors(test1Facet).get(functionsToKeep)
       );
     });
 
     it("remove all functions from all mutable facets", async () => {
       let selectors = [];
-      let [, ...facets] = await diamond.facets();
+      let [, ...facets] = await greenproof.facets();
       for (let i = 0; i < facets.length; i++) {
         selectors.push(...facets[i].selectors);
       }
@@ -449,7 +444,7 @@ describe("DiamondTest", async function () {
         "facets()",
         "diamondCut(tuple(address,uint8,bytes4[])[],address,bytes)",
       ]);
-      tx = await diamond.diamondCut(
+      tx = await greenproof.diamondCut(
         [
           {
             target: ethers.constants.AddressZero,
@@ -465,12 +460,12 @@ describe("DiamondTest", async function () {
       if (!receipt.status) {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
-      facets = await diamond.facets();
+      facets = await greenproof.facets();
       assert.equal(facets.length, 1); // SolidState facet
-      const diamondCutSelector = diamond.interface.getSighash(
+      const diamondCutSelector = greenproof.interface.getSighash(
         "diamondCut((address,uint8,bytes4[])[],address,bytes)"
       );
-      const facetsSelector = diamond.interface.getSighash("facets()");
+      const facetsSelector = greenproof.interface.getSighash("facets()");
       assert.equal(facets[0][0], addresses[0]);
       assert.includeMembers(facets[0][1], [diamondCutSelector, facetsSelector]);
     });
@@ -498,15 +493,20 @@ describe("DiamondTest", async function () {
           selectors: getSelectors(Test2Facet),
         },
       ];
-      tx = await diamond.diamondCut(cut, ethers.constants.AddressZero, "0x", {
-        gasLimit: 8000000,
-      });
+      tx = await greenproof.diamondCut(
+        cut,
+        ethers.constants.AddressZero,
+        "0x",
+        {
+          gasLimit: 8000000,
+        }
+      );
       receipt = await tx.wait();
       if (!receipt.status) {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
-      const facets = await diamond.facets();
-      const facetAddresses = await diamond.facetAddresses();
+      const facets = await greenproof.facets();
+      const facetAddresses = await greenproof.facetAddresses();
       assert.equal(facetAddresses.length, 4);
       assert.equal(facets.length, 4);
       assert.sameMembers(facetAddresses, addresses);

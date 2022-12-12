@@ -2,7 +2,7 @@ const chai = require("chai");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { solidity } = require("ethereum-waffle");
-const { deployDiamond } = require("../../scripts/deploy/deployContracts");
+const { deployGreenproof } = require("../../scripts/deploy/deployContracts");
 const { initMockClaimManager } = require("../utils/claimManager.utils");
 const { roles } = require("../utils/roles.utils");
 const { initMockClaimRevoker } = require("../utils/claimRevocation.utils");
@@ -16,7 +16,7 @@ const { consensusTests } = require("./consensus");
 const { workerRole } = roles;
 chai.use(solidity);
 
-let diamondAddress;
+let greenproofAddress;
 let votingContract;
 describe("Voting", function () {
   let owner;
@@ -139,7 +139,7 @@ describe("Voting", function () {
     reward,
     rewardsEnabled,
   } = {}) => {
-    ({ diamondAddress } = await deployDiamond({
+    ({ greenproofAddress } = await deployGreenproof({
       claimManagerAddress: mockClaimManager.address,
       claimRevokerAddress: mockClaimRevoker.address,
       roles,
@@ -147,8 +147,8 @@ describe("Voting", function () {
       rewardAmount: reward,
       rewardsEnabled,
     }));
-    module.exports.diamondAddress = diamondAddress;
-    votingContract = await ethers.getContractAt("VotingFacet", diamondAddress);
+    module.exports.greenproofAddress = greenproofAddress;
+    votingContract = await ethers.getContractAt("VotingFacet", greenproofAddress);
     workers.forEach((w) => w.setVotingContract(votingContract));
 
     if (rewardsEnabled && rewardPool) {
