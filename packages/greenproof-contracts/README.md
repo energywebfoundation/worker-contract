@@ -30,14 +30,8 @@ Each smartcontract component provided in `contracts/facets` directory is then a 
 
 - NFT Issuer component : the issuance component is encapsulated inside the [IssuerFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/IssuerFacet.sol) contract
 
-Additional utility facets are provided by the [Diamond-2 reference implementation](https://github.com/mudgen/diamond-2-hardhat), which help conforming to the EIP-2535 standard specification:
+Additional utility facets are provided by the [Solidstate diamond implementation](https://github.com/solidstate-network/solidstate-solidity/tree/master/contracts/proxy/diamond), which help conforming to the EIP-2535 standard specification
 
-- The [DiamondCutFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondCutFacet.sol) contract is a facet handling all the upgrading logic.
-(A cut, in the diamond industry, is an action resulting in new facet creation or removal. This facet will be used to granularly add, replace or remove logic to the Greenproof Diamond)
-
-- A dedicated facet is provided with the [OwnershipFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/OwnershipFacet.sol) contract, which handles the implementation of the EIP-173 standard for the Diamond ownership.
-
-- A [DiamondLoupeFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/DiamondLoupeFacet.sol) provides all standard [loupe functions](https://dev.to/mudgen/why-loupe-functions-for-diamonds-1kc3) for showing what facets and functions the diamond has.
 ---
 
 ## Quickstart
@@ -50,21 +44,21 @@ npm install
 - Running test
 
 ```
-npm run test
+npm run test:e2e
 ```
 
-This command will run unit tests for the whole `greenproof-contracts` components. You can target one  specific component to test inside the greenproof diamond module:
-- `issuerFacet.spec.js` handles unit tests for the Issuance component. 
+This command will run e2e tests for the whole `greenproof-contracts` components. You can target one  specific component to test inside the greenproof diamond module:
+- `issuer.spec.js` handles unit tests for the Issuance component. 
 ```
 npm run issuer:test
 ```
 
-- `votingFacet.spec.js handles unit tests for the Voting component`
+- `voting.spec.js handles unit tests for the Voting component`
 ```
-npm run issuer:test
+npm run voting:test
 ```
-- `diamondTest.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
+- `greenproof.spec.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
 
 ```
-npm run diamond:test
+npm run greenproof:test
 ```
