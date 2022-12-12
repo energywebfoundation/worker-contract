@@ -8,8 +8,8 @@ import {LibVoting} from "./libraries/LibVoting.sol";
 import {LibIssuer} from "./libraries/LibIssuer.sol";
 import {LibClaimManager} from "./libraries/LibClaimManager.sol";
 
-contract Diamond is SolidStateDiamond {
-    struct DiamondConfig {
+contract Greenproof is SolidStateDiamond {
+    struct GreenproofConfig {
         address contractOwner;
     }
 
@@ -30,7 +30,7 @@ contract Diamond is SolidStateDiamond {
         bool rewardsEnabled;
     }
 
-    constructor(DiamondConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
+    constructor(GreenproofConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
         require(votingConfig.rewardAmount > 0, "init: Null reward amount");
         require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
         require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
@@ -43,7 +43,14 @@ contract Diamond is SolidStateDiamond {
         LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         OwnableStorage.layout().owner = diamondConfig.contractOwner;
 
-        LibClaimManager.init(rolesConfig.claimManagerAddress, rolesConfig.issuerRole, rolesConfig.revokerRole, rolesConfig.workerRole, rolesConfig.claimerRole, rolesConfig.claimsRevocationRegistry);
+        LibClaimManager.init(
+            rolesConfig.claimManagerAddress,
+            rolesConfig.issuerRole,
+            rolesConfig.revokerRole,
+            rolesConfig.workerRole,
+            rolesConfig.claimerRole,
+            rolesConfig.claimsRevocationRegistry
+        );
     }
 
     function updateClaimManager(address newaddress) external returns (address oldAddress) {
