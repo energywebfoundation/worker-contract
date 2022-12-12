@@ -286,7 +286,7 @@ module.exports.resultsTests = function () {
       });
     });
 
-    describe("disabling rewards", function () {
+    describe("Disabling rewards", function () {
       it("should not pay the winners if rewards are disabled", async () => {
         votingContract = await setupVotingContract({
           reward: REWARD,
@@ -324,7 +324,7 @@ module.exports.resultsTests = function () {
           participatingWorkers: [workers[0], workers[1]],
           rewardsEnabled: false,
         });
-        const { diamondAddress } = require("./voting.spec");
+        const { greenproofAddress } = require("./voting.spec");
 
         await workers[0].voteNotWinning(
           timeframes[0].input,
@@ -337,11 +337,11 @@ module.exports.resultsTests = function () {
           { voteCount: 2}
         );
 
-        const diamondContract = await ethers.getContractAt(
-          "Diamond",
-          diamondAddress
+        const GreenproofContract = await ethers.getContractAt(
+          "Greenproof",
+          greenproofAddress
         );
-        const tx = await diamondContract.setRewardsEnabled(true);
+        const tx = await GreenproofContract.setRewardsEnabled(true);
         await tx.wait();
 
         await workers[0].voteNotWinning(

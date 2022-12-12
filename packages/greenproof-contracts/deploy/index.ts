@@ -1,2 +1,2 @@
-export * from './libraries/diamond';
+export * from './libraries/greenproof';
 export * from '../src/index';
