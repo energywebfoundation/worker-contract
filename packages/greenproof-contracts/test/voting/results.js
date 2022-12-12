@@ -229,6 +229,19 @@ module.exports.resultsTests = function () {
       });
     });
 
+    it("should revet when calling replenishment of funds with no funds", async () => {
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+      });
+
+      await expect(
+        votingContract.connect(faucet).replenishRewardPool({
+            value: 0,
+        })
+      ).to.be.revertedWith("NoFundsProvided");
+    });
+
     it("rewards should be paid partially and then fully after charging up the pool", async () => {
       votingContract = await setupVotingContract({
         reward: REWARD,
