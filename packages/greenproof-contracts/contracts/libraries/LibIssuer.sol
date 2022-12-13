@@ -25,8 +25,6 @@ library LibIssuer {
     }
 
     event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
-    event IssuanceRequested(uint256 indexed certificateID);
-    event RequestRejected(uint256 indexed certificateID);
 
     error NonExistingCertificate(uint256 certificateID);
     error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
@@ -35,7 +33,6 @@ library LibIssuer {
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
-        require(issuer.revocablePeriod == 0, "revocable period: already set");
         issuer.revocablePeriod = revocablePeriod;
     }
 
@@ -44,13 +41,7 @@ library LibIssuer {
         issuer.latestCertificateId++;
     }
 
-    function _registerProof(
-        bytes32 dataHash,
-        address generatorAddress,
-        uint256 amount,
-        uint256 certificateID,
-        bytes32 voteID
-    ) internal {
+    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 amount, uint256 certificateID, bytes32 voteID) internal {
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
         issuer.certificates[certificateID] = IGreenProof.Certificate({
@@ -65,11 +56,7 @@ library LibIssuer {
         issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }
 
-    function _registerClaimedProof(
-        uint256 certificateID,
-        address user,
-        uint256 claimedAmount
-    ) internal {
+    function _registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
         IssuerStorage storage issuer = _getStorage();
         issuer.claimedBalances[certificateID][user] += claimedAmount;
     }
@@ -78,7 +65,7 @@ library LibIssuer {
         IssuerStorage storage issuer = _getStorage();
         uint256 certificateId = issuer.dataToCertificateID[_data];
 
-        if(certificateId == 0) {
+        if (certificateId == 0) {
             return false;
         }
 
