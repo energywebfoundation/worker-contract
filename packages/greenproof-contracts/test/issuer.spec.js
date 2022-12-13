@@ -127,6 +127,30 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("issuance must be non-zero");
     });
 
+    it("should reject proof issuance requests for data not in consensus", async () => {
+      const {
+        inputHash,
+        volumeRootHash,
+        matchResultProof,
+        volume,
+        volumeProof,
+      } = generateProofData();
+
+      await expect(
+        issuerContract
+          .connect(issuer)
+          .requestProofIssuance(
+            inputHash,
+            wallets[1].address,
+            volumeRootHash,
+            matchResultProof,
+            parseEther(volume.toString(10)),
+            volumeProof,
+            tokenURI
+          )
+      ).to.be.revertedWith(`NotInConsensus("${inputHash}")`);
+    });
+
     it("Authorized issuers can send proof issuance requests", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
