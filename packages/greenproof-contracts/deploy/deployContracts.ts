@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { config } from "dotenv";
 import { FacetCutAction, getSelectors } from "./libraries/greenproof";
 import { BigNumber, Contract, ContractFactory } from "ethers";
-import { Greenproof__factory } from "../src";
+import { GreenProofInit } from '../src';
 
 config();
 
@@ -72,27 +72,7 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
   const greeproofInit = await deploy("GreenproofInit");
-  const greenproof = await deploy("Greenproof", (factory) => {
-    const args: Parameters<Greenproof__factory["deploy"]> = [
-      { contractOwner },
-      {
-        votingTimeLimit,
-        rewardAmount,
-        majorityPercentage,
-        revocablePeriod,
-        rewardsEnabled,
-      },
-      {
-        claimManagerAddress,
-        issuerRole,
-        revokerRole,
-        workerRole,
-        claimerRole,
-        claimsRevocationRegistry: claimRevokerAddress,
-      },
-    ];
-    return factory.deploy(...args);
-  });
+  const greenproof = await deploy("Greenproof", (factory) => factory.deploy());
 
   logger("Deploying facets...");
   const cuts = [];
@@ -107,13 +87,28 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   }
 
   logger("List of Cuts to execute", cuts);
-  // const greenproof = await ethers.getContractAt("Greenproof", greenproof.address);
-  // call to init function
-  const functionCall = greeproofInit.interface.encodeFunctionData("init");
+  const args: Parameters<GreenproofInit["init"]> = [
+    { contractOwner },
+    {
+      votingTimeLimit,
+      rewardAmount,
+      majorityPercentage,
+      revocablePeriod,
+      rewardsEnabled,
+    },
+    {
+      claimManagerAddress,
+      issuerRole,
+      revokerRole,
+      workerRole,
+      claimerRole,
+      claimsRevocationRegistry: claimRevokerAddress,
+    },
+  ];
   const tx = await greenproof.diamondCut(
     cuts,
     greeproofInit.address,
-    functionCall
+    greeproofInit.interface.encodeFunctionData('init', args),
   );
 
   logger("Diamond cuts tx", tx.hash);
