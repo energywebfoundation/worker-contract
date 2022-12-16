@@ -35,6 +35,13 @@ contract VotingFacet is IVoting, IReward {
         _;
     }
 
+    modifier onlyWhenEnabledRewards() {
+        if (!LibReward._isRewardEnabled()) {
+            revert LibReward.RewardsDisabled();
+        }
+        _;
+    }
+
     /**
      * @notice Increases the number of votes for this matchResult. Voting completes when that vote leads to consensus or when voting expires
      */
@@ -193,21 +200,11 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.votingIDs.length;
     }
 
-    function replenishRewardPool() external payable override {
-        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
-
-        if (rewardStorage.rewardsEnabled == false) {
-            revert LibReward.RewardsDisabled();
-        }
-        
+    function replenishRewardPool() external payable override onlyWhenEnabledRewards {
         if (msg.value == 0) {
             revert NoFundsProvided();
         }
-
         emit Replenished(msg.value);
-
-        if (rewardStorage.rewardQueue.length > 0) {
-            LibReward.payReward();
-        }
+        LibReward.payReward();
     }
 }
