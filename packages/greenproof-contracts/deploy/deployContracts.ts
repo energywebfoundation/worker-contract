@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { config } from "dotenv";
 import { FacetCutAction, getSelectors } from "./libraries/greenproof";
 import { BigNumber, Contract, ContractFactory } from "ethers";
-import { GreenproofInit } from '../src';
+import { GreenproofInit } from "../src";
 
 config();
 
@@ -108,7 +108,7 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   const tx = await greenproof.diamondCut(
     cuts,
     greeproofInit.address,
-    greeproofInit.interface.encodeFunctionData('init', args),
+    greeproofInit.interface.encodeFunctionData("init", args)
   );
 
   logger("Diamond cuts tx", tx.hash);
