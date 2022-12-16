@@ -310,7 +310,7 @@ describe("IssuerFacet", function () {
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
-      ).to.be.revertedWith("transfer: invalid zero token ID");
+      ).to.be.revertedWith("transferBatch: invalid zero token ID");
     });
     it("should revert Batch certificates transfer when caller is not approved", async () => {
 
