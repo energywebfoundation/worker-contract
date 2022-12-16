@@ -80,12 +80,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(
-        string memory key,
-        string memory value,
-        bytes32[] memory dataProof,
-        bytes32 dataHash
-    ) external override onlyIssuer {
+    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.isDataDisclosed[dataHash][key] == false, "Disclose: data already disclosed");
@@ -105,13 +100,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         certificateOwners = _accountsByToken(certificateID);
     }
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public override(ERC1155Base, IERC1155) {
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override(ERC1155Base, IERC1155) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(id != 0, "transfer: invalid zero token ID");
@@ -128,8 +117,8 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        for (uint256 i = 0; i < ids.length; i++) {
+        uint256 numberOfIds = ids.length;
+        for (uint256 i = 0; i < numberOfIds; i++) {
             require(ids[i] != 0, "transfer: invalid zero token ID");
             require(ids[i] <= issuer.latestCertificateId, "transferBatch: tokenId greater than issuer.latestCertificateId");
             require(issuer.certificates[ids[i]].isRevoked == false || to == issuer.certificates[ids[i]].generator, "non tradable revoked proof");
