@@ -243,6 +243,19 @@ module.exports.resultsTests = function () {
       ).to.be.revertedWith("NoFundsProvided");
     });
 
+    it("should correctly proceed to rewardPool replenishment", async () => {
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+      });
+
+      await expect(
+        votingContract.connect(faucet).replenishRewardPool({
+            value: REWARD,
+        })
+      ).to.emit(votingContract, "Replenished").withArgs(REWARD);
+    });
+
     it("should revert when calling replenishment of funds with rewards disabled", async () => {
       
       votingContract = await setupVotingContract({
