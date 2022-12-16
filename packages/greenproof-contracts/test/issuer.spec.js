@@ -150,6 +150,61 @@ describe("IssuerFacet", function () {
           )
       ).to.be.revertedWith(`NotInConsensus("${inputHash}")`);
     });
+    
+    it("should reject proof issuance requests for volume not in consensus", async () => {
+      const {
+        inputHash,
+        volumeRootHash,
+        matchResultProof,
+        volume,
+        volumeProof,
+        matchResult
+      } = generateProofData({volume: 42});
+
+      await reachConsensus(inputHash, matchResult);
+
+      const wrongVolume = parseEther("21");
+
+      await expect(
+        issuerContract
+          .connect(issuer)
+          .requestProofIssuance(
+            inputHash,
+            wallets[1].address,
+            volumeRootHash,
+            matchResultProof,
+            wrongVolume,
+            volumeProof,
+            tokenURI
+          )
+      ).to.be.revertedWith("amount : Not part of this consensus");
+    });
+    
+    it("should reject proof issuance requests by non issuers", async () => {
+      const {
+        inputHash,
+        volumeRootHash,
+        matchResultProof,
+        volume,
+        volumeProof,
+        matchResult
+      } = generateProofData();
+
+      await reachConsensus(inputHash, matchResult);
+
+      await expect(
+        issuerContract
+          .requestProofIssuance(
+            inputHash,
+            wallets[1].address,
+            volumeRootHash,
+            matchResultProof,
+            parseEther(volume.toString(10)),
+            volumeProof,
+            tokenURI
+          )
+      ).to.be.revertedWith("Access: Not an issuer");
+    });
 
     it("Authorized issuers can send proof issuance requests", async () => {
       const proofData = generateProofData();
@@ -335,6 +390,31 @@ describe("IssuerFacet", function () {
             transferBytesData
           )
       ).to.be.revertedWith("ERC1155: caller is not owner nor approved");
+    });
+
+    it("should allow Batch certificates transfer when caller is approved", async () => {
+
+      const minter = wallets[0];
+      const receiver = wallets[1];
+      const transferVolume = parseEther("2");
+      const mintedVolume = 5;
+      const proofData = generateProofData({ volume: mintedVolume });
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(1, proofData, receiver);
+
+      const transferBytesData = ethers.utils.formatBytes32String("");
+      await issuerContract.connect(receiver).setApprovalForAll(minter.address, true);
+      await expect(
+        issuerContract
+          .connect(minter)
+          .safeBatchTransferFrom(
+            receiver.address,
+            owner.address,
+            [1, 1],
+            [transferVolume, transferVolume.sub(1)],
+            transferBytesData
+          )
+      ).to.not.be.reverted;
     });
 
     it("should revert when one tries to transfer Batch certificates containing token ID > lastTokenIndex", async () => {
