@@ -250,6 +250,12 @@ describe("IssuerFacet", function () {
       expect(secondCert.merkleRootHash).to.eql(secondProofData.volumeRootHash);
       expect(secondCert.generator).to.eql(wallets[0].address);
     });
+    
+    it("should revert when trying to fetch all certificates of non owner", async () => {
+      await expect(
+        proofManagerContract.getProofsOf(wallets[ 0 ].address)
+      ).to.be.revertedWith("No proofs for this address");
+    });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
       const { inputHash: someOtherHash } = generateProofData();
@@ -543,6 +549,17 @@ describe("IssuerFacet", function () {
       await expect(
         proofManagerContract.connect(claimer).claimProofFor(1, owner.address, 1)
       ).to.be.revertedWith("proof revoked");
+    });
+    
+    it("should revert if non claimer tries to claim proof", async () => {
+      const proofData = generateProofData();
+      const notClaimer = worker;
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(1, proofData, owner);
+
+      await expect(
+        proofManagerContract.connect(notClaimer).claimProofFor(1, owner.address, 1)
+      ).to.be.revertedWith("Access: Not enrolled as claimer");
     });
 
     it("should revert if owner tries to retire a revoked proof", async () => {
