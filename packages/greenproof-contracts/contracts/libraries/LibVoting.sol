@@ -263,7 +263,8 @@ library LibVoting {
      */
     function _isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof) internal view returns (bool) {
         bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(votingID);
-        for (uint256 i = 0; i < matchResults.length; i++) {
+        uint256 numberOfMatchResults = matchResults.length;
+        for (uint256 i = 0; i < numberOfMatchResults; i++) {
             if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
                 return true;
             }
