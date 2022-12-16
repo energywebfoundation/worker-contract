@@ -40,9 +40,10 @@ library LibReward {
     function payReward() internal {
         RewardStorage storage rs = getStorage();
 
+        uint256 rewardAmount = rs.rewardAmount;
         uint256 rewardQueueSize = rs.rewardQueue.length;
 
-        while (rewardQueueSize > 0 && address(this).balance >= rs.rewardAmount) {
+        while (rewardQueueSize > 0 && address(this).balance >= rewardAmount) {
             address payable currentWorker = rs.rewardQueue[rewardQueueSize - 1];
             rewardQueueSize--;
             rs.rewardQueue.pop();
