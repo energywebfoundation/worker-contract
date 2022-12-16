@@ -123,7 +123,7 @@ library LibVoting {
     }
 
     function _startSession(bytes32 votingID, bytes32 matchResult) internal {
-        /// There con not be voting without some session
+        /// There can not be voting without some session
         if (_getStorage().votingIDToVoting[votingID].sessionIDs.length == 0) {
             _getStorage().votingIDs.push(votingID);
         }
@@ -157,7 +157,9 @@ library LibVoting {
         emit WinningMatch(votingID, session.matchResult, session.votesCount);
         emit ConsensusReached(session.matchResult, votingID);
 
-        _reward(_getStorage().winners[votingID][sessionID]);
+        if (LibReward._isRewardEnabled()) {
+            _rewardWinners(votingID, sessionID);
+        }
     }
 
     function _getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
@@ -181,17 +183,24 @@ library LibVoting {
         _votingStorage.winners[votingID][sessionID] = _getVoters(votingID, sessionID);
     }
 
-    function _reward(address payable[] memory voters) internal {
+    /**
+     * @notice sends rewards to workers who casted winning vote
+     * @dev On missing funds, will add in the rewardQueue only the voters who could not be rewarded
+     */
+    function _rewardWinners(bytes32 votingID, bytes32 sessionID) internal {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
+        address payable[] memory votingWinners = _getStorage().winners[votingID][sessionID];
 
-        if (!rs.rewardsEnabled) {
-            return;
-        }
+        uint256 rewardAmount = rs.rewardAmount;
+        uint256 numberOfVotingWinners = votingWinners.length;
 
-        for (uint256 i = 0; i < voters.length; i++) {
-            rs.rewardQueue.push(voters[i]);
+        for (uint256 i = 0; i < numberOfVotingWinners; i++) {
+            if (address(this).balance >= rewardAmount) {
+                votingWinners[i].transfer(rewardAmount);
+            } else {
+                rs.rewardQueue.push(votingWinners[i]);
+            }
         }
-        LibReward.payReward();
     }
 
     /**
