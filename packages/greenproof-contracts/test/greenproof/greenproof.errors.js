@@ -1,4 +1,4 @@
-const DiamondError = {
+const GreenproofError = {
   InvalidOwner: 'init: Invalid contract Owner',
   InvalidClaimManager: 'init: Invalid claimManager',
   InvalidClaimRevocationRegistry: 'init: Invalid claimsRevocationRegistry',
@@ -6,5 +6,5 @@ const DiamondError = {
 }
 
 module.exports = {
-  DiamondError,
+  GreenproofError,
 }

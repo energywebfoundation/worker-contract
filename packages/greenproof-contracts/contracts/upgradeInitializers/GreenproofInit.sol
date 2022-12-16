@@ -42,7 +42,7 @@ contract GreenproofInit {
 
     // You can add parameters to this function in order to pass in
     // data to set your own state variables
-    function init(GreenproofConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) external {
+    function init(GreenproofConfig memory greenproofConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) external {
         ERC165Storage.Layout storage erc165 = ERC165Storage.layout();
         erc165.setSupportedInterface(type(IClaimManager).interfaceId, true);
         erc165.setSupportedInterface(type(IGreenProof).interfaceId, true);
@@ -53,13 +53,13 @@ contract GreenproofInit {
         require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
         require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
         require(votingConfig.revocablePeriod > 0, "init: Invalid revocable period");
-        require(diamondConfig.contractOwner != address(0), "init: Invalid contract Owner");
+        require(greenproofConfig.contractOwner != address(0), "init: Invalid contract Owner");
         require(votingConfig.majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
 
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
         LibIssuer.init(votingConfig.revocablePeriod);
         LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
-        OwnableStorage.layout().owner = diamondConfig.contractOwner;
+        OwnableStorage.layout().owner = greenproofConfig.contractOwner;
 
         LibClaimManager.init(
             rolesConfig.claimManagerAddress,

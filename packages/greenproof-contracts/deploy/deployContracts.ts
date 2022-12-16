@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { config } from "dotenv";
 import { FacetCutAction, getSelectors } from "./libraries/greenproof";
 import { BigNumber, Contract, ContractFactory } from "ethers";
-import { GreenProofInit } from '../src';
+import { GreenproofInit } from '../src';
 
 config();
 

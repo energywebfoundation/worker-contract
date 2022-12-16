@@ -1,8 +1,9 @@
-/* global ethers task */
-// require("hardhat-diamond-abi");
 require("hardhat-gas-reporter");
 require("@nomiclabs/hardhat-waffle");
 require("@typechain/hardhat");
+require("@nomiclabs/hardhat-ethers");
+
+const { task } = require("hardhat/config");
 const dotenv = require("dotenv");
 const path = require('path');
 
@@ -54,15 +55,10 @@ module.exports = {
   gasReporter: {
     currency: 'USD',
     gasPrice: 21,
-    enabled: false,
     coinmarketcap: process.env.COIN_MARKET_CAP_API,
     token: "EWT",
-    enabled: process.env.GAS_REPORTING == "activate" ?  true : false
+    enabled: process.env.ENABLE_GAS_REPORTING === "true"
   },
-  // diamondAbi: {
-  //   // (required) The name of your Diamond ABI
-  //   name: "GreenproofContracts",
-  // },
   typechain: {
     outDir: path.join(__dirname, "src"),
   },
