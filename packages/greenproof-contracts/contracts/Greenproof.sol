@@ -64,7 +64,6 @@ contract Greenproof is SolidStateDiamond {
         emit ClaimManagerUpdated(oldAddress, newAddress);
     }
 
-    //TODO: provide unit tests for RoleVersion update
     function updateIssuerVersion(uint256 newVersion) external {
         uint256 oldVersion = LibClaimManager.setIssuerVersion(newVersion);
         emit IssuerVersionUpdated(oldVersion, newVersion);
