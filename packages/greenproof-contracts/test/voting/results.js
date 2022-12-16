@@ -212,7 +212,7 @@ module.exports.resultsTests = function () {
     it("reward should be paid after replenishment of funds", async () => {
       votingContract = await setupVotingContract({
         reward: REWARD,
-        participatingWorkers: [workers[0], workers[1]],
+        participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
       });
 
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
@@ -316,6 +316,46 @@ module.exports.resultsTests = function () {
         expect(
           await votingContract.getWinningMatches(timeframes[0].input)
         ).to.deep.equal([timeframes[0].output]);
+      });
+
+      it("should revert when non owner tries to enable and disable rewards", async () => {
+        const nonOwner = faucet;
+        
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: false,
+        });
+        
+        const { greenproofAddress } = require("./voting.spec");
+        const GreenproofContract = await ethers.getContractAt(
+          "Greenproof",
+          greenproofAddress
+        );
+
+        await expect(
+          GreenproofContract.connect(nonOwner).setRewardsEnabled(true)
+        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
+      });
+
+      it("should revert when tries to enable rewards twice", async () => {
+        const nonOwner = faucet;
+        
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: false,
+        });
+        
+        const { greenproofAddress } = require("./voting.spec");
+        const GreenproofContract = await ethers.getContractAt(
+          "Greenproof",
+          greenproofAddress
+        );
+
+        await expect(
+          GreenproofContract.connect(nonOwner).setRewardsEnabled(true)
+        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
       });
 
       it("should pay the rewards after enabling rewards", async () => {
