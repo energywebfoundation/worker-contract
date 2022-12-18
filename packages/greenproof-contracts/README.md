@@ -30,7 +30,7 @@ Each smartcontract component provided in `contracts/facets` directory is then a 
 
 - NFT Issuer component : the issuance component is encapsulated inside the [IssuerFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/master/packages/greenproof-contracts/contracts/facets/IssuerFacet.sol) contract
 
-Additional utility facets are provided by the [Diamond-2 reference implementation](https://github.com/mudgen/diamond-2-hardhat), which help conforming to the EIP-2535 standard specification:
+Additional utility facets are provided by the [Solidstate diamond implementation](https://github.com/solidstate-network/solidstate-solidity/tree/master/contracts/proxy/diamond), which help conforming to the EIP-2535 standard specification
 
 ---
 
@@ -51,11 +51,13 @@ npm run test:e2e
 
 This command will run unit tests for the whole `greenproof-contracts` components. You can target one specific component to test inside the greenproof core module :
 - `issuerFacet.spec.js` handles unit tests for the Issuance component. 
+
 ```
 npm run issuer:test
 ```
 
 - `test/voting handles unit tests for the Voting component`
+
 ```
 npm run voting:test
 ```
@@ -63,9 +65,10 @@ npm run voting:test
 
 ```
 npm run greenproof:test
+
 ```
 To run `coverage` test :
  
 ```
 npm run coverage:test
-````
+```
