@@ -151,7 +151,7 @@ describe("Voting", function () {
     votingContract = await ethers.getContractAt("VotingFacet", greenproofAddress);
     workers.forEach((w) => w.setVotingContract(votingContract));
 
-    if (rewardPool) {
+    if (rewardsEnabled && rewardPool) {
       await votingContract
         .connect(faucet)
         .replenishRewardPool({ value: rewardPool });

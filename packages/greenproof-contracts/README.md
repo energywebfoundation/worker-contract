@@ -26,9 +26,9 @@ As mentioned in the [Ethereum documentation](https://ethereum.org/en/developers/
 
 Each smartcontract component provided in `contracts/facets` directory is then a facet of this greenproof Diamond.
 
-- Voting component : the voting logic is implemented in the [VotingFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/VotingFacet.sol) contract
+- Voting component : the voting logic is implemented in the [VotingFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/master/packages/greenproof-contracts/contracts/facets/VotingFacet.sol) contract
 
-- NFT Issuer component : the issuance component is encapsulated inside the [IssuerFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/feat/GP-134/Issuer-Contract/packages/ew-greenProof-core-Diamond/contracts/facets/IssuerFacet.sol) contract
+- NFT Issuer component : the issuance component is encapsulated inside the [IssuerFacet.sol](https://github.com/energywebfoundation/greenproof-sdk/blob/master/packages/greenproof-contracts/contracts/facets/IssuerFacet.sol) contract
 
 Additional utility facets are provided by the [Solidstate diamond implementation](https://github.com/solidstate-network/solidstate-solidity/tree/master/contracts/proxy/diamond), which help conforming to the EIP-2535 standard specification
 
@@ -41,19 +41,23 @@ Additional utility facets are provided by the [Solidstate diamond implementation
 npm install
 ```
 
-- Running test
+### Running tests
+
+- end-to-end tests
 
 ```
 npm run test:e2e
 ```
 
-This command will run e2e tests for the whole `greenproof-contracts` components. You can target one  specific component to test inside the greenproof diamond module:
-- `issuer.spec.js` handles unit tests for the Issuance component. 
+This command will run unit tests for the whole `greenproof-contracts` components. You can target one specific component to test inside the greenproof core module :
+- `issuerFacet.spec.js` handles unit tests for the Issuance component. 
+
 ```
 npm run issuer:test
 ```
 
-- `voting.spec.js handles unit tests for the Voting component`
+- `test/voting handles unit tests for the Voting component`
+
 ```
 npm run voting:test
 ```
@@ -61,4 +65,10 @@ npm run voting:test
 
 ```
 npm run greenproof:test
+
+```
+To run `coverage` test :
+ 
+```
+npm run coverage:test
 ```

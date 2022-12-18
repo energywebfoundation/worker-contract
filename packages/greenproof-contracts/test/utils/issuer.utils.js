@@ -4,13 +4,13 @@ const generateRandomInt = () => Math.floor(Math.random() * 1_000_000);
 
 const generateProofData = (
   {
-    id = generateRandomInt(),
+    id = undefined,
     generatorID = generateRandomInt(),
     volume = generateRandomInt(),
     consumerID = generateRandomInt(),
   } = {}) => {
   const inputData = [{
-    id: 1,
+    id: id !== undefined ? id : 1,
     generatorID: generatorID,
     volume,
     consumerID,

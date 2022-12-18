@@ -6,7 +6,7 @@ const {
 } = require("../scripts/deploy");
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
-const { assert, expect } = require("chai");
+const { assert, expect, util } = require("chai");
 const chai = require("chai");
 
 const { roles } = require("./utils/roles.utils");
@@ -23,12 +23,13 @@ describe("GreenproofTest", async function () {
   let tx;
   let receipt;
   let owner;
+  let nonOwner;
   let claimManagerMocked;
   let claimsRevocationRegistryMocked;
   const addresses = [];
 
   before(async function () {
-    [owner] = await ethers.getSigners();
+    [owner, nonOwner] = await ethers.getSigners();
 
     claimManagerMocked = await initMockClaimManager(owner);
     claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
@@ -91,13 +92,147 @@ describe("GreenproofTest", async function () {
     });
   });
 
+  describe("Proxy roles updates tests", () => {
+
+    describe("- ClaimManagerAddress update tests", () => {
+      it("should revert when updating claimManager with Zero address", async () => {
+        const zeroAddress = ethers.constants.AddressZero;
+        await expect(greenproof.updateClaimManager(zeroAddress))
+          .to.be.revertedWith("Cannot update to null address");
+      });
+
+      it("should revert when updating claimManager with same address", async () => {
+        await expect(greenproof.updateClaimManager(claimManagerMocked.address))
+          .to.be.revertedWith("Same address");
+      });
+
+      it("should revert when non owner tries to update claimManager Address", async () => {
+        const oldClaimManagerAddress = claimManagerMocked.address;
+        const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+        
+        await expect(
+          greenproof.connect(nonOwner).updateClaimManager(newClaimManagerAddress)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update claimManager Address", async () => {
+        const oldClaimManagerAddress = claimManagerMocked.address;
+        const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+        
+        await expect(greenproof.updateClaimManager(newClaimManagerAddress))
+          .to.emit(greenproof, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
+      });
+
+    });
+
+    describe("- ClaimerRole update tests", () => {
+      it("should revert when updating claimerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(greenproof.updateClaimerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update claimerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          greenproof.connect(nonOwner).updateClaimerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update claimerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(greenproof.updateClaimerVersion(newRoleVersion))
+          .to.emit(greenproof, "ClaimerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+
+    describe("- workerRole update tests", () => {
+      it("should revert when updating workerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(greenproof.updateWorkerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update workerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          greenproof.connect(nonOwner).updateWorkerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update workerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(greenproof.updateWorkerVersion(newRoleVersion))
+          .to.emit(greenproof, "WorkerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+
+    describe("- RevokerRole update tests", () => {
+      it("should revert when updating revokerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(greenproof.updateRevokerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update revokerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          greenproof.connect(nonOwner).updateRevokerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update revokerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(greenproof.updateRevokerVersion(newRoleVersion))
+          .to.emit(greenproof, "RevokerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+
+    describe("- IssuerRole update tests", () => {
+      it("should revert when updating IssuerRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(greenproof.updateIssuerVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update IssuerRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          greenproof.connect(nonOwner).updateIssuerVersion(newRoleVersion)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update IssuerRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(greenproof.updateIssuerVersion(newRoleVersion))
+          .to.emit(greenproof, "IssuerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
+  })
+
   describe("\n****** Proxy setting tests ******", () => {
     it("should have four facets -- call to facetAddresses function", async () => {
       for (const address of await greenproof.facetAddresses()) {
         addresses.push(address);
       }
 
-      assert.equal(addresses.length, 2); // SolidState https://github.com/solidstate-network/solidstate-solidity/blob/e9f741cb1476a066ce92d39600a82dc1c9e06b7d/contracts/proxy/diamond/SolidStateDiamond.sol#L72 and Issuer facets
+      assert.equal(addresses.length, 2); // SolidState https://github.com/solidstate-network/solidstate-solidity/blob/e9f741cb1476a066ce92d39600a82dc1c9e06b7d/contracts/proxy/diamond/SolidStategreenproof.sol#L72 and Issuer facets
     });
 
     it("facets should have the right function selectors -- call to facetFunctionSelectors function", async () => {
@@ -155,12 +290,31 @@ describe("GreenproofTest", async function () {
       assert.sameMembers(selectors, expectedSelectors);
     });
 
-    it("should test function call", async () => {
+    it("should test function calls", async () => {
       const test1Facet = await ethers.getContractAt(
         "Test1Facet",
         greenproofAddress
       );
+      await test1Facet.test1Func1();
+      await test1Facet.test1Func2();
+      await test1Facet.test1Func3();
+      await test1Facet.test1Func4();
+      await test1Facet.test1Func5();
+      await test1Facet.test1Func6();
+      await test1Facet.test1Func7();
+      await test1Facet.test1Func8();
+      await test1Facet.test1Func9();
       await test1Facet.test1Func10();
+      await test1Facet.test1Func11();
+      await test1Facet.test1Func12();
+      await test1Facet.test1Func13();
+      await test1Facet.test1Func14();
+      await test1Facet.test1Func15();
+      await test1Facet.test1Func16();
+      await test1Facet.test1Func17();
+      await test1Facet.test1Func18();
+      await test1Facet.test1Func19();
+      await test1Facet.test1Func20();
     });
 
     it("should add test2 functions", async () => {
@@ -189,6 +343,27 @@ describe("GreenproofTest", async function () {
         await greenproof.facetFunctionSelectors(test2Facet.address),
         selectors
       );
+
+      await test2Facet.test2Func1();
+      await test2Facet.test2Func2();
+      await test2Facet.test2Func3();
+      await test2Facet.test2Func4();
+      await test2Facet.test2Func5();
+      await test2Facet.test2Func6();
+      await test2Facet.test2Func7();
+      await test2Facet.test2Func8();
+      await test2Facet.test2Func9();
+      await test2Facet.test2Func10();
+      await test2Facet.test2Func11();
+      await test2Facet.test2Func12();
+      await test2Facet.test2Func13();
+      await test2Facet.test2Func14();
+      await test2Facet.test2Func15();
+      await test2Facet.test2Func16();
+      await test2Facet.test2Func17();
+      await test2Facet.test2Func18();
+      await test2Facet.test2Func19();
+      await test2Facet.test2Func20();
     });
 
     it("should remove some test2 functions", async () => {
@@ -296,7 +471,6 @@ describe("GreenproofTest", async function () {
     });
 
     it("add most functions and facets", async () => {
-      // const diamondLoupeFacetSelectors = getSelectors(diamondLoupeFacet);
       const IssuerFacet = await ethers.getContractFactory("IssuerFacet");
       const Test1Facet = await ethers.getContractFactory("Test1Facet");
       const Test2Facet = await ethers.getContractFactory("Test2Facet");
