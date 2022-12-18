@@ -118,7 +118,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     ) public override(ERC1155Base, IERC1155) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
         uint256 numberOfIds = ids.length;
-        for (uint256 i = 0; i < numberOfIds; i++) {
+        for (uint256 i; i < numberOfIds; i++) {
             require(ids[i] != 0, "transferBatch: invalid zero token ID");
             require(ids[i] <= issuer.latestCertificateId, "transferBatch: tokenId greater than issuer.latestCertificateId");
             require(issuer.certificates[ids[i]].isRevoked == false || to == issuer.certificates[ids[i]].generator, "non tradable revoked proof");

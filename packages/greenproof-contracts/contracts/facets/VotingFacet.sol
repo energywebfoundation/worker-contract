@@ -119,10 +119,12 @@ contract VotingFacet is IVoting, IReward {
     function cancelExpiredVotings() external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        for (uint256 i = 0; i < votingStorage.votingIDs.length; i++) {
+        uint256 numberOfVotingIDs = votingStorage.votingIDs.length;
+        for (uint256 i; i < numberOfVotingIDs; i++) {
             bytes32 votingID = votingStorage.votingIDs[i];
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
-            for (uint256 j = 0; j < voting.sessionIDs.length; j++) {
+            uint256 numberOfSessionIds = voting.sessionIDs.length;
+            for (uint256 j; j < numberOfSessionIds; j++) {
                 bytes32 sessionID = voting.sessionIDs[i];
                 if (LibVoting._isSessionExpired(votingID, sessionID)) {
                     LibVoting._completeSession(votingID, sessionID);
@@ -151,8 +153,9 @@ contract VotingFacet is IVoting, IReward {
         bytes32[] memory winningMatches = getWinningMatches(votingID);
         bytes32[] memory votesContainer = new bytes32[](winningMatches.length);
         uint256 numberOfVotes;
+        uint256 numberOfWinningMatches = winningMatches.length;
 
-        for (uint256 i = 0; i < winningMatches.length; i++) {
+        for (uint256 i; i < numberOfWinningMatches; i++) {
             LibVoting.VotingSession storage session = LibVoting._getSession(votingID, LibVoting._getSessionID(votingID, winningMatches[i]));
             if (LibVoting._hasAlreadyVoted(worker, session)) {
                 votesContainer[numberOfVotes] = winningMatches[i];
@@ -161,7 +164,7 @@ contract VotingFacet is IVoting, IReward {
         }
 
         votes = new bytes32[](numberOfVotes);
-        for (uint i = 0; i < numberOfVotes; i++) {
+        for (uint i; i < numberOfVotes; i++) {
             votes[i] = votesContainer[i];
         }
     }
@@ -180,16 +183,17 @@ contract VotingFacet is IVoting, IReward {
         LibVoting.Voting storage voting = LibVoting._getStorage().votingIDToVoting[votingID];
         uint256 numberOfWinningSessions;
         bytes32[] memory winningSessionsIDs = new bytes32[](voting.sessionIDs.length);
+        uint256 numberOfVotingSessionIds = voting.sessionIDs.length;
 
-        for (uint256 i = 0; i < voting.sessionIDs.length; i++) {
-            if (voting.sessionIDToSession[voting.sessionIDs[i]].isConsensusReached == true) {
+        for (uint256 i; i < numberOfVotingSessionIds; i++) {
+            if (LibVoting._getSession(votingID, voting.sessionIDs[i]).isConsensusReached) {
                 winningSessionsIDs[numberOfWinningSessions] = voting.sessionIDs[i];
                 numberOfWinningSessions++;
             }
         }
 
         winningMatches = new bytes32[](numberOfWinningSessions);
-        for (uint256 i = 0; i < numberOfWinningSessions; i++) {
+        for (uint256 i; i < numberOfWinningSessions; i++) {
             winningMatches[i] = voting.sessionIDToSession[winningSessionsIDs[i]].matchResult;
         }
     }
