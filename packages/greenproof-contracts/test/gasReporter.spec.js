@@ -1,9 +1,7 @@
 const chai = require('chai');
 const { expect } = require('chai');
 const { parseEther } = require('ethers').utils;
-const {
-  deployDiamond,
-} = require('../scripts/deploy/deployContracts');
+const { deployGreenproof } = require('../scripts/deploy/deployContracts');
 const { ethers } = require('hardhat');
 const { solidity } = require('ethereum-waffle');
 const { roles } = require('./utils/roles.utils');
@@ -32,7 +30,7 @@ describe('Gas consumption report', function() {
   let sender;
   let receiver;
 
-  let diamondAddress;
+  let greenproofAddress;
   let votingContract;
   let proofManagerContract;
   let issuerContract;
@@ -73,7 +71,7 @@ describe('Gas consumption report', function() {
       );
     };
 
-    ({ diamondAddress } = await deployDiamond({
+    ({ greenproofAddress } = await deployGreenproof({
       claimManagerAddress: claimManagerMocked.address,
       claimRevokerAddress: claimsRevocationRegistryMocked.address,
       contractOwner: owner.address,
@@ -82,9 +80,9 @@ describe('Gas consumption report', function() {
       revocablePeriod: revokablePeriod,
     }));
 
-    issuerContract = await ethers.getContractAt('IssuerFacet', diamondAddress);
-    votingContract = await ethers.getContractAt('VotingFacet', diamondAddress);
-    proofManagerContract = await ethers.getContractAt('ProofManagerFacet', diamondAddress);
+    issuerContract = await ethers.getContractAt('IssuerFacet', greenproofAddress);
+    votingContract = await ethers.getContractAt('VotingFacet', greenproofAddress);
+    proofManagerContract = await ethers.getContractAt('ProofManagerFacet', greenproofAddress);
 
     await resetRoles();
     await grantRole(worker, roles.workerRole);

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/facets/ProofManagerFacet.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/facets/</a> ProofManagerFacet.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>31/31</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>22/22</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>11/11</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>39/39</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14×</span>
+<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-yes">11×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.16;
+&nbsp;
+import {LibIssuer} from "../libraries/LibIssuer.sol";
+import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofManager} from "../interfaces/IProofManager.sol";
+import {LibClaimManager} from "../libraries/LibClaimManager.sol";
+import {LibProofManager} from "../libraries/LibProofManager.sol";
+import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
+&nbsp;
+contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
+    using LibClaimManager for address;
+&nbsp;
+    modifier onlyRevoker() {
+        require(msg.sender.isEnrolledRevoker(), "Access: Not enrolled as revoker");
+        _;
+    }
+&nbsp;
+    modifier onlyClaimer() {
+        require(msg.sender.isEnrolledClaimer(), "Access: Not enrolled as claimer");
+        _;
+    }
+&nbsp;
+    function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+&nbsp;
+        require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
+        require(_balanceOf(owner, certificateID) &gt;= amount, "Insufficient volume owned");
+&nbsp;
+        LibIssuer._registerClaimedProof(certificateID, owner, amount);
+        _burn(owner, certificateID, amount);
+        emit ProofClaimed(certificateID, owner, block.timestamp, amount);
+    }
+&nbsp;
+    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
+        _claimProof(certificateID, owner, amount);
+    }
+&nbsp;
+    function claimProof(uint256 certificateID, uint256 amount) external override {
+        _claimProof(certificateID, msg.sender, amount);
+    }
+&nbsp;
+    function revokeProof(uint256 certificateID) external override onlyRevoker {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        uint256 issuanceDate = issuer.certificates[certificateID].issuanceDate;
+&nbsp;
+        if (certificateID &gt; issuer.latestCertificateId) {
+            revert LibIssuer.NonExistingCertificate(certificateID);
+        }
+        require(issuer.certificates[certificateID].isRevoked == false, "already revoked proof");
+        if (issuanceDate + issuer.revocablePeriod &lt; block.timestamp) {
+            revert LibIssuer.NonRevokableCertificate(certificateID, issuanceDate, issuanceDate + issuer.revocablePeriod);
+        }
+        issuer.certificates[certificateID].isRevoked = true;
+        emit ProofRevoked(certificateID);
+    }
+&nbsp;
+    function getProof(uint256 certificateID) external view override returns (IGreenProof.Certificate memory proof) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+&nbsp;
+        if (certificateID &gt; issuer.latestCertificateId) {
+            revert LibIssuer.NonExistingCertificate(certificateID);
+        }
+        proof = issuer.certificates[certificateID];
+    }
+&nbsp;
+    function getProofIdByDataHash(bytes32 dataHash) external view override returns (uint256 proofId) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+&nbsp;
+        return issuer.dataToCertificateID[dataHash];
+    }
+&nbsp;
+    function getProofsOf(address userAddress) external view override returns (IGreenProof.Certificate[] memory) {
+        uint256[] memory userTokenList = _tokensByAccount(userAddress);
+        uint256 numberOfCertificates = userTokenList.length;
+&nbsp;
+        require(numberOfCertificates != 0, "No proofs for this address");
+        IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](numberOfCertificates);
+        for (uint256 i; i &lt; numberOfCertificates; i++) {
+            uint256 currentTokenID = userTokenList[i];
+            uint256 volume = _balanceOf(userAddress, currentTokenID);
+            userProofs[i] = LibIssuer._getCertificate(currentTokenID, volume);
+        }
+&nbsp;
+        return userProofs;
+    }
+&nbsp;
+    function claimedBalanceOf(address user, uint256 certificateID) external view override returns (uint256) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+&nbsp;
+        return issuer.claimedBalances[certificateID][user];
+    }
+&nbsp;
+    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure override returns (bool) {
+        return LibProofManager._verifyProof(rootHash, leaf, proof);
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Dec 19 2022 00:01:47 GMT+0100 (heure normale d’Europe centrale)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/libraries/LibIssuer.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/libraries/</a> LibIssuer.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>13/13</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>2/2</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>8/8</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>21/21</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-yes">35×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">465×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">465×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34×</span>
+<span class="cline-any cline-yes">34×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">//SPDX-License-Identifier: MIT
+pragma solidity ^0.8.16;
+&nbsp;
+import {IVoting} from "../interfaces/IVoting.sol";
+import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
+import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
+import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
+&nbsp;
+library LibIssuer {
+    bytes32 constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
+    bytes32 constant DEFAULT_VCREDENTIAL_VALUE = "";
+&nbsp;
+    struct IssuerStorage {
+        uint256 latestCertificateId;
+        uint256 revocablePeriod;
+        mapping(bytes32 =&gt; uint256) dataToCertificateID;
+        mapping(uint256 =&gt; IGreenProof.Certificate) certificates;
+        // Mapping from token ID to account balances, to track how much of certificate ID a wallet has claimed
+        mapping(uint256 =&gt; mapping(address =&gt; uint256)) claimedBalances;
+        mapping(bytes32 =&gt; mapping(string =&gt; string)) disclosedData;
+        //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
+        mapping(bytes32 =&gt; mapping(string =&gt; bool)) isDataDisclosed;
+        mapping(bytes32 =&gt; mapping(bytes32 =&gt; uint256)) voteToCertificates;
+    }
+&nbsp;
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
+&nbsp;
+    error NonExistingCertificate(uint256 certificateID);
+    error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
+    error NotInConsensus(bytes32 voteID);
+    error AlreadyCertifiedData(bytes32 dataHash);
+&nbsp;
+    function init(uint256 revocablePeriod) internal {
+        IssuerStorage storage issuer = _getStorage();
+        issuer.revocablePeriod = revocablePeriod;
+    }
+&nbsp;
+    function _incrementProofIndex() internal {
+        IssuerStorage storage issuer = _getStorage();
+        issuer.latestCertificateId++;
+    }
+&nbsp;
+    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 amount, uint256 certificateID, bytes32 voteID) internal {
+        LibIssuer.IssuerStorage storage issuer = _getStorage();
+&nbsp;
+        issuer.certificates[certificateID] = IGreenProof.Certificate({
+            isRevoked: false,
+            certificateID: certificateID,
+            issuanceDate: block.timestamp,
+            volume: amount,
+            merkleRootHash: dataHash,
+            generator: generatorAddress
+        });
+        issuer.dataToCertificateID[dataHash] = certificateID;
+        issuer.voteToCertificates[voteID][dataHash] = certificateID;
+    }
+&nbsp;
+    function _registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
+        IssuerStorage storage issuer = _getStorage();
+        issuer.claimedBalances[certificateID][user] += claimedAmount;
+    }
+&nbsp;
+    function _isCertified(bytes32 _data) internal view returns (bool) {
+        IssuerStorage storage issuer = _getStorage();
+        uint256 certificateId = issuer.dataToCertificateID[_data];
+&nbsp;
+        if (certificateId == 0) {
+            return false;
+        }
+&nbsp;
+        return !issuer.certificates[certificateId].isRevoked;
+    }
+&nbsp;
+    function _getCertificate(uint256 certificateID, uint256 volume) internal view returns (IGreenProof.Certificate memory) {
+        IssuerStorage storage issuer = _getStorage();
+&nbsp;
+        return
+            IGreenProof.Certificate({
+                isRevoked: issuer.certificates[certificateID].isRevoked,
+                certificateID: issuer.certificates[certificateID].certificateID,
+                issuanceDate: issuer.certificates[certificateID].issuanceDate,
+                volume: volume,
+                merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
+                generator: issuer.certificates[certificateID].generator
+            });
+    }
+&nbsp;
+    function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {
+        bytes32 position = ISSUER_STORAGE_POSITION;
+&nbsp;
+        assembly {
+            _issuerStorage.slot := position
+        }
+    }
+&nbsp;
+    function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
+        string memory volumeString = UintUtils.toString(volume / 1 ether);
+        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Dec 19 2022 00:01:47 GMT+0100 (heure normale d’Europe centrale)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

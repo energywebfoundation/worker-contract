@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/libraries/LibClaimManager.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/libraries/</a> LibClaimManager.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>28/28</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">92.86% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>26/28</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>13/13</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>46/46</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-yes">11×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">269×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">269×</span>
+<span class="cline-any cline-yes">269×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">269×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-yes">261×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">810×</span>
+<span class="cline-any cline-yes">810×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">201×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">201×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">//SPDX-License-Identifier: MIT
+pragma solidity ^0.8.16;
+&nbsp;
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
+import {IClaimManager} from "../interfaces/IClaimManager.sol";
+&nbsp;
+library LibClaimManager {
+    bytes32 constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
+&nbsp;
+    error NotInitializedClaimManager();
+&nbsp;
+    struct Role {
+        bytes32 name;
+        uint256 version;
+    }
+&nbsp;
+    struct ClaimManagerStorage {
+        address claimManagerAddress;
+        address claimsRevocationRegistry;
+        Role workerRole;
+        Role issuerRole;
+        Role revokerRole;
+        Role claimerRole;
+    }
+&nbsp;
+    modifier onlyOwner() {
+        require(OwnableStorage.layout().owner == msg.sender, "Greenproof: ClaimManager facet: Must be contract owner");
+        _;
+    }
+&nbsp;
+    function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        // ExtCall : Contract deployed and managed by EnergyWeb Foundation
+        bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
+        bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(_role, _subject);
+&nbsp;
+        return (isSubjectEnrolled &amp;&amp; !isRoleRevoked);
+    }
+&nbsp;
+    function init(
+        address claimManagerAddress,
+        bytes32 issuerRole,
+        bytes32 revokerRole,
+        bytes32 workerRole,
+        bytes32 claimerRole,
+        address claimsRevocationRegistry
+    ) internal {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(claimStore.claimManagerAddress == address(0), "ClaimManager Already initialized");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(claimStore.claimsRevocationRegistry == address(0), "claimsRevocationRegistry Already initialized");
+&nbsp;
+        claimStore.claimManagerAddress = claimManagerAddress;
+        claimStore.claimsRevocationRegistry = claimsRevocationRegistry;
+        claimStore.issuerRole = Role({name: issuerRole, version: 1});
+        claimStore.revokerRole = Role({name: revokerRole, version: 1});
+        claimStore.workerRole = Role({name: workerRole, version: 1});
+        claimStore.claimerRole = Role({name: claimerRole, version: 1});
+    }
+&nbsp;
+    function setIssuerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        require(claimStore.issuerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.issuerRole.version;
+&nbsp;
+        claimStore.issuerRole.version = _newVersion;
+    }
+&nbsp;
+    function setWorkerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        require(claimStore.workerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.workerRole.version;
+&nbsp;
+        claimStore.workerRole.version = _newVersion;
+    }
+&nbsp;
+    function setRevokerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        require(claimStore.revokerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.revokerRole.version;
+&nbsp;
+        claimStore.revokerRole.version = _newVersion;
+    }
+&nbsp;
+    function setClaimerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        require(claimStore.claimerRole.version != _newVersion, "Same version");
+        oldRoleVersion = claimStore.claimerRole.version;
+&nbsp;
+        claimStore.claimerRole.version = _newVersion;
+    }
+&nbsp;
+    function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        require(_newAddress != address(0), "Cannot update to null address");
+        require(claimStore.claimManagerAddress != _newAddress, "Same address");
+&nbsp;
+        oldAddress = claimStore.claimManagerAddress;
+&nbsp;
+        claimStore.claimManagerAddress = _newAddress;
+    }
+&nbsp;
+    function getStorage() internal pure returns (ClaimManagerStorage storage ClaimStore) {
+        bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
+        assembly {
+            ClaimStore.slot := position
+        }
+    }
+&nbsp;
+    function isEnrolledIssuer(address operator) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        return hasRole(operator, claimStore.issuerRole.name, claimStore.issuerRole.version);
+    }
+&nbsp;
+    function isEnrolledRevoker(address operator) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        return hasRole(operator, claimStore.revokerRole.name, claimStore.revokerRole.version);
+    }
+&nbsp;
+    function isEnrolledClaimer(address operator) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        return hasRole(operator, claimStore.claimerRole.name, claimStore.claimerRole.version);
+    }
+&nbsp;
+    function isEnrolledWorker(address operator) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+&nbsp;
+        return hasRole(operator, claimStore.workerRole.name, claimStore.workerRole.version);
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Dec 19 2022 00:01:47 GMT+0100 (heure normale d’Europe centrale)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>
