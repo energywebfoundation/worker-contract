@@ -47,24 +47,31 @@ Additional utility facets are provided by the [Diamond-2 reference implementatio
 npm install
 ```
 
-- Running test
+### Running tests
+
+- end-to-end tests
 
 ```
-npm run test
+npm run test:e2e
 ```
 
-This command will run unit tests for the whole `greenproof-contracts` components. You can target one  specific component to test inside the greenproof diamond module:
+This command will run unit tests for the whole `greenproof-contracts` components. You can target one specific component to test inside the greenproof core module :
 - `issuerFacet.spec.js` handles unit tests for the Issuance component. 
 ```
 npm run issuer:test
 ```
 
-- `votingFacet.spec.js handles unit tests for the Voting component`
+- `test/voting handles unit tests for the Voting component`
 ```
-npm run issuer:test
+npm run voting:test
 ```
-- `diamondTest.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
+- `greenproof.spec.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
 
 ```
-npm run diamond:test
+npm run greenproof:test
 ```
+To run `coverage` test :
+ 
+```
+npm run coverage:test
+````
