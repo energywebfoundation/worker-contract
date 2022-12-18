@@ -84,6 +84,7 @@ contract VotingFacet is IVoting, IReward {
         }
         votingStorage.workerToIndex[workerAddress] = LibVoting._getNumberOfWorkers();
         votingStorage.whitelistedWorkers.push(workerAddress);
+        emit WorkerAdded(workerAddress, block.timestamp);
     }
 
     /**
@@ -111,6 +112,7 @@ contract VotingFacet is IVoting, IReward {
 
         delete votingStorage.workerToIndex[workerToRemove];
         votingStorage.whitelistedWorkers.pop();
+        emit WorkerRemoved(workerToRemove, block.timestamp);
     }
 
     /**
