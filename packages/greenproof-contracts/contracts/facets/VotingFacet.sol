@@ -35,6 +35,13 @@ contract VotingFacet is IVoting, IReward {
         _;
     }
 
+    modifier onlyWhenEnabledRewards() {
+        if (!LibReward._isRewardEnabled()) {
+            revert LibReward.RewardsDisabled();
+        }
+        _;
+    }
+
     /**
      * @notice Increases the number of votes for this matchResult. Voting completes when that vote leads to consensus or when voting expires
      */
@@ -42,7 +49,7 @@ contract VotingFacet is IVoting, IReward {
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
         LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
 
-        if (session.status == LibVoting.Status.Completed) {
+        if (LibVoting._isClosed(session)) {
             revert LibVoting.SessionCannotBeRestarted(votingID, matchResult);
         }
 
@@ -75,9 +82,8 @@ contract VotingFacet is IVoting, IReward {
         if (isWhitelistedWorker(workerAddress)) {
             revert LibVoting.WorkerAlreadyAdded();
         }
-        votingStorage.workerToIndex[workerAddress] = votingStorage.numberOfWorkers;
+        votingStorage.workerToIndex[workerAddress] = LibVoting._getNumberOfWorkers();
         votingStorage.whitelistedWorkers.push(workerAddress);
-        votingStorage.numberOfWorkers = votingStorage.numberOfWorkers + 1;
     }
 
     /**
@@ -88,23 +94,23 @@ contract VotingFacet is IVoting, IReward {
      */
     function removeWorker(address workerToRemove) external override {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
+        uint256 numberOfWorkers = LibVoting._getNumberOfWorkers();
 
         if (!isWhitelistedWorker(workerToRemove)) {
             revert LibVoting.WorkerWasNotAdded(workerToRemove);
         }
         require(workerToRemove.isEnrolledWorker() == false, "Not allowed: still enrolled as worker");
 
-        if (votingStorage.numberOfWorkers > 1) {
+        if (numberOfWorkers > 1) {
             uint256 workerIndex = votingStorage.workerToIndex[workerToRemove];
             // Copy last element to fill the missing place in array
-            address payable workerToMove = votingStorage.whitelistedWorkers[votingStorage.numberOfWorkers - 1];
+            address payable workerToMove = votingStorage.whitelistedWorkers[numberOfWorkers - 1];
             votingStorage.whitelistedWorkers[workerIndex] = workerToMove;
             votingStorage.workerToIndex[workerToMove] = workerIndex;
         }
 
         delete votingStorage.workerToIndex[workerToRemove];
         votingStorage.whitelistedWorkers.pop();
-        votingStorage.numberOfWorkers = votingStorage.numberOfWorkers - 1;
     }
 
     /**
@@ -113,10 +119,12 @@ contract VotingFacet is IVoting, IReward {
     function cancelExpiredVotings() external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        for (uint256 i = 0; i < votingStorage.votingIDs.length; i++) {
+        uint256 numberOfVotingIDs = votingStorage.votingIDs.length;
+        for (uint256 i; i < numberOfVotingIDs; i++) {
             bytes32 votingID = votingStorage.votingIDs[i];
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
-            for (uint256 j = 0; j < voting.sessionIDs.length; j++) {
+            uint256 numberOfSessionIds = voting.sessionIDs.length;
+            for (uint256 j; j < numberOfSessionIds; j++) {
                 bytes32 sessionID = voting.sessionIDs[i];
                 if (LibVoting._isSessionExpired(votingID, sessionID)) {
                     LibVoting._completeSession(votingID, sessionID);
@@ -124,12 +132,6 @@ contract VotingFacet is IVoting, IReward {
                 }
             }
         }
-    }
-
-    function getNumberOfWorkers() external view override returns (uint256) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
-
-        return votingStorage.numberOfWorkers;
     }
 
     function getWorkers() external view override returns (address payable[] memory) {
@@ -141,7 +143,7 @@ contract VotingFacet is IVoting, IReward {
     function isWhitelistedWorker(address worker) public view returns (bool) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
-        return workerIndex < votingStorage.numberOfWorkers && votingStorage.whitelistedWorkers[workerIndex] == worker;
+        return workerIndex < LibVoting._getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
     }
 
     /**
@@ -151,17 +153,18 @@ contract VotingFacet is IVoting, IReward {
         bytes32[] memory winningMatches = getWinningMatches(votingID);
         bytes32[] memory votesContainer = new bytes32[](winningMatches.length);
         uint256 numberOfVotes;
+        uint256 numberOfWinningMatches = winningMatches.length;
 
-        for (uint256 i = 0; i < winningMatches.length; i++) {
+        for (uint256 i; i < numberOfWinningMatches; i++) {
             LibVoting.VotingSession storage session = LibVoting._getSession(votingID, LibVoting._getSessionID(votingID, winningMatches[i]));
-            if (session.workerToVoted[worker] == true) {
+            if (LibVoting._hasAlreadyVoted(worker, session)) {
                 votesContainer[numberOfVotes] = winningMatches[i];
                 numberOfVotes++;
             }
         }
 
         votes = new bytes32[](numberOfVotes);
-        for (uint i = 0; i < numberOfVotes; i++) {
+        for (uint i; i < numberOfVotes; i++) {
             votes[i] = votesContainer[i];
         }
     }
@@ -180,16 +183,17 @@ contract VotingFacet is IVoting, IReward {
         LibVoting.Voting storage voting = LibVoting._getStorage().votingIDToVoting[votingID];
         uint256 numberOfWinningSessions;
         bytes32[] memory winningSessionsIDs = new bytes32[](voting.sessionIDs.length);
+        uint256 numberOfVotingSessionIds = voting.sessionIDs.length;
 
-        for (uint256 i = 0; i < voting.sessionIDs.length; i++) {
-            if (voting.sessionIDToSession[voting.sessionIDs[i]].isConsensusReached == true) {
+        for (uint256 i; i < numberOfVotingSessionIds; i++) {
+            if (LibVoting._getSession(votingID, voting.sessionIDs[i]).isConsensusReached) {
                 winningSessionsIDs[numberOfWinningSessions] = voting.sessionIDs[i];
                 numberOfWinningSessions++;
             }
         }
 
         winningMatches = new bytes32[](numberOfWinningSessions);
-        for (uint256 i = 0; i < numberOfWinningSessions; i++) {
+        for (uint256 i; i < numberOfWinningSessions; i++) {
             winningMatches[i] = voting.sessionIDToSession[winningSessionsIDs[i]].matchResult;
         }
     }
@@ -200,17 +204,11 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.votingIDs.length;
     }
 
-    function replenishRewardPool() external payable override {
-        LibReward.RewardStorage storage rewardStorage = LibReward.getStorage();
-
+    function replenishRewardPool() external payable override onlyWhenEnabledRewards {
         if (msg.value == 0) {
             revert NoFundsProvided();
         }
-
         emit Replenished(msg.value);
-
-        if (rewardStorage.rewardsEnabled && rewardStorage.rewardQueue.length > 0) {
-            LibReward.payReward();
-        }
+        LibReward.payReward();
     }
 }

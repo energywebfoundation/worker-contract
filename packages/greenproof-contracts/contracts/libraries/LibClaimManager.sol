@@ -28,16 +28,9 @@ library LibClaimManager {
         _;
     }
 
-    function hasRole(
-        address _subject,
-        bytes32 _role,
-        uint256 _version
-    ) internal view returns (bool) {
+    function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.claimManagerAddress == address(0)) {
-            revert NotInitializedClaimManager();
-        }
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation
         bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
         bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(_role, _subject);
@@ -102,13 +95,9 @@ library LibClaimManager {
         claimStore.claimerRole.version = _newVersion;
     }
 
-    //TODO: provide unit tests for claimManager Update
     function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.claimManagerAddress == address(0)) {
-            revert NotInitializedClaimManager();
-        }
         require(_newAddress != address(0), "Cannot update to null address");
         require(claimStore.claimManagerAddress != _newAddress, "Same address");
 

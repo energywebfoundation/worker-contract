@@ -36,7 +36,6 @@ library LibVoting {
      */
     struct VotingStorage {
         uint256 timeLimit /* limit of duration of a voting session. The vote is considered expired after `startTimestamp` + `timeLimit` */;
-        uint256 numberOfWorkers /* Number of workers taking part to vote. This will determine the consensus threshold  */;
         uint256 majorityPercentage /* Percentage of workers that have to vote on the same result to reach the majority  */;
         address payable[] whitelistedWorkers /* List of all whitelisted workers */;
         bytes32[] votingIDs /* List of all voting identifiers */;
@@ -124,7 +123,7 @@ library LibVoting {
     }
 
     function _startSession(bytes32 votingID, bytes32 matchResult) internal {
-        /// There con not be voting without some session
+        /// There can not be voting without some session
         if (_getStorage().votingIDToVoting[votingID].sessionIDs.length == 0) {
             _getStorage().votingIDs.push(votingID);
         }
@@ -158,7 +157,9 @@ library LibVoting {
         emit WinningMatch(votingID, session.matchResult, session.votesCount);
         emit ConsensusReached(session.matchResult, votingID);
 
-        _reward(_getStorage().winners[votingID][sessionID]);
+        if (LibReward._isRewardEnabled()) {
+            _rewardWinners(votingID, sessionID);
+        }
     }
 
     function _getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
@@ -182,17 +183,24 @@ library LibVoting {
         _votingStorage.winners[votingID][sessionID] = _getVoters(votingID, sessionID);
     }
 
-    function _reward(address payable[] memory voters) internal {
+    /**
+     * @notice sends rewards to workers who casted winning vote
+     * @dev On missing funds, will add in the rewardQueue only the voters who could not be rewarded
+     */
+    function _rewardWinners(bytes32 votingID, bytes32 sessionID) internal {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
+        address payable[] memory votingWinners = _getStorage().winners[votingID][sessionID];
 
-        if (!rs.rewardsEnabled) {
-            return;
-        }
+        uint256 rewardAmount = rs.rewardAmount;
+        uint256 numberOfVotingWinners = votingWinners.length;
 
-        for (uint256 i = 0; i < voters.length; i++) {
-            rs.rewardQueue.push(voters[i]);
+        for (uint256 i; i < numberOfVotingWinners; i++) {
+            if (address(this).balance >= rewardAmount) {
+                votingWinners[i].transfer(rewardAmount);
+            } else {
+                rs.rewardQueue.push(votingWinners[i]);
+            }
         }
-        LibReward.payReward();
     }
 
     /**
@@ -208,11 +216,17 @@ library LibVoting {
     function _hasMajority(uint256 numberOfWinningVotes) internal view returns (bool) {
         VotingStorage storage votingStorage = _getStorage();
 
-        return ((100 * numberOfWinningVotes) / _getStorage().numberOfWorkers) >= votingStorage.majorityPercentage;
+        return ((100 * numberOfWinningVotes) / _getNumberOfWorkers()) >= votingStorage.majorityPercentage;
     }
 
     function _isClosed(VotingSession storage vote) internal view returns (bool) {
         return vote.status == Status.Completed;
+    }
+
+    function _getNumberOfWorkers() internal view returns (uint256) {
+        VotingStorage storage votingStorage = _getStorage();
+
+        return votingStorage.whitelistedWorkers.length;
     }
 
     function _getVoters(bytes32 votingID, bytes32 sessionID) internal view returns (address payable[] memory _voters) {
@@ -220,10 +234,13 @@ library LibVoting {
 
         VotingSession storage session = _votingStorage.votingIDToVoting[votingID].sessionIDToSession[sessionID];
 
+        uint256 numberOfWorkers = _getNumberOfWorkers();
+        address payable[] memory workersList = _votingStorage.whitelistedWorkers;
+
         _voters = new address payable[](session.votesCount);
         uint256 votersCount = 0;
-        for (uint256 i = 0; i < _votingStorage.numberOfWorkers; i++) {
-            address payable worker = _votingStorage.whitelistedWorkers[i];
+        for (uint256 i; i < numberOfWorkers; i++) {
+            address payable worker = workersList[i];
             if (session.workerToVoted[worker]) {
                 _voters[votersCount] = worker;
                 votersCount++;
@@ -246,7 +263,8 @@ library LibVoting {
      */
     function _isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof) internal view returns (bool) {
         bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(votingID);
-        for (uint256 i = 0; i < matchResults.length; i++) {
+        uint256 numberOfMatchResults = matchResults.length;
+        for (uint256 i; i < numberOfMatchResults; i++) {
             if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
                 return true;
             }
@@ -256,10 +274,6 @@ library LibVoting {
 
     function _hasAlreadyVoted(address operator, VotingSession storage session) internal view returns (bool) {
         return session.workerToVoted[operator];
-    }
-
-    function _compareStrings(string memory a, string memory b) internal pure returns (bool) {
-        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
     }
 
     function _getStorage() internal pure returns (VotingStorage storage _votingStorage) {
