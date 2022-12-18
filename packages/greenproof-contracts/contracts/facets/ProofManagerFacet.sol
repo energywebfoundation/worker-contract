@@ -76,7 +76,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
         require(numberOfCertificates != 0, "No proofs for this address");
         IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](numberOfCertificates);
-        for (uint256 i = 0; i < numberOfCertificates; i++) {
+        for (uint256 i; i < numberOfCertificates; i++) {
             uint256 currentTokenID = userTokenList[i];
             uint256 volume = _balanceOf(userAddress, currentTokenID);
             userProofs[i] = LibIssuer._getCertificate(currentTokenID, volume);

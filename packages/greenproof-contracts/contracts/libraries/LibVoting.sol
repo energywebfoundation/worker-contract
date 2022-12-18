@@ -194,7 +194,7 @@ library LibVoting {
         uint256 rewardAmount = rs.rewardAmount;
         uint256 numberOfVotingWinners = votingWinners.length;
 
-        for (uint256 i = 0; i < numberOfVotingWinners; i++) {
+        for (uint256 i; i < numberOfVotingWinners; i++) {
             if (address(this).balance >= rewardAmount) {
                 votingWinners[i].transfer(rewardAmount);
             } else {
@@ -239,7 +239,7 @@ library LibVoting {
 
         _voters = new address payable[](session.votesCount);
         uint256 votersCount = 0;
-        for (uint256 i = 0; i < numberOfWorkers; i++) {
+        for (uint256 i; i < numberOfWorkers; i++) {
             address payable worker = workersList[i];
             if (session.workerToVoted[worker]) {
                 _voters[votersCount] = worker;
@@ -264,7 +264,7 @@ library LibVoting {
     function _isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof) internal view returns (bool) {
         bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(votingID);
         uint256 numberOfMatchResults = matchResults.length;
-        for (uint256 i = 0; i < numberOfMatchResults; i++) {
+        for (uint256 i; i < numberOfMatchResults; i++) {
             if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
                 return true;
             }
