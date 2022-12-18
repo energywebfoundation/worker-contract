@@ -16,6 +16,10 @@ interface IVoting {
 
     event ConsensusReached(bytes32 winningMatch, bytes32 votingID);
 
+    event WorkerRemoved(address indexed worker, uint256 indexed removalDate);
+
+    event WorkerAdded(address indexed worker, uint256 indexed removalDate);
+
     function vote(bytes32 votingID, bytes32 matchResult) external;
 
     function addWorker(address payable workerAddress) external;
