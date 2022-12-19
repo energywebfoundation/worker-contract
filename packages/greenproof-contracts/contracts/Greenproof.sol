@@ -85,6 +85,6 @@ contract Greenproof is SolidStateDiamond {
     }
 
     function setRewardsEnabled(bool rewardsEnabled) external {
-        LibReward.setRewardsEnabled(rewardsEnabled);
+        LibReward._setRewardsFeature(rewardsEnabled);
     }
 }

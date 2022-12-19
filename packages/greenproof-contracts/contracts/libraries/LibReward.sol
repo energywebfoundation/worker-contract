@@ -8,8 +8,9 @@ library LibReward {
 
     /// Invalid call to pay rewards to the winners. Rewards are disabled.
     error RewardsDisabled();
+    event RewardsActivated(uint256 indexed activationDate);
+    event RewardsDeactivated(uint256 indexed deactivationDate);
 
-    event RewardsStateUpdated(uint256 indexed timestamp, bool indexed state);
     struct RewardStorage {
         bool rewardsEnabled;
         uint256 rewardAmount;
@@ -29,12 +30,16 @@ library LibReward {
         rs.rewardsEnabled = _rewardsEnabled;
     }
 
-    function setRewardsEnabled(bool rewardsEnabled) internal onlyOwner {
+    function _setRewardsFeature(bool isEnabled) internal onlyOwner {
         RewardStorage storage rs = getStorage();
 
-        require(rs.rewardsEnabled != rewardsEnabled, "LibReward: rewards state already set");
-        rs.rewardsEnabled = rewardsEnabled;
-        emit RewardsStateUpdated(block.timestamp, rewardsEnabled);
+        require(rs.rewardsEnabled != isEnabled, "LibReward: rewards state already set");
+        rs.rewardsEnabled = isEnabled;
+        if (isEnabled) {
+            emit RewardsActivated(block.timestamp);
+        } else {
+            emit RewardsDeactivated(block.timestamp);
+        }
     }
 
     function payReward() internal {
