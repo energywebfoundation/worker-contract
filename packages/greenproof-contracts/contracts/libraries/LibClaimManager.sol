@@ -48,9 +48,6 @@ library LibClaimManager {
     ) internal {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.claimManagerAddress == address(0), "ClaimManager Already initialized");
-        require(claimStore.claimsRevocationRegistry == address(0), "claimsRevocationRegistry Already initialized");
-
         claimStore.claimManagerAddress = claimManagerAddress;
         claimStore.claimsRevocationRegistry = claimsRevocationRegistry;
         claimStore.issuerRole = Role({name: issuerRole, version: 1});
