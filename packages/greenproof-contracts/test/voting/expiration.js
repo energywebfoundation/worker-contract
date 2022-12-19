@@ -28,6 +28,18 @@ module.exports.expirationTests = function () {
       .withArgs(timeframes[0].input, timeframes[0].output);
   });
 
+  it("voting which don't exceeded time limit are not cancelled", async () => {
+    votingContract = await setupVotingContract({
+      participatingWorkers: [workers[0], workers[1], workers[2]],
+    });
+
+    await workers[0].vote(timeframes[0].input, timeframes[0].output);
+
+    await expect(votingContract.cancelExpiredVotings())
+      .to.not.emit(votingContract, "VotingSessionExpired")
+      .withArgs(timeframes[0].input, timeframes[0].output);
+  });
+
   it("voting which exceeded time limit must not be completed", async () => {
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
