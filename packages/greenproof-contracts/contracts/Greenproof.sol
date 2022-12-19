@@ -83,8 +83,4 @@ contract Greenproof is SolidStateDiamond {
         uint256 oldVersion = LibClaimManager.setClaimerVersion(newVersion);
         emit ClaimerVersionUpdated(oldVersion, newVersion);
     }
-
-    function setRewardsEnabled(bool rewardsEnabled) external {
-        LibReward._setRewardsFeature(rewardsEnabled);
-    }
 }
