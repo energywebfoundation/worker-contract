@@ -106,21 +106,23 @@ module.exports.permissionsTests = function () {
     ).to.be.revertedWith("WorkerAlreadyAdded");
   });
 
+  //SIARA
+
   it("should allow non owner address to add enrolled workers", async () => {
     votingContract = await setupVotingContract();
     await mockClaimManager.grantRole(workers[0].address, workerRole);
     await mockClaimManager.grantRole(workers[1].address, workerRole);
     await mockClaimManager.grantRole(workers[2].address, workerRole);
 
-    await votingContract
+    await expect(votingContract
       .connect(workers[3].wallet)
-      .addWorker(workers[0].address);
-    await votingContract
+      .addWorker(workers[0].address)).to.emit(votingContract, "WorkerAdded");
+    await expect(votingContract
       .connect(workers[3].wallet)
-      .addWorker(workers[1].address);
-    await votingContract
+      .addWorker(workers[1].address)).to.emit(votingContract, "WorkerAdded");
+    await expect(votingContract
       .connect(workers[3].wallet)
-      .addWorker(workers[2].address);
+      .addWorker(workers[2].address)).to.emit(votingContract, "WorkerAdded");
 
     expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(true);
     expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(true);
@@ -149,7 +151,13 @@ module.exports.permissionsTests = function () {
     expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(true);
     expect(await votingContract.isWhitelistedWorker(workers[2].address)).to.equal(true);
 
-    await removeWorkers([workers[0], workers[1], workers[2]]);
+    await removeWorkers([ workers[ 0 ], workers[ 1 ] ]);
+
+    await mockClaimManager.revokeRole(workers[2].address, workerRole);
+    
+    await expect(votingContract
+      .connect(workers[3].wallet)
+      .removeWorker(workers[2].address)).to.emit(votingContract, "WorkerRemoved");
 
     expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(false);
     expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(false);
