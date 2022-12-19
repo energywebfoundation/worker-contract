@@ -90,6 +90,36 @@ describe("GreenproofTest", async function () {
         })
       ).to.be.revertedWith("init: Invalid revocable period");
     });
+    
+    it("should revert if reward amount is 0", async () => {
+      const zeroRewardAmount = 0;
+      const contractOwner = (await ethers.getSigners())[0];
+
+      await expect(
+        deployGreenproof({
+          claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
+          roles,
+          contractOwner: contractOwner.address,
+          rewardAmount: zeroRewardAmount
+        })
+      ).to.be.revertedWith("init: Null reward amount");
+    });
+    
+    it("should revert if majority percentage is avove 100", async () => {
+
+      const contractOwner = (await ethers.getSigners())[0];
+
+      await expect(
+        deployGreenproof({
+          claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
+          roles,
+          contractOwner: contractOwner.address,
+          majorityPercentage: 101
+        })
+      ).to.be.revertedWith("init: Majority percentage must be between 0 and 100");
+    });
   });
 
   describe("Proxy roles updates tests", () => {
@@ -121,6 +151,15 @@ describe("GreenproofTest", async function () {
         
         await expect(greenproof.updateClaimManager(newClaimManagerAddress))
           .to.emit(greenproof, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
+      });
+
+      it("should revert when dupplicatly enabling rewards", async () => {
+        await expect(greenproof.setRewardsEnabled(true))
+          .to.be.revertedWith("LibReward: rewards state already set");
+      });
+      it("should allow to update rewards", async () => {
+        await expect(greenproof.setRewardsEnabled(false))
+          .to.emit(greenproof, "RewardsStateUpdated");
       });
 
     });
@@ -295,6 +334,9 @@ describe("GreenproofTest", async function () {
         "Test1Facet",
         greenproofAddress
       );
+      
+      await test1Facet.supportsInterface(0xb0e8fcc7);
+
       await test1Facet.test1Func1();
       await test1Facet.test1Func2();
       await test1Facet.test1Func3();
