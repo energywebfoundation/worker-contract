@@ -90,6 +90,34 @@ describe("GreenproofTest", async function () {
         })
       ).to.be.revertedWith("init: Invalid revocable period");
     });
+
+    it("Greenproof should not be initialized with 0 reward amount", async () => {
+      const contractOwner = (await ethers.getSigners())[ 0 ];
+
+      await expect(
+        deployGreenproof({
+          claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
+          roles,
+          contractOwner: contractOwner.address,
+          rewardAmount: ethers.constants.Zero
+        })
+      ).to.be.revertedWith("init: Null reward amount");
+    });
+
+    it("should revert if majority percentage is above 100", async () => {
+      const contractOwner = (await ethers.getSigners())[0];
+
+      await expect(
+        deployGreenproof({
+          claimManagerAddress: claimManagerMocked.address,
+          claimRevokerAddress: claimsRevocationRegistryMocked.address,
+          roles,
+          contractOwner: contractOwner.address,
+          majorityPercentage: 101
+        })
+      ).to.be.revertedWith("init: Majority percentage must be between 0 and 100");
+    })
   });
 
   describe("Proxy roles updates tests", () => {
