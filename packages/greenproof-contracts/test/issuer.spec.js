@@ -583,7 +583,7 @@ describe("IssuerFacet", function () {
       ).to.emit(proofManagerContract, "ProofRevoked");
     });
 
-    it("should revert when transfering reevoked proof", async () => {
+    it("should revert when transfering revoked proof", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, revoker);
@@ -601,6 +601,45 @@ describe("IssuerFacet", function () {
           transferBytesData
         )
       ).to.be.revertedWith("non tradable revoked proof");
+    });
+
+    it("should all transfer of revoked proof only to generator", async () => {
+      const proofData = generateProofData({volume: 42});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const certificateID = 1;
+      const volumeToTransfer = parseEther("21");
+
+      await mintProof(certificateID, proofData, issuer);
+
+
+      //transfert the certificate to the owner
+      await issuerContract.connect(issuer).safeTransferFrom(issuer.address, owner.address, certificateID, volumeToTransfer, transferBytesData);
+
+      //Certificate revocation
+      await expect(
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
+      ).to.emit(proofManagerContract, "ProofRevoked");
+
+      await expect(
+        issuerContract.safeTransferFrom(
+          owner.address,
+          revoker.address,
+          certificateID,
+          parseEther("1"),
+          transferBytesData
+        )
+      ).to.be.revertedWith("non tradable revoked proof");
+
+      //only generator can receive back revoked proofs
+       await expect(
+        issuerContract.safeTransferFrom(
+          owner.address,
+          issuer.address,
+          certificateID,
+          volumeToTransfer,
+          transferBytesData
+        )
+      ).to.be.not.reverted;
     });
 
     it("should prevent duplicate revocation", async () => {
