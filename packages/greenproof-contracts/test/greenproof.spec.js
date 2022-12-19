@@ -152,16 +152,6 @@ describe("GreenproofTest", async function () {
         await expect(greenproof.updateClaimManager(newClaimManagerAddress))
           .to.emit(greenproof, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
       });
-
-      it("should revert when dupplicatly enabling rewards", async () => {
-        await expect(greenproof.setRewardsEnabled(true))
-          .to.be.revertedWith("LibReward: rewards state already set");
-      });
-      it("should allow to update rewards", async () => {
-        await expect(greenproof.setRewardsEnabled(false))
-          .to.emit(greenproof, "RewardsStateUpdated");
-      });
-
     });
 
     describe("- ClaimerRole update tests", () => {
