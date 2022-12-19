@@ -35,7 +35,6 @@ contract Greenproof is SolidStateDiamond {
     event RevokerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
     event ClaimerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
     event ClaimManagerUpdated(address indexed oldAddress, address indexed newAddress);
-    event RewardsStateUpdated(uint256 indexed timestamp, bool indexed state);
 
     constructor(GreenproofConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
         require(votingConfig.rewardAmount > 0, "init: Null reward amount");
@@ -83,9 +82,5 @@ contract Greenproof is SolidStateDiamond {
     function updateClaimerVersion(uint256 newVersion) external {
         uint256 oldVersion = LibClaimManager.setClaimerVersion(newVersion);
         emit ClaimerVersionUpdated(oldVersion, newVersion);
-    }
-
-    function setRewardsEnabled(bool rewardsEnabled) external {
-        LibReward.setRewardsEnabled(rewardsEnabled);
     }
 }

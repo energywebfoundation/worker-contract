@@ -299,7 +299,39 @@ module.exports.resultsTests = function () {
       });
     });
 
-    describe("Disabling rewards", function () {
+    describe("Rewards management", function () {
+      it("should correctly update reward feature", async () => {
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: true,
+        });
+
+        await expect(
+          votingContract.setRewardsFeature(false)
+        ).to.emit(votingContract, "RewardsDeactivated");
+        
+        await expect(
+          votingContract.setRewardsFeature(true)
+        ).to.emit(votingContract, "RewardsActivated");
+      });
+      
+      it("should revert when updating reward feature to the same state", async () => {
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: true,
+        });
+
+        await expect(
+          votingContract.setRewardsFeature(false)
+        ).to.emit(votingContract, "RewardsDeactivated");
+        
+        await expect(
+          votingContract.setRewardsFeature(false)
+        ).to.be.revertedWith("LibReward: rewards state already set");
+      });
+
       it("should not pay the winners if rewards are disabled", async () => {
         votingContract = await setupVotingContract({
           reward: REWARD,
@@ -340,14 +372,8 @@ module.exports.resultsTests = function () {
           rewardsEnabled: false,
         });
         
-        const { greenproofAddress } = require("./voting.spec");
-        const GreenproofContract = await ethers.getContractAt(
-          "Greenproof",
-          greenproofAddress
-        );
-
         await expect(
-          GreenproofContract.connect(nonOwner).setRewardsEnabled(true)
+          votingContract.connect(nonOwner).setRewardsFeature(true)
         ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
       });
 
@@ -359,15 +385,9 @@ module.exports.resultsTests = function () {
           participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
           rewardsEnabled: false,
         });
-        
-        const { greenproofAddress } = require("./voting.spec");
-        const GreenproofContract = await ethers.getContractAt(
-          "Greenproof",
-          greenproofAddress
-        );
 
         await expect(
-          GreenproofContract.connect(nonOwner).setRewardsEnabled(true)
+          votingContract.connect(nonOwner).setRewardsFeature(true)
         ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
       });
 
@@ -377,7 +397,6 @@ module.exports.resultsTests = function () {
           participatingWorkers: [workers[0], workers[1]],
           rewardsEnabled: false,
         });
-        const { greenproofAddress } = require("./voting.spec");
 
         await workers[0].voteNotWinning(
           timeframes[0].input,
@@ -390,11 +409,8 @@ module.exports.resultsTests = function () {
           { voteCount: 2}
         );
 
-        const GreenproofContract = await ethers.getContractAt(
-          "Greenproof",
-          greenproofAddress
-        );
-        const tx = await GreenproofContract.setRewardsEnabled(true);
+
+        const tx = await votingContract.setRewardsFeature(true);
         await tx.wait();
 
         await workers[0].voteNotWinning(

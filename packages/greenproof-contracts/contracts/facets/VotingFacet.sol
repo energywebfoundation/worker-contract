@@ -136,6 +136,10 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
+    function setRewardsFeature(bool rewardsEnabled) external {
+        LibReward._setRewardsFeature(rewardsEnabled);
+    }
+
     function getWorkers() external view override returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
