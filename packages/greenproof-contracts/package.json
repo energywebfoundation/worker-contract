@@ -6,10 +6,11 @@
   "types": "scripts/deploy/index.d.ts",
   "scripts": {
     "clean": "npx hardhat clean",
-    "test:e2e": "yarn build && npx hardhat test",
-    "test:unit": "echo \"No unit tests\"",
-    "compile": "npx hardhat compile",
     "build": "yarn compile && tsc",
+    "compile": "npx hardhat compile",
+    "test:unit": "echo \"No unit tests\"",
+    "test:coverage": "npx hardhat coverage",
+    "test:e2e": "yarn build && npx hardhat test",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
     "greenproof:test": "yarn build && npx hardhat test test/greenproof.spec.js"
@@ -40,6 +41,7 @@
     "mocha-it-each": "1.0.2",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
+    "solidity-coverage": "^0.8.2",
     "standard": "^16.0.3",
     "typechain": "8.1.0"
   },

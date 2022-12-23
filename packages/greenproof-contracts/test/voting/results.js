@@ -118,6 +118,45 @@ module.exports.resultsTests = function () {
     ).to.deep.equal([timeframes[0].output]);
   });
 
+  it("should be able to get the list of whiteListed workers", async () => {
+    votingContract = await setupVotingContract({
+      participatingWorkers: [workers[0]],
+    });
+    let expectedList = [workers[0].address]
+
+    expect(await votingContract.getWorkers()).to.deep.equal(expectedList);
+    
+    votingContract = await setupVotingContract({
+      participatingWorkers: [workers[0], workers[2], workers[3]],
+    });
+    expectedList = [workers[0].address, workers[2].address, workers[3].address]
+
+    expect(await votingContract.getWorkers()).to.deep.equal(expectedList);
+  });
+
+  it("should get the number of voteIDs casted in the system", async () => {
+    votingContract = await setupVotingContract({
+      participatingWorkers: [workers[0], workers[1], workers[2]],
+    });
+
+    expect(
+      await votingContract.numberOfVotings()
+    ).to.be.equal(0);
+
+    await votingContract.connect(workers[0].wallet).vote(timeframes[0].input, timeframes[0].output)
+   
+    expect(
+      await votingContract.numberOfVotings()
+    ).to.be.equal(1);
+    
+    await votingContract.connect(workers[ 1 ].wallet).vote(timeframes[ 1 ].input, timeframes[ 2 ].output)
+    await votingContract.connect(workers[2].wallet).vote(timeframes[2].input, timeframes[1].output)
+
+    expect(
+      await votingContract.numberOfVotings()
+    ).to.be.equal(3);
+  });
+
   it("should not be able to restart session", async () => {
     votingContract = await setupVotingContract({
       majorityPercentage: 50,
@@ -150,6 +189,7 @@ module.exports.resultsTests = function () {
           workers[4],
         ],
         rewardPool: REWARD.mul(2),
+        rewardsEnabled: true
       });
 
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
@@ -172,7 +212,7 @@ module.exports.resultsTests = function () {
     it("reward should be paid after replenishment of funds", async () => {
       votingContract = await setupVotingContract({
         reward: REWARD,
-        participatingWorkers: [workers[0], workers[1]],
+        participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
       });
 
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
@@ -190,11 +230,53 @@ module.exports.resultsTests = function () {
       });
     });
 
+    it("should revert when calling replenishment of funds with no funds", async () => {
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+      });
+
+      await expect(
+        votingContract.connect(faucet).replenishRewardPool({
+            value: 0,
+        })
+      ).to.be.revertedWith("NoFundsProvided");
+    });
+
+    it("should correctly proceed to rewardPool replenishment", async () => {
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+      });
+
+      await expect(
+        votingContract.connect(faucet).replenishRewardPool({
+            value: REWARD,
+        })
+      ).to.emit(votingContract, "Replenished").withArgs(REWARD);
+    });
+
+    it("should revert when calling replenishment of funds with rewards disabled", async () => {
+      
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+        rewardsEnabled: false,
+      });
+
+      await expect(
+        votingContract.connect(faucet).replenishRewardPool({
+            value: REWARD.mul(2),
+        })
+      ).to.be.revertedWith("RewardsDisabled()");
+    });
+
     it("rewards should be paid partially and then fully after charging up the pool", async () => {
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
         rewardPool: REWARD,
+        rewardsEnabled: true,
       });
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
 
@@ -217,7 +299,40 @@ module.exports.resultsTests = function () {
       });
     });
 
-    describe("Disabling rewards", function () {
+    describe("Rewards management", function () {
+
+      it("should correctly update reward feature", async () => {
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: true,
+        });
+
+        await expect(
+          votingContract.setRewardsEnabled(false)
+        ).to.emit(votingContract, "RewardsDeactivated");
+
+        await expect(
+          votingContract.setRewardsEnabled(true)
+        ).to.emit(votingContract, "RewardsActivated");
+      });
+
+      it("should revert when updating reward feature to the same state", async () => {
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: true,
+        });
+
+        await expect(
+          votingContract.setRewardsEnabled(false)
+        ).to.emit(votingContract, "RewardsDeactivated");
+
+        await expect(
+          votingContract.setRewardsEnabled(false)
+        ).to.be.revertedWith("LibReward: rewards state already set");
+      });
+
       it("should not pay the winners if rewards are disabled", async () => {
         votingContract = await setupVotingContract({
           reward: REWARD,
@@ -249,53 +364,76 @@ module.exports.resultsTests = function () {
         ).to.deep.equal([timeframes[0].output]);
       });
 
+      it("should revert when non owner tries to enable and disable rewards", async () => {
+        const nonOwner = faucet;
+        
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: false,
+        });
+        
+
+        await expect(
+          votingContract.connect(nonOwner).setRewardsEnabled(true)
+        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
+      });
+
+      it("should revert when tries to enable rewards twice", async () => {
+        const nonOwner = faucet;
+        
+        votingContract = await setupVotingContract({
+          reward: REWARD,
+          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          rewardsEnabled: false,
+        });
+        
+
+        await expect(
+          votingContract.connect(nonOwner).setRewardsEnabled(true)
+        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
+      });
+
       it("should pay the rewards after enabling rewards", async () => {
         votingContract = await setupVotingContract({
           reward: REWARD,
           participatingWorkers: [workers[0], workers[1]],
-          rewardPool: REWARD.mul(5),
           rewardsEnabled: false,
         });
-        const { greenproofAddress } = require("./voting.spec");
 
         await workers[0].voteNotWinning(
           timeframes[0].input,
           timeframes[0].output
         );
-        await expectToReceiveReward({
-          winners: [],
-          possiblePayouts: 0,
-          operation: () =>
-            workers[1].voteWinning(timeframes[0].input, timeframes[0].output, {
-              voteCount: 2,
-            }),
-        });
 
-        const GreenproofContract = await ethers.getContractAt(
-          "Greenproof",
-          greenproofAddress
+        await workers[1].voteWinning(
+          timeframes[0].input,
+          timeframes[0].output,
+          { voteCount: 2}
         );
-        const tx = await GreenproofContract.setRewardsEnabled(true, {
-          gasPrice: 10_000_000,
-        });
+
+        const tx = await votingContract.setRewardsEnabled(true);
         await tx.wait();
 
         await workers[0].voteNotWinning(
           timeframes[1].input,
           timeframes[0].output
         );
-        await expectToReceiveReward({
-          winners: [workers[0], workers[1]],
-          possiblePayouts: 2,
-          operation: () =>
-            workers[1].voteWinning(timeframes[1].input, timeframes[0].output, {
-              voteCount: 2,
-            }),
-        });
 
-        expect(
-          await votingContract.getWinningMatches(timeframes[0].input)
-        ).to.deep.equal([timeframes[0].output]);
+        await workers[1].voteWinning(
+          timeframes[1].input,
+          timeframes[0].output,
+          { voteCount: 2}
+        );
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 2,
+        operation: () =>
+          votingContract.connect(faucet).replenishRewardPool({
+            value: REWARD.mul(2),
+          }),
+      });
       });
     });
 
