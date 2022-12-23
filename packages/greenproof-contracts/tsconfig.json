@@ -10,7 +10,5 @@
     "skipLibCheck": true,
     "noImplicitThis": false
   },
-  "include": [
-    "./deploy"
-  ]
+  "include": ["./deploy"]
 }

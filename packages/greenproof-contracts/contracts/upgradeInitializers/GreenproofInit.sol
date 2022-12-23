@@ -42,7 +42,11 @@ contract GreenproofInit {
 
     // You can add parameters to this function in order to pass in
     // data to set your own state variables
-    function init(GreenproofConfig memory greenproofConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) external {
+    function init(
+        GreenproofConfig memory greenproofConfig,
+        VotingConfig memory votingConfig,
+        RolesConfig memory rolesConfig
+    ) external {
         ERC165Storage.Layout storage erc165 = ERC165Storage.layout();
         erc165.setSupportedInterface(type(IClaimManager).interfaceId, true);
         erc165.setSupportedInterface(type(IGreenProof).interfaceId, true);

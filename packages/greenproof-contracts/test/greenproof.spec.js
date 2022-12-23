@@ -1,13 +1,13 @@
-const {
-  getSelectors,
-  FacetCutAction,
-} = require("../scripts/deploy");
+const { getSelectors, FacetCutAction } = require("../scripts/deploy");
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const chai = require("chai");
 const { roles } = require("./utils/roles.utils");
-const { deployGreenproof, Facet } = require("../scripts/deploy/deployContracts");
+const {
+  deployGreenproof,
+  Facet,
+} = require("../scripts/deploy/deployContracts");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 const { GreenproofError } = require("./greenproof/greenproof.errors");
@@ -15,12 +15,12 @@ const { itEach } = require("mocha-it-each");
 
 chai.use(solidity);
 
-describe("GreenproofTest", async function() {
+describe("GreenproofTest", async function () {
   let owner;
   let claimManagerMocked;
   let claimsRevocationRegistryMocked;
 
-  before(async function() {
+  before(async function () {
     [owner] = await ethers.getSigners();
 
     claimManagerMocked = await initMockClaimManager(owner);
@@ -35,7 +35,7 @@ describe("GreenproofTest", async function() {
           claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: ethers.constants.AddressZero,
-        }),
+        })
       ).to.be.revertedWith(GreenproofError.InvalidOwner);
     });
 
@@ -45,7 +45,7 @@ describe("GreenproofTest", async function() {
           claimManagerAddress: ethers.constants.AddressZero,
           claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
-        }),
+        })
       ).to.be.revertedWith(GreenproofError.InvalidClaimManager);
     });
 
@@ -54,7 +54,7 @@ describe("GreenproofTest", async function() {
         deployGreenproof({
           claimManagerAddress: claimManagerMocked.address,
           claimRevokerAddress: ethers.constants.AddressZero,
-        }),
+        })
       ).to.be.revertedWith(GreenproofError.InvalidClaimRevocationRegistry);
     });
 
@@ -69,24 +69,30 @@ describe("GreenproofTest", async function() {
           roles,
           contractOwner: contractOwner.address,
           revocablePeriod: zeroRevocablePeriod,
-        }),
+        })
       ).to.be.revertedWith(GreenproofError.InvalidRevocablePeriod);
     });
   });
 
   describe("Proxy setting tests", () => {
-    const getFacetAddress = async greenproof => {
+    const getFacetAddress = async (greenproof) => {
       const [, facetAddress] = await getFacetAddresses(greenproof);
       return facetAddress;
     };
-    const getFacetAddresses = greenproof => greenproof.facetAddresses();
+    const getFacetAddresses = (greenproof) => greenproof.facetAddresses();
 
     itEach(
       "with facets: ${value.facets} it should return proper number of facet addresses",
       [
         { facets: [Facet.IssuerFacet] },
         { facets: [Facet.VotingFacet, Facet.IssuerFacet] },
-        { facets: [Facet.VotingFacet, Facet.IssuerFacet, Facet.ProofManagerFacet] },
+        {
+          facets: [
+            Facet.VotingFacet,
+            Facet.IssuerFacet,
+            Facet.ProofManagerFacet,
+          ],
+        },
       ],
       async ({ facets }) => {
         const { greenproofAddress } = await deployGreenproof({
@@ -95,21 +101,23 @@ describe("GreenproofTest", async function() {
           roles,
           facets,
         });
-        const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+        const greenproof = await ethers.getContractAt(
+          "Greenproof",
+          greenproofAddress
+        );
 
         const deployedFacets = await greenproof.facetAddresses();
 
         const NUMBER_OF_SOLID_GREENPROOF_FACETS = 1;
-        expect(deployedFacets).to.have.length(facets.length + NUMBER_OF_SOLID_GREENPROOF_FACETS);
-      });
+        expect(deployedFacets).to.have.length(
+          facets.length + NUMBER_OF_SOLID_GREENPROOF_FACETS
+        );
+      }
+    );
 
     itEach(
       "it should properly cut ${value} selectors",
-      [
-        Facet.IssuerFacet,
-        Facet.VotingFacet,
-        Facet.ProofManagerFacet,
-      ],
+      [Facet.IssuerFacet, Facet.VotingFacet, Facet.ProofManagerFacet],
       async (facetName) => {
         const { greenproofAddress } = await deployGreenproof({
           claimManagerAddress: claimManagerMocked.address,
@@ -118,13 +126,20 @@ describe("GreenproofTest", async function() {
           facets: [facetName],
         });
         const facet = await ethers.getContractAt(facetName, greenproofAddress);
-        const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+        const greenproof = await ethers.getContractAt(
+          "Greenproof",
+          greenproofAddress
+        );
         const expectedSelectors = getSelectors(facet);
 
         const [, facetAddress] = await greenproof.facetAddresses();
-        const greenproofFacetSelectors = await greenproof.facetFunctionSelectors(facetAddress);
-        expect(greenproofFacetSelectors).to.have.same.members(expectedSelectors);
-      });
+        const greenproofFacetSelectors =
+          await greenproof.facetFunctionSelectors(facetAddress);
+        expect(greenproofFacetSelectors).to.have.same.members(
+          expectedSelectors
+        );
+      }
+    );
 
     it("selectors should be associated to facets correctly -- multiple calls to facetAddress function", async () => {
       const { greenproofAddress } = await deployGreenproof({
@@ -133,15 +148,23 @@ describe("GreenproofTest", async function() {
         roles,
         facets: [Facet.IssuerFacet],
       });
-      const issuerFacet = await ethers.getContractAt(Facet.IssuerFacet, greenproofAddress);
-      const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+      const issuerFacet = await ethers.getContractAt(
+        Facet.IssuerFacet,
+        greenproofAddress
+      );
+      const greenproof = await ethers.getContractAt(
+        "Greenproof",
+        greenproofAddress
+      );
       const facetAddress = await getFacetAddress(greenproof);
 
       const requestProofIssuanceSelector = issuerFacet.interface.getSighash(
-        "requestProofIssuance(bytes32,address,bytes32,bytes32[],uint256,bytes32[],string)",
+        "requestProofIssuance(bytes32,address,bytes32,bytes32[],uint256,bytes32[],string)"
       );
 
-      const resolvedFacetAddress = await greenproof.facetAddress(requestProofIssuanceSelector);
+      const resolvedFacetAddress = await greenproof.facetAddress(
+        requestProofIssuanceSelector
+      );
       expect(facetAddress).to.equal(resolvedFacetAddress);
     });
 
@@ -152,15 +175,23 @@ describe("GreenproofTest", async function() {
         roles,
         facets: [Facet.IssuerFacet],
       });
-      const issuerFacet = await ethers.getContractAt(Facet.IssuerFacet, greenproofAddress);
-      const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+      const issuerFacet = await ethers.getContractAt(
+        Facet.IssuerFacet,
+        greenproofAddress
+      );
+      const greenproof = await ethers.getContractAt(
+        "Greenproof",
+        greenproofAddress
+      );
       const facetAddress = await getFacetAddress(greenproof);
 
       const discloseDataSelector = issuerFacet.interface.getSighash(
-        "discloseData(string,string,bytes32[],bytes32)",
+        "discloseData(string,string,bytes32[],bytes32)"
       );
 
-      const resolvedFacetAddress = await greenproof.facetAddress(discloseDataSelector);
+      const resolvedFacetAddress = await greenproof.facetAddress(
+        discloseDataSelector
+      );
       expect(facetAddress, resolvedFacetAddress);
     });
 
@@ -171,11 +202,13 @@ describe("GreenproofTest", async function() {
         roles,
         facets: [Facet.IssuerFacet],
       });
-      const issuerFacet = await ethers.getContractAt(Facet.IssuerFacet, greenproofAddress);
+      const issuerFacet = await ethers.getContractAt(
+        Facet.IssuerFacet,
+        greenproofAddress
+      );
 
       await issuerFacet.getCertificateOwners(1);
     });
-
 
     it("should remove some functions", async () => {
       const { greenproofAddress } = await deployGreenproof({
@@ -184,8 +217,14 @@ describe("GreenproofTest", async function() {
         roles,
         facets: [Facet.IssuerFacet],
       });
-      const issuerFacet = await ethers.getContractAt(Facet.IssuerFacet, greenproofAddress);
-      const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+      const issuerFacet = await ethers.getContractAt(
+        Facet.IssuerFacet,
+        greenproofAddress
+      );
+      const greenproof = await ethers.getContractAt(
+        "Greenproof",
+        greenproofAddress
+      );
       const facetAddress = await getFacetAddress(greenproof);
       const functionsToKeep = [Object.keys(issuerFacet.interface.functions)[1]];
 
@@ -199,13 +238,15 @@ describe("GreenproofTest", async function() {
           },
         ],
         ethers.constants.AddressZero,
-        "0x",
+        "0x"
       );
 
       const receipt = await tx.wait();
       expect(receipt.status).to.be.greaterThan(0);
 
-      const resolvedSelectors = await greenproof.facetFunctionSelectors(facetAddress);
+      const resolvedSelectors = await greenproof.facetFunctionSelectors(
+        facetAddress
+      );
       const expectedSelectors = getSelectors(issuerFacet).get(functionsToKeep);
       expect(resolvedSelectors).to.have.same.members(expectedSelectors);
     });
@@ -217,8 +258,14 @@ describe("GreenproofTest", async function() {
         roles,
         facets: [Facet.IssuerFacet],
       });
-      const issuerFacet = await ethers.getContractAt(Facet.IssuerFacet, greenproofAddress);
-      const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+      const issuerFacet = await ethers.getContractAt(
+        Facet.IssuerFacet,
+        greenproofAddress
+      );
+      const greenproof = await ethers.getContractAt(
+        "Greenproof",
+        greenproofAddress
+      );
       const selectors = getSelectors(issuerFacet);
 
       const tx = await greenproof.diamondCut(
@@ -230,7 +277,7 @@ describe("GreenproofTest", async function() {
           },
         ],
         ethers.constants.AddressZero,
-        "0x",
+        "0x"
       );
 
       const receipt = await tx.wait();
@@ -239,11 +286,14 @@ describe("GreenproofTest", async function() {
       const facets = await greenproof.facets();
       expect(facets).to.have.length(1); // SolidState facet
       const diamondCutSelector = greenproof.interface.getSighash(
-        "diamondCut((address,uint8,bytes4[])[],address,bytes)",
+        "diamondCut((address,uint8,bytes4[])[],address,bytes)"
       );
       const facetsSelector = greenproof.interface.getSighash("facets()");
       expect(facets[0][0]).to.equal((await getFacetAddresses(greenproof))[0]);
-      expect(facets[0][1]).to.include.members([diamondCutSelector, facetsSelector]);
+      expect(facets[0][1]).to.include.members([
+        diamondCutSelector,
+        facetsSelector,
+      ]);
     });
   });
 });

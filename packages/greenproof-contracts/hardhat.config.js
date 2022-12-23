@@ -45,7 +45,7 @@ module.exports = {
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-    }
+    },
   },
   settings: {
     optimizer: {
@@ -58,7 +58,7 @@ module.exports = {
     gasPrice: 21,
     coinmarketcap: process.env.COIN_MARKET_CAP_API,
     token: "EWT",
-    enabled: process.env.ENABLE_GAS_REPORTING === "true"
+    enabled: process.env.ENABLE_GAS_REPORTING === "true",
   },
   typechain: {
     outDir: path.join(__dirname, "src"),

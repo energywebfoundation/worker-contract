@@ -53,7 +53,8 @@ module.exports.permissionsTests = function () {
       participatingWorkers: [],
     });
 
-    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.be.false;
+    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.be
+      .false;
 
     workers[0].voteNotWhitelisted(timeframes[0].input, timeframes[0].output);
   });
@@ -114,60 +115,94 @@ module.exports.permissionsTests = function () {
     await mockClaimManager.grantRole(workers[1].address, workerRole);
     await mockClaimManager.grantRole(workers[2].address, workerRole);
 
-    await expect(votingContract
-      .connect(workers[3].wallet)
-      .addWorker(workers[0].address)).to.emit(votingContract, "WorkerAdded");
-    await expect(votingContract
-      .connect(workers[3].wallet)
-      .addWorker(workers[1].address)).to.emit(votingContract, "WorkerAdded");
-    await expect(votingContract
-      .connect(workers[3].wallet)
-      .addWorker(workers[2].address)).to.emit(votingContract, "WorkerAdded");
+    await expect(
+      votingContract.connect(workers[3].wallet).addWorker(workers[0].address)
+    ).to.emit(votingContract, "WorkerAdded");
+    await expect(
+      votingContract.connect(workers[3].wallet).addWorker(workers[1].address)
+    ).to.emit(votingContract, "WorkerAdded");
+    await expect(
+      votingContract.connect(workers[3].wallet).addWorker(workers[2].address)
+    ).to.emit(votingContract, "WorkerAdded");
 
-    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[2].address)).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[0].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[1].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[2].address)
+    ).to.equal(true);
   });
 
   it("should allow non owner address to remove not enrolled workers", async () => {
     votingContract = await setupVotingContract();
     await addWorkers([workers[0], workers[1], workers[2]]);
 
-    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[2].address)).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[0].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[1].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[2].address)
+    ).to.equal(true);
 
     await removeWorkers([workers[0], workers[1]]);
 
-    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(false);
-    expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(false);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[0].address)
+    ).to.equal(false);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[1].address)
+    ).to.equal(false);
   });
 
   it("should allow to remove workers and add it again", async () => {
     votingContract = await setupVotingContract();
 
     await addWorkers([workers[0], workers[1], workers[2]]);
-    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[2].address)).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[0].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[1].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[2].address)
+    ).to.equal(true);
 
-    await removeWorkers([ workers[ 0 ], workers[ 1 ] ]);
+    await removeWorkers([workers[0], workers[1]]);
 
     await mockClaimManager.revokeRole(workers[2].address, workerRole);
-    
-    await expect(votingContract
-      .connect(workers[3].wallet)
-      .removeWorker(workers[2].address)).to.emit(votingContract, "WorkerRemoved");
 
-    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(false);
-    expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(false);
-    expect(await votingContract.isWhitelistedWorker(workers[2].address)).to.equal(false);
+    await expect(
+      votingContract.connect(workers[3].wallet).removeWorker(workers[2].address)
+    ).to.emit(votingContract, "WorkerRemoved");
+
+    expect(
+      await votingContract.isWhitelistedWorker(workers[0].address)
+    ).to.equal(false);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[1].address)
+    ).to.equal(false);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[2].address)
+    ).to.equal(false);
 
     await addWorkers([workers[0], workers[1], workers[2]]);
 
-    expect(await votingContract.isWhitelistedWorker(workers[0].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[1].address)).to.equal(true);
-    expect(await votingContract.isWhitelistedWorker(workers[2].address)).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[0].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[1].address)
+    ).to.equal(true);
+    expect(
+      await votingContract.isWhitelistedWorker(workers[2].address)
+    ).to.equal(true);
   });
 
   it("voting can not be cancelled by non owner", async () => {

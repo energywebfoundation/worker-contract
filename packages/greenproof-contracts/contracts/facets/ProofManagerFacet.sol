@@ -21,7 +21,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _;
     }
 
-    function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
+    function _claimProof(
+        uint256 certificateID,
+        address owner,
+        uint256 amount
+    ) private {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
@@ -32,7 +36,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         emit ProofClaimed(certificateID, owner, block.timestamp, amount);
     }
 
-    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
+    function claimProofFor(
+        uint256 certificateID,
+        address owner,
+        uint256 amount
+    ) external onlyClaimer {
         _claimProof(certificateID, owner, amount);
     }
 
@@ -91,7 +99,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         return issuer.claimedBalances[certificateID][user];
     }
 
-    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure override returns (bool) {
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure override returns (bool) {
         return LibProofManager._verifyProof(rootHash, leaf, proof);
     }
 }
