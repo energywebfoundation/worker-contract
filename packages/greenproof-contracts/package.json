@@ -13,7 +13,9 @@
     "test:e2e": "yarn build && npx hardhat test",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
-    "greenproof:test": "yarn build && npx hardhat test test/greenproof.spec.js"
+    "greenproof:test": "yarn build && npx hardhat test test/greenproof.spec.js",
+    "format:check": "prettier --check",
+    "format:fix": "prettier -w ."
   },
   "repository": {
     "type": "git",
