@@ -1,12 +1,15 @@
 # GREENPROOF-CONTRACTS
 
 ## Description
+
 ---
 
 The present package is the onchain module of the Greenproof core SDK of Energyweb Foundation.
 
 ## Architecture
+
 ---
+
 The on-chain component of the greenProof core module is an upgradable proxied module, implementing the [EIP-2535](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2535.md) standard, which is a standard recommended in the [upgrades section](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1155.md#upgrades) of the EIP-1155 token standard documentation.
 
 This upgradable pattern is called a Diamond standard architecture, where all smart contracts are organized as different facets of one single diamond.
@@ -35,8 +38,11 @@ Additional utility facets are provided by the [Solidstate diamond implementation
 ---
 
 ## Quickstart
+
 ---
+
 - Install dependencies:
+
 ```
 npm install
 ```
@@ -50,7 +56,8 @@ npm run test:e2e
 ```
 
 This command will run unit tests for the whole `greenproof-contracts` components. You can target one specific component to test inside the greenproof core module :
-- `issuerFacet.spec.js` handles unit tests for the Issuance component. 
+
+- `issuerFacet.spec.js` handles unit tests for the Issuance component.
 
 ```
 npm run issuer:test
@@ -61,14 +68,16 @@ npm run issuer:test
 ```
 npm run voting:test
 ```
+
 - `greenproof.spec.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
 
 ```
 npm run greenproof:test
 
 ```
+
 To run `coverage` test :
- 
+
 ```
 npm run coverage:test
 ```

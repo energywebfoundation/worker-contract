@@ -3,8 +3,8 @@ const GreenproofError = {
   InvalidClaimManager: "init: Invalid claimManager",
   InvalidClaimRevocationRegistry: "init: Invalid claimsRevocationRegistry",
   InvalidRevocablePeriod: "init: Invalid revocable period",
-}
+};
 
 module.exports = {
   GreenproofError,
-}
+};

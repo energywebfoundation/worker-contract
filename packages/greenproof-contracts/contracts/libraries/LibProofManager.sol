@@ -4,7 +4,6 @@ import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 
 library LibProofManager {
-
     function _verifyProof(
         bytes32 rootHash,
         bytes32 leaf,
