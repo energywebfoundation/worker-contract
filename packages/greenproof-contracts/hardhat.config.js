@@ -1,4 +1,4 @@
-require('solidity-coverage');
+require("olidity-coverage");
 require("hardhat-gas-reporter");
 require("@nomiclabs/hardhat-waffle");
 require("@typechain/hardhat");
@@ -6,7 +6,7 @@ require("@nomiclabs/hardhat-ethers");
 
 const { task } = require("hardhat/config");
 const dotenv = require("dotenv");
-const path = require('path');
+const path = require("path");
 
 dotenv.config();
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -23,7 +23,7 @@ task("accounts", "Prints the list of accounts", async () => {
 // Go to https://hardhat.org/config/ to learn more
 
 /**
- * @type import('hardhat/config').HardhatUserConfig
+ * @type import("hardhat/config").HardhatUserConfig
  */
 module.exports = {
   solidity: {
@@ -54,7 +54,7 @@ module.exports = {
     },
   },
   gasReporter: {
-    currency: 'USD',
+    currency: "USD",
     gasPrice: 21,
     coinmarketcap: process.env.COIN_MARKET_CAP_API,
     token: "EWT",
