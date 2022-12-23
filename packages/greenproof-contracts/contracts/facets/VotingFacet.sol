@@ -170,7 +170,7 @@ contract VotingFacet is IVoting, IReward {
         }
 
         votes = new bytes32[](numberOfVotes);
-        for (uint i; i < numberOfVotes; i++) {
+        for (uint256 i; i < numberOfVotes; i++) {
             votes[i] = votesContainer[i];
         }
     }

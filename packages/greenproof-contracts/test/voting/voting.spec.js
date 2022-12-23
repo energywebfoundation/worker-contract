@@ -148,7 +148,10 @@ describe("Voting", function () {
       rewardsEnabled,
     }));
     module.exports.greenproofAddress = greenproofAddress;
-    votingContract = await ethers.getContractAt("VotingFacet", greenproofAddress);
+    votingContract = await ethers.getContractAt(
+      "VotingFacet",
+      greenproofAddress
+    );
     workers.forEach((w) => w.setVotingContract(votingContract));
 
     if (rewardsEnabled && rewardPool) {

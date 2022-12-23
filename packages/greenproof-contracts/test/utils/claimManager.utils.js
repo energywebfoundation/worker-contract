@@ -1,5 +1,5 @@
 const { utils } = require("ethers");
-const { deployMockContract } = require('ethereum-waffle');
+const { deployMockContract } = require("ethereum-waffle");
 const { FormatTypes, Interface } = utils;
 
 const abi = [
@@ -10,10 +10,7 @@ const claimManagerABI = new Interface(abi).format(FormatTypes.json);
 const defaultVersion = 1;
 
 const initMockClaimManager = async (owner) => {
-  const contract = await deployMockContract(
-    owner,
-    claimManagerABI
-  );
+  const contract = await deployMockContract(owner, claimManagerABI);
 
   const grantRole = async (address, role) => {
     await contract.mock.hasRole
@@ -31,12 +28,11 @@ const initMockClaimManager = async (owner) => {
     revokeRole,
     grantRole,
     contract,
-    address: contract.address
-  }
-}
-
+    address: contract.address,
+  };
+};
 
 module.exports = {
   claimManagerABI,
-  initMockClaimManager
+  initMockClaimManager,
 };

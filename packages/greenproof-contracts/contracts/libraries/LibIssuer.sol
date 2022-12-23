@@ -41,7 +41,13 @@ library LibIssuer {
         issuer.latestCertificateId++;
     }
 
-    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 amount, uint256 certificateID, bytes32 voteID) internal {
+    function _registerProof(
+        bytes32 dataHash,
+        address generatorAddress,
+        uint256 amount,
+        uint256 certificateID,
+        bytes32 voteID
+    ) internal {
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
         issuer.certificates[certificateID] = IGreenProof.Certificate({
@@ -56,7 +62,11 @@ library LibIssuer {
         issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }
 
-    function _registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
+    function _registerClaimedProof(
+        uint256 certificateID,
+        address user,
+        uint256 claimedAmount
+    ) internal {
         IssuerStorage storage issuer = _getStorage();
         issuer.claimedBalances[certificateID][user] += claimedAmount;
     }

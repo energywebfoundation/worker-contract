@@ -122,14 +122,14 @@ module.exports.resultsTests = function () {
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0]],
     });
-    let expectedList = [workers[0].address]
+    let expectedList = [workers[0].address];
 
     expect(await votingContract.getWorkers()).to.deep.equal(expectedList);
-    
+
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[2], workers[3]],
     });
-    expectedList = [workers[0].address, workers[2].address, workers[3].address]
+    expectedList = [workers[0].address, workers[2].address, workers[3].address];
 
     expect(await votingContract.getWorkers()).to.deep.equal(expectedList);
   });
@@ -139,22 +139,22 @@ module.exports.resultsTests = function () {
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
 
-    expect(
-      await votingContract.numberOfVotings()
-    ).to.be.equal(0);
+    expect(await votingContract.numberOfVotings()).to.be.equal(0);
 
-    await votingContract.connect(workers[0].wallet).vote(timeframes[0].input, timeframes[0].output)
-   
-    expect(
-      await votingContract.numberOfVotings()
-    ).to.be.equal(1);
-    
-    await votingContract.connect(workers[ 1 ].wallet).vote(timeframes[ 1 ].input, timeframes[ 2 ].output)
-    await votingContract.connect(workers[2].wallet).vote(timeframes[2].input, timeframes[1].output)
+    await votingContract
+      .connect(workers[0].wallet)
+      .vote(timeframes[0].input, timeframes[0].output);
 
-    expect(
-      await votingContract.numberOfVotings()
-    ).to.be.equal(3);
+    expect(await votingContract.numberOfVotings()).to.be.equal(1);
+
+    await votingContract
+      .connect(workers[1].wallet)
+      .vote(timeframes[1].input, timeframes[2].output);
+    await votingContract
+      .connect(workers[2].wallet)
+      .vote(timeframes[2].input, timeframes[1].output);
+
+    expect(await votingContract.numberOfVotings()).to.be.equal(3);
   });
 
   it("should not be able to restart session", async () => {
@@ -189,7 +189,7 @@ module.exports.resultsTests = function () {
           workers[4],
         ],
         rewardPool: REWARD.mul(2),
-        rewardsEnabled: true
+        rewardsEnabled: true,
       });
 
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
@@ -212,7 +212,7 @@ module.exports.resultsTests = function () {
     it("reward should be paid after replenishment of funds", async () => {
       votingContract = await setupVotingContract({
         reward: REWARD,
-        participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+        participatingWorkers: [workers[0], workers[1]],
       });
 
       workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
@@ -238,7 +238,7 @@ module.exports.resultsTests = function () {
 
       await expect(
         votingContract.connect(faucet).replenishRewardPool({
-            value: 0,
+          value: 0,
         })
       ).to.be.revertedWith("NoFundsProvided");
     });
@@ -251,13 +251,14 @@ module.exports.resultsTests = function () {
 
       await expect(
         votingContract.connect(faucet).replenishRewardPool({
-            value: REWARD,
+          value: REWARD,
         })
-      ).to.emit(votingContract, "Replenished").withArgs(REWARD);
+      )
+        .to.emit(votingContract, "Replenished")
+        .withArgs(REWARD);
     });
 
     it("should revert when calling replenishment of funds with rewards disabled", async () => {
-      
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
@@ -266,7 +267,7 @@ module.exports.resultsTests = function () {
 
       await expect(
         votingContract.connect(faucet).replenishRewardPool({
-            value: REWARD.mul(2),
+          value: REWARD.mul(2),
         })
       ).to.be.revertedWith("RewardsDisabled()");
     });
@@ -300,33 +301,35 @@ module.exports.resultsTests = function () {
     });
 
     describe("Rewards management", function () {
-
       it("should correctly update reward feature", async () => {
         votingContract = await setupVotingContract({
           reward: REWARD,
-          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          participatingWorkers: [workers[0], workers[1]],
           rewardsEnabled: true,
         });
 
-        await expect(
-          votingContract.setRewardsEnabled(false)
-        ).to.emit(votingContract, "RewardsDeactivated");
+        await expect(votingContract.setRewardsEnabled(false)).to.emit(
+          votingContract,
+          "RewardsDeactivated"
+        );
 
-        await expect(
-          votingContract.setRewardsEnabled(true)
-        ).to.emit(votingContract, "RewardsActivated");
+        await expect(votingContract.setRewardsEnabled(true)).to.emit(
+          votingContract,
+          "RewardsActivated"
+        );
       });
 
       it("should revert when updating reward feature to the same state", async () => {
         votingContract = await setupVotingContract({
           reward: REWARD,
-          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          participatingWorkers: [workers[0], workers[1]],
           rewardsEnabled: true,
         });
 
-        await expect(
-          votingContract.setRewardsEnabled(false)
-        ).to.emit(votingContract, "RewardsDeactivated");
+        await expect(votingContract.setRewardsEnabled(false)).to.emit(
+          votingContract,
+          "RewardsDeactivated"
+        );
 
         await expect(
           votingContract.setRewardsEnabled(false)
@@ -366,32 +369,34 @@ module.exports.resultsTests = function () {
 
       it("should revert when non owner tries to enable and disable rewards", async () => {
         const nonOwner = faucet;
-        
+
         votingContract = await setupVotingContract({
           reward: REWARD,
-          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          participatingWorkers: [workers[0], workers[1]],
           rewardsEnabled: false,
         });
-        
 
         await expect(
           votingContract.connect(nonOwner).setRewardsEnabled(true)
-        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
+        ).to.be.revertedWith(
+          "Greenproof: LibReward facet: Must be contract owner"
+        );
       });
 
       it("should revert when tries to enable rewards twice", async () => {
         const nonOwner = faucet;
-        
+
         votingContract = await setupVotingContract({
           reward: REWARD,
-          participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
+          participatingWorkers: [workers[0], workers[1]],
           rewardsEnabled: false,
         });
-        
 
         await expect(
           votingContract.connect(nonOwner).setRewardsEnabled(true)
-        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
+        ).to.be.revertedWith(
+          "Greenproof: LibReward facet: Must be contract owner"
+        );
       });
 
       it("should pay the rewards after enabling rewards", async () => {
@@ -409,7 +414,7 @@ module.exports.resultsTests = function () {
         await workers[1].voteWinning(
           timeframes[0].input,
           timeframes[0].output,
-          { voteCount: 2}
+          { voteCount: 2 }
         );
 
         const tx = await votingContract.setRewardsEnabled(true);
@@ -423,17 +428,17 @@ module.exports.resultsTests = function () {
         await workers[1].voteWinning(
           timeframes[1].input,
           timeframes[0].output,
-          { voteCount: 2}
+          { voteCount: 2 }
         );
 
-      await expectToReceiveReward({
-        winners: [workers[0], workers[1]],
-        possiblePayouts: 2,
-        operation: () =>
-          votingContract.connect(faucet).replenishRewardPool({
-            value: REWARD.mul(2),
-          }),
-      });
+        await expectToReceiveReward({
+          winners: [workers[0], workers[1]],
+          possiblePayouts: 2,
+          operation: () =>
+            votingContract.connect(faucet).replenishRewardPool({
+              value: REWARD.mul(2),
+            }),
+        });
       });
     });
 

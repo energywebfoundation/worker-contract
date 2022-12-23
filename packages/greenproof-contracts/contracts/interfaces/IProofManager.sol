@@ -8,11 +8,15 @@ interface IProofManager {
 
     function claimProof(uint256 certificateID, uint256 amount) external;
 
-    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external;
+    function claimProofFor(
+        uint256 certificateID,
+        address owner,
+        uint256 amount
+    ) external;
 
     function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof);
 
-    function getProofIdByDataHash(bytes32 dataHash) external view returns (uint proofId);
+    function getProofIdByDataHash(bytes32 dataHash) external view returns (uint256 proofId);
 
     function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory);
 
