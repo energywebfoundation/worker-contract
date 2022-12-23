@@ -1,4 +1,4 @@
-require("olidity-coverage");
+require("solidity-coverage");
 require("hardhat-gas-reporter");
 require("@nomiclabs/hardhat-waffle");
 require("@typechain/hardhat");
