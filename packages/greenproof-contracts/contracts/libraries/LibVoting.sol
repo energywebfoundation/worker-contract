@@ -115,9 +115,10 @@ library LibVoting {
      */
     function _recordVote(bytes32 votingID, bytes32 sessionID) internal {
         VotingSession storage session = _getSession(votingID, sessionID);
+
+        session.voteSessionIndexToWorker[session.votesCount] = payable(msg.sender);
         session.votesCount++;
         session.workerToVoted[msg.sender] = true;
-        session.voteSessionIndexToWorker[session.votesCount] = payable(msg.sender);
 
         if (_hasReachedConsensus(session)) {
             session.isConsensusReached = true;
@@ -241,7 +242,7 @@ library LibVoting {
 
         _voters = new address payable[](session.votesCount);
         for (uint256 i; i < numberOfVotesInSession; i++) {
-            _voters[i] = session.voteSessionIndexToWorker[i + 1];
+            _voters[i] = session.voteSessionIndexToWorker[i];
         }
     }
 
