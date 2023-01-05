@@ -88,6 +88,42 @@ describe("Voting", function () {
   describe("Expiration", expirationTests);
   describe("Consensus", consensusTests);
 
+  describe("Additional Checkings", async () => {
+    it("Should correctly reward after voting worker has been removed", async () => {
+      const REWARD = ethers.utils.parseEther("1");
+
+      votingContract = await setupVotingContract({
+      reward: REWARD,
+      participatingWorkers: [
+      workers[0],
+      workers[1],
+      workers[2],
+      workers[3],
+      workers[4],
+      ],
+      rewardPool: REWARD.mul(3),
+      rewardsEnabled: true
+      });
+      await workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      await workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      await removeWorkers([ workers[ 0 ] ]);
+
+      expect(await ethers.provider.getBalance(ethers.constants.AddressZero)).to.equal(0);
+      const tx = await workers[ 4 ].voteWinning(
+        timeframes[ 0 ].input,
+        timeframes[ 0 ].output,
+        {
+          voteCount: 3,
+        },
+      );
+
+      expect(await tx).changeEtherBalance(workers[ 0 ].wallet, REWARD);
+
+      expect(await ethers.provider.getBalance(ethers.constants.AddressZero)).to.equal(0);
+
+    });
+  })
+
   const addWorkers = async (workers) => {
     await Promise.all(
       workers.map(async (w) => {

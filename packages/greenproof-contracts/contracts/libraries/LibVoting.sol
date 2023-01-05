@@ -24,6 +24,8 @@ library LibVoting {
         bytes32 matchResult;
         // Worker address to voted flag
         mapping(address => bool) workerToVoted;
+        //records each worker voting in this vote session voter
+        mapping(uint256 => address payable) voteSessionIndexToWorker;
         // To decide which actions are currently applicable to voting
         Status status;
         // If count of votes is enough for consensus
@@ -115,6 +117,7 @@ library LibVoting {
         VotingSession storage session = _getSession(votingID, sessionID);
         session.votesCount++;
         session.workerToVoted[msg.sender] = true;
+        session.voteSessionIndexToWorker[session.votesCount] = payable(msg.sender);
 
         if (_hasReachedConsensus(session)) {
             session.isConsensusReached = true;
@@ -234,17 +237,11 @@ library LibVoting {
 
         VotingSession storage session = _votingStorage.votingIDToVoting[votingID].sessionIDToSession[sessionID];
 
-        uint256 numberOfWorkers = _getNumberOfWorkers();
-        address payable[] memory workersList = _votingStorage.whitelistedWorkers;
+        uint256 numberOfVotesInSession = session.votesCount;
 
         _voters = new address payable[](session.votesCount);
-        uint256 votersCount = 0;
-        for (uint256 i; i < numberOfWorkers; i++) {
-            address payable worker = workersList[i];
-            if (session.workerToVoted[worker]) {
-                _voters[votersCount] = worker;
-                votersCount++;
-            }
+        for (uint256 i; i < numberOfVotesInSession; i++) {
+            _voters[i] = session.voteSessionIndexToWorker[i + 1];
         }
     }
 
