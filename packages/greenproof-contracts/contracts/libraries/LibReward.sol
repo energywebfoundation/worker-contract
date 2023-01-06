@@ -10,6 +10,7 @@ library LibReward {
     error RewardsDisabled();
     event RewardsActivated(uint256 indexed activationDate);
     event RewardsDeactivated(uint256 indexed deactivationDate);
+    event RewardsPayed(uint256 indexed numberOfRewards);
 
     struct RewardStorage {
         bool rewardsEnabled;
@@ -42,18 +43,26 @@ library LibReward {
         }
     }
 
-    function payReward() internal {
+    function _payReward(uint256 maxNumberOfPays) internal {
         RewardStorage storage rs = getStorage();
 
         uint256 rewardAmount = rs.rewardAmount;
-        uint256 rewardQueueSize = rs.rewardQueue.length;
+        uint256 numberOfPays = rs.rewardQueue.length;
+        if (numberOfPays > maxNumberOfPays) {
+            numberOfPays = maxNumberOfPays;
+        }
+        if (numberOfPays > address(this).balance / rewardAmount) {
+            numberOfPays = address(this).balance / rewardAmount;
+        }
 
-        while (rewardQueueSize > 0 && address(this).balance >= rewardAmount) {
-            address payable currentWorker = rs.rewardQueue[rewardQueueSize - 1];
-            rewardQueueSize--;
+        for (uint256 i = 0; i < numberOfPays; i++) {
+            address payable currentWorker = rs.rewardQueue[rs.rewardQueue.length - 1];
             rs.rewardQueue.pop();
+
             currentWorker.transfer(rs.rewardAmount);
         }
+
+        emit RewardsPayed(numberOfPays);
     }
 
     function _isRewardEnabled() internal view returns (bool) {
