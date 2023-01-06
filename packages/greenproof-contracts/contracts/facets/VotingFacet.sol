@@ -127,7 +127,7 @@ contract VotingFacet is IVoting, IReward {
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
             uint256 numberOfSessionIds = voting.sessionIDs.length;
             for (uint256 j; j < numberOfSessionIds; j++) {
-                bytes32 sessionID = voting.sessionIDs[i];
+                bytes32 sessionID = voting.sessionIDs[j];
                 if (LibVoting._isSessionExpired(votingID, sessionID)) {
                     LibVoting._completeSession(votingID, sessionID);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
