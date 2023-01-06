@@ -224,9 +224,13 @@ module.exports.resultsTests = function () {
         winners: [workers[0], workers[1]],
         possiblePayouts: 2,
         operation: () =>
+          expect(
           votingContract.connect(faucet).replenishRewardPool({
             value: REWARD.mul(2),
-          }),
+            })
+          )
+            .to.emit(votingContract, "RewardsPayed")
+            .withArgs(2),
       });
     });
 
@@ -293,9 +297,13 @@ module.exports.resultsTests = function () {
         winners: [workers[0], workers[1]],
         possiblePayouts: 1,
         operation: () =>
+          expect(
           votingContract.connect(faucet).replenishRewardPool({
             value: REWARD,
-          }),
+            })
+          )
+            .to.emit(votingContract, "RewardsPayed")
+            .withArgs(1),
       });
     });
 
@@ -449,8 +457,7 @@ module.exports.resultsTests = function () {
       );
       const losersBefore = await Promise.all(losers.map((w) => w.getBalance()));
 
-      const result = await operation();
-      await result.wait();
+      await operation();
 
       const winnersAfter = await Promise.all(
         winners.map((w) => w.getBalance())
