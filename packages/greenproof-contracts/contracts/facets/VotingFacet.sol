@@ -134,14 +134,19 @@ contract VotingFacet is IVoting, IReward {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
         uint256 numberOfVotingIDs = votingStorage.votingIDs.length;
+
         for (uint256 i; i < numberOfVotingIDs; i++) {
             bytes32 votingID = votingStorage.votingIDs[i];
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
+
             uint256 numberOfSessionIds = voting.sessionIDs.length;
+
             for (uint256 j; j < numberOfSessionIds; j++) {
                 bytes32 sessionID = voting.sessionIDs[i];
+
                 if (LibVoting.isSessionExpired(votingID, sessionID)) {
                     uint256 numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
+
                     emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
                 }
