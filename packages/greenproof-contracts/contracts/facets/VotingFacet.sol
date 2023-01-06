@@ -74,7 +74,6 @@ contract VotingFacet is IVoting, IReward {
      * @notice addWorker - Adds a worker to the whiteList of authorized workers.
      * To be added, a worker should have the `workerRole` credential inside the claimManager
      * @param workerAddress - The address of the worker we want to remove
-     * @dev only the address referenced as the contract owner is allowed to perform this.
      */
     function addWorker(address payable workerAddress) external override onlyEnrolledWorkers(workerAddress) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
@@ -91,7 +90,6 @@ contract VotingFacet is IVoting, IReward {
      * @notice removeWorker - Removes a worker from the whiteList of authorized workers
      * The `workerRole` credential of the worker should be revoked before the removal.
      * @param workerToRemove - The address of the worker we want to remove
-     * @dev only the address referenced as the contract owner is allowed to perform this
      */
     function removeWorker(address workerToRemove) external override {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
@@ -117,6 +115,7 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice Cancels votings that takes longer than time limit
+     * @dev only the address referenced as the contract owner is allowed to perform this.
      */
     function cancelExpiredVotings() external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
