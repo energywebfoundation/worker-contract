@@ -51,8 +51,8 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
     this.contract.off(this.contract.filters.WinningMatch(), this.handleWinningMatchEvent);
   }
 
-  public async cancelExpiredVotings(): Promise<void> {
-    await this.contract.cancelExpiredVotings();
+  public async cancelExpiredVotings(numberOfVotingsLimit: number, numberOfSessionsLimit: number): Promise<void> {
+    await this.contract.cancelExpiredVotings(numberOfVotingsLimit, numberOfSessionsLimit);
   }
 
   private async handleMissedEvents(getLastHandledBlockNumber: Function) {
