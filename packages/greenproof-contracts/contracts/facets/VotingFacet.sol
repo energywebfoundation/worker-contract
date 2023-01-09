@@ -169,7 +169,7 @@ contract VotingFacet is IVoting, IReward {
         }
 
         votes = new bytes32[](numberOfVotes);
-        for (uint i; i < numberOfVotes; i++) {
+        for (uint256 i; i < numberOfVotes; i++) {
             votes[i] = votesContainer[i];
         }
     }
@@ -214,6 +214,11 @@ contract VotingFacet is IVoting, IReward {
             revert NoFundsProvided();
         }
         emit Replenished(msg.value);
-        LibReward.payReward();
+        LibReward._payReward(LibReward.getStorage().rewardQueue.length);
+    }
+
+    /// @dev Only called when reward payment failes due to insufficient gas
+    function payReward(uint256 numberOfPays) external {
+        LibReward._payReward(numberOfPays);
     }
 }
