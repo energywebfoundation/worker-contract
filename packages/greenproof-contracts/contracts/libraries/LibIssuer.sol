@@ -9,7 +9,6 @@ import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enu
 
 library LibIssuer {
     bytes32 constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
-    bytes32 constant DEFAULT_VCREDENTIAL_VALUE = "";
 
     struct IssuerStorage {
         uint256 latestCertificateId;
