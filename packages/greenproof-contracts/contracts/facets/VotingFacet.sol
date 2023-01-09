@@ -117,16 +117,17 @@ contract VotingFacet is IVoting, IReward {
      * @notice Cancels votings that takes longer than time limit
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
-    function cancelExpiredVotings() external override onlyOwner {
+    function cancelExpiredVotings(uint256 numberOfVotingsLimit, uint256 numberOfSessionsLimit) external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
-        uint256 numberOfVotingIDs = votingStorage.votingIDs.length;
-        for (uint256 i; i < numberOfVotingIDs; i++) {
+        uint256 numberOfVotingsToCancel = LibVoting.preventGasLimit(numberOfVotingsLimit, votingStorage.votingIDs.length);
+
+        for (uint256 i; i < numberOfVotingsToCancel; i++) {
             bytes32 votingID = votingStorage.votingIDs[i];
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
-            uint256 numberOfSessionIds = voting.sessionIDs.length;
-            for (uint256 j; j < numberOfSessionIds; j++) {
-                bytes32 sessionID = voting.sessionIDs[j];
+            uint256 numberOfSessionsToCancel = LibVoting.preventGasLimit(numberOfSessionsLimit, voting.sessionIDs.length);
+            for (uint256 j; j < numberOfSessionsToCancel; j++) {
+                bytes32 sessionID = voting.sessionIDs[i];
                 if (LibVoting._isSessionExpired(votingID, sessionID)) {
                     LibVoting._completeSession(votingID, sessionID);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);

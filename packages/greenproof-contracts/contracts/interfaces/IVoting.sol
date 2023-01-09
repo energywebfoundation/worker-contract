@@ -36,5 +36,5 @@ interface IVoting {
 
     function numberOfVotings() external view returns (uint256);
 
-    function cancelExpiredVotings() external;
+    function cancelExpiredVotings(uint256 numberOfVotingsLimit, uint256 numberOfSessionsLimit) external;
 }

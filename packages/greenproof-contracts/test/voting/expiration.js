@@ -20,25 +20,15 @@ module.exports.expirationTests = function () {
     });
 
     await workers[0].vote(timeframes[0].input, timeframes[0].output);
-    await workers[0].vote(timeframes[0].input, timeframes[1].output);
-    await workers[0].vote(timeframes[1].input, timeframes[0].output);
-    await workers[0].vote(timeframes[1].input, timeframes[1].output);
 
     await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
-    const tx = await votingContract.cancelExpiredVotings();
+    const maxVotesToCancel = 1;
+    const maxSessionsPerVoteToCancel = 1;
+    const tx = await votingContract.cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel);
 
     await expect(tx)
       .to.emit(votingContract, "VotingSessionExpired")
       .withArgs(timeframes[0].input, timeframes[0].output);
-    await expect(tx)
-      .to.emit(votingContract, "VotingSessionExpired")
-      .withArgs(timeframes[0].input, timeframes[1].output);
-    await expect(tx)
-      .to.emit(votingContract, "VotingSessionExpired")
-      .withArgs(timeframes[1].input, timeframes[0].output);
-    await expect(tx)
-      .to.emit(votingContract, "VotingSessionExpired")
-      .withArgs(timeframes[1].input, timeframes[1].output);
   });
 
   it("voting which don't exceeded time limit are not cancelled", async () => {
@@ -46,9 +36,11 @@ module.exports.expirationTests = function () {
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
 
-    await workers[0].vote(timeframes[0].input, timeframes[0].output);
+    await workers[ 0 ].vote(timeframes[ 0 ].input, timeframes[ 0 ].output);
+    const maxVotesToCancel = 1;
+    const maxSessionsPerVoteToCancel = 1;
 
-    await expect(votingContract.cancelExpiredVotings())
+    await expect(votingContract.cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel))
       .to.not.emit(votingContract, "VotingSessionExpired")
       .withArgs(timeframes[0].input, timeframes[0].output);
   });

@@ -276,6 +276,14 @@ library LibVoting {
         return session.workerToVoted[operator];
     }
 
+    function preventGasLimit(uint256 maxTxAllowed, uint256 objectSize) internal pure returns (uint256 nbOfTxAllowed) {
+        if (maxTxAllowed > objectSize) {
+            nbOfTxAllowed = objectSize;
+        } else {
+            nbOfTxAllowed = maxTxAllowed;
+        }
+    }
+
     function _getStorage() internal pure returns (VotingStorage storage _votingStorage) {
         bytes32 position = VOTING_STORAGE_POSITION;
 
