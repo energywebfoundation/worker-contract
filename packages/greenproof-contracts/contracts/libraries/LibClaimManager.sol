@@ -103,6 +103,16 @@ library LibClaimManager {
         claimStore.claimManagerAddress = _newAddress;
     }
 
+    function setClaimRevocationRegistry(address newAddress) internal onlyOwner returns (address oldAddress) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        require(newAddress != address(0), "Revocation Registry: null address");
+        require(claimStore.claimsRevocationRegistry != newAddress, "Revocation Registry: Same address");
+
+        oldAddress = claimStore.claimsRevocationRegistry;
+        claimStore.claimsRevocationRegistry = newAddress;
+    }
+
     function getStorage() internal pure returns (ClaimManagerStorage storage ClaimStore) {
         bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
         assembly {
