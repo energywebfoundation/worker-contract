@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.16;
+pragma solidity 0.8.16;
 
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
