@@ -67,7 +67,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer._incrementProofIndex();
         LibIssuer._registerProof(dataHash, generator, amount, issuer.latestCertificateId, voteID);
 
-        _mint(generator, issuer.latestCertificateId, amount, "");
+        _safeMint(generator, issuer.latestCertificateId, amount, "");
         _setTokenURI(issuer.latestCertificateId, tokenUri);
         emit LibIssuer.ProofMinted(issuer.latestCertificateId, amount, generator);
     }
