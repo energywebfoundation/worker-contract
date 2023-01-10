@@ -24,7 +24,7 @@ library LibVoting {
         bytes32 matchResult;
         // Worker address to voted flag
         mapping(address => bool) workerToVoted;
-        //records each worker voting in this vote session voter
+        //records each worker voting in this vote session
         address payable[] voters;
         // To decide which actions are currently applicable to voting
         Status status;
