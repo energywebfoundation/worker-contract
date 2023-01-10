@@ -34,7 +34,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param generator - The address of the wallet which will receive the minted certificate tokens (i.e - generator's wallet)
      * @param dataHash - The merkleRoot hash of the data we are certifying.
      * @param dataProof - The proofs path to verify that data is part of the vote consensus merkleTree
-     * @param amount - The amount of generated green resource (electricity / organic gas /..) we want to certify
+     * @param volume - The amount of generated green resource (electricity / organic gas /..) we want to certify
      * @param amountProof - the proofs path to verify that the amount we want to certify is part of the `dataHash` merkleTree.
      * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
      * @dev The generator address can not be the zero address
@@ -44,7 +44,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         address generator,
         bytes32 dataHash,
         bytes32[] memory dataProof,
-        uint256 amount,
+        uint256 volume,
         bytes32[] memory amountProof,
         string memory tokenUri
     ) external override onlyIssuer {
@@ -61,15 +61,16 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
             revert LibIssuer.NotInConsensus(voteID);
         }
 
-        bytes32 amountHash = amount._getAmountHash();
+        bytes32 amountHash = volume._getAmountHash();
         require(LibProofManager._verifyProof(dataHash, amountHash, amountProof), "amount : Not part of this consensus");
 
         LibIssuer._incrementProofIndex();
-        LibIssuer._registerProof(dataHash, generator, amount, issuer.latestCertificateId, voteID);
+        uint256 volumeInWei = volume * 1 ether;
+        LibIssuer._registerProof(dataHash, generator, volumeInWei, issuer.latestCertificateId, voteID);
 
-        _mint(generator, issuer.latestCertificateId, amount, "");
+        _mint(generator, issuer.latestCertificateId, volumeInWei, "");
         _setTokenURI(issuer.latestCertificateId, tokenUri);
-        emit LibIssuer.ProofMinted(issuer.latestCertificateId, amount, generator);
+        emit LibIssuer.ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
     }
 
     /**
