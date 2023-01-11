@@ -40,14 +40,14 @@ library LibIssuer {
         issuer.latestCertificateId++;
     }
 
-    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 amount, uint256 certificateID, bytes32 voteID) internal {
+    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
         issuer.certificates[certificateID] = IGreenProof.Certificate({
             isRevoked: false,
             certificateID: certificateID,
             issuanceDate: block.timestamp,
-            volume: amount,
+            volume: volumeInWei,
             merkleRootHash: dataHash,
             generator: generatorAddress
         });
@@ -71,7 +71,7 @@ library LibIssuer {
         return !issuer.certificates[certificateId].isRevoked;
     }
 
-    function _getCertificate(uint256 certificateID, uint256 volume) internal view returns (IGreenProof.Certificate memory) {
+    function _getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
         IssuerStorage storage issuer = _getStorage();
 
         return
@@ -79,7 +79,7 @@ library LibIssuer {
                 isRevoked: issuer.certificates[certificateID].isRevoked,
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
-                volume: volume,
+                volume: volumeInWei,
                 merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
                 generator: issuer.certificates[certificateID].generator
             });
@@ -94,7 +94,7 @@ library LibIssuer {
     }
 
     function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
-        string memory volumeString = UintUtils.toString(volume / 1 ether);
+        string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }
 }

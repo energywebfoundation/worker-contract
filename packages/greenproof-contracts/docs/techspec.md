@@ -279,7 +279,7 @@ Second purpose of contract is token trasferring.
 - **\_isCertified(bytes32 \_data)**: Checks if certified for generation data `_data` was issued and was not revoked.
 - **\_getCertificate(uint256 certificateID, uint256 volume)**: Returns certificate by its identifier. Certificate contains generation and issuance data.
 - **\_getStorage()**: returns contract slot containing issuance data.
-- **\_getAmountHash(uint256 volume)**: creates leave of Merkle tree generation data containing `volume`.
+- **\_getAmountHash(uint256 volume)**: creates leaves of Merkle tree generation data containing `volume`.
 
 ## ProofManagerFacet
 
