@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 
 library LibReward {
-    bytes32 constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
+    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
 
     /// Invalid call to pay rewards to the winners. Rewards are disabled.
     error RewardsDisabled();
