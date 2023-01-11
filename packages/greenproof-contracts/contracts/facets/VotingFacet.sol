@@ -217,7 +217,7 @@ contract VotingFacet is IVoting, IReward {
         LibReward._payReward(LibReward.getStorage().rewardQueue.length);
     }
 
-    /// @dev Only called when reward payment failes due to insufficient gas
+    /// @dev Only called when reward payment fails due to insufficient gas
     function payReward(uint256 numberOfPays) external {
         LibReward._payReward(numberOfPays);
     }

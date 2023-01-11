@@ -191,6 +191,7 @@ library LibVoting {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
         address payable[] memory votingWinners = _getStorage().winners[votingID][sessionID];
 
+        uint256 numberOfPayments;
         uint256 rewardAmount = rs.rewardAmount;
         uint256 numberOfVotingWinners = votingWinners.length;
 
@@ -198,9 +199,13 @@ library LibVoting {
             if (address(this).balance >= rewardAmount) {
                 /// @dev `transfer` is safe, because worker is EOA
                 votingWinners[i].transfer(rewardAmount);
+                numberOfPayments++;
             } else {
                 rs.rewardQueue.push(votingWinners[i]);
             }
+        }
+        if (numberOfPayments != 0) {
+            emit LibReward.RewardsPayed(numberOfPayments);
         }
     }
 
