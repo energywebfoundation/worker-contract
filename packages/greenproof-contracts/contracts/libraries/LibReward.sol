@@ -59,7 +59,7 @@ library LibReward {
             address payable currentWorker = rs.rewardQueue[rs.rewardQueue.length - 1];
             rs.rewardQueue.pop();
             /// @dev `transfer` is safe, because worker is EOA
-            currentWorker.transfer(rs.rewardAmount);
+            currentWorker.transfer(rewardAmount);
         }
 
         emit RewardsPayed(numberOfPays);
