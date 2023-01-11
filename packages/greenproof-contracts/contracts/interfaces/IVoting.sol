@@ -3,18 +3,18 @@ pragma solidity 0.8.16;
 
 interface IVoting {
     // Event emitted when consensus in voting session has been reached
-    event WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount);
+    event WinningMatch(bytes32 indexed votingID, bytes32 indexed matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
-    event NoConsensusReached(bytes32 votingID, bytes32 sessionID);
+    event NoConsensusReached(bytes32 indexed votingID, bytes32 indexed sessionID);
 
     // Voting lasts more than time limit
-    event VotingSessionExpired(bytes32 votingID, bytes32 sessionID);
+    event VotingSessionExpired(bytes32 indexed votingID, bytes32 indexed sessionID);
 
     // Event emitted after match is recorded
-    event MatchRegistered(bytes32 votingID, bytes32 matchResult);
+    event MatchRegistered(bytes32 indexed votingID, bytes32 indexed matchResult);
 
-    event ConsensusReached(bytes32 winningMatch, bytes32 votingID);
+    event ConsensusReached(bytes32 indexed winningMatch, bytes32 indexed votingID);
 
     event WorkerRemoved(address indexed worker, uint256 indexed removalDate);
 
