@@ -196,6 +196,7 @@ library LibVoting {
 
         for (uint256 i; i < numberOfVotingWinners; i++) {
             if (address(this).balance >= rewardAmount) {
+                /// @dev `transfer` is safe, because worker is EOA
                 votingWinners[i].transfer(rewardAmount);
             } else {
                 rs.rewardQueue.push(votingWinners[i]);
