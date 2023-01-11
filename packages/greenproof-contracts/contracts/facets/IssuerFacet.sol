@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.16;
+pragma solidity 0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
@@ -68,7 +68,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256 volumeInWei = volume * 1 ether;
         LibIssuer._registerProof(dataHash, generator, volumeInWei, issuer.latestCertificateId, voteID);
 
-        _mint(generator, issuer.latestCertificateId, volumeInWei, "");
+        _safeMint(generator, issuer.latestCertificateId, volumeInWei, "");
         _setTokenURI(issuer.latestCertificateId, tokenUri);
         emit LibIssuer.ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
     }
