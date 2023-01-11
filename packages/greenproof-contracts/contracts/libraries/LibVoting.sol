@@ -55,7 +55,7 @@ library LibVoting {
     }
 
     // Event emitted when consensus in voting sessing has been reached
-    event WinningMatch(bytes32 indexed votingID, bytes32 indexed matchResult, uint256 indexed voteCount);
+    event WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
     event NoConsensusReached(bytes32 indexed votingID, bytes32 indexed sessionID);
