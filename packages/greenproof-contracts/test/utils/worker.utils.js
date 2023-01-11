@@ -44,7 +44,7 @@ class Worker {
   }
 
   async voteWinning(input, output, { voteCount, winningOutput }) {
-    const voteTx = this.votingContract.vote(input, output);
+    const voteTx = await this.votingContract.vote(input, output);
     expect(voteTx)
       .to.emit(this.votingContract, "WinningMatch")
       .withArgs(input, winningOutput || output, voteCount);

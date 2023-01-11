@@ -7,7 +7,7 @@ const {
 
 const { workerRole } = roles;
 
-module.exports.permissionsTests = function () {
+module.exports.permissionsTests = async function () {
   let owner;
   let workers;
   let mockClaimManager;
@@ -105,8 +105,6 @@ module.exports.permissionsTests = function () {
       votingContract.addWorker(workers[0].address)
     ).to.be.revertedWith("WorkerAlreadyAdded");
   });
-
-  //SIARA
 
   it("should allow non owner address to add enrolled workers", async () => {
     votingContract = await setupVotingContract();
