@@ -372,6 +372,7 @@ describe("GreenproofTest", async function () {
       await test1Facet.test1Func18();
       await test1Facet.test1Func19();
       await test1Facet.test1Func20();
+      await test1Facet.isInterfaceSupported("0x43a7aEeb");
     });
 
     it("should add test2 functions", async () => {
