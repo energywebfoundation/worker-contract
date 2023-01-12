@@ -1,11 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {IVoting} from "../interfaces/IVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
-import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 library LibIssuer {
     bytes32 constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
