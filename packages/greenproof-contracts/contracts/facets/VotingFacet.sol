@@ -242,5 +242,12 @@ contract VotingFacet is IVoting, IReward {
         } else {
             emit NoConsensusReached(votingID, sessionID);
         }
+        emit Replenished(msg.value);
+        LibReward._payReward(LibReward.getStorage().rewardQueue.length);
+    }
+
+    /// @dev Only called when reward payment fails due to insufficient gas
+    function payReward(uint256 numberOfPays) external onlyWhenEnabledRewards {
+        LibReward._payReward(numberOfPays);
     }
 }
