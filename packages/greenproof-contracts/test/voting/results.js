@@ -406,6 +406,66 @@ module.exports.resultsTests = function () {
             .withArgs(2),
       });
     });
+    
+    it("Should not allow to PayReward manually when rewards are disabled", async () => {
+      const OneWei = 1;
+
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1], workers[2], workers[3]],
+        rewardPool: OneWei, // We don't provide enough funds during deployment to avoid automatic rewarding
+        rewardsEnabled: true, // Initially rewards are enabled
+      });
+
+      await workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      await workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      await workers[2].voteNotWinning(timeframes[0].input, timeframes[1].output);
+      let tx = await workers[3].voteWinning(timeframes[0].input, timeframes[0].output, {
+            voteCount: 3,
+      });
+
+      // We are making sure that the rewards are not paid (not enough funds)
+      // Even if the consensus is reached
+      await expect(tx).to.not.emit(votingContract, "RewardsPayed");
+      await expect(tx).to.emit(votingContract, "ConsensusReached");
+
+      // We send sufficient funds to the contract to handle 3 rewardings
+      await faucet.sendTransaction({
+        to: votingContract.address,
+        value: REWARD.mul(3)
+      });
+
+      // Disabling Rewarding
+      tx = await votingContract.setRewardsEnabled(false);
+      await tx.wait();
+
+      // Verifying that rewards are disabled
+      await expect(tx).to.emit(votingContract, "RewardsDeactivated");
+
+      // We set the payment limit to 10
+      const maxNumberOfPayements = 10;
+
+      // Wet are expecting only 3 payments
+      const effectiveNumberOfPayements = 3;
+
+      // Making sure that the transaction correctly reverts
+      await expect(
+        votingContract.payReward(maxNumberOfPayements)
+      ).to.be.revertedWith("RewardsDisabled");
+
+      // Enabling rewards
+      tx = await votingContract.setRewardsEnabled(true);
+      await tx.wait();
+
+      // Verifying that rewards are enabled
+      await expect(tx).to.emit(votingContract, "RewardsActivated");
+
+      // verifying that rewards are paid
+      await expect(
+        votingContract.payReward(maxNumberOfPayements)
+      ).to.emit(votingContract, "RewardsPayed")
+        .withArgs(effectiveNumberOfPayements);
+    });
 
     describe("Rewards management", function () {
 
