@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
