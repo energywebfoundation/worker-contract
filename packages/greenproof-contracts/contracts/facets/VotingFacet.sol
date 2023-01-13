@@ -45,7 +45,7 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Increases the number of votes for this matchResult. Voting completes when that vote leads to consensus or when voting expires
      */
-    function vote(bytes32 votingID, bytes32 matchResult) external override onlyWhitelistedWorker {
+    function vote(bytes32 votingID, bytes32 matchResult) external onlyWhitelistedWorker {
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
         LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
 
@@ -75,7 +75,7 @@ contract VotingFacet is IVoting, IReward {
      * To be added, a worker should have the `workerRole` credential inside the claimManager
      * @param workerAddress - The address of the worker we want to remove
      */
-    function addWorker(address payable workerAddress) external override onlyEnrolledWorkers(workerAddress) {
+    function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         if (isWhitelistedWorker(workerAddress)) {
@@ -91,7 +91,7 @@ contract VotingFacet is IVoting, IReward {
      * The `workerRole` credential of the worker should be revoked before the removal.
      * @param workerToRemove - The address of the worker we want to remove
      */
-    function removeWorker(address workerToRemove) external override {
+    function removeWorker(address workerToRemove) external {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         uint256 numberOfWorkers = LibVoting._getNumberOfWorkers();
 
@@ -117,7 +117,7 @@ contract VotingFacet is IVoting, IReward {
      * @notice Cancels votings that takes longer than time limit
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
-    function cancelExpiredVotings() external override onlyOwner {
+    function cancelExpiredVotings() external onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         uint256 numberOfVotingIDs = votingStorage.votingIDs.length;
@@ -139,7 +139,7 @@ contract VotingFacet is IVoting, IReward {
         LibReward._setRewardsFeature(rewardsEnabled);
     }
 
-    function getWorkers() external view override returns (address payable[] memory) {
+    function getWorkers() external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.whitelistedWorkers;
@@ -177,7 +177,7 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Retreieves the list of workers who voted for the winning macth
      */
-    function getWinners(bytes32 votingID, bytes32 matchResult) external view override returns (address payable[] memory) {
+    function getWinners(bytes32 votingID, bytes32 matchResult) external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
 
@@ -203,13 +203,13 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
-    function numberOfVotings() external view override returns (uint256) {
+    function numberOfVotings() external view returns (uint256) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.votingIDs.length;
     }
 
-    function replenishRewardPool() external payable override onlyWhenEnabledRewards {
+    function replenishRewardPool() external payable onlyWhenEnabledRewards {
         if (msg.value == 0) {
             revert NoFundsProvided();
         }
