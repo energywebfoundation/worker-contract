@@ -20,6 +20,7 @@ library LibIssuer {
         mapping(bytes32 => mapping(string => string)) disclosedData;
         //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
         mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
+        // @notice saving the data needed for future features
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
