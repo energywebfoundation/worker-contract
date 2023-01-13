@@ -20,6 +20,8 @@ library LibIssuer {
         mapping(bytes32 => mapping(string => string)) disclosedData;
         //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
         mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
+        // @notice saving the data needed for future features
+        mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
     event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
@@ -51,6 +53,7 @@ library LibIssuer {
             generator: generatorAddress
         });
         issuer.dataToCertificateID[dataHash] = certificateID;
+        issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }
 
     function _registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
