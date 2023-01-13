@@ -673,8 +673,10 @@ describe("IssuerFacet", function () {
 
     it("should revert if claimer tries to retire a revoked proof", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, owner);
+      await mintProof(certificateID, proofData, owner);
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(1)
@@ -682,7 +684,7 @@ describe("IssuerFacet", function () {
 
       await expect(
         proofManagerContract.connect(claimer).claimProofFor(1, owner.address, 1)
-      ).to.be.revertedWith("proof revoked");
+      ).to.be.revertedWith(`ProofRevoked(${certificateID})`);
     });
 
     it("should revert if non claimer tries to claim proof", async () => {
@@ -700,17 +702,20 @@ describe("IssuerFacet", function () {
 
     it("should revert if owner tries to retire a revoked proof", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
+      const claimedVolume = 1;
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, issuer, issuer);
+      await mintProof(certificateID, proofData, issuer, issuer);
       await grantRole(issuer, roles.claimerRole);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        proofManagerContract.connect(issuer).claimProof(1, 1)
-      ).to.be.revertedWith("proof revoked");
+        proofManagerContract.connect(issuer).claimProof(certificateID, claimedVolume)
+      ).to.be.revertedWith(`ProofRevoked(${certificateID})`);
     });
 
     it("should allow claiming proofs for others", async () => {
@@ -775,30 +780,34 @@ describe("IssuerFacet", function () {
 
     it("should revert when retirement for others amount exceeds owned volume", async () => {
       const mintedVolume = 5;
-      const proofData = generateProofData({ volume: mintedVolume });
-      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const certificateID = 1;
       const minter = wallets[0];
-      await mintProof(1, proofData, minter);
+      const proofData = generateProofData({ volume: mintedVolume });
+
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(certificateID, proofData, minter);
       const claimedVolume = parseEther("6");
 
       await expect(
         proofManagerContract
           .connect(claimer)
-          .claimProofFor(1, minter.address, claimedVolume)
-      ).to.be.revertedWith("Insufficient volume owned");
+          .claimProofFor(certificateID, minter.address, claimedVolume)
+      ).to.be.revertedWith(`InsufficientBalance("${minter.address}", ${certificateID}, ${claimedVolume})`);
     });
 
     it("should revert when retirement amount exceeds owned volume", async () => {
       const mintedVolume = 5;
-      const proofData = generateProofData({ volume: mintedVolume });
-      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const certificateID = 1;
       const minter = wallets[0];
-      await mintProof(1, proofData, minter);
       const claimedVolume = parseEther("6");
+      const proofData = generateProofData({ volume: mintedVolume });
+      
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(certificateID, proofData, minter);
 
       await expect(
-        proofManagerContract.connect(minter).claimProof(1, claimedVolume)
-      ).to.be.revertedWith("Insufficient volume owned");
+        proofManagerContract.connect(minter).claimProof(certificateID, claimedVolume)
+      ).to.be.revertedWith(`InsufficientBalance("${minter.address}", ${certificateID}, ${claimedVolume})`);
     });
 
     it("should allow authorized revoker to revoke a retired proof during the revocable Period", async () => {
@@ -1004,6 +1013,7 @@ describe("IssuerFacet", function () {
       await issuerContract
         .connect(issuer)
         .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash);
+
       await expect(
         issuerContract
           .connect(issuer)
