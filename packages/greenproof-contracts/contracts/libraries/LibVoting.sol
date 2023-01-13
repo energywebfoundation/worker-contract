@@ -141,15 +141,11 @@ library LibVoting {
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
-            emit NoConsensusReached(votingID, sessionID);
             return;
         }
 
         _revealMatch(votingID, sessionID);
         _revealVoters(votingID, sessionID);
-
-        emit WinningMatch(votingID, session.matchResult, session.votesCount);
-        emit ConsensusReached(session.matchResult, votingID);
 
         if (LibReward._isRewardEnabled()) {
             _rewardWinners(votingID, sessionID);
@@ -166,7 +162,6 @@ library LibVoting {
     function _revealMatch(bytes32 votingID, bytes32 sessionID) internal {
         VotingSession storage session = _getSession(votingID, sessionID);
         _getStorage().matches[votingID][sessionID] = session.matchResult;
-        emit MatchRegistered(votingID, session.matchResult);
     }
 
     /**

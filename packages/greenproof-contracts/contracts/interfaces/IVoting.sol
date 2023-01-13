@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 interface IVoting {
-    // Event emitted when consensus in voting session has been reached
+    // Event emitted when consensus in voting sessing has been reached
     event WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
@@ -11,14 +11,28 @@ interface IVoting {
     // Voting lasts more than time limit
     event VotingSessionExpired(bytes32 votingID, bytes32 sessionID);
 
-    // Event emitted after match is recorded
-    event MatchRegistered(bytes32 votingID, bytes32 matchResult);
-
     event ConsensusReached(bytes32 winningMatch, bytes32 votingID);
 
     event WorkerRemoved(address indexed worker, uint256 indexed removalDate);
 
     event WorkerAdded(address indexed worker, uint256 indexed removalDate);
+
+    // Worker had already voted for a match result
+    error AlreadyVoted();
+
+    // Sender is not whitelisted
+    error NotWhitelisted();
+
+    // Voting ended, winner is chosen - workers cannot vote anymore
+    error VotingAlreadyEnded();
+
+    // Worker has been added already
+    error WorkerAlreadyAdded();
+
+    // Worker has not been added yet
+    error WorkerWasNotAdded(address notWhitListedWorker);
+
+    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult);
 
     function vote(bytes32 votingID, bytes32 matchResult) external;
 

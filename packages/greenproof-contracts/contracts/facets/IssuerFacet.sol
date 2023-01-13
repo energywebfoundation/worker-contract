@@ -22,6 +22,8 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     using LibIssuer for bytes32;
     using LibClaimManager for address;
 
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
+
     modifier onlyIssuer() {
         require(msg.sender.isEnrolledIssuer(), "Access: Not an issuer");
         _;
@@ -66,11 +68,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
         LibIssuer._incrementProofIndex();
         uint256 volumeInWei = volume * 1 ether;
-        LibIssuer._registerProof(dataHash, generator, volumeInWei, issuer.latestCertificateId, voteID);
+        LibIssuer._registerProof(dataHash, generator, volumeInWei, issuer.latestCertificateId);
 
         _safeMint(generator, issuer.latestCertificateId, volumeInWei, "");
         _setTokenURI(issuer.latestCertificateId, tokenUri);
-        emit LibIssuer.ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
+        emit ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
     }
 
     /**
