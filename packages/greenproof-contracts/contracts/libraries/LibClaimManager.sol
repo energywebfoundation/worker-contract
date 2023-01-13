@@ -116,9 +116,9 @@ library LibClaimManager {
     }
 
     function checkEnrolledIssuer(address operator) internal view {
-        ClaimManagerStorage storage claimStore = getStorage();
+        Role memory issuerRole = getStorage().issuerRole;
 
-        bool isIssuer = hasRole(operator, claimStore.issuerRole.name, claimStore.issuerRole.version);
+        bool isIssuer = hasRole(operator, issuerRole.name, issuerRole.version);
 
         if (!isIssuer) {
             revert NotEnrolledIssuer(operator);
@@ -126,9 +126,9 @@ library LibClaimManager {
     }
 
     function checkEnrolledRevoker(address operator) internal view {
-        ClaimManagerStorage storage claimStore = getStorage();
+        Role memory revokerRole = getStorage().revokerRole;
 
-        bool isRevoker = hasRole(operator, claimStore.revokerRole.name, claimStore.revokerRole.version);
+        bool isRevoker = hasRole(operator, revokerRole.name, revokerRole.version);
 
         if (!isRevoker) {
             revert NotEnrolledRevoker(operator);
