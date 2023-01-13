@@ -16,10 +16,8 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
 contract VotingFacet is IVoting, IReward {
-    using LibClaimManager for address;
-
     modifier onlyEnrolledWorkers(address operator) {
-        require(operator.isEnrolledWorker(), "Access denied: not enrolled as worker");
+        LibClaimManager.checkEnrolledWorker(operator);
         _;
     }
 
@@ -39,6 +37,11 @@ contract VotingFacet is IVoting, IReward {
         if (!LibReward._isRewardEnabled()) {
             revert LibReward.RewardsDisabled();
         }
+        _;
+    }
+
+    modifier onlyRevokedWorkers(address workerToRemove) {
+        LibClaimManager.checkRevokedWorker(workerToRemove);
         _;
     }
 
@@ -93,14 +96,13 @@ contract VotingFacet is IVoting, IReward {
      * The `workerRole` credential of the worker should be revoked before the removal.
      * @param workerToRemove - The address of the worker we want to remove
      */
-    function removeWorker(address workerToRemove) external override {
+    function removeWorker(address workerToRemove) external override onlyRevokedWorkers(workerToRemove) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         uint256 numberOfWorkers = LibVoting._getNumberOfWorkers();
 
         if (!isWhitelistedWorker(workerToRemove)) {
             revert WorkerWasNotAdded(workerToRemove);
         }
-        require(workerToRemove.isEnrolledWorker() == false, "Not allowed: still enrolled as worker");
 
         if (numberOfWorkers > 1) {
             uint256 workerIndex = votingStorage.workerToIndex[workerToRemove];

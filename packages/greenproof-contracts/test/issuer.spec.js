@@ -209,7 +209,7 @@ describe("IssuerFacet", function () {
           volumeProof,
           tokenURI
         )
-      ).to.be.revertedWith("Access: Not an issuer");
+      ).to.be.revertedWith(`NotEnrolledIssuer("${owner.address}")`);
     });
 
     it("Authorized issuers can send proof issuance requests", async () => {
@@ -566,7 +566,7 @@ describe("IssuerFacet", function () {
 
       await expect(
         proofManagerContract.connect(unauthorizedOperator).revokeProof(1)
-      ).to.be.revertedWith("Access: Not enrolled as revoker");
+      ).to.be.revertedWith(`NotEnrolledRevoker("${unauthorizedOperator.address}")`);
     });
 
     it("should prevent revocation of non existing certificates", async () => {
@@ -695,7 +695,7 @@ describe("IssuerFacet", function () {
         proofManagerContract
           .connect(notClaimer)
           .claimProofFor(1, owner.address, 1)
-      ).to.be.revertedWith("Access: Not enrolled as claimer");
+      ).to.be.revertedWith(`NotEnrolledClaimer("${notClaimer.address}")`);
     });
 
     it("should revert if owner tries to retire a revoked proof", async () => {
@@ -944,7 +944,7 @@ describe("IssuerFacet", function () {
         issuerContract
           .connect(unauthorizedOperator)
           .discloseData(key, proofData.volume, dataProof, dataRootHash)
-      ).to.be.revertedWith("Access: Not an issuer");
+      ).to.be.revertedWith(`NotEnrolledIssuer("${unauthorizedOperator.address}")`);
     });
 
     it("should allow authorized user to disclose data", async () => {
@@ -979,7 +979,8 @@ describe("IssuerFacet", function () {
             dataProof,
             dataRootHash
           )
-      ).to.be.revertedWith("Disclose : data not verified");
+      
+      ).to.be.revertedWith("InvalidProof");
       await expect(
         issuerContract
           .connect(issuer)
@@ -989,7 +990,7 @@ describe("IssuerFacet", function () {
             dataProof,
             dataRootHash
           )
-      ).to.be.revertedWith("Disclose : data not verified");
+      ).to.be.revertedWith("InvalidProof");
     });
 
     it("should revert when one tries to disclose already disclosed data", async () => {
@@ -1003,11 +1004,11 @@ describe("IssuerFacet", function () {
       await issuerContract
         .connect(issuer)
         .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash);
-      expect(
+      await expect(
         issuerContract
           .connect(issuer)
           .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash)
-      ).to.be.revertedWith("Disclose: data already disclosed");
+      ).to.be.revertedWith(`AlreadyDisclosedData("${dataRootHash}", "${key}")`)
     });
   });
 

@@ -20,12 +20,11 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
     using LibIssuer for uint256;
     using LibIssuer for bytes32;
-    using LibClaimManager for address;
 
     event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 
     modifier onlyIssuer() {
-        require(msg.sender.isEnrolledIssuer(), "Access: Not an issuer");
+        LibClaimManager.checkEnrolledIssuer(msg.sender);
         _;
     }
 
@@ -84,14 +83,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
     function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external override onlyIssuer {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        require(issuer.isDataDisclosed[dataHash][key] == false, "Disclose: data already disclosed");
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
-        require(LibProofManager._verifyProof(dataHash, leaf, dataProof), "Disclose : data not verified");
 
-        issuer.disclosedData[dataHash][key] = value;
-        issuer.isDataDisclosed[dataHash][key] = true;
+        LibIssuer.checkNotDisclosed(dataHash, key);
+        LibProofManager.checkProof(dataHash, leaf, dataProof);
+        LibIssuer.discloseData(dataHash, key, value);
     }
 
     /**

@@ -28,6 +28,7 @@ library LibIssuer {
     error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
     error NotInConsensus(bytes32 voteID);
     error AlreadyCertifiedData(bytes32 dataHash);
+    error AlreadyDisclosedData(bytes32 dataHash, string key);
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
@@ -57,6 +58,13 @@ library LibIssuer {
     function _registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
         IssuerStorage storage issuer = _getStorage();
         issuer.claimedBalances[certificateID][user] += claimedAmount;
+    }
+
+    function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
+        LibIssuer.IssuerStorage storage issuer = _getStorage();
+
+        issuer.disclosedData[dataHash][key] = value;
+        issuer.isDataDisclosed[dataHash][key] = true;
     }
 
     function _isCertified(bytes32 _data) internal view returns (bool) {
@@ -95,5 +103,13 @@ library LibIssuer {
     function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
         string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+
+    function checkNotDisclosed(bytes32 dataHash, string memory key) internal view {
+        IssuerStorage storage issuer = _getStorage();
+
+        if (issuer.isDataDisclosed[dataHash][key]) {
+            revert AlreadyDisclosedData(dataHash, key);
+        }
     }
 }

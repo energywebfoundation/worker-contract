@@ -7,6 +7,13 @@ import {IClaimManager} from "../interfaces/IClaimManager.sol";
 library LibClaimManager {
     bytes32 constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
 
+    error NotInitializedClaimManager();
+    error NotEnrolledIssuer(address operator);
+    error NotEnrolledClaimer(address operator);
+    error NotEnrolledRevoker(address operator);
+    error NotEnrolledWorker(address operator);
+    error NotRevokedWorker(address operator);
+
     struct Role {
         bytes32 name;
         uint256 version;
@@ -108,27 +115,53 @@ library LibClaimManager {
         }
     }
 
-    function isEnrolledIssuer(address operator) internal view returns (bool) {
+    function checkEnrolledIssuer(address operator) internal view {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        return hasRole(operator, claimStore.issuerRole.name, claimStore.issuerRole.version);
+        bool isIssuer = hasRole(operator, claimStore.issuerRole.name, claimStore.issuerRole.version);
+
+        if (!isIssuer) {
+            revert NotEnrolledIssuer(operator);
+        }
     }
 
-    function isEnrolledRevoker(address operator) internal view returns (bool) {
+    function checkEnrolledRevoker(address operator) internal view {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        return hasRole(operator, claimStore.revokerRole.name, claimStore.revokerRole.version);
+        bool isRevoker = hasRole(operator, claimStore.revokerRole.name, claimStore.revokerRole.version);
+
+        if (!isRevoker) {
+            revert NotEnrolledRevoker(operator);
+        }
     }
 
-    function isEnrolledClaimer(address operator) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
+    function checkEnrolledClaimer(address operator) internal view {
+        Role memory claimerRole = getStorage().claimerRole;
 
-        return hasRole(operator, claimStore.claimerRole.name, claimStore.claimerRole.version);
+        bool isClaimer = hasRole(operator, claimerRole.name, claimerRole.version);
+
+        if (!isClaimer) {
+            revert NotEnrolledClaimer(operator);
+        }
     }
 
-    function isEnrolledWorker(address operator) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
+    function checkEnrolledWorker(address operator) internal view {
+        Role memory workerRole = getStorage().workerRole;
 
-        return hasRole(operator, claimStore.workerRole.name, claimStore.workerRole.version);
+        bool isWorker = hasRole(operator, workerRole.name, workerRole.version);
+
+        if (!isWorker) {
+            revert NotEnrolledWorker(operator);
+        }
+    }
+
+    function checkRevokedWorker(address operator) internal view {
+        Role memory workerRole = getStorage().workerRole;
+
+        bool isWorker = hasRole(operator, workerRole.name, workerRole.version);
+
+        if (isWorker) {
+            revert NotRevokedWorker(operator);
+        }
     }
 }
