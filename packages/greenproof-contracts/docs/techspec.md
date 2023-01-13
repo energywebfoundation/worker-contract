@@ -253,6 +253,7 @@ Second purpose of contract is token trasferring.
       mapping(uint256 => mapping(address => uint256)) claimedBalances - (`certificateID` -> owner -> balance). Balances of claimed certificates.
     - mapping(bytes32 => mapping(string => string)) disclosedData - (`dataHash` -> `key` -> `value`). Disclosed (`key`, `value`) part of data with Merkle root tree `dataHash`.
     - mapping(bytes32 => mapping(string => bool)) isDataDisclosed - (`dataHash` -> `key` -> isDisclosed). Checks that data with key `key` is disclosed in data with Merkle root tree `dataHash`.
+    - mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates (`votingID` -> `dataHash` -> `certificateID`). Maps voting session, which completed with consensus to certificate id.
   - **ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver)**: event emitted when new certificate is created.
   - **NonExistingCertificate(uint256 certificateID)**: reason of rejection when non issued certificate is requested.
   - **NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit)**: reason of rejection, when revoker tries to revoke certificate which revocation period has expired.
