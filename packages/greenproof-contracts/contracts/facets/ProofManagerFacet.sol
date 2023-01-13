@@ -9,6 +9,8 @@ import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
+    error InsufficientBalance(address claimer, uint256 certificateID, uint256 claimedVolume);
+
     modifier onlyRevoker() {
         LibClaimManager.checkEnrolledRevoker(msg.sender);
         _;
@@ -20,10 +22,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        LibProofManager.checkProofRevocation(certificateID);
 
-        require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
-        require(_balanceOf(owner, certificateID) >= amount, "Insufficient volume owned");
+        if (_balanceOf(owner, certificateID) < amount) {
+            revert InsufficientBalance(owner, certificateID, amount);
+        }
 
         LibIssuer._registerClaimedProof(certificateID, owner, amount);
         _burn(owner, certificateID, amount);

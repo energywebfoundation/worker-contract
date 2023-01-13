@@ -86,7 +86,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
 
         LibIssuer.checkNotDisclosed(dataHash, key);
-        LibProofManager.checkProof(dataHash, leaf, dataProof);
+        LibProofManager.checkProofValidity(dataHash, leaf, dataProof);
         LibIssuer.discloseData(dataHash, key, value);
     }
 
