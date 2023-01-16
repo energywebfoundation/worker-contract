@@ -18,9 +18,6 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
-    using LibIssuer for uint256;
-    using LibIssuer for bytes32;
-
     event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 
     modifier onlyIssuer() {
@@ -51,20 +48,10 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     ) external override onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(generator != address(0), "issuance must be non-zero");
-
-        if (dataHash._isCertified()) {
-            // this prevents duplicate issuance of the same certificate ID
-            revert LibIssuer.AlreadyCertifiedData(dataHash);
-        }
-        bool isVoteInConsensus = LibVoting._isPartOfConsensus(voteID, dataHash, dataProof);
-        if (!isVoteInConsensus) {
-            revert LibIssuer.NotInConsensus(voteID);
-        }
-
-        bytes32 amountHash = volume._getAmountHash();
-        require(LibProofManager._verifyProof(dataHash, amountHash, amountProof), "amount : Not part of this consensus");
-
+        LibIssuer.preventZeroAddressReceiver(generator);
+        LibIssuer.preventAlreadyCertified(dataHash);
+        LibVoting.checkVoteInConsensus(voteID, dataHash, dataProof);
+        LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
         LibIssuer._incrementProofIndex();
         uint256 volumeInWei = volume * 1 ether;
         LibIssuer._registerProof(dataHash, generator, volumeInWei, issuer.latestCertificateId, voteID);

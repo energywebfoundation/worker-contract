@@ -131,7 +131,7 @@ describe("IssuerFacet", function () {
             volumeProof,
             tokenURI
           )
-      ).to.be.revertedWith("issuance must be non-zero");
+      ).to.be.revertedWith("ForbiddenZeroAddressReceiver()");
     });
 
     it("should reject proof issuance requests for data not in consensus", async () => {
@@ -184,7 +184,7 @@ describe("IssuerFacet", function () {
             volumeProof,
             tokenURI
           )
-      ).to.be.revertedWith("amount : Not part of this consensus");
+      ).to.be.revertedWith(`VolumeNotInConsensus(${wrongVolume}, "${volumeRootHash}"`);
     });
 
     it("should reject proof issuance requests by non issuers", async () => {

@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
+import {LibProofManager} from "./LibProofManager.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
@@ -24,11 +25,14 @@ library LibIssuer {
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
+
+    error ForbiddenZeroAddressReceiver();
     error NonExistingCertificate(uint256 certificateID);
     error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
-    error NotInConsensus(bytes32 voteID);
     error AlreadyCertifiedData(bytes32 dataHash);
     error AlreadyDisclosedData(bytes32 dataHash, string key);
+    error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
@@ -67,15 +71,14 @@ library LibIssuer {
         issuer.isDataDisclosed[dataHash][key] = true;
     }
 
-    function _isCertified(bytes32 _data) internal view returns (bool) {
+    // this prevents duplicate issuance of the same certificate ID
+    function preventAlreadyCertified(bytes32 data) internal view {
         IssuerStorage storage issuer = _getStorage();
-        uint256 certificateId = issuer.dataToCertificateID[_data];
+        uint256 certificateId = issuer.dataToCertificateID[data];
 
-        if (certificateId == 0) {
-            return false;
+        if (certificateId != 0 && !issuer.certificates[certificateId].isRevoked) {
+            revert AlreadyCertifiedData(data);
         }
-
-        return !issuer.certificates[certificateId].isRevoked;
     }
 
     function _getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
@@ -110,6 +113,21 @@ library LibIssuer {
 
         if (issuer.isDataDisclosed[dataHash][key]) {
             revert AlreadyDisclosedData(dataHash, key);
+        }
+    }
+
+    function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
+        bytes32 volumeHash = _getAmountHash(volume);
+
+        bool isVolumeInConsensus = LibProofManager._verifyProof(dataHash, volumeHash, amountProof);
+        if (!isVolumeInConsensus) {
+            revert VolumeNotInConsensus(volume, dataHash);
+        }
+    }
+
+    function preventZeroAddressReceiver(address receiver) internal pure {
+        if (receiver == address(0)) {
+            revert ForbiddenZeroAddressReceiver();
         }
     }
 }
