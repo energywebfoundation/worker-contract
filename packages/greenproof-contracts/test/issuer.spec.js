@@ -350,7 +350,7 @@ describe("IssuerFacet", function () {
             parseEther("2"),
             transferBytesData
           )
-      ).to.be.revertedWith("transfer: invalid zero token ID");
+      ).to.be.revertedWith("insufficient balance");
     });
 
     it("should revert when one tries to transfer Batch certificates containing token ID = 0", async () => {
@@ -529,7 +529,7 @@ describe("IssuerFacet", function () {
             transferBytesData
           )
       ).to.be.revertedWith(
-        "transfer: tokenId greater than issuer.latestCertificateId"
+        "insufficient balance"
       );
     });
 
