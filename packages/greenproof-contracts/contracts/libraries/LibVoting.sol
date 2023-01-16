@@ -220,21 +220,19 @@ library LibVoting {
     /** Data verification */
 
     /** checks that some data is part of a voting consensus
-        @param votingID : the inputHash identifying the vote
+        @param voteID : the inputHash identifying the vote
         @param dataHash: the hash of the data we want to verify
         @param dataProof: the merkle proof of the data
-        @return `True` if the dataHash is part of the voting merkle root, 'False` otherwise  
-
      */
-    function _isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof) internal view returns (bool) {
-        bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(votingID);
+    function checkVoteInConsensus(bytes32 voteID, bytes32 dataHash, bytes32[] memory dataProof) internal view {
+        bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(voteID);
         uint256 numberOfMatchResults = matchResults.length;
         for (uint256 i; i < numberOfMatchResults; i++) {
             if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
-                return true;
+                return;
             }
         }
-        return false;
+        revert NotInConsensus(voteID);
     }
 
     function _hasAlreadyVoted(address operator, VotingSession storage session) internal view returns (bool) {
