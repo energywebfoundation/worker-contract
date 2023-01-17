@@ -54,31 +54,6 @@ library LibVoting {
         Completed
     }
 
-    // Event emitted when consensus in voting sessing has been reached
-    event WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount);
-
-    // Winning match result can not be determined
-    event NoConsensusReached(bytes32 votingID, bytes32 sessionID);
-
-    // Event emitted after match is recorded
-    event MatchRegistered(bytes32 votingID, bytes32 matchResult);
-
-    event ConsensusReached(bytes32 winningMatch, bytes32 votingID);
-
-    // Worker had already voted for a match result
-    error AlreadyVoted();
-
-    // Sender is not whitelisted
-    error NotWhitelisted();
-
-    // Worker has been added already
-    error WorkerAlreadyAdded();
-
-    // Worker has not been added yet
-    error WorkerWasNotAdded(address notWhitelistedWorker);
-
-    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult);
-
     // initialize voting parameters at the diamond construction
     function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
         VotingStorage storage _votingStorage = _getStorage();
@@ -141,15 +116,11 @@ library LibVoting {
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
-            emit NoConsensusReached(votingID, sessionID);
             return;
         }
 
         _revealMatch(votingID, sessionID);
         _revealVoters(votingID, sessionID);
-
-        emit WinningMatch(votingID, session.matchResult, session.votesCount);
-        emit ConsensusReached(session.matchResult, votingID);
 
         if (LibReward._isRewardEnabled()) {
             _rewardWinners(votingID, sessionID);
@@ -166,7 +137,6 @@ library LibVoting {
     function _revealMatch(bytes32 votingID, bytes32 sessionID) internal {
         VotingSession storage session = _getSession(votingID, sessionID);
         _getStorage().matches[votingID][sessionID] = session.matchResult;
-        emit MatchRegistered(votingID, session.matchResult);
     }
 
     /**
