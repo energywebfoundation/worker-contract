@@ -319,7 +319,7 @@ describe("IssuerFacet", function () {
     it("should revert when trying to fetch all certificates of non owner", async () => {
       await expect(
         proofManagerContract.getProofsOf(wallets[0].address)
-      ).to.be.revertedWith("No proofs for this address");
+      ).to.be.revertedWith(`NoProofsOwned`);
     });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
@@ -663,16 +663,17 @@ describe("IssuerFacet", function () {
 
     it("should prevent duplicate revocation", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, revoker);
+      await mintProof(certificateID, proofData, revoker);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
-      ).to.be.revertedWith("already revoked proof");
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
+      ).to.be.revertedWith(`ProofRevoked(${certificateID})`);
     });
 
     it("should revert if claimer tries to retire a revoked proof", async () => {
@@ -848,7 +849,7 @@ describe("IssuerFacet", function () {
 
       //The certificate should not be revocable anymore
       await expect(tx).to.be.revertedWith(
-        `NonRevokableCertificate(${1}, ${issuanceDate}, ${
+        `NonRevokableProof(${1}, ${issuanceDate}, ${
           issuanceDate + revokablePeriod
         })`
       );

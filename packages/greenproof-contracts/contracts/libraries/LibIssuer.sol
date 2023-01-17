@@ -28,8 +28,6 @@ library LibIssuer {
     event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 
     error ForbiddenZeroAddressReceiver();
-    error NonExistingCertificate(uint256 certificateID);
-    error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
     error AlreadyCertifiedData(bytes32 dataHash);
     error AlreadyDisclosedData(bytes32 dataHash, string key);
     error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
