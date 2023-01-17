@@ -54,6 +54,8 @@ library LibVoting {
         Completed
     }
 
+    error NotInConsensus(bytes32 voteID);
+
     // initialize voting parameters at the diamond construction
     function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
         VotingStorage storage _votingStorage = _getStorage();
