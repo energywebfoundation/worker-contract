@@ -33,6 +33,7 @@ library LibIssuer {
     error AlreadyCertifiedData(bytes32 dataHash);
     error AlreadyDisclosedData(bytes32 dataHash, string key);
     error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
+    error NotAllowedTransfer(uint256 certificateID, address sender, address receiver);
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
@@ -113,6 +114,14 @@ library LibIssuer {
 
         if (issuer.isDataDisclosed[dataHash][key]) {
             revert AlreadyDisclosedData(dataHash, key);
+        }
+    }
+
+    function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
+        IssuerStorage storage issuer = _getStorage();
+
+        if (issuer.certificates[certificateID].isRevoked && receiver != issuer.certificates[certificateID].generator) {
+            revert NotAllowedTransfer(certificateID, msg.sender, receiver);
         }
     }
 

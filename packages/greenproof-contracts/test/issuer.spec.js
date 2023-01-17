@@ -374,7 +374,7 @@ describe("IssuerFacet", function () {
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
-      ).to.be.revertedWith("transferBatch: invalid zero token ID");
+      ).to.be.revertedWith("ERC1155: insufficient balances for transfer");
     });
     it("should revert Batch certificates transfer when caller is not approved", async () => {
       const minter = wallets[0];
@@ -448,7 +448,7 @@ describe("IssuerFacet", function () {
             transferBytesData
           )
       ).to.be.revertedWith(
-        "transferBatch: tokenId greater than issuer.latestCertificateId"
+        "'ERC1155: insufficient balances for transfer"
       );
     });
 
@@ -470,7 +470,7 @@ describe("IssuerFacet", function () {
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       const transferBytesData = ethers.utils.formatBytes32String("");
-
+      const expectedRevertMessage = `NotAllowedTransfer(2, "${wallets[0].address}", "${owner.address}")`
       await expect(
         issuerContract
           .connect(wallets[0])
@@ -481,7 +481,7 @@ describe("IssuerFacet", function () {
             [transferVolume, transferVolume],
             transferBytesData
           )
-      ).to.be.revertedWith("non tradable revoked proof");
+      ).to.be.revertedWith(expectedRevertMessage);
     });
 
     it("should allow Batch certificates transfers of revoked certificate to the generator wallet", async () => {
@@ -593,22 +593,25 @@ describe("IssuerFacet", function () {
 
     it("should revert when transfering revoked proof", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, revoker);
+      await mintProof(certificateID, proofData, owner);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
+      
+      const expectedRevertMessage = `NotAllowedTransfer(${certificateID}, "${owner.address}", "${revoker.address}")`
 
       await expect(
         issuerContract.safeTransferFrom(
-          revoker.address,
           owner.address,
-          1,
+          revoker.address,
+          certificateID,
           parseEther("1"),
           transferBytesData
         )
-      ).to.be.revertedWith("non tradable revoked proof");
+      ).to.be.revertedWith(expectedRevertMessage);
     });
 
     it("should allow transfer of revoked proof only to generator", async () => {
@@ -635,6 +638,7 @@ describe("IssuerFacet", function () {
         proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
+      const expectedRevertMessage = `NotAllowedTransfer(${certificateID}, "${owner.address}", "${revoker.address}")`
       await expect(
         issuerContract.safeTransferFrom(
           owner.address,
@@ -643,7 +647,7 @@ describe("IssuerFacet", function () {
           parseEther("1"),
           transferBytesData
         )
-      ).to.be.revertedWith("non tradable revoked proof");
+      ).to.be.revertedWith(expectedRevertMessage);
 
       //only generator can receive back revoked proofs
       await expect(
