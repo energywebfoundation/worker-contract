@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 interface IVoting {
-    // Event emitted when consensus in voting sessing has been reached
+    // Event emitted when consensus in voting session has been reached
     event WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
