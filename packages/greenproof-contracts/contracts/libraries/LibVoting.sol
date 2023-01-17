@@ -31,7 +31,7 @@ library LibVoting {
     }
 
     /**
-     * @title `VotingStarage` is the structured storage workspace of all storage variables related to voting component
+     * @title `VotingStorage` is the structured storage workspace of all storage variables related to voting component
      * @notice Whenever you wish to update your app and add more variable to the storage, make sure to add them at the end of te struct
      */
     struct VotingStorage {
@@ -60,9 +60,6 @@ library LibVoting {
     // Winning match result can not be determined
     event NoConsensusReached(bytes32 votingID, bytes32 sessionID);
 
-    // Voting lasts more than time limit
-    event VotingSessionExpired(bytes32 votingID);
-
     // Event emitted after match is recorded
     event MatchRegistered(bytes32 votingID, bytes32 matchResult);
 
@@ -74,14 +71,11 @@ library LibVoting {
     // Sender is not whitelisted
     error NotWhitelisted();
 
-    // Voting ended, winner is chosen - workers cannot vote anymore
-    error VotingAlreadyEnded();
-
     // Worker has been added already
     error WorkerAlreadyAdded();
 
     // Worker has not been added yet
-    error WorkerWasNotAdded(address notWhitListedWorker);
+    error WorkerWasNotAdded(address notWhitelistedWorker);
 
     error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult);
 
