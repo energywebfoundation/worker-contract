@@ -7,8 +7,6 @@ import {IClaimManager} from "../interfaces/IClaimManager.sol";
 library LibClaimManager {
     bytes32 constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
 
-    error NotInitializedClaimManager();
-
     struct Role {
         bytes32 name;
         uint256 version;
