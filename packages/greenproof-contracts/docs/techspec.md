@@ -326,7 +326,6 @@ Containes functions, which verifies authorization in facets.
 ### Assests
 
 - **CLAIM_MANAGER_STORAGE_POSITION**: Identifies slot in contract storage containing authorization configuration.
-- **NotInitializedClaimManager()**: reason of rejection to call function on not initialized **LibClaimManager**
 - **Role**: Struct identifying EWF role credentials.
   - bytes32 name - name of the role credentials.
   - uint256 version - version of role credential definition.
@@ -376,7 +375,6 @@ Library managing reward payment.
 
   - bool rewardsEnabled - determines whethers reward is enabled.
   - uint256 rewardAmount - reward amount.
-  - address matchVotingAddress - DEPRECATED.
   - address payable[] rewardQueue - list of scheduled payments.
 
   ### Modifiers

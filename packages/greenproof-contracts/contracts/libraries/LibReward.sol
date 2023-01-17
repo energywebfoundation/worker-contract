@@ -15,7 +15,6 @@ library LibReward {
     struct RewardStorage {
         bool rewardsEnabled;
         uint256 rewardAmount;
-        address matchVotingAddress;
         address payable[] rewardQueue;
     }
 
