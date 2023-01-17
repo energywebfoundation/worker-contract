@@ -23,9 +23,6 @@ interface IVoting {
     // Sender is not whitelisted
     error NotWhitelisted();
 
-    // Voting ended, winner is chosen - workers cannot vote anymore
-    error VotingAlreadyEnded();
-
     // Worker has been added already
     error WorkerAlreadyAdded();
 

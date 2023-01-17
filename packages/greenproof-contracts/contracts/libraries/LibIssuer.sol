@@ -39,7 +39,7 @@ library LibIssuer {
         issuer.latestCertificateId++;
     }
 
-    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID) internal {
+    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
         LibIssuer.IssuerStorage storage issuer = _getStorage();
 
         issuer.certificates[certificateID] = IGreenProof.Certificate({
