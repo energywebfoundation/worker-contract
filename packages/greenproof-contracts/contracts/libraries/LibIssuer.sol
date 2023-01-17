@@ -25,13 +25,60 @@ library LibIssuer {
     }
 
     error NonExistingCertificate(uint256 certificateID);
-    error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
+    error TimeToRevokeHasElapsed(uint256 certificateID, uint256 issuanceDate, uint256 timeToRevoke);
     error NotInConsensus(bytes32 voteID);
     error AlreadyCertifiedData(bytes32 dataHash);
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
         issuer.revocablePeriod = revocablePeriod;
+    }
+
+    function isProofRevoked(uint256 certificateID) internal view returns (bool) {
+        IssuerStorage storage issuer = _getStorage();
+
+        return issuer.certificates[certificateID].isRevoked;
+    }
+
+    function proofExists(uint256 certificateID) internal view returns (bool) {
+        IssuerStorage storage issuer = _getStorage();
+
+        return issuer.certificates[certificateID].certificateID > 0;
+    }
+
+    function canBeRevoked(uint256 certificateID) internal view returns (bool) {
+        IssuerStorage storage issuer = _getStorage();
+
+        return issuer.certificates[certificateID].issuanceDate + issuer.revocablePeriod >= block.timestamp;
+    }
+
+    function getIssuanceDate(uint256 certificateID) internal view returns (uint256) {
+        IssuerStorage storage issuer = _getStorage();
+
+        return issuer.certificates[certificateID].issuanceDate;
+    }
+
+    function getRevocablePeriod() internal view returns (uint256) {
+        IssuerStorage storage issuer = _getStorage();
+        return issuer.revocablePeriod;
+    }
+
+    function revokeProof(uint256 certificateID) internal {
+        IssuerStorage storage issuer = _getStorage();
+
+        issuer.certificates[certificateID].isRevoked = true;
+    }
+
+    function getProofIdByDataHash(bytes32 dataHash) internal view returns (uint256 proofId) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        return issuer.dataToCertificateID[dataHash];
+    }
+
+    function claimedBalanceOf(address user, uint256 certificateID) internal view returns (uint256 claimedBalance) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        return issuer.claimedBalances[certificateID][user];
     }
 
     function _incrementProofIndex() internal {
@@ -70,7 +117,7 @@ library LibIssuer {
         return !issuer.certificates[certificateId].isRevoked;
     }
 
-    function _getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
+    function _getCertificate(uint256 certificateID) internal view returns (IGreenProof.Certificate memory) {
         IssuerStorage storage issuer = _getStorage();
 
         return
@@ -78,7 +125,7 @@ library LibIssuer {
                 isRevoked: issuer.certificates[certificateID].isRevoked,
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
-                volume: volumeInWei,
+                volume: issuer.certificates[certificateID].volume,
                 merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
                 generator: issuer.certificates[certificateID].generator
             });

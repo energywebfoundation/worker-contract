@@ -22,9 +22,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
+        require(LibIssuer.isProofRevoked(certificateID) == false, "proof revoked");
         require(_balanceOf(owner, certificateID) >= amount, "Insufficient volume owned");
 
         LibIssuer._registerClaimedProof(certificateID, owner, amount);
@@ -41,33 +39,31 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function revokeProof(uint256 certificateID) external override onlyRevoker {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-        uint256 issuanceDate = issuer.certificates[certificateID].issuanceDate;
-
-        if (certificateID > issuer.latestCertificateId) {
+        if(!LibIssuer.proofExists(certificateID)) {
             revert LibIssuer.NonExistingCertificate(certificateID);
         }
-        require(issuer.certificates[certificateID].isRevoked == false, "already revoked proof");
-        if (issuanceDate + issuer.revocablePeriod < block.timestamp) {
-            revert LibIssuer.NonRevokableCertificate(certificateID, issuanceDate, issuanceDate + issuer.revocablePeriod);
+        require(LibIssuer.isProofRevoked(certificateID) == false, "already revoked proof");
+        uint256 issuanceDate = LibIssuer.getIssuanceDate(certificateID);
+        uint256 revocablePeriod = LibIssuer.getRevocablePeriod();
+
+        if (!LibIssuer.canBeRevoked(certificateID)) {
+            revert LibIssuer.TimeToRevokeHasElapsed(certificateID, issuanceDate, revocablePeriod);
         }
-        issuer.certificates[certificateID].isRevoked = true;
+
+        LibIssuer.revokeProof(certificateID);
         emit ProofRevoked(certificateID);
     }
 
     function getProof(uint256 certificateID) external view override returns (IGreenProof.Certificate memory proof) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        if (certificateID > issuer.latestCertificateId) {
+        if(!LibIssuer.proofExists(certificateID)) {
             revert LibIssuer.NonExistingCertificate(certificateID);
         }
-        proof = issuer.certificates[certificateID];
+
+        proof = LibIssuer._getCertificate(certificateID);
     }
 
     function getProofIdByDataHash(bytes32 dataHash) external view override returns (uint256 proofId) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        return issuer.dataToCertificateID[dataHash];
+        return LibIssuer.getProofIdByDataHash(dataHash);
     }
 
     function getProofsOf(address userAddress) external view override returns (IGreenProof.Certificate[] memory) {
@@ -79,16 +75,15 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         for (uint256 i; i < numberOfCertificates; i++) {
             uint256 currentTokenID = userTokenList[i];
             uint256 volume = _balanceOf(userAddress, currentTokenID);
-            userProofs[i] = LibIssuer._getCertificate(currentTokenID, volume);
+            userProofs[i] = LibIssuer._getCertificate(currentTokenID);
+            userProofs[i].volume = volume;
         }
 
         return userProofs;
     }
 
     function claimedBalanceOf(address user, uint256 certificateID) external view override returns (uint256) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        return issuer.claimedBalances[certificateID][user];
+        return LibIssuer.claimedBalanceOf(user, certificateID);
     }
 
     function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure override returns (bool) {
