@@ -31,6 +31,4 @@ interface IGreenProof {
     ) external;
 
     function getCertificateOwners(uint256 certificateID) external view returns (address[] memory);
-
-    event ProofMinted(uint256 indexed certificateID, uint256 indexed amount, address indexed receiver);
 }

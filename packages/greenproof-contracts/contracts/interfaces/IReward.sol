@@ -7,7 +7,7 @@ interface IReward {
     event Replenished(uint256 indexed amount);
     event RewardsActivated(uint256 indexed activationDate);
     event RewardsDeactivated(uint256 indexed deactivationDate);
-    event RewardsPayed(uint256 indexed numberOfRewards);
+    event RewardsPaidOut(uint256 indexed numberOfRewards);
 
     function replenishRewardPool() external payable;
 }
