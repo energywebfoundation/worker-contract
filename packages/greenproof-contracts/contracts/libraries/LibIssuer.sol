@@ -24,8 +24,6 @@ library LibIssuer {
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
-    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
-
     error NonExistingCertificate(uint256 certificateID);
     error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
     error NotInConsensus(bytes32 voteID);

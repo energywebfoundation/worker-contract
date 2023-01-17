@@ -229,7 +229,7 @@ module.exports.resultsTests = function () {
             value: REWARD.mul(2),
             })
           )
-            .to.emit(votingContract, "RewardsPayed")
+            .to.emit(votingContract, "RewardsPaidOut")
             .withArgs(2),
       });
     });
@@ -302,7 +302,7 @@ module.exports.resultsTests = function () {
             value: REWARD,
             })
           )
-            .to.emit(votingContract, "RewardsPayed")
+            .to.emit(votingContract, "RewardsPaidOut")
             .withArgs(1),
       });
     });
