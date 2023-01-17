@@ -10,8 +10,8 @@ import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 /**
- * @title `Votingfacet` - The voting component of the GreenProof core module.
- * @author Energyweb Foundation
+ * @title `VotingFacet` - The voting component of the GreenProof core module.
+ * @author EnergyWeb Foundation
  * @notice this facet handles all voting functionalities of the greenProof-core module
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
@@ -30,7 +30,7 @@ contract VotingFacet is IVoting, IReward {
 
     modifier onlyWhitelistedWorker() {
         if (!isWhitelistedWorker(msg.sender)) {
-            revert LibVoting.NotWhitelisted();
+            revert NotWhitelisted();
         }
         _;
     }
@@ -50,11 +50,12 @@ contract VotingFacet is IVoting, IReward {
         LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
 
         if (LibVoting._isClosed(session)) {
-            revert LibVoting.SessionCannotBeRestarted(votingID, matchResult);
+            revert SessionCannotBeRestarted(votingID, matchResult);
         }
 
         if (LibVoting._isSessionExpired(votingID, sessionID)) {
             LibVoting._completeSession(votingID, sessionID);
+            _emitSessionEvents(votingID, sessionID);
             emit VotingSessionExpired(votingID, matchResult);
             return;
         }
@@ -64,10 +65,11 @@ contract VotingFacet is IVoting, IReward {
         }
 
         if (session.workerToVoted[msg.sender] == true) {
-            revert LibVoting.AlreadyVoted();
+            revert AlreadyVoted();
         }
 
         LibVoting._recordVote(votingID, sessionID);
+        _emitSessionEvents(votingID, sessionID);
     }
 
     /**
@@ -79,7 +81,7 @@ contract VotingFacet is IVoting, IReward {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         if (isWhitelistedWorker(workerAddress)) {
-            revert LibVoting.WorkerAlreadyAdded();
+            revert WorkerAlreadyAdded();
         }
         votingStorage.workerToIndex[workerAddress] = LibVoting._getNumberOfWorkers();
         votingStorage.whitelistedWorkers.push(workerAddress);
@@ -96,7 +98,7 @@ contract VotingFacet is IVoting, IReward {
         uint256 numberOfWorkers = LibVoting._getNumberOfWorkers();
 
         if (!isWhitelistedWorker(workerToRemove)) {
-            revert LibVoting.WorkerWasNotAdded(workerToRemove);
+            revert WorkerWasNotAdded(workerToRemove);
         }
         require(workerToRemove.isEnrolledWorker() == false, "Not allowed: still enrolled as worker");
 
@@ -129,6 +131,7 @@ contract VotingFacet is IVoting, IReward {
                 bytes32 sessionID = voting.sessionIDs[i];
                 if (LibVoting._isSessionExpired(votingID, sessionID)) {
                     LibVoting._completeSession(votingID, sessionID);
+                    _emitSessionEvents(votingID, sessionID);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
                 }
             }
@@ -137,6 +140,11 @@ contract VotingFacet is IVoting, IReward {
 
     function setRewardsEnabled(bool rewardsEnabled) external {
         LibReward._setRewardsFeature(rewardsEnabled);
+        if (rewardsEnabled) {
+            emit RewardsActivated(block.timestamp);
+        } else {
+            emit RewardsDeactivated(block.timestamp);
+        }
     }
 
     function getWorkers() external view override returns (address payable[] memory) {
@@ -214,11 +222,26 @@ contract VotingFacet is IVoting, IReward {
             revert NoFundsProvided();
         }
         emit Replenished(msg.value);
-        LibReward._payReward(LibReward.getStorage().rewardQueue.length);
+
+        uint256 numberOfPays = LibReward.getStorage().rewardQueue.length;
+        LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(numberOfPays);
     }
 
     /// @dev Only called when reward payment fails due to insufficient gas
     function payReward(uint256 numberOfPays) external {
         LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(numberOfPays);
+    }
+
+    function _emitSessionEvents(bytes32 votingID, bytes32 sessionID) internal {
+        LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
+        if (session.isConsensusReached) {
+            emit WinningMatch(votingID, session.matchResult, session.votesCount);
+            emit ConsensusReached(session.matchResult, votingID);
+        }
+        else {
+            emit NoConsensusReached(votingID, sessionID);
+        }
     }
 }
