@@ -13,6 +13,8 @@ library LibClaimManager {
     error NotEnrolledRevoker(address operator);
     error NotEnrolledWorker(address operator);
     error NotRevokedWorker(address operator);
+    error UpdateRoleError(string errorMessage);
+    error NotAuthorized(string requiredAuth);
 
     struct Role {
         bytes32 name;
@@ -29,7 +31,7 @@ library LibClaimManager {
     }
 
     modifier onlyOwner() {
-        require(OwnableStorage.layout().owner == msg.sender, "Greenproof: ClaimManager facet: Must be contract owner");
+        checkOwnership();
         _;
     }
 
@@ -64,7 +66,10 @@ library LibClaimManager {
     function setIssuerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.issuerRole.version != _newVersion, "Same version");
+        if (claimStore.issuerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
+
         oldRoleVersion = claimStore.issuerRole.version;
 
         claimStore.issuerRole.version = _newVersion;
@@ -73,7 +78,9 @@ library LibClaimManager {
     function setWorkerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.workerRole.version != _newVersion, "Same version");
+        if (claimStore.workerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
         oldRoleVersion = claimStore.workerRole.version;
 
         claimStore.workerRole.version = _newVersion;
@@ -82,7 +89,9 @@ library LibClaimManager {
     function setRevokerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.revokerRole.version != _newVersion, "Same version");
+        if (claimStore.revokerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
         oldRoleVersion = claimStore.revokerRole.version;
 
         claimStore.revokerRole.version = _newVersion;
@@ -91,7 +100,10 @@ library LibClaimManager {
     function setClaimerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.claimerRole.version != _newVersion, "Same version");
+        if (claimStore.claimerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
+
         oldRoleVersion = claimStore.claimerRole.version;
 
         claimStore.claimerRole.version = _newVersion;
@@ -100,8 +112,13 @@ library LibClaimManager {
     function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(_newAddress != address(0), "Cannot update to null address");
-        require(claimStore.claimManagerAddress != _newAddress, "Same address");
+        if (_newAddress == address(0)) {
+            revert UpdateRoleError("Cannot update to null address");
+        }
+
+        if (claimStore.claimManagerAddress == _newAddress) {
+            revert UpdateRoleError("Same address");
+        }
 
         oldAddress = claimStore.claimManagerAddress;
 
@@ -162,6 +179,12 @@ library LibClaimManager {
 
         if (isWorker) {
             revert NotRevokedWorker(operator);
+        }
+    }
+
+    function checkOwnership() internal view {
+        if (OwnableStorage.layout().owner != msg.sender) {
+            revert NotAuthorized("Owner");
         }
     }
 }
