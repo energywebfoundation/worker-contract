@@ -448,7 +448,7 @@ describe("IssuerFacet", function () {
             transferBytesData
           )
       ).to.be.revertedWith(
-        "transferBatch: tokenId greater than issuer.latestCertificateId"
+        "transferBatch: proof does not exist"
       );
     });
 

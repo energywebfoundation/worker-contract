@@ -50,8 +50,6 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32[] memory amountProof,
         string memory tokenUri
     ) external override onlyIssuer {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
         require(generator != address(0), "issuance must be non-zero");
 
         if (dataHash._isCertified()) {
@@ -66,13 +64,14 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32 amountHash = volume._getAmountHash();
         require(LibProofManager._verifyProof(dataHash, amountHash, amountProof), "amount : Not part of this consensus");
 
-        LibIssuer._incrementProofIndex();
+        uint256 newCertificateId = LibIssuer.incrementAndGetNewCertificateId();
         uint256 volumeInWei = volume * 1 ether;
-        LibIssuer._registerProof(dataHash, generator, volumeInWei, issuer.latestCertificateId, voteID);
 
-        _safeMint(generator, issuer.latestCertificateId, volumeInWei, "");
-        _setTokenURI(issuer.latestCertificateId, tokenUri);
-        emit ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
+        LibIssuer._registerProof(dataHash, generator, volumeInWei, newCertificateId, voteID);
+
+        _safeMint(generator, newCertificateId, volumeInWei, "");
+        _setTokenURI(newCertificateId, tokenUri);
+        emit ProofMinted(newCertificateId, volumeInWei, generator);
     }
 
     /**
@@ -84,14 +83,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
     function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external override onlyIssuer {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        require(issuer.isDataDisclosed[dataHash][key] == false, "Disclose: data already disclosed");
+        require(LibIssuer.isDisclosed(dataHash, key) == false, "Disclose: data already disclosed");
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
         require(LibProofManager._verifyProof(dataHash, leaf, dataProof), "Disclose : data not verified");
 
-        issuer.disclosedData[dataHash][key] = value;
-        issuer.isDataDisclosed[dataHash][key] = true;
+        LibIssuer.discloseData(dataHash, key, value);
     }
 
     /**
@@ -104,9 +100,8 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     }
 
     function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override(ERC1155Base, IERC1155) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        require(LibIssuer.canBeTransferredTo(id, to), "non tradable revoked proof");
 
-        require(issuer.certificates[id].isRevoked == false || to == issuer.certificates[id].generator, "non tradable revoked proof");
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
@@ -117,13 +112,13 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256[] memory amounts,
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
         uint256 numberOfIds = ids.length;
         for (uint256 i; i < numberOfIds; i++) {
             require(ids[i] != 0, "transferBatch: invalid zero token ID");
-            require(ids[i] <= issuer.latestCertificateId, "transferBatch: tokenId greater than issuer.latestCertificateId");
-            require(issuer.certificates[ids[i]].isRevoked == false || to == issuer.certificates[ids[i]].generator, "non tradable revoked proof");
+            require(LibIssuer.proofExists(ids[i]), "transferBatch: proof does not exist");
+            require(LibIssuer.canBeTransferredTo(ids[i], to), "non tradable revoked proof");
         }
+
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
 }
