@@ -9,8 +9,6 @@ import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
-    error InsufficientBalance(address claimer, uint256 certificateID, uint256 claimedVolume);
-
     modifier onlyRevoker() {
         LibClaimManager.checkEnrolledRevoker(msg.sender);
         _;
@@ -22,11 +20,10 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
-        LibProofManager.checkProofRevocation(certificateID);
+        uint256 ownedBalance = _balanceOf(owner, certificateID);
 
-        if (_balanceOf(owner, certificateID) < amount) {
-            revert InsufficientBalance(owner, certificateID, amount);
-        }
+        LibProofManager.checkNotRevokedProof(certificateID);
+        LibProofManager.checkClaimedVolume(certificateID, owner, amount, ownedBalance);
 
         LibIssuer._registerClaimedProof(certificateID, owner, amount);
         _burn(owner, certificateID, amount);
@@ -43,25 +40,17 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
     function revokeProof(uint256 certificateID) external override onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-        uint256 issuanceDate = issuer.certificates[certificateID].issuanceDate;
 
-        if (certificateID > issuer.latestCertificateId) {
-            revert LibIssuer.NonExistingCertificate(certificateID);
-        }
-        require(issuer.certificates[certificateID].isRevoked == false, "already revoked proof");
-        if (issuanceDate + issuer.revocablePeriod < block.timestamp) {
-            revert LibIssuer.NonRevokableCertificate(certificateID, issuanceDate, issuanceDate + issuer.revocablePeriod);
-        }
+        LibProofManager.checkProofExistance(certificateID);
+        LibProofManager.checkNotRevokedProof(certificateID);
+        LibProofManager.checkProofRevocability(certificateID);
         issuer.certificates[certificateID].isRevoked = true;
         emit ProofRevoked(certificateID);
     }
 
     function getProof(uint256 certificateID) external view override returns (IGreenProof.Certificate memory proof) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        if (certificateID > issuer.latestCertificateId) {
-            revert LibIssuer.NonExistingCertificate(certificateID);
-        }
+        LibProofManager.checkProofExistance(certificateID);
         proof = issuer.certificates[certificateID];
     }
 
@@ -75,7 +64,8 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         uint256 numberOfCertificates = userTokenList.length;
 
-        require(numberOfCertificates != 0, "No proofs for this address");
+        LibProofManager.checkOwnedCertificates(numberOfCertificates, userAddress);
+
         IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](numberOfCertificates);
         for (uint256 i; i < numberOfCertificates; i++) {
             uint256 currentTokenID = userTokenList[i];
