@@ -81,9 +81,29 @@ library LibIssuer {
         return issuer.claimedBalances[certificateID][user];
     }
 
-    function _incrementProofIndex() internal {
+    function canBeTransferredTo(uint256 certificateID, address recipient) internal view returns (bool) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        return !isProofRevoked(certificateID) || recipient == issuer.certificates[certificateID].generator;
+    }
+
+    function isDisclosed(bytes32 dataHash, string memory key) internal view returns (bool) {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        return issuer.isDataDisclosed[dataHash][key];
+    }
+
+    function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+
+        issuer.disclosedData[dataHash][key] = value;
+        issuer.isDataDisclosed[dataHash][key] = true;
+    }
+
+    function incrementAndGetNewCertificateId() internal returns (uint256) {
         IssuerStorage storage issuer = _getStorage();
-        issuer.latestCertificateId++;
+
+        return ++issuer.latestCertificateId;
     }
 
     function _registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
