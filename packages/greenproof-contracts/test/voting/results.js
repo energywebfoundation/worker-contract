@@ -342,7 +342,7 @@ module.exports.resultsTests = function () {
           expect(
             votingContract.payReward(maxNumberOfPayements)
           )
-            .to.emit(votingContract, "RewardsPayed")
+            .to.emit(votingContract, "RewardsPaidOut")
             .withArgs(effectiveNumberOfPayements),
       });
     });
@@ -365,7 +365,7 @@ module.exports.resultsTests = function () {
 
       // We are making sure that the rewards are not paid (not enough funds)
       // Even if the consensus is reached
-      await expect(tx).to.not.emit(votingContract, "RewardsPayed");
+      await expect(tx).to.not.emit(votingContract, "RewardsPaidOut");
       await expect(tx).to.emit(votingContract, "ConsensusReached");
 
       // We send sufficient funds to the contract to handle 1 rewarding over 3
@@ -388,7 +388,7 @@ module.exports.resultsTests = function () {
           expect(
             votingContract.payReward(maxNumberOfPayements)
           )
-            .to.emit(votingContract, "RewardsPayed")
+            .to.emit(votingContract, "RewardsPaidOut")
             .withArgs(effectiveNumberOfPayements),
       });
 
@@ -402,7 +402,7 @@ module.exports.resultsTests = function () {
               value: REWARD.mul(2)
             })
           )
-            .to.emit(votingContract, "RewardsPayed")
+            .to.emit(votingContract, "RewardsPaidOut")
             .withArgs(2),
       });
     });
