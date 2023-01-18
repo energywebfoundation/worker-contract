@@ -17,20 +17,6 @@ interface IVoting {
 
     event WorkerAdded(address indexed worker, uint256 indexed removalDate);
 
-    // Worker had already voted for a match result
-    error AlreadyVoted();
-
-    // Sender is not whitelisted
-    error NotWhitelisted();
-
-    // Worker has been added already
-    error WorkerAlreadyAdded();
-
-    // Worker has not been added yet
-    error WorkerWasNotAdded(address notWhitListedWorker);
-
-    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult);
-
     function vote(bytes32 votingID, bytes32 matchResult) external;
 
     function addWorker(address payable workerAddress) external;

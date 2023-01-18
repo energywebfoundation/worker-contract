@@ -54,7 +54,11 @@ library LibVoting {
         Completed
     }
 
-    error NotInConsensus(bytes32 voteID);
+    error AlreadyVoted(address worker); // Worker had already voted for a match result
+    error NotInConsensus(bytes32 voteID); // Vote is not part of consensus
+    error NotWhitelisted(address operator); // Sender is not whitelisted
+    error WorkerAlreadyAdded(address worker); // Worker has already been added
+    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult); // Vote session is closed
 
     // initialize voting parameters at the diamond construction
     function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
@@ -124,7 +128,7 @@ library LibVoting {
         _revealMatch(votingID, sessionID);
         _revealVoters(votingID, sessionID);
 
-        if (LibReward._isRewardEnabled()) {
+        if (LibReward.isRewardEnabled()) {
             _rewardWinners(votingID, sessionID);
         }
     }
@@ -190,6 +194,12 @@ library LibVoting {
         return vote.status == Status.Completed;
     }
 
+    function isWhitelistedWorker(address worker) internal view returns (bool) {
+        VotingStorage storage votingStorage = _getStorage();
+        uint256 workerIndex = votingStorage.workerToIndex[worker];
+        return workerIndex < _getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
+    }
+
     function _getNumberOfWorkers() internal view returns (uint256) {
         VotingStorage storage votingStorage = _getStorage();
 
@@ -235,6 +245,35 @@ library LibVoting {
             }
         }
         revert NotInConsensus(voteID);
+    }
+
+    function checkNotClosedSession(bytes32 votingID, bytes32 matchResult) internal view returns (bytes32) {
+        bytes32 sessionID = _getSessionID(votingID, matchResult);
+
+        LibVoting.VotingSession storage session = _getSession(votingID, sessionID);
+
+        if (_isClosed(session)) {
+            revert SessionCannotBeRestarted(votingID, matchResult);
+        }
+        return sessionID;
+    }
+
+    function checkNotVoted(address operator, VotingSession storage session) internal view {
+        if (session.workerToVoted[operator] == true) {
+            revert AlreadyVoted(operator);
+        }
+    }
+
+    function checkWhiteListedWorker(address operator) internal view {
+        if (!isWhitelistedWorker(operator)) {
+            revert NotWhitelisted(operator);
+        }
+    }
+
+    function checkNotWhiteListedWorker(address operator) internal view {
+        if (isWhitelistedWorker(operator)) {
+            revert WorkerAlreadyAdded(operator);
+        }
     }
 
     function _hasAlreadyVoted(address operator, VotingSession storage session) internal view returns (bool) {
