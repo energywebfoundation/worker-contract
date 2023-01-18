@@ -223,14 +223,14 @@ contract VotingFacet is IVoting, IReward {
         emit Replenished(msg.value);
 
         uint256 numberOfPays = LibReward.getStorage().rewardQueue.length;
-        LibReward._payReward(numberOfPays);
-        emit RewardsPaidOut(numberOfPays);
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
     }
 
     /// @dev Only called when reward payment fails due to insufficient gas
     function payReward(uint256 numberOfPays) external {
-        LibReward._payReward(numberOfPays);
-        emit RewardsPaidOut(numberOfPays);
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
     }
 
     function _emitSessionEvents(bytes32 votingID, bytes32 sessionID) internal {
@@ -238,8 +238,7 @@ contract VotingFacet is IVoting, IReward {
         if (session.isConsensusReached) {
             emit WinningMatch(votingID, session.matchResult, session.votesCount);
             emit ConsensusReached(session.matchResult, votingID);
-        }
-        else {
+        } else {
             emit NoConsensusReached(votingID, sessionID);
         }
     }
