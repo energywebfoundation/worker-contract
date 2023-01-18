@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
@@ -21,6 +20,8 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     using LibIssuer for uint256;
     using LibIssuer for bytes32;
     using LibClaimManager for address;
+
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 
     modifier onlyIssuer() {
         require(msg.sender.isEnrolledIssuer(), "Access: Not an issuer");
@@ -47,7 +48,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256 volume,
         bytes32[] memory amountProof,
         string memory tokenUri
-    ) external override onlyIssuer {
+    ) external onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(generator != address(0), "issuance must be non-zero");
@@ -70,7 +71,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
 
         _safeMint(generator, issuer.latestCertificateId, volumeInWei, "");
         _setTokenURI(issuer.latestCertificateId, tokenUri);
-        emit LibIssuer.ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
+        emit ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
     }
 
     /**
@@ -81,7 +82,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external override onlyIssuer {
+    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.isDataDisclosed[dataHash][key] == false, "Disclose: data already disclosed");
@@ -97,15 +98,13 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param certificateID - the id of the minted certificate
      * @return certificateOwners - The List of all users / wallets holding a share of this `certificateID`.
      */
-    function getCertificateOwners(uint256 certificateID) external view override returns (address[] memory certificateOwners) {
+    function getCertificateOwners(uint256 certificateID) external view returns (address[] memory certificateOwners) {
         certificateOwners = _accountsByToken(certificateID);
     }
 
     function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override(ERC1155Base, IERC1155) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        require(id != 0, "transfer: invalid zero token ID");
-        require(id <= issuer.latestCertificateId, "transfer: tokenId greater than issuer.latestCertificateId");
         require(issuer.certificates[id].isRevoked == false || to == issuer.certificates[id].generator, "non tradable revoked proof");
         super.safeTransferFrom(from, to, id, amount, data);
     }

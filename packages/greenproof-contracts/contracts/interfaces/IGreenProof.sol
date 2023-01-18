@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {LibIssuer} from "../libraries/LibIssuer.sol";
-
 interface IGreenProof {
     struct Certificate {
         bool isRevoked;
@@ -23,14 +21,7 @@ interface IGreenProof {
         string memory tokenUri
     ) external;
 
-    function discloseData(
-        string memory key,
-        string memory value,
-        bytes32[] memory dataProof,
-        bytes32 dataHash
-    ) external;
+    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external;
 
     function getCertificateOwners(uint256 certificateID) external view returns (address[] memory);
-
-    event ProofMinted(uint256 indexed certificateID, uint256 indexed amount, address indexed receiver);
 }

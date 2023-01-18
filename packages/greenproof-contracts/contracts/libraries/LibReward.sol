@@ -15,7 +15,6 @@ library LibReward {
     struct RewardStorage {
         bool rewardsEnabled;
         uint256 rewardAmount;
-        address matchVotingAddress;
         address payable[] rewardQueue;
     }
 
@@ -36,14 +35,9 @@ library LibReward {
 
         require(rs.rewardsEnabled != isEnabled, "LibReward: rewards state already set");
         rs.rewardsEnabled = isEnabled;
-        if (isEnabled) {
-            emit RewardsActivated(block.timestamp);
-        } else {
-            emit RewardsDeactivated(block.timestamp);
-        }
     }
 
-    function _payReward(uint256 maxNumberOfPays) internal {
+    function _payReward(uint256 maxNumberOfPays) internal returns (uint256 rewardedAmount) {
         RewardStorage storage rs = getStorage();
 
         uint256 rewardAmount = rs.rewardAmount;
@@ -61,8 +55,7 @@ library LibReward {
             /// @dev `transfer` is safe, because worker is EOA
             currentWorker.transfer(rs.rewardAmount);
         }
-
-        emit RewardsPayed(numberOfPays);
+        rewardedAmount = numberOfPays;
     }
 
     function _isRewardEnabled() internal view returns (bool) {

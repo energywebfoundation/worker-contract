@@ -229,7 +229,7 @@ module.exports.resultsTests = function () {
             value: REWARD.mul(2),
             })
           )
-            .to.emit(votingContract, "RewardsPayed")
+            .to.emit(votingContract, "RewardsPaidOut")
             .withArgs(2),
       });
     });
@@ -302,8 +302,108 @@ module.exports.resultsTests = function () {
             value: REWARD,
             })
           )
-            .to.emit(votingContract, "RewardsPayed")
+            .to.emit(votingContract, "RewardsPaidOut")
             .withArgs(1),
+      });
+    });
+
+    it("rewards should be paid partially then fully after calling PayReward manually", async () => {
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1]],
+        rewardPool: REWARD,
+        rewardsEnabled: true,
+      });
+      await workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+
+      // Only 1 worker over 2 can be rewarded
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 1,
+        operation: () =>
+          workers[1].voteWinning(timeframes[0].input, timeframes[0].output, {
+            voteCount: 2,
+          }),
+      });
+
+      //Send additional funds to the contract
+      await faucet.sendTransaction({
+        to: votingContract.address,
+        value: REWARD.mul(10)
+      })
+
+      const maxNumberOfPayements = 10;
+      const effectiveNumberOfPayements = 1;
+
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1]],
+        possiblePayouts: 1,
+        operation: () =>
+          expect(
+            votingContract.payReward(maxNumberOfPayements)
+          )
+            .to.emit(votingContract, "RewardsPaidOut")
+            .withArgs(effectiveNumberOfPayements),
+      });
+    });
+
+    it("rewards transactions are correctly limited when we PayReward manually", async () => {
+      const OneWei = 1;
+
+      votingContract = await setupVotingContract({
+        reward: REWARD,
+        participatingWorkers: [workers[0], workers[1], workers[2], workers[3]],
+        rewardPool: OneWei, // We don't provide enough funds during deployment
+        rewardsEnabled: true,
+      });
+      await workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      await workers[1].voteNotWinning(timeframes[0].input, timeframes[0].output);
+      await workers[2].voteNotWinning(timeframes[0].input, timeframes[1].output);
+      const tx = await workers[3].voteWinning(timeframes[0].input, timeframes[0].output, {
+            voteCount: 3,
+      });
+
+      // We are making sure that the rewards are not paid (not enough funds)
+      // Even if the consensus is reached
+      await expect(tx).to.not.emit(votingContract, "RewardsPaidOut");
+      await expect(tx).to.emit(votingContract, "ConsensusReached");
+
+      // We send sufficient funds to the contract to handle 1 rewarding over 3
+      await faucet.sendTransaction({
+        to: votingContract.address,
+        value: REWARD
+      });
+
+      // We set the payment limit to 2
+      const maxNumberOfPayements = 2;
+
+      // Wet are expecting only 1 payments
+      const effectiveNumberOfPayements = 1;
+
+      // We call the PayReward function and verify that only 1 payment is done 
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1], workers[3]],
+        possiblePayouts: 1,
+        operation: () =>
+          expect(
+            votingContract.payReward(maxNumberOfPayements)
+          )
+            .to.emit(votingContract, "RewardsPaidOut")
+            .withArgs(effectiveNumberOfPayements),
+      });
+
+      // We replenish the pool and verify that the remaining 2 payments are executed
+      await expectToReceiveReward({
+        winners: [workers[0], workers[1], workers[3]],
+        possiblePayouts: 2,
+        operation: () =>
+          expect(
+            votingContract.connect(faucet).replenishRewardPool({
+              value: REWARD.mul(2)
+            })
+          )
+            .to.emit(votingContract, "RewardsPaidOut")
+            .withArgs(2),
       });
     });
 
