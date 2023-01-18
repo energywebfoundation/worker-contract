@@ -2,12 +2,14 @@
 pragma solidity 0.8.16;
 
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
+import {LibClaimManager} from "./LibClaimManager.sol";
 
 library LibReward {
     bytes32 constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
 
-    /// Invalid call to pay rewards to the winners. Rewards are disabled.
-    error RewardsDisabled();
+    error RewardsDisabled(); // Invalid call to pay rewards to the winners. Rewards are disabled.
+    error NoFundsProvided(); // No funds sent in msg.value
+    error RewardStateNotChanged(bool state); // The rewarding toggle is in the same state as previous
 
     struct RewardStorage {
         bool rewardsEnabled;
@@ -16,7 +18,7 @@ library LibReward {
     }
 
     modifier onlyOwner() {
-        require(OwnableStorage.layout().owner == msg.sender, "Greenproof: LibReward facet: Must be contract owner");
+        LibClaimManager.checkOwnership();
         _;
     }
 
@@ -29,8 +31,9 @@ library LibReward {
 
     function _setRewardsFeature(bool isEnabled) internal onlyOwner {
         RewardStorage storage rs = getStorage();
-
-        require(rs.rewardsEnabled != isEnabled, "LibReward: rewards state already set");
+        if (rs.rewardsEnabled == isEnabled) {
+            revert RewardStateNotChanged(isEnabled);
+        }
         rs.rewardsEnabled = isEnabled;
     }
 
@@ -54,8 +57,20 @@ library LibReward {
         }
     }
 
-    function _isRewardEnabled() internal view returns (bool) {
+    function isRewardEnabled() internal view returns (bool) {
         return getStorage().rewardsEnabled;
+    }
+
+    function checkRewardEnabled() internal view {
+        if (!isRewardEnabled()) {
+            revert RewardsDisabled();
+        }
+    }
+
+    function checkFunds() internal view {
+        if (msg.value == 0) {
+            revert NoFundsProvided();
+        }
     }
 
     function getStorage() internal pure returns (RewardStorage storage rs) {

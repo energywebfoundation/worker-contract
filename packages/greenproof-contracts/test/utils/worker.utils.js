@@ -54,13 +54,13 @@ class Worker {
 
   async voteNotWhitelisted(input, output) {
     expect(this.votingContract.vote(input, output)).to.be.revertedWith(
-      "NotWhitelisted"
+      `NotWhitelisted("${this.address}")`
     );
   }
 
   async voteAlreadyVoted(input, output) {
     expect(this.votingContract.vote(input, output)).to.be.revertedWith(
-      "AlreadyVoted()"
+      `AlreadyVoted("${this.address}")`
     );
   }
 

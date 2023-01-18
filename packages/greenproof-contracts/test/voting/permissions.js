@@ -80,7 +80,7 @@ module.exports.permissionsTests = function () {
     
     await expect(
       votingContract.connect(owner).removeWorker(workers[0].address)
-    ).to.be.revertedWith(`WorkerWasNotAdded("${workers[0].address}")`);
+    ).to.be.revertedWith(`NotWhitelisted("${workers[0].address}")`);
   });
 
   it("should not allow an enrolled worker to be unregistered", async () => {
@@ -183,7 +183,7 @@ module.exports.permissionsTests = function () {
 
     await expect(
       votingContract.connect(workers[1].wallet).cancelExpiredVotings()
-    ).to.be.revertedWith("Greenproof: Voting facet: Only owner allowed");
+    ).to.be.revertedWith(`NotAuthorized("Owner")`);
   });
 
   it("reverts when non owner tries to cancel expired votings", async () => {
@@ -199,6 +199,6 @@ module.exports.permissionsTests = function () {
 
     await expect(
       votingContract.connect(workers[0].wallet).cancelExpiredVotings()
-    ).to.be.revertedWith("Greenproof: Voting facet: Only owner allowed");
+    ).to.be.revertedWith(`NotAuthorized("Owner")`);
   });
 };
