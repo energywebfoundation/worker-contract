@@ -4,14 +4,13 @@ pragma solidity 0.8.16;
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IReward} from "../interfaces/IReward.sol";
-import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 /**
- * @title `Votingfacet` - The voting component of the GreenProof core module.
- * @author Energyweb Foundation
+ * @title `VotingFacet` - The voting component of the GreenProof core module.
+ * @author EnergyWeb Foundation
  * @notice this facet handles all voting functionalities of the greenProof-core module
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
@@ -30,7 +29,7 @@ contract VotingFacet is IVoting, IReward {
 
     modifier onlyWhitelistedWorker() {
         if (!isWhitelistedWorker(msg.sender)) {
-            revert LibVoting.NotWhitelisted();
+            revert NotWhitelisted();
         }
         _;
     }
@@ -45,16 +44,17 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Increases the number of votes for this matchResult. Voting completes when that vote leads to consensus or when voting expires
      */
-    function vote(bytes32 votingID, bytes32 matchResult) external override onlyWhitelistedWorker {
+    function vote(bytes32 votingID, bytes32 matchResult) external onlyWhitelistedWorker {
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
         LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
 
         if (LibVoting._isClosed(session)) {
-            revert LibVoting.SessionCannotBeRestarted(votingID, matchResult);
+            revert SessionCannotBeRestarted(votingID, matchResult);
         }
 
         if (LibVoting._isSessionExpired(votingID, sessionID)) {
             LibVoting._completeSession(votingID, sessionID);
+            _emitSessionEvents(votingID, sessionID);
             emit VotingSessionExpired(votingID, matchResult);
             return;
         }
@@ -64,10 +64,11 @@ contract VotingFacet is IVoting, IReward {
         }
 
         if (session.workerToVoted[msg.sender] == true) {
-            revert LibVoting.AlreadyVoted();
+            revert AlreadyVoted();
         }
 
         LibVoting._recordVote(votingID, sessionID);
+        _emitSessionEvents(votingID, sessionID);
     }
 
     /**
@@ -75,11 +76,11 @@ contract VotingFacet is IVoting, IReward {
      * To be added, a worker should have the `workerRole` credential inside the claimManager
      * @param workerAddress - The address of the worker we want to remove
      */
-    function addWorker(address payable workerAddress) external override onlyEnrolledWorkers(workerAddress) {
+    function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         if (isWhitelistedWorker(workerAddress)) {
-            revert LibVoting.WorkerAlreadyAdded();
+            revert WorkerAlreadyAdded();
         }
         votingStorage.workerToIndex[workerAddress] = LibVoting._getNumberOfWorkers();
         votingStorage.whitelistedWorkers.push(workerAddress);
@@ -91,12 +92,12 @@ contract VotingFacet is IVoting, IReward {
      * The `workerRole` credential of the worker should be revoked before the removal.
      * @param workerToRemove - The address of the worker we want to remove
      */
-    function removeWorker(address workerToRemove) external override {
+    function removeWorker(address workerToRemove) external {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         uint256 numberOfWorkers = LibVoting._getNumberOfWorkers();
 
         if (!isWhitelistedWorker(workerToRemove)) {
-            revert LibVoting.WorkerWasNotAdded(workerToRemove);
+            revert WorkerWasNotAdded(workerToRemove);
         }
         require(workerToRemove.isEnrolledWorker() == false, "Not allowed: still enrolled as worker");
 
@@ -117,7 +118,7 @@ contract VotingFacet is IVoting, IReward {
      * @notice Cancels votings that takes longer than time limit
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
-    function cancelExpiredVotings() external override onlyOwner {
+    function cancelExpiredVotings() external onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         uint256 numberOfVotingIDs = votingStorage.votingIDs.length;
@@ -129,6 +130,7 @@ contract VotingFacet is IVoting, IReward {
                 bytes32 sessionID = voting.sessionIDs[i];
                 if (LibVoting._isSessionExpired(votingID, sessionID)) {
                     LibVoting._completeSession(votingID, sessionID);
+                    _emitSessionEvents(votingID, sessionID);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
                 }
             }
@@ -137,9 +139,14 @@ contract VotingFacet is IVoting, IReward {
 
     function setRewardsEnabled(bool rewardsEnabled) external {
         LibReward._setRewardsFeature(rewardsEnabled);
+        if (rewardsEnabled) {
+            emit RewardsActivated(block.timestamp);
+        } else {
+            emit RewardsDeactivated(block.timestamp);
+        }
     }
 
-    function getWorkers() external view override returns (address payable[] memory) {
+    function getWorkers() external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.whitelistedWorkers;
@@ -177,7 +184,7 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Retreieves the list of workers who voted for the winning macth
      */
-    function getWinners(bytes32 votingID, bytes32 matchResult) external view override returns (address payable[] memory) {
+    function getWinners(bytes32 votingID, bytes32 matchResult) external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
 
@@ -203,22 +210,36 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
-    function numberOfVotings() external view override returns (uint256) {
+    function numberOfVotings() external view returns (uint256) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.votingIDs.length;
     }
 
-    function replenishRewardPool() external payable override onlyWhenEnabledRewards {
+    function replenishRewardPool() external payable onlyWhenEnabledRewards {
         if (msg.value == 0) {
             revert NoFundsProvided();
         }
         emit Replenished(msg.value);
-        LibReward._payReward(LibReward.getStorage().rewardQueue.length);
+
+        uint256 numberOfPays = LibReward.getStorage().rewardQueue.length;
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
     }
 
-    /// @dev Only called when reward payment failes due to insufficient gas
+    /// @dev Only called when reward payment fails due to insufficient gas
     function payReward(uint256 numberOfPays) external {
-        LibReward._payReward(numberOfPays);
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
+    }
+
+    function _emitSessionEvents(bytes32 votingID, bytes32 sessionID) internal {
+        LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
+        if (session.isConsensusReached) {
+            emit WinningMatch(votingID, session.matchResult, session.votesCount);
+            emit ConsensusReached(session.matchResult, votingID);
+        } else {
+            emit NoConsensusReached(votingID, sessionID);
+        }
     }
 }

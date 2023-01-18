@@ -31,7 +31,7 @@ library LibVoting {
     }
 
     /**
-     * @title `VotingStarage` is the structured storage workspace of all storage variables related to voting component
+     * @title `VotingStorage` is the structured storage workspace of all storage variables related to voting component
      * @notice Whenever you wish to update your app and add more variable to the storage, make sure to add them at the end of te struct
      */
     struct VotingStorage {
@@ -147,15 +147,11 @@ library LibVoting {
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
-            emit NoConsensusReached(votingID, sessionID);
             return;
         }
 
         _revealMatch(votingID, sessionID);
         _revealVoters(votingID, sessionID);
-
-        emit WinningMatch(votingID, session.matchResult, session.votesCount);
-        emit ConsensusReached(session.matchResult, votingID);
 
         if (LibReward._isRewardEnabled()) {
             _rewardWinners(votingID, sessionID);
@@ -172,7 +168,6 @@ library LibVoting {
     function _revealMatch(bytes32 votingID, bytes32 sessionID) internal {
         VotingSession storage session = _getSession(votingID, sessionID);
         _getStorage().matches[votingID][sessionID] = session.matchResult;
-        emit MatchRegistered(votingID, session.matchResult);
     }
 
     /**
@@ -191,6 +186,7 @@ library LibVoting {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
         address payable[] memory votingWinners = _getStorage().winners[votingID][sessionID];
 
+        uint256 numberOfPayments;
         uint256 rewardAmount = rs.rewardAmount;
         uint256 numberOfVotingWinners = votingWinners.length;
 
@@ -198,9 +194,13 @@ library LibVoting {
             if (address(this).balance >= rewardAmount) {
                 /// @dev `transfer` is safe, because worker is EOA
                 votingWinners[i].transfer(rewardAmount);
+                numberOfPayments++;
             } else {
                 rs.rewardQueue.push(votingWinners[i]);
             }
+        }
+        if (numberOfPayments != 0) {
+            emit LibReward.RewardsPayed(numberOfPayments);
         }
     }
 

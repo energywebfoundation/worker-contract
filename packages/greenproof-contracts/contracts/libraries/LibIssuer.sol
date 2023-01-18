@@ -1,11 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {IVoting} from "../interfaces/IVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
-import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 library LibIssuer {
     bytes32 constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
@@ -20,10 +17,9 @@ library LibIssuer {
         mapping(bytes32 => mapping(string => string)) disclosedData;
         //checks that data is disclosed for a specific key (string) of a precise certificate (bytes32)
         mapping(bytes32 => mapping(string => bool)) isDataDisclosed;
+        // @notice saving the data needed for future features
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
-
-    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 
     error NonExistingCertificate(uint256 certificateID);
     error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
