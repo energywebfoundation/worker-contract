@@ -49,7 +49,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256 volume,
         bytes32[] memory amountProof,
         string memory tokenUri
-    ) external override onlyIssuer {
+    ) external onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(generator != address(0), "issuance must be non-zero");
@@ -83,7 +83,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external override onlyIssuer {
+    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         require(issuer.isDataDisclosed[dataHash][key] == false, "Disclose: data already disclosed");
@@ -99,7 +99,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param certificateID - the id of the minted certificate
      * @return certificateOwners - The List of all users / wallets holding a share of this `certificateID`.
      */
-    function getCertificateOwners(uint256 certificateID) external view override returns (address[] memory certificateOwners) {
+    function getCertificateOwners(uint256 certificateID) external view returns (address[] memory certificateOwners) {
         certificateOwners = _accountsByToken(certificateID);
     }
 
