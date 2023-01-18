@@ -4,7 +4,6 @@ pragma solidity 0.8.16;
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IReward} from "../interfaces/IReward.sol";
-import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
