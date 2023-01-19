@@ -7,7 +7,7 @@ import {IVoting} from "../interfaces/IVoting.sol";
 import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 library LibVoting {
-    bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
+    bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
 
     struct Voting {
         bytes32[] sessionIDs;
@@ -31,7 +31,7 @@ library LibVoting {
     }
 
     /**
-     * @title `VotingStarage` is the structured storage workspace of all storage variables related to voting component
+     * @title `VotingStorage` is the structured storage workspace of all storage variables related to voting component
      * @notice Whenever you wish to update your app and add more variable to the storage, make sure to add them at the end of te struct
      */
     struct VotingStorage {
@@ -55,7 +55,7 @@ library LibVoting {
     }
 
     // Event emitted when consensus in voting sessing has been reached
-    event WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount);
+    event WinningMatch(bytes32 indexed votingID, bytes32 indexed matchResult, uint256 indexed voteCount);
 
     // Winning match result can not be determined
     event NoConsensusReached(bytes32 indexed votingID, bytes32 indexed sessionID);
@@ -147,15 +147,11 @@ library LibVoting {
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
-            emit NoConsensusReached(votingID, sessionID);
             return;
         }
 
         _revealMatch(votingID, sessionID);
         _revealVoters(votingID, sessionID);
-
-        emit WinningMatch(votingID, session.matchResult, session.votesCount);
-        emit ConsensusReached(session.matchResult, votingID);
 
         if (LibReward._isRewardEnabled()) {
             _rewardWinners(votingID, sessionID);
@@ -172,7 +168,6 @@ library LibVoting {
     function _revealMatch(bytes32 votingID, bytes32 sessionID) internal {
         VotingSession storage session = _getSession(votingID, sessionID);
         _getStorage().matches[votingID][sessionID] = session.matchResult;
-        emit MatchRegistered(votingID, session.matchResult);
     }
 
     /**

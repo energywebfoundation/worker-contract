@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 
 library LibReward {
-    bytes32 constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
+    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
 
     /// Invalid call to pay rewards to the winners. Rewards are disabled.
     error RewardsDisabled();
@@ -15,7 +15,6 @@ library LibReward {
     struct RewardStorage {
         bool rewardsEnabled;
         uint256 rewardAmount;
-        address matchVotingAddress;
         address payable[] rewardQueue;
     }
 
@@ -36,14 +35,9 @@ library LibReward {
 
         require(rs.rewardsEnabled != isEnabled, "LibReward: rewards state already set");
         rs.rewardsEnabled = isEnabled;
-        if (isEnabled) {
-            emit RewardsActivated(block.timestamp);
-        } else {
-            emit RewardsDeactivated(block.timestamp);
-        }
     }
 
-    function _payReward(uint256 maxNumberOfPays) internal {
+    function _payReward(uint256 maxNumberOfPays) internal returns (uint256 rewardedAmount) {
         RewardStorage storage rs = getStorage();
 
         uint256 rewardAmount = rs.rewardAmount;
@@ -59,10 +53,9 @@ library LibReward {
             address payable currentWorker = rs.rewardQueue[rs.rewardQueue.length - 1];
             rs.rewardQueue.pop();
             /// @dev `transfer` is safe, because worker is EOA
-            currentWorker.transfer(rs.rewardAmount);
+            currentWorker.transfer(rewardAmount);
         }
-
-        emit RewardsPayed(numberOfPays);
+        rewardedAmount = numberOfPays;
     }
 
     function _isRewardEnabled() internal view returns (bool) {
