@@ -7,7 +7,7 @@ import {IVoting} from "../interfaces/IVoting.sol";
 import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 library LibVoting {
-    bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
+    bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
 
     struct Voting {
         bytes32[] sessionIDs;
