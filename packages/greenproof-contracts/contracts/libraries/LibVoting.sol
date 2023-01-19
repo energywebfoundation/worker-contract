@@ -54,6 +54,37 @@ library LibVoting {
         Completed
     }
 
+    // Event emitted when consensus in voting sessing has been reached
+    event WinningMatch(bytes32 indexed votingID, bytes32 indexed matchResult, uint256 indexed voteCount);
+
+    // Winning match result can not be determined
+    event NoConsensusReached(bytes32 indexed votingID, bytes32 indexed sessionID);
+
+    // Voting lasts more than time limit
+    event VotingSessionExpired(bytes32 indexed votingID);
+
+    // Event emitted after match is recorded
+    event MatchRegistered(bytes32 indexed votingID, bytes32 indexed matchResult);
+
+    event ConsensusReached(bytes32 indexed winningMatch, bytes32 indexed votingID);
+
+    // Worker had already voted for a match result
+    error AlreadyVoted();
+
+    // Sender is not whitelisted
+    error NotWhitelisted();
+
+    // Voting ended, winner is chosen - workers cannot vote anymore
+    error VotingAlreadyEnded();
+
+    // Worker has been added already
+    error WorkerAlreadyAdded();
+
+    // Worker has not been added yet
+    error WorkerWasNotAdded(address notWhitListedWorker);
+
+    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult);
+
     // initialize voting parameters at the diamond construction
     function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
         VotingStorage storage _votingStorage = _getStorage();
