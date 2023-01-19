@@ -191,11 +191,21 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.winners[votingID][sessionID];
     }
 
+    /**
+     * @notice getWinningMatches - Returns the list of match results that have reached consensus in a specific voting
+     * @param votingID - The id of the voting for which we want to get the winning matches
+     * @return winningMatches - An array of bytes32 representing the match results that have reached consensus
+     * @dev This function returns the match results that have reached consensus in a specific voting.
+     *      It first retrieves all the voting sessions associated with the given votingID and iterates over them to check if consensus is reached.
+     *      The match results associated with these sessions are then returned as an array
+     */
     function getWinningMatches(bytes32 votingID) public view returns (bytes32[] memory winningMatches) {
         LibVoting.Voting storage voting = LibVoting._getStorage().votingIDToVoting[votingID];
         uint256 numberOfWinningSessions;
-        bytes32[] memory winningSessionsIDs = new bytes32[](voting.sessionIDs.length);
+
         uint256 numberOfVotingSessionIds = voting.sessionIDs.length;
+
+        bytes32[] memory winningSessionsIDs = new bytes32[](numberOfVotingSessionIds);
 
         for (uint256 i; i < numberOfVotingSessionIds; i++) {
             if (LibVoting._getSession(votingID, voting.sessionIDs[i]).isConsensusReached) {
