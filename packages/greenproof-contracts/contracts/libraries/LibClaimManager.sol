@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
 
 library LibClaimManager {
