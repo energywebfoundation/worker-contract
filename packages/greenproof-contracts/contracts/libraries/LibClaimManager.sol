@@ -5,8 +5,6 @@ import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorag
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
 
 library LibClaimManager {
-    bytes32 private constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
-
     struct Role {
         bytes32 name;
         uint256 version;
@@ -21,19 +19,11 @@ library LibClaimManager {
         Role claimerRole;
     }
 
+    bytes32 private constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
+
     modifier onlyOwner() {
         require(OwnableStorage.layout().owner == msg.sender, "Greenproof: ClaimManager facet: Must be contract owner");
         _;
-    }
-
-    function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
-
-        // ExtCall : Contract deployed and managed by EnergyWeb Foundation
-        bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
-        bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(_role, _subject);
-
-        return (isSubjectEnrolled && !isRoleRevoked);
     }
 
     function init(
@@ -111,13 +101,6 @@ library LibClaimManager {
         claimStore.claimsRevocationRegistry = newAddress;
     }
 
-    function getStorage() internal pure returns (ClaimManagerStorage storage ClaimStore) {
-        bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
-        assembly {
-            ClaimStore.slot := position
-        }
-    }
-
     function isEnrolledIssuer(address operator) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
@@ -140,5 +123,22 @@ library LibClaimManager {
         ClaimManagerStorage storage claimStore = getStorage();
 
         return hasRole(operator, claimStore.workerRole.name, claimStore.workerRole.version);
+    }
+
+    function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        // ExtCall : Contract deployed and managed by EnergyWeb Foundation
+        bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
+        bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(_role, _subject);
+
+        return (isSubjectEnrolled && !isRoleRevoked);
+    }
+
+    function getStorage() internal pure returns (ClaimManagerStorage storage ClaimStore) {
+        bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
+        assembly {
+            ClaimStore.slot := position
+        }
     }
 }

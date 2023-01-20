@@ -146,16 +146,27 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
+    function replenishRewardPool() external payable onlyWhenEnabledRewards {
+        if (msg.value == 0) {
+            revert NoFundsProvided();
+        }
+        emit Replenished(msg.value);
+
+        uint256 numberOfPays = LibReward.getStorage().rewardQueue.length;
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
+    }
+
+    /// @dev Only called when reward payment fails due to insufficient gas
+    function payReward(uint256 numberOfPays) external {
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
+    }
+
     function getWorkers() external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.whitelistedWorkers;
-    }
-
-    function isWhitelistedWorker(address worker) public view returns (bool) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
-        uint256 workerIndex = votingStorage.workerToIndex[worker];
-        return workerIndex < LibVoting._getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
     }
 
     /**
@@ -169,6 +180,7 @@ contract VotingFacet is IVoting, IReward {
 
         for (uint256 i; i < numberOfWinningMatches; i++) {
             LibVoting.VotingSession storage session = LibVoting._getSession(votingID, LibVoting._getSessionID(votingID, winningMatches[i]));
+
             if (LibVoting._hasAlreadyVoted(worker, session)) {
                 votesContainer[numberOfVotes] = winningMatches[i];
                 numberOfVotes++;
@@ -189,6 +201,18 @@ contract VotingFacet is IVoting, IReward {
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
 
         return votingStorage.winners[votingID][sessionID];
+    }
+
+    function numberOfVotings() external view returns (uint256) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
+
+        return votingStorage.votingIDs.length;
+    }
+
+    function isWhitelistedWorker(address worker) public view returns (bool) {
+        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
+        uint256 workerIndex = votingStorage.workerToIndex[worker];
+        return workerIndex < LibVoting._getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
     }
 
     /**
@@ -218,29 +242,6 @@ contract VotingFacet is IVoting, IReward {
         for (uint256 i; i < numberOfWinningSessions; i++) {
             winningMatches[i] = voting.sessionIDToSession[winningSessionsIDs[i]].matchResult;
         }
-    }
-
-    function numberOfVotings() external view returns (uint256) {
-        LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
-
-        return votingStorage.votingIDs.length;
-    }
-
-    function replenishRewardPool() external payable onlyWhenEnabledRewards {
-        if (msg.value == 0) {
-            revert NoFundsProvided();
-        }
-        emit Replenished(msg.value);
-
-        uint256 numberOfPays = LibReward.getStorage().rewardQueue.length;
-        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
-        emit RewardsPaidOut(rewardedAmount);
-    }
-
-    /// @dev Only called when reward payment fails due to insufficient gas
-    function payReward(uint256 numberOfPays) external {
-        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
-        emit RewardsPaidOut(rewardedAmount);
     }
 
     function _emitSessionEvents(bytes32 votingID, bytes32 sessionID) internal {
