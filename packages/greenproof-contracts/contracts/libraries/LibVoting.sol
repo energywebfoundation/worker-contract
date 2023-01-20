@@ -3,7 +3,6 @@ pragma solidity 0.8.16;
 
 import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
-
 import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 library LibVoting {
@@ -54,22 +53,11 @@ library LibVoting {
 
     bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
 
-    // Worker had already voted for a match result
-    error AlreadyVoted();
-
-    // Sender is not whitelisted
-    error NotWhitelisted();
-
-    // Voting ended, winner is chosen - workers cannot vote anymore
-    error VotingAlreadyEnded();
-
-    // Worker has been added already
-    error WorkerAlreadyAdded();
-
-    // Worker has not been added yet
-    error WorkerWasNotAdded(address notWhitListedWorker);
-
-    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult);
+    error AlreadyVoted(address worker); // Worker had already voted for a match result
+    error NotInConsensus(bytes32 voteID); // Vote is not part of consensus
+    error NotWhitelisted(address operator); // Sender is not whitelisted
+    error WorkerAlreadyAdded(address worker); // Worker has already been added
+    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult); // Vote session is closed
 
     // initialize voting parameters at the diamond construction
     function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
@@ -82,14 +70,14 @@ library LibVoting {
     /**
      * @notice _recordVote: stores worker's vote
      */
-    function _recordVote(bytes32 votingID, bytes32 sessionID) internal {
+    function _recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         VotingSession storage session = _getSession(votingID, sessionID);
         session.votesCount++;
         session.workerToVoted[msg.sender] = true;
 
         if (_hasReachedConsensus(session)) {
             session.isConsensusReached = true;
-            _completeSession(votingID, sessionID);
+            numberOfRewardedWorkers = _completeSession(votingID, sessionID);
         }
     }
 
@@ -112,20 +100,20 @@ library LibVoting {
     /**
      * @notice No further votes are accounted. If consensus has been reached then reward is paid and session results are exposed
      */
-    function _completeSession(bytes32 votingID, bytes32 sessionID) internal {
+    function _completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         Voting storage voting = _getStorage().votingIDToVoting[votingID];
         VotingSession storage session = voting.sessionIDToSession[sessionID];
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
-            return;
+            return 0;
         }
 
         _revealMatch(votingID, sessionID);
         _revealVoters(votingID, sessionID);
 
-        if (LibReward._isRewardEnabled()) {
-            _rewardWinners(votingID, sessionID);
+        if (LibReward.isRewardEnabled()) {
+            numberOfRewardedWorkers = _rewardWinners(votingID, sessionID);
         }
     }
 
@@ -149,11 +137,10 @@ library LibVoting {
      * @notice sends rewards to workers who casted winning vote
      * @dev On missing funds, will add in the rewardQueue only the voters who could not be rewarded
      */
-    function _rewardWinners(bytes32 votingID, bytes32 sessionID) internal {
+    function _rewardWinners(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfPayments) {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
         address payable[] memory votingWinners = _getStorage().winners[votingID][sessionID];
 
-        uint256 numberOfPayments;
         uint256 rewardAmount = rs.rewardAmount;
         uint256 numberOfVotingWinners = votingWinners.length;
 
@@ -165,9 +152,6 @@ library LibVoting {
             } else {
                 rs.rewardQueue.push(votingWinners[i]);
             }
-        }
-        if (numberOfPayments != 0) {
-            emit LibReward.RewardsPayed(numberOfPayments);
         }
     }
 
@@ -206,6 +190,12 @@ library LibVoting {
         return vote.status == Status.Completed;
     }
 
+    function isWhitelistedWorker(address worker) internal view returns (bool) {
+        VotingStorage storage votingStorage = _getStorage();
+        uint256 workerIndex = votingStorage.workerToIndex[worker];
+        return workerIndex < _getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
+    }
+
     function _getNumberOfWorkers() internal view returns (uint256) {
         VotingStorage storage votingStorage = _getStorage();
 
@@ -238,21 +228,48 @@ library LibVoting {
     /** Data verification */
 
     /** checks that some data is part of a voting consensus
-        @param votingID : the inputHash identifying the vote
+        @param voteID : the inputHash identifying the vote
         @param dataHash: the hash of the data we want to verify
         @param dataProof: the merkle proof of the data
-        @return `True` if the dataHash is part of the voting merkle root, 'False` otherwise  
-
      */
-    function _isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof) internal view returns (bool) {
-        bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(votingID);
+    function checkVoteInConsensus(bytes32 voteID, bytes32 dataHash, bytes32[] memory dataProof) internal view {
+        bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(voteID);
         uint256 numberOfMatchResults = matchResults.length;
         for (uint256 i; i < numberOfMatchResults; i++) {
             if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
-                return true;
+                return;
             }
         }
-        return false;
+        revert NotInConsensus(voteID);
+    }
+
+    function checkNotClosedSession(bytes32 votingID, bytes32 matchResult) internal view returns (bytes32) {
+        bytes32 sessionID = _getSessionID(votingID, matchResult);
+
+        LibVoting.VotingSession storage session = _getSession(votingID, sessionID);
+
+        if (_isClosed(session)) {
+            revert SessionCannotBeRestarted(votingID, matchResult);
+        }
+        return sessionID;
+    }
+
+    function checkNotVoted(address operator, VotingSession storage session) internal view {
+        if (session.workerToVoted[operator] == true) {
+            revert AlreadyVoted(operator);
+        }
+    }
+
+    function checkWhiteListedWorker(address operator) internal view {
+        if (!isWhitelistedWorker(operator)) {
+            revert NotWhitelisted(operator);
+        }
+    }
+
+    function checkNotWhiteListedWorker(address operator) internal view {
+        if (isWhitelistedWorker(operator)) {
+            revert WorkerAlreadyAdded(operator);
+        }
     }
 
     function _hasAlreadyVoted(address operator, VotingSession storage session) internal view returns (bool) {

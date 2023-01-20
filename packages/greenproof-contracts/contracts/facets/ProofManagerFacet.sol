@@ -9,15 +9,13 @@ import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
-    using LibClaimManager for address;
-
     modifier onlyRevoker() {
-        require(msg.sender.isEnrolledRevoker(), "Access: Not enrolled as revoker");
+        LibClaimManager.checkEnrolledRevoker(msg.sender);
         _;
     }
 
     modifier onlyClaimer() {
-        require(msg.sender.isEnrolledClaimer(), "Access: Not enrolled as claimer");
+        LibClaimManager.checkEnrolledClaimer(msg.sender);
         _;
     }
 
@@ -31,25 +29,17 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
     function revokeProof(uint256 certificateID) external onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-        uint256 issuanceDate = issuer.certificates[certificateID].issuanceDate;
 
-        if (certificateID > issuer.latestCertificateId) {
-            revert LibIssuer.NonExistingCertificate(certificateID);
-        }
-        require(issuer.certificates[certificateID].isRevoked == false, "already revoked proof");
-        if (issuanceDate + issuer.revocablePeriod < block.timestamp) {
-            revert LibIssuer.NonRevokableCertificate(certificateID, issuanceDate, issuanceDate + issuer.revocablePeriod);
-        }
+        LibProofManager.checkProofExistance(certificateID);
+        LibProofManager.checkNotRevokedProof(certificateID);
+        LibProofManager.checkProofRevocability(certificateID);
         issuer.certificates[certificateID].isRevoked = true;
         emit ProofRevoked(certificateID);
     }
 
     function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-
-        if (certificateID > issuer.latestCertificateId) {
-            revert LibIssuer.NonExistingCertificate(certificateID);
-        }
+        LibProofManager.checkProofExistance(certificateID);
         proof = issuer.certificates[certificateID];
     }
 
@@ -63,7 +53,8 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         uint256 numberOfCertificates = userTokenList.length;
 
-        require(numberOfCertificates != 0, "No proofs for this address");
+        LibProofManager.checkOwnedCertificates(numberOfCertificates, userAddress);
+
         IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](numberOfCertificates);
         for (uint256 i; i < numberOfCertificates; i++) {
             uint256 currentTokenID = userTokenList[i];

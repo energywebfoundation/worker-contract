@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+import {LibProofManager} from "./LibProofManager.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 
@@ -19,10 +20,13 @@ library LibIssuer {
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
-    error NonExistingCertificate(uint256 certificateID);
-    error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
-    error NotInConsensus(bytes32 voteID);
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
+
+    error ForbiddenZeroAddressReceiver();
     error AlreadyCertifiedData(bytes32 dataHash);
+    error AlreadyDisclosedData(bytes32 dataHash, string key);
+    error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
+    error NotAllowedTransfer(uint256 certificateID, address sender, address receiver);
 
     bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
@@ -56,15 +60,21 @@ library LibIssuer {
         issuer.claimedBalances[certificateID][user] += claimedAmount;
     }
 
-    function _isCertified(bytes32 _data) internal view returns (bool) {
+    function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
+        LibIssuer.IssuerStorage storage issuer = _getStorage();
+
+        issuer.disclosedData[dataHash][key] = value;
+        issuer.isDataDisclosed[dataHash][key] = true;
+    }
+
+    // this prevents duplicate issuance of the same certificate ID
+    function preventAlreadyCertified(bytes32 data) internal view {
         IssuerStorage storage issuer = _getStorage();
-        uint256 certificateId = issuer.dataToCertificateID[_data];
+        uint256 certificateId = issuer.dataToCertificateID[data];
 
-        if (certificateId == 0) {
-            return false;
+        if (certificateId != 0 && !issuer.certificates[certificateId].isRevoked) {
+            revert AlreadyCertifiedData(data);
         }
-
-        return !issuer.certificates[certificateId].isRevoked;
     }
 
     function _getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
@@ -92,5 +102,36 @@ library LibIssuer {
     function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
         string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+
+    function checkNotDisclosed(bytes32 dataHash, string memory key) internal view {
+        IssuerStorage storage issuer = _getStorage();
+
+        if (issuer.isDataDisclosed[dataHash][key]) {
+            revert AlreadyDisclosedData(dataHash, key);
+        }
+    }
+
+    function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
+        IssuerStorage storage issuer = _getStorage();
+
+        if (issuer.certificates[certificateID].isRevoked && receiver != issuer.certificates[certificateID].generator) {
+            revert NotAllowedTransfer(certificateID, msg.sender, receiver);
+        }
+    }
+
+    function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
+        bytes32 volumeHash = _getAmountHash(volume);
+
+        bool isVolumeInConsensus = LibProofManager._verifyProof(dataHash, volumeHash, amountProof);
+        if (!isVolumeInConsensus) {
+            revert VolumeNotInConsensus(volume, dataHash);
+        }
+    }
+
+    function preventZeroAddressReceiver(address receiver) internal pure {
+        if (receiver == address(0)) {
+            revert ForbiddenZeroAddressReceiver();
+        }
     }
 }

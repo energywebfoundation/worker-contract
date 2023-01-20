@@ -21,8 +21,17 @@ library LibClaimManager {
 
     bytes32 private constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
 
+    error NotInitializedClaimManager();
+    error NotEnrolledIssuer(address operator);
+    error NotEnrolledClaimer(address operator);
+    error NotEnrolledRevoker(address operator);
+    error NotEnrolledWorker(address operator);
+    error NotRevokedWorker(address operator);
+    error UpdateRoleError(string errorMessage);
+    error NotAuthorized(string requiredAuth);
+
     modifier onlyOwner() {
-        require(OwnableStorage.layout().owner == msg.sender, "Greenproof: ClaimManager facet: Must be contract owner");
+        checkOwnership();
         _;
     }
 
@@ -47,7 +56,10 @@ library LibClaimManager {
     function setIssuerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.issuerRole.version != _newVersion, "Same version");
+        if (claimStore.issuerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
+
         oldRoleVersion = claimStore.issuerRole.version;
 
         claimStore.issuerRole.version = _newVersion;
@@ -56,7 +68,9 @@ library LibClaimManager {
     function setWorkerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.workerRole.version != _newVersion, "Same version");
+        if (claimStore.workerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
         oldRoleVersion = claimStore.workerRole.version;
 
         claimStore.workerRole.version = _newVersion;
@@ -65,7 +79,9 @@ library LibClaimManager {
     function setRevokerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.revokerRole.version != _newVersion, "Same version");
+        if (claimStore.revokerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
         oldRoleVersion = claimStore.revokerRole.version;
 
         claimStore.revokerRole.version = _newVersion;
@@ -74,7 +90,10 @@ library LibClaimManager {
     function setClaimerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(claimStore.claimerRole.version != _newVersion, "Same version");
+        if (claimStore.claimerRole.version == _newVersion) {
+            revert UpdateRoleError("Same version");
+        }
+
         oldRoleVersion = claimStore.claimerRole.version;
 
         claimStore.claimerRole.version = _newVersion;
@@ -83,8 +102,13 @@ library LibClaimManager {
     function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(_newAddress != address(0), "Cannot update to null address");
-        require(claimStore.claimManagerAddress != _newAddress, "Same address");
+        if (_newAddress == address(0)) {
+            revert UpdateRoleError("Cannot update to null address");
+        }
+
+        if (claimStore.claimManagerAddress == _newAddress) {
+            revert UpdateRoleError("Same address");
+        }
 
         oldAddress = claimStore.claimManagerAddress;
 
@@ -101,28 +125,60 @@ library LibClaimManager {
         claimStore.claimsRevocationRegistry = newAddress;
     }
 
-    function isEnrolledIssuer(address operator) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
+    function checkEnrolledIssuer(address operator) internal view {
+        Role memory issuerRole = getStorage().issuerRole;
 
-        return hasRole(operator, claimStore.issuerRole.name, claimStore.issuerRole.version);
+        bool isIssuer = hasRole(operator, issuerRole.name, issuerRole.version);
+
+        if (!isIssuer) {
+            revert NotEnrolledIssuer(operator);
+        }
     }
 
-    function isEnrolledRevoker(address operator) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
+    function checkEnrolledRevoker(address operator) internal view {
+        Role memory revokerRole = getStorage().revokerRole;
 
-        return hasRole(operator, claimStore.revokerRole.name, claimStore.revokerRole.version);
+        bool isRevoker = hasRole(operator, revokerRole.name, revokerRole.version);
+
+        if (!isRevoker) {
+            revert NotEnrolledRevoker(operator);
+        }
     }
 
-    function isEnrolledClaimer(address operator) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
+    function checkEnrolledClaimer(address operator) internal view {
+        Role memory claimerRole = getStorage().claimerRole;
 
-        return hasRole(operator, claimStore.claimerRole.name, claimStore.claimerRole.version);
+        bool isClaimer = hasRole(operator, claimerRole.name, claimerRole.version);
+
+        if (!isClaimer) {
+            revert NotEnrolledClaimer(operator);
+        }
     }
 
-    function isEnrolledWorker(address operator) internal view returns (bool) {
-        ClaimManagerStorage storage claimStore = getStorage();
+    function checkEnrolledWorker(address operator) internal view {
+        Role memory workerRole = getStorage().workerRole;
 
-        return hasRole(operator, claimStore.workerRole.name, claimStore.workerRole.version);
+        bool isWorker = hasRole(operator, workerRole.name, workerRole.version);
+
+        if (!isWorker) {
+            revert NotEnrolledWorker(operator);
+        }
+    }
+
+    function checkRevokedWorker(address operator) internal view {
+        Role memory workerRole = getStorage().workerRole;
+
+        bool isWorker = hasRole(operator, workerRole.name, workerRole.version);
+
+        if (isWorker) {
+            revert NotRevokedWorker(operator);
+        }
+    }
+
+    function checkOwnership() internal view {
+        if (OwnableStorage.layout().owner != msg.sender) {
+            revert NotAuthorized("Owner");
+        }
     }
 
     function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
