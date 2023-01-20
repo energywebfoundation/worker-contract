@@ -153,6 +153,36 @@ describe("GreenproofTest", async function () {
 
     });
 
+    describe("- ClaimRevocationRegistry update tests", () => {
+      it("should revert when updating ClaimRevocationRegistry with Zero address", async () => {
+        const zeroAddress = ethers.constants.AddressZero;
+        await expect(greenproof.updateClaimRevocationRegistry(zeroAddress))
+          .to.be.revertedWith("Revocation Registry: null address");
+      });
+
+      it("should revert when updating ClaimRevocationRegistry with same address", async () => {
+        await expect(greenproof.updateClaimRevocationRegistry(claimsRevocationRegistryMocked.address))
+          .to.be.revertedWith("Revocation Registry: Same address");
+      });
+
+      it("should revert when non owner tries to update ClaimRevocationRegistry Address", async () => {
+        const newRevocationregistry = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+        
+        await expect(
+          greenproof.connect(nonOwner).updateClaimRevocationRegistry(newRevocationregistry)
+        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+      });
+
+      it("should update ClaimRevocationRegistry Address", async () => {
+        const oldRevocationregistry = claimsRevocationRegistryMocked.address;
+        const newRevocationregistry = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+        
+        await expect(greenproof.updateClaimRevocationRegistry(newRevocationregistry))
+          .to.emit(greenproof, "ClaimsRevocationRegistryUpdated").withArgs(oldRevocationregistry, newRevocationregistry);
+      });
+
+    });
+
     describe("- ClaimerRole update tests", () => {
       it("should revert when updating claimerRole version with same version", async () => {
         const sameRoleVersion = 1;

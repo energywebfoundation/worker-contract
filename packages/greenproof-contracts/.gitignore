@@ -1,6 +1,7 @@
 node_modules
 .deps
 .vscode
+coverage*
 
 #Hardhat files
 cache

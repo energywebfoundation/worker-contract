@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
@@ -45,7 +44,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256 volume,
         bytes32[] memory amountProof,
         string memory tokenUri
-    ) external override onlyIssuer {
+    ) external onlyIssuer {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         LibIssuer.preventZeroAddressReceiver(generator);
@@ -82,7 +81,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param certificateID - the id of the minted certificate
      * @return certificateOwners - The List of all users / wallets holding a share of this `certificateID`.
      */
-    function getCertificateOwners(uint256 certificateID) external view override returns (address[] memory certificateOwners) {
+    function getCertificateOwners(uint256 certificateID) external view returns (address[] memory certificateOwners) {
         certificateOwners = _accountsByToken(certificateID);
     }
 
