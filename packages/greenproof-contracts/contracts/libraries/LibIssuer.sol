@@ -5,8 +5,6 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 
 library LibIssuer {
-    bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
-
     struct IssuerStorage {
         uint256 latestCertificateId;
         uint256 revocablePeriod;
@@ -25,6 +23,8 @@ library LibIssuer {
     error NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
     error NotInConsensus(bytes32 voteID);
     error AlreadyCertifiedData(bytes32 dataHash);
+
+    bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
