@@ -1,11 +1,11 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
 
 library LibClaimManager {
-    bytes32 constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
+    bytes32 private constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
 
     error NotInitializedClaimManager();
     error NotEnrolledIssuer(address operator);
@@ -123,6 +123,16 @@ library LibClaimManager {
         oldAddress = claimStore.claimManagerAddress;
 
         claimStore.claimManagerAddress = _newAddress;
+    }
+
+    function setClaimRevocationRegistry(address newAddress) internal onlyOwner returns (address oldAddress) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        require(newAddress != address(0), "Revocation Registry: null address");
+        require(claimStore.claimsRevocationRegistry != newAddress, "Revocation Registry: Same address");
+
+        oldAddress = claimStore.claimsRevocationRegistry;
+        claimStore.claimsRevocationRegistry = newAddress;
     }
 
     function getStorage() internal pure returns (ClaimManagerStorage storage ClaimStore) {

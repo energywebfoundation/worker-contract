@@ -5,7 +5,7 @@ import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {LibClaimManager} from "./LibClaimManager.sol";
 
 library LibReward {
-    bytes32 constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
+    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
 
     error RewardsDisabled(); // Invalid call to pay rewards to the winners. Rewards are disabled.
     error NoFundsProvided(); // No funds sent in msg.value
@@ -37,7 +37,7 @@ library LibReward {
         rs.rewardsEnabled = isEnabled;
     }
 
-    function _payReward(uint256 maxNumberOfPays) internal {
+    function _payReward(uint256 maxNumberOfPays) internal returns (uint256 rewardedAmount) {
         RewardStorage storage rs = getStorage();
 
         uint256 rewardAmount = rs.rewardAmount;
@@ -53,8 +53,9 @@ library LibReward {
             address payable currentWorker = rs.rewardQueue[rs.rewardQueue.length - 1];
             rs.rewardQueue.pop();
             /// @dev `transfer` is safe, because worker is EOA
-            currentWorker.transfer(rs.rewardAmount);
+            currentWorker.transfer(rewardAmount);
         }
+        rewardedAmount = numberOfPays;
     }
 
     function isRewardEnabled() internal view returns (bool) {

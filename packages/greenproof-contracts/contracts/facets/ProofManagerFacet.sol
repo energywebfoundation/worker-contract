@@ -34,11 +34,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _claimProof(certificateID, owner, amount);
     }
 
-    function claimProof(uint256 certificateID, uint256 amount) external override {
+    function claimProof(uint256 certificateID, uint256 amount) external {
         _claimProof(certificateID, msg.sender, amount);
     }
 
-    function revokeProof(uint256 certificateID) external override onlyRevoker {
+    function revokeProof(uint256 certificateID) external onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         LibProofManager.checkProofExistance(certificateID);
@@ -48,19 +48,19 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         emit ProofRevoked(certificateID);
     }
 
-    function getProof(uint256 certificateID) external view override returns (IGreenProof.Certificate memory proof) {
+    function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
         LibProofManager.checkProofExistance(certificateID);
         proof = issuer.certificates[certificateID];
     }
 
-    function getProofIdByDataHash(bytes32 dataHash) external view override returns (uint256 proofId) {
+    function getProofIdByDataHash(bytes32 dataHash) external view returns (uint256 proofId) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         return issuer.dataToCertificateID[dataHash];
     }
 
-    function getProofsOf(address userAddress) external view override returns (IGreenProof.Certificate[] memory) {
+    function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory) {
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         uint256 numberOfCertificates = userTokenList.length;
 
@@ -76,13 +76,13 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         return userProofs;
     }
 
-    function claimedBalanceOf(address user, uint256 certificateID) external view override returns (uint256) {
+    function claimedBalanceOf(address user, uint256 certificateID) external view returns (uint256) {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
         return issuer.claimedBalances[certificateID][user];
     }
 
-    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure override returns (bool) {
+    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool) {
         return LibProofManager._verifyProof(rootHash, leaf, proof);
     }
 }

@@ -3,7 +3,6 @@ pragma solidity 0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IReward} from "../interfaces/IReward.sol";
-import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
@@ -43,7 +42,7 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Increases the number of votes for this matchResult. Voting completes when that vote leads to consensus or when voting expires
      */
-    function vote(bytes32 votingID, bytes32 matchResult) external override onlyWhitelistedWorker {
+    function vote(bytes32 votingID, bytes32 matchResult) external onlyWhitelistedWorker {
         bytes32 sessionID = LibVoting.checkNotClosedSession(votingID, matchResult);
 
         if (LibVoting._isSessionExpired(votingID, sessionID)) {
@@ -70,7 +69,7 @@ contract VotingFacet is IVoting, IReward {
      * To be added, a worker should have the `workerRole` credential inside the claimManager
      * @param workerAddress - The address of the worker we want to remove
      */
-    function addWorker(address payable workerAddress) external override onlyEnrolledWorkers(workerAddress) {
+    function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         LibVoting.checkNotWhiteListedWorker(workerAddress);
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
@@ -84,7 +83,7 @@ contract VotingFacet is IVoting, IReward {
      * The `workerRole` credential of the worker should be revoked before the removal.
      * @param workerToRemove - The address of the worker we want to remove
      */
-    function removeWorker(address workerToRemove) external override onlyRevokedWorkers(workerToRemove) {
+    function removeWorker(address workerToRemove) external onlyRevokedWorkers(workerToRemove) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         uint256 numberOfWorkers = LibVoting._getNumberOfWorkers();
 
@@ -107,7 +106,7 @@ contract VotingFacet is IVoting, IReward {
      * @notice Cancels votings that takes longer than time limit
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
-    function cancelExpiredVotings() external override onlyOwner {
+    function cancelExpiredVotings() external onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         uint256 numberOfVotingIDs = votingStorage.votingIDs.length;
@@ -135,7 +134,7 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
-    function getWorkers() external view override returns (address payable[] memory) {
+    function getWorkers() external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.whitelistedWorkers;
@@ -171,18 +170,28 @@ contract VotingFacet is IVoting, IReward {
     /**
      * @notice Retreieves the list of workers who voted for the winning macth
      */
-    function getWinners(bytes32 votingID, bytes32 matchResult) external view override returns (address payable[] memory) {
+    function getWinners(bytes32 votingID, bytes32 matchResult) external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
         bytes32 sessionID = LibVoting._getSessionID(votingID, matchResult);
 
         return votingStorage.winners[votingID][sessionID];
     }
 
+    /**
+     * @notice getWinningMatches - Returns the list of match results that have reached consensus in a specific voting
+     * @param votingID - The id of the voting for which we want to get the winning matches
+     * @return winningMatches - An array of bytes32 representing the match results that have reached consensus
+     * @dev This function returns the match results that have reached consensus in a specific voting.
+     *      It first retrieves all the voting sessions associated with the given votingID and iterates over them to check if consensus is reached.
+     *      The match results associated with these sessions are then returned as an array
+     */
     function getWinningMatches(bytes32 votingID) public view returns (bytes32[] memory winningMatches) {
         LibVoting.Voting storage voting = LibVoting._getStorage().votingIDToVoting[votingID];
         uint256 numberOfWinningSessions;
-        bytes32[] memory winningSessionsIDs = new bytes32[](voting.sessionIDs.length);
+
         uint256 numberOfVotingSessionIds = voting.sessionIDs.length;
+
+        bytes32[] memory winningSessionsIDs = new bytes32[](numberOfVotingSessionIds);
 
         for (uint256 i; i < numberOfVotingSessionIds; i++) {
             if (LibVoting._getSession(votingID, voting.sessionIDs[i]).isConsensusReached) {
@@ -197,25 +206,25 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
-    function numberOfVotings() external view override returns (uint256) {
+    function numberOfVotings() external view returns (uint256) {
         LibVoting.VotingStorage storage votingStorage = LibVoting._getStorage();
 
         return votingStorage.votingIDs.length;
     }
 
-    function replenishRewardPool() external payable override onlyWhenEnabledRewards {
+    function replenishRewardPool() external payable onlyWhenEnabledRewards {
         LibReward.checkFunds();
         emit Replenished(msg.value);
 
         uint256 numberOfPays = LibReward.getStorage().rewardQueue.length;
-        LibReward._payReward(numberOfPays);
-        emit RewardsPaidOut(numberOfPays);
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
     }
 
-    /// @dev Only called when reward payment failes due to insufficient gas
+    /// @dev Only called when reward payment fails due to insufficient gas
     function payReward(uint256 numberOfPays) external {
-        LibReward._payReward(numberOfPays);
-        emit RewardsPaidOut(numberOfPays);
+        uint256 rewardedAmount = LibReward._payReward(numberOfPays);
+        emit RewardsPaidOut(rewardedAmount);
     }
 
     function _emitSessionEvents(bytes32 votingID, bytes32 sessionID) internal {

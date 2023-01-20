@@ -3,11 +3,10 @@ pragma solidity 0.8.16;
 
 import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
-
 import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 library LibVoting {
-    bytes32 constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
+    bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
 
     struct Voting {
         bytes32[] sessionIDs;
@@ -86,14 +85,14 @@ library LibVoting {
     /**
      * @notice _recordVote: stores worker's vote
      */
-    function _recordVote(bytes32 votingID, bytes32 sessionID) internal {
+    function _recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         VotingSession storage session = _getSession(votingID, sessionID);
         session.votesCount++;
         session.workerToVoted[msg.sender] = true;
 
         if (_hasReachedConsensus(session)) {
             session.isConsensusReached = true;
-            _completeSession(votingID, sessionID);
+            numberOfRewardedWorkers = _completeSession(votingID, sessionID);
         }
     }
 
@@ -116,20 +115,20 @@ library LibVoting {
     /**
      * @notice No further votes are accounted. If consensus has been reached then reward is paid and session results are exposed
      */
-    function _completeSession(bytes32 votingID, bytes32 sessionID) internal {
+    function _completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         Voting storage voting = _getStorage().votingIDToVoting[votingID];
         VotingSession storage session = voting.sessionIDToSession[sessionID];
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
-            return;
+            return 0;
         }
 
         _revealMatch(votingID, sessionID);
         _revealVoters(votingID, sessionID);
 
         if (LibReward.isRewardEnabled()) {
-            _rewardWinners(votingID, sessionID);
+            numberOfRewardedWorkers = _rewardWinners(votingID, sessionID);
         }
     }
 
@@ -157,7 +156,7 @@ library LibVoting {
      * @notice sends rewards to workers who casted winning vote
      * @dev On missing funds, will add in the rewardQueue only the voters who could not be rewarded
      */
-    function _rewardWinners(bytes32 votingID, bytes32 sessionID) internal {
+    function _rewardWinners(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfPayments) {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
         address payable[] memory votingWinners = _getStorage().winners[votingID][sessionID];
 
@@ -168,6 +167,7 @@ library LibVoting {
             if (address(this).balance >= rewardAmount) {
                 /// @dev `transfer` is safe, because worker is EOA
                 votingWinners[i].transfer(rewardAmount);
+                numberOfPayments++;
             } else {
                 rs.rewardQueue.push(votingWinners[i]);
             }
