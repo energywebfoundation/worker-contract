@@ -60,8 +60,8 @@ contract VotingFacet is IVoting, IReward {
 
         LibVoting.checkNotVoted(msg.sender, session);
 
-        LibVoting._recordVote(votingID, sessionID);
-        _emitSessionEvents(votingID, sessionID);
+        uint256 numberOfRewardedWorkers = LibVoting._recordVote(votingID, sessionID);
+        _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
     }
 
     /**
@@ -227,11 +227,14 @@ contract VotingFacet is IVoting, IReward {
         emit RewardsPaidOut(rewardedAmount);
     }
 
-    function _emitSessionEvents(bytes32 votingID, bytes32 sessionID) internal {
+    function _emitSessionEvents(bytes32 votingID, bytes32 sessionID, uint256 numberOfRewardedWorkers) internal {
         LibVoting.VotingSession storage session = LibVoting._getSession(votingID, sessionID);
         if (session.isConsensusReached) {
             emit WinningMatch(votingID, session.matchResult, session.votesCount);
             emit ConsensusReached(session.matchResult, votingID);
+            if (numberOfRewardedWorkers > 0) {
+                emit RewardsPaidOut(numberOfRewardedWorkers);
+            }
         } else {
             emit NoConsensusReached(votingID, sessionID);
         }
