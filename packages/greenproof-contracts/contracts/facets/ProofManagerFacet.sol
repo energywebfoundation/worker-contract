@@ -76,10 +76,10 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        uint256 ownedBalance = _balanceOf(owner, certificateID);
 
-        require(issuer.certificates[certificateID].isRevoked == false, "proof revoked");
-        require(_balanceOf(owner, certificateID) >= amount, "Insufficient volume owned");
+        LibProofManager.checkNotRevokedProof(certificateID);
+        LibProofManager.checkClaimedVolume(certificateID, owner, amount, ownedBalance);
 
         LibIssuer._registerClaimedProof(certificateID, owner, amount);
         _burn(owner, certificateID, amount);
