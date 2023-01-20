@@ -44,10 +44,11 @@ contract VotingFacet is IVoting, IReward {
      */
     function vote(bytes32 votingID, bytes32 matchResult) external onlyWhitelistedWorker {
         bytes32 sessionID = LibVoting.checkNotClosedSession(votingID, matchResult);
+        uint256 numberOfRewardedWorkers;
 
         if (LibVoting._isSessionExpired(votingID, sessionID)) {
-            LibVoting._completeSession(votingID, sessionID);
-            _emitSessionEvents(votingID, sessionID);
+            numberOfRewardedWorkers = LibVoting._completeSession(votingID, sessionID);
+            _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
             emit VotingSessionExpired(votingID, matchResult);
             return;
         }
@@ -60,7 +61,7 @@ contract VotingFacet is IVoting, IReward {
 
         LibVoting.checkNotVoted(msg.sender, session);
 
-        uint256 numberOfRewardedWorkers = LibVoting._recordVote(votingID, sessionID);
+        numberOfRewardedWorkers = LibVoting._recordVote(votingID, sessionID);
         _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
     }
 
@@ -117,8 +118,8 @@ contract VotingFacet is IVoting, IReward {
             for (uint256 j; j < numberOfSessionIds; j++) {
                 bytes32 sessionID = voting.sessionIDs[i];
                 if (LibVoting._isSessionExpired(votingID, sessionID)) {
-                    LibVoting._completeSession(votingID, sessionID);
-                    _emitSessionEvents(votingID, sessionID);
+                    uint256 numberOfRewardedWorkers = LibVoting._completeSession(votingID, sessionID);
+                    _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
                 }
             }
