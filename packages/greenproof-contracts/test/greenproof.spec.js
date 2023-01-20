@@ -135,7 +135,6 @@ describe("GreenproofTest", async function () {
       });
 
       it("should revert when non owner tries to update claimManager Address", async () => {
-        const oldClaimManagerAddress = claimManagerMocked.address;
         const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
         
         await expect(
