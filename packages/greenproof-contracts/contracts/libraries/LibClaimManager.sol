@@ -14,6 +14,7 @@ library LibClaimManager {
     error NotEnrolledWorker(address operator);
     error NotRevokedWorker(address operator);
     error UpdateRoleError(string errorMessage);
+    error UpdateAddressError(string errorMessage);
     error NotAuthorized(string requiredAuth);
 
     struct Role {
@@ -126,10 +127,15 @@ library LibClaimManager {
     }
 
     function setClaimRevocationRegistry(address newAddress) internal onlyOwner returns (address oldAddress) {
+        if (newAddress == address(0)) {
+            revert UpdateAddressError("Revocation Registry: null address");
+        }
+
         ClaimManagerStorage storage claimStore = getStorage();
 
-        require(newAddress != address(0), "Revocation Registry: null address");
-        require(claimStore.claimsRevocationRegistry != newAddress, "Revocation Registry: Same address");
+        if (claimStore.claimsRevocationRegistry == newAddress) {
+            revert UpdateAddressError("Revocation Registry: Same address");
+        }
 
         oldAddress = claimStore.claimsRevocationRegistry;
         claimStore.claimsRevocationRegistry = newAddress;
