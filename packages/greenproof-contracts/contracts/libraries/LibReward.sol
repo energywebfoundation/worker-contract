@@ -4,19 +4,20 @@ pragma solidity 0.8.16;
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 
 library LibReward {
-    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
-
-    /// Invalid call to pay rewards to the winners. Rewards are disabled.
-    error RewardsDisabled();
-    event RewardsActivated(uint256 indexed activationDate);
-    event RewardsDeactivated(uint256 indexed deactivationDate);
-    event RewardsPayed(uint256 indexed numberOfRewards);
-
     struct RewardStorage {
         bool rewardsEnabled;
         uint256 rewardAmount;
         address payable[] rewardQueue;
     }
+
+    /// Invalid call to pay rewards to the winners. Rewards are disabled.
+    error RewardsDisabled();
+
+    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
+
+    event RewardsActivated(uint256 indexed activationDate);
+    event RewardsDeactivated(uint256 indexed deactivationDate);
+    event RewardsPayed(uint256 indexed numberOfRewards);
 
     modifier onlyOwner() {
         require(OwnableStorage.layout().owner == msg.sender, "Greenproof: LibReward facet: Must be contract owner");
