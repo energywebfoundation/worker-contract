@@ -170,10 +170,9 @@ Containes voting functions used by facets.
 
 - **WinningMatch(bytes32 votingID, bytes32 matchResult, uint256 indexed voteCount)**: Event emitted when consensus in voting sessing has been reached.
 - **VotingSessionExpired(bytes32 votingID)**: Event emitted when voting lasts more than time limit.
-- **NotWhitelisted()**: reason of rejection to vote to nonauthorized worker.
+- **NotWhitelisted(address operator)**: reason of rejection to vote to nonauthorized worker.
 - **VotingAlreadyEnded()**: reason of rejection to vote in completed session.
-- **WorkerAlreadyAdded()**: reason of rejection to authorize to participate in votings same worker.
-- **WorkerWasNotAdded(address notWhitListedWorker)**: reason of rejection to cancel authorization to nonauthorized worker.
+- **WorkerAlreadyAdded(address worker)**: reason of rejection to authorize to participate in votings same worker.
 - **SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult)**: reason of rejection to vote again in the same session.
 
 ### Functions
@@ -256,7 +255,7 @@ Second purpose of contract is token trasferring.
     - mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates (`votingID` -> `dataHash` -> `certificateID`). Maps voting session, which completed with consensus to certificate id.
   - **ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver)**: event emitted when new certificate is created.
   - **NonExistingCertificate(uint256 certificateID)**: reason of rejection when non issued certificate is requested.
-  - **NonRevokableCertificate(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit)**: reason of rejection, when revoker tries to revoke certificate which revocation period has expired.
+  - **NonRevokableProof(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit)**: reason of rejection, when revoker tries to revoke certificate which revocation period has expired.
   - **NotInConsensus(bytes32 voteID)**: reason of rejection of certification of the voting, which has not reached consensus.
   - **AlreadyCertifiedData(bytes32 dataHash)**: reason of rejection to certify generation data which has already been certified.
 

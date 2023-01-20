@@ -438,7 +438,7 @@ module.exports.resultsTests = function () {
 
         await expect(
           votingContract.setRewardsEnabled(false)
-        ).to.be.revertedWith("LibReward: rewards state already set");
+        ).to.be.revertedWith(`RewardStateNotChanged(false)`);
       });
 
       it("should not pay the winners if rewards are disabled", async () => {
@@ -484,7 +484,7 @@ module.exports.resultsTests = function () {
 
         await expect(
           votingContract.connect(nonOwner).setRewardsEnabled(true)
-        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should revert when tries to enable rewards twice", async () => {
@@ -499,7 +499,7 @@ module.exports.resultsTests = function () {
 
         await expect(
           votingContract.connect(nonOwner).setRewardsEnabled(true)
-        ).to.be.revertedWith("Greenproof: LibReward facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should pay the rewards after enabling rewards", async () => {

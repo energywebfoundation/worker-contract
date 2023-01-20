@@ -140,7 +140,7 @@ describe("GreenproofTest", async function () {
         
         await expect(
           greenproof.connect(nonOwner).updateClaimManager(newClaimManagerAddress)
-        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should update claimManager Address", async () => {
@@ -170,7 +170,7 @@ describe("GreenproofTest", async function () {
         
         await expect(
           greenproof.connect(nonOwner).updateClaimRevocationRegistry(newRevocationregistry)
-        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should update ClaimRevocationRegistry Address", async () => {
@@ -195,7 +195,7 @@ describe("GreenproofTest", async function () {
         
         await expect(
           greenproof.connect(nonOwner).updateClaimerVersion(newRoleVersion)
-        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should update claimerRole version", async () => {
@@ -220,7 +220,7 @@ describe("GreenproofTest", async function () {
         
         await expect(
           greenproof.connect(nonOwner).updateWorkerVersion(newRoleVersion)
-        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should update workerRole version", async () => {
@@ -245,7 +245,7 @@ describe("GreenproofTest", async function () {
         
         await expect(
           greenproof.connect(nonOwner).updateRevokerVersion(newRoleVersion)
-        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should update revokerRole version", async () => {
@@ -270,7 +270,7 @@ describe("GreenproofTest", async function () {
         
         await expect(
           greenproof.connect(nonOwner).updateIssuerVersion(newRoleVersion)
-        ).to.be.revertedWith("Greenproof: ClaimManager facet: Must be contract owner");
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
       });
 
       it("should update IssuerRole version", async () => {

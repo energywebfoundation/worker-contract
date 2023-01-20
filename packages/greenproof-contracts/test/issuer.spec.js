@@ -131,7 +131,7 @@ describe("IssuerFacet", function () {
             volumeProof,
             tokenURI
           )
-      ).to.be.revertedWith("issuance must be non-zero");
+      ).to.be.revertedWith("ForbiddenZeroAddressReceiver()");
     });
 
     it("should reject proof issuance requests for data not in consensus", async () => {
@@ -184,7 +184,7 @@ describe("IssuerFacet", function () {
             volumeProof,
             tokenURI
           )
-      ).to.be.revertedWith("amount : Not part of this consensus");
+      ).to.be.revertedWith(`VolumeNotInConsensus(${wrongVolume}, "${volumeRootHash}"`);
     });
 
     it("should reject proof issuance requests by non issuers", async () => {
@@ -209,7 +209,7 @@ describe("IssuerFacet", function () {
           volumeProof,
           tokenURI
         )
-      ).to.be.revertedWith("Access: Not an issuer");
+      ).to.be.revertedWith(`NotEnrolledIssuer("${owner.address}")`);
     });
 
     it("Authorized issuers can send proof issuance requests", async () => {
@@ -319,7 +319,7 @@ describe("IssuerFacet", function () {
     it("should revert when trying to fetch all certificates of non owner", async () => {
       await expect(
         proofManagerContract.getProofsOf(wallets[0].address)
-      ).to.be.revertedWith("No proofs for this address");
+      ).to.be.revertedWith(`NoProofsOwned`);
     });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
@@ -374,7 +374,7 @@ describe("IssuerFacet", function () {
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
-      ).to.be.revertedWith("transferBatch: invalid zero token ID");
+      ).to.be.revertedWith("ERC1155: insufficient balances for transfer");
     });
     it("should revert Batch certificates transfer when caller is not approved", async () => {
       const minter = wallets[0];
@@ -448,7 +448,7 @@ describe("IssuerFacet", function () {
             transferBytesData
           )
       ).to.be.revertedWith(
-        "transferBatch: tokenId greater than issuer.latestCertificateId"
+        "'ERC1155: insufficient balances for transfer"
       );
     });
 
@@ -470,7 +470,7 @@ describe("IssuerFacet", function () {
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       const transferBytesData = ethers.utils.formatBytes32String("");
-
+      const expectedRevertMessage = `NotAllowedTransfer(2, "${wallets[0].address}", "${owner.address}")`
       await expect(
         issuerContract
           .connect(wallets[0])
@@ -481,7 +481,7 @@ describe("IssuerFacet", function () {
             [transferVolume, transferVolume],
             transferBytesData
           )
-      ).to.be.revertedWith("non tradable revoked proof");
+      ).to.be.revertedWith(expectedRevertMessage);
     });
 
     it("should allow Batch certificates transfers of revoked certificate to the generator wallet", async () => {
@@ -566,7 +566,7 @@ describe("IssuerFacet", function () {
 
       await expect(
         proofManagerContract.connect(unauthorizedOperator).revokeProof(1)
-      ).to.be.revertedWith("Access: Not enrolled as revoker");
+      ).to.be.revertedWith(`NotEnrolledRevoker("${unauthorizedOperator.address}")`);
     });
 
     it("should prevent revocation of non existing certificates", async () => {
@@ -593,22 +593,25 @@ describe("IssuerFacet", function () {
 
     it("should revert when transfering revoked proof", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, revoker);
+      await mintProof(certificateID, proofData, owner);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
+      
+      const expectedRevertMessage = `NotAllowedTransfer(${certificateID}, "${owner.address}", "${revoker.address}")`
 
       await expect(
         issuerContract.safeTransferFrom(
-          revoker.address,
           owner.address,
-          1,
+          revoker.address,
+          certificateID,
           parseEther("1"),
           transferBytesData
         )
-      ).to.be.revertedWith("non tradable revoked proof");
+      ).to.be.revertedWith(expectedRevertMessage);
     });
 
     it("should allow transfer of revoked proof only to generator", async () => {
@@ -635,6 +638,7 @@ describe("IssuerFacet", function () {
         proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
+      const expectedRevertMessage = `NotAllowedTransfer(${certificateID}, "${owner.address}", "${revoker.address}")`
       await expect(
         issuerContract.safeTransferFrom(
           owner.address,
@@ -643,7 +647,7 @@ describe("IssuerFacet", function () {
           parseEther("1"),
           transferBytesData
         )
-      ).to.be.revertedWith("non tradable revoked proof");
+      ).to.be.revertedWith(expectedRevertMessage);
 
       //only generator can receive back revoked proofs
       await expect(
@@ -659,22 +663,25 @@ describe("IssuerFacet", function () {
 
     it("should prevent duplicate revocation", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, revoker);
+      await mintProof(certificateID, proofData, revoker);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
-      ).to.be.revertedWith("already revoked proof");
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
+      ).to.be.revertedWith(`ProofRevoked(${certificateID})`);
     });
 
     it("should revert if claimer tries to retire a revoked proof", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, owner);
+      await mintProof(certificateID, proofData, owner);
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(1)
@@ -682,7 +689,7 @@ describe("IssuerFacet", function () {
 
       await expect(
         proofManagerContract.connect(claimer).claimProofFor(1, owner.address, 1)
-      ).to.be.revertedWith("proof revoked");
+      ).to.be.revertedWith(`ProofRevoked(${certificateID})`);
     });
 
     it("should revert if non claimer tries to claim proof", async () => {
@@ -695,22 +702,25 @@ describe("IssuerFacet", function () {
         proofManagerContract
           .connect(notClaimer)
           .claimProofFor(1, owner.address, 1)
-      ).to.be.revertedWith("Access: Not enrolled as claimer");
+      ).to.be.revertedWith(`NotEnrolledClaimer("${notClaimer.address}")`);
     });
 
     it("should revert if owner tries to retire a revoked proof", async () => {
       const proofData = generateProofData();
+      const certificateID = 1;
+      const claimedVolume = 1;
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, issuer, issuer);
+      await mintProof(certificateID, proofData, issuer, issuer);
       await grantRole(issuer, roles.claimerRole);
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(1)
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
-        proofManagerContract.connect(issuer).claimProof(1, 1)
-      ).to.be.revertedWith("proof revoked");
+        proofManagerContract.connect(issuer).claimProof(certificateID, claimedVolume)
+      ).to.be.revertedWith(`ProofRevoked(${certificateID})`);
     });
 
     it("should allow claiming proofs for others", async () => {
@@ -775,30 +785,34 @@ describe("IssuerFacet", function () {
 
     it("should revert when retirement for others amount exceeds owned volume", async () => {
       const mintedVolume = 5;
-      const proofData = generateProofData({ volume: mintedVolume });
-      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const certificateID = 1;
       const minter = wallets[0];
-      await mintProof(1, proofData, minter);
+      const proofData = generateProofData({ volume: mintedVolume });
+
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(certificateID, proofData, minter);
       const claimedVolume = parseEther("6");
 
       await expect(
         proofManagerContract
           .connect(claimer)
-          .claimProofFor(1, minter.address, claimedVolume)
-      ).to.be.revertedWith("Insufficient volume owned");
+          .claimProofFor(certificateID, minter.address, claimedVolume)
+      ).to.be.revertedWith(`InsufficientBalance("${minter.address}", ${certificateID}, ${claimedVolume})`);
     });
 
     it("should revert when retirement amount exceeds owned volume", async () => {
       const mintedVolume = 5;
-      const proofData = generateProofData({ volume: mintedVolume });
-      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const certificateID = 1;
       const minter = wallets[0];
-      await mintProof(1, proofData, minter);
       const claimedVolume = parseEther("6");
+      const proofData = generateProofData({ volume: mintedVolume });
+      
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(certificateID, proofData, minter);
 
       await expect(
-        proofManagerContract.connect(minter).claimProof(1, claimedVolume)
-      ).to.be.revertedWith("Insufficient volume owned");
+        proofManagerContract.connect(minter).claimProof(certificateID, claimedVolume)
+      ).to.be.revertedWith(`InsufficientBalance("${minter.address}", ${certificateID}, ${claimedVolume})`);
     });
 
     it("should allow authorized revoker to revoke a retired proof during the revocable Period", async () => {
@@ -835,7 +849,7 @@ describe("IssuerFacet", function () {
 
       //The certificate should not be revocable anymore
       await expect(tx).to.be.revertedWith(
-        `NonRevokableCertificate(${1}, ${issuanceDate}, ${
+        `NonRevokableProof(${1}, ${issuanceDate}, ${
           issuanceDate + revokablePeriod
         })`
       );
@@ -944,7 +958,7 @@ describe("IssuerFacet", function () {
         issuerContract
           .connect(unauthorizedOperator)
           .discloseData(key, proofData.volume, dataProof, dataRootHash)
-      ).to.be.revertedWith("Access: Not an issuer");
+      ).to.be.revertedWith(`NotEnrolledIssuer("${unauthorizedOperator.address}")`);
     });
 
     it("should allow authorized user to disclose data", async () => {
@@ -979,7 +993,8 @@ describe("IssuerFacet", function () {
             dataProof,
             dataRootHash
           )
-      ).to.be.revertedWith("Disclose : data not verified");
+      
+      ).to.be.revertedWith("InvalidProof");
       await expect(
         issuerContract
           .connect(issuer)
@@ -989,7 +1004,7 @@ describe("IssuerFacet", function () {
             dataProof,
             dataRootHash
           )
-      ).to.be.revertedWith("Disclose : data not verified");
+      ).to.be.revertedWith("InvalidProof");
     });
 
     it("should revert when one tries to disclose already disclosed data", async () => {
@@ -1003,11 +1018,12 @@ describe("IssuerFacet", function () {
       await issuerContract
         .connect(issuer)
         .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash);
-      expect(
+
+      await expect(
         issuerContract
           .connect(issuer)
           .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash)
-      ).to.be.revertedWith("Disclose: data already disclosed");
+      ).to.be.revertedWith(`AlreadyDisclosedData("${dataRootHash}", "${key}")`)
     });
   });
 

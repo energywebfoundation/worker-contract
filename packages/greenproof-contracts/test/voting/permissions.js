@@ -67,7 +67,7 @@ module.exports.permissionsTests = function () {
     await mockClaimManager.revokeRole(workers[0].address, workerRole);
     await expect(
       votingContract.addWorker(workers[0].address)
-    ).to.be.revertedWith("Access denied: not enrolled as worker");
+    ).to.be.revertedWith(`NotEnrolledWorker("${workers[0].address}")`);
   });
 
   it("should revert when we try to remove a not whiteListed worker", async () => {
@@ -76,12 +76,14 @@ module.exports.permissionsTests = function () {
       participatingWorkers: [],
     });
 
+    await mockClaimManager.revokeRole(workers[ 0 ].address, workerRole);
+    
     await expect(
       votingContract.connect(owner).removeWorker(workers[0].address)
-    ).to.be.revertedWith(`WorkerWasNotAdded("${workers[0].address}")`);
+    ).to.be.revertedWith(`NotWhitelisted("${workers[0].address}")`);
   });
 
-  it("should not allow an enrolled worker to unregister", async () => {
+  it("should not allow an enrolled worker to be unregistered", async () => {
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0], workers[1]],
@@ -89,11 +91,11 @@ module.exports.permissionsTests = function () {
 
     await expect(
       votingContract.connect(owner).removeWorker(workers[0].address)
-    ).to.be.revertedWith("Not allowed: still enrolled as worker");
+    ).to.be.revertedWith(`NotRevokedWorker("${workers[0].address}")`);
 
     await expect(
       votingContract.connect(workers[1].wallet).removeWorker(workers[0].address)
-    ).to.be.revertedWith("Not allowed: still enrolled as worker");
+    ).to.be.revertedWith(`NotRevokedWorker("${workers[0].address}")`);
   });
 
   it("should not be able to add same worker twice", async () => {
@@ -181,7 +183,7 @@ module.exports.permissionsTests = function () {
 
     await expect(
       votingContract.connect(workers[1].wallet).cancelExpiredVotings()
-    ).to.be.revertedWith("Greenproof: Voting facet: Only owner allowed");
+    ).to.be.revertedWith(`NotAuthorized("Owner")`);
   });
 
   it("reverts when non owner tries to cancel expired votings", async () => {
@@ -197,6 +199,6 @@ module.exports.permissionsTests = function () {
 
     await expect(
       votingContract.connect(workers[0].wallet).cancelExpiredVotings()
-    ).to.be.revertedWith("Greenproof: Voting facet: Only owner allowed");
+    ).to.be.revertedWith(`NotAuthorized("Owner")`);
   });
 };
