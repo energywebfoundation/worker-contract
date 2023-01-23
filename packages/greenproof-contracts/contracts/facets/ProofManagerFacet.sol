@@ -19,6 +19,17 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _;
     }
 
+
+    function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
+        uint256 ownedBalance = _balanceOf(owner, certificateID);
+
+        LibProofManager.checkClaimableProof(certificateID, owner, amount, ownedBalance);
+
+        LibIssuer._registerClaimedProof(certificateID, owner, amount);
+        _burn(owner, certificateID, amount);
+        emit ProofClaimed(certificateID, owner, block.timestamp, amount);
+    }
+
     function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
         _claimProof(certificateID, owner, amount);
     }
@@ -30,8 +41,6 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     function revokeProof(uint256 certificateID) external onlyRevoker {
         LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
 
-        LibProofManager.checkProofExistance(certificateID);
-        LibProofManager.checkNotRevokedProof(certificateID);
         LibProofManager.checkProofRevocability(certificateID);
         issuer.certificates[certificateID].isRevoked = true;
         emit ProofRevoked(certificateID);

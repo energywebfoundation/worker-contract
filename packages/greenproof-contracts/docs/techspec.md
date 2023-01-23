@@ -172,7 +172,7 @@ Containes voting functions used by facets.
 - **VotingSessionExpired(bytes32 votingID)**: Event emitted when voting lasts more than time limit.
 - **NotWhitelisted(address operator)**: reason of rejection to vote to nonauthorized worker.
 - **VotingAlreadyEnded()**: reason of rejection to vote in completed session.
-- **WorkerAlreadyAdded(address worker)**: reason of rejection to authorize to participate in votings same worker.
+- **AlreadyWhitelistedWorker(address worker)**: reason of rejection to authorize to participate in votings same worker.
 - **SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult)**: reason of rejection to vote again in the same session.
 
 ### Functions

@@ -105,7 +105,7 @@ module.exports.permissionsTests = function () {
 
     await expect(
       votingContract.addWorker(workers[0].address)
-    ).to.be.revertedWith("WorkerAlreadyAdded");
+    ).to.be.revertedWith("AlreadyWhitelistedWorker");
   });
 
   //SIARA
