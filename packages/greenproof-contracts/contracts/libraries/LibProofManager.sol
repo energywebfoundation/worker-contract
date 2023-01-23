@@ -11,6 +11,12 @@ library LibProofManager {
     error NonExistingCertificate(uint256 certificateID);
     error TimeToRevokeElapsed(uint256 certificateID, uint256 issuanceDate, uint256 revocablePeriod);
 
+    /**
+     * @notice Checks if a certificate exists
+     * @dev A certificate exists if certificates ID > 0 && certificates <= latestCertificateId
+     * @dev this function reverts if the certificate ID does not exist
+     * @param certificateID - ID of the certificate being checked
+     */
     function checkProofExistence(uint256 certificateID) internal view {
         uint256 latestCertificateId = LibIssuer.getLatestCertificateId();
 
