@@ -5,7 +5,26 @@ import {LibProofManager} from "./LibProofManager.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 
+/**
+ * @title LibIssuer
+ * @dev Library for storing and managing green proof certificates
+ * @author Energyweb Foundation
+ * @notice This contract is a library for green proof certificates management
+ */
+
 library LibIssuer {
+    /**
+     * @notice Certificate registry tracking issued certificates
+     * @dev The certificate registry is represented by this storage structure
+     * @param latestCertificateId latest issued certificate ID
+     * @param revocablePeriod revocable period for certificates
+     * @param dataToCertificateID mapping of data hash to certificate ID
+     * @param certificates mapping of certificate ID to certificate information
+     * @param claimedBalances mapping of certificate ID to account balances, to track how much of a certificate ID a wallet has claimed
+     * @param disclosedData mapping of data hash to mapping of key-value pairs of disclosed data
+     * @param isDataDisclosed mapping of data hash to mapping of keys to booleans indicating whether the data has been disclosed for that key
+     * @param voteToCertificates mapping of vote ID to mapping of data hash to certificate ID
+     */
     struct IssuerStorage {
         uint256 latestCertificateId;
         uint256 revocablePeriod;
@@ -20,27 +39,78 @@ library LibIssuer {
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
 
+    /**
+     * @notice ProofMinted event emitted when a new green proof certificate is minted
+     * @param certificateID ID of the minted certificate
+     * @param volume volume of the minted certificate
+     * @param receiver address of the receiver of the minted certificate
+     */
     event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 
+    /**
+     * @dev Error: Zero address passed as receiver
+     */
     error ForbiddenZeroAddressReceiver();
+
+    /**
+     * @dev Error: Data hash has already been certified
+     * @param dataHash hash of the data associated with the certificate
+     */
     error AlreadyCertifiedData(bytes32 dataHash);
+
+    /**
+     * @dev Error: Data has already been disclosed for a specific key
+     * @param dataHash hash of the data associated with the certificate
+     * @param key key of the data being disclosed
+     */
     error AlreadyDisclosedData(bytes32 dataHash, string key);
+
+    /**
+     * @dev Error: Volume is not in consensus
+     * @param volume volume of the certificate
+     * @param dataHash hash of the data associated with the certificate
+     */
     error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
+
+    /**
+     * @dev Error: Transfer not allowed
+     * @param certificateID ID of the certificate
+     * @param sender address of the sender of the certificate
+     * @param receiver address of the receiver of the certificate
+     */
     error NotAllowedTransfer(uint256 certificateID, address sender, address receiver);
 
+    /**
+     * @dev Tracking the storage position of the issuerStorage
+     */
     bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
+    /**
+     * @dev Initialize the contract with a revocable period for certificates
+     * @param revocablePeriod period in which the certificates can be revoked
+     */
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = getStorage();
         issuer.revocablePeriod = revocablePeriod;
     }
 
+    /**
+     * @dev Increment the latest certificate ID
+     */
     function incrementAndGetProofIndex() internal returns (uint256) {
         IssuerStorage storage issuer = getStorage();
         issuer.latestCertificateId++;
         return getLatestCertificateId();
     }
 
+    /**
+     * @dev Records a new green proof certificate into the certificate registry
+     * @param dataHash hash of the data associated to the certificate
+     * @param generatorAddress address of the generator of the certificate
+     * @param volumeInWei volume of the certificate in wei
+     * @param certificateID ID of the certificate
+     * @param voteID ID of the vote associated to the certificate
+     */
     function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
@@ -56,11 +126,23 @@ library LibIssuer {
         issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }
 
+    /**
+     * @dev Register a claimed green proof certificate
+     * @param certificateID ID of the claimed certificate
+     * @param user address of the user claiming the certificate
+     * @param claimedAmount amount of the certificate being claimed
+     */
     function registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
         IssuerStorage storage issuer = getStorage();
         issuer.claimedBalances[certificateID][user] += claimedAmount;
     }
 
+    /**
+     * @notice Disclose data associated with a green proof certificate
+     * @param dataHash hash of the data associated with the certificate
+     * @param key key of the data being disclosed
+     * @param value value of the data being disclosed
+     */
     function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
@@ -68,7 +150,11 @@ library LibIssuer {
         issuer.isDataDisclosed[dataHash][key] = true;
     }
 
-    // this prevents duplicate issuance of the same certificate ID
+    /**
+     * @notice Checks if a certificate with a specific data hash has already been issued
+     * @dev This prevents duplicate issuance of the same certificate ID
+     * @param data hash of the data associated with the certificate
+     */
     function preventAlreadyCertified(bytes32 data) internal view {
         IssuerStorage storage issuer = getStorage();
         uint256 certificateId = issuer.dataToCertificateID[data];
@@ -78,6 +164,11 @@ library LibIssuer {
         }
     }
 
+    /**
+     * @dev Get a specific green proof certificate
+     * @param certificateID ID of the certificate
+     * @param volumeInWei volume of the certificate in wei
+     */
     function getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
         IssuerStorage storage issuer = getStorage();
 
@@ -92,6 +183,10 @@ library LibIssuer {
             });
     }
 
+    /**
+     * @dev Get the hash representation of the volume key-value pair inside the data to certify
+     * @return volumeHash
+     */
     function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
         string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
@@ -105,6 +200,13 @@ library LibIssuer {
         }
     }
 
+    /**
+     * @notice checkAllowedTransfer - Checks if a transfer of a certificate is allowed
+     * @notice revoked certificate should not be transferred, unless the receiver is the generator address
+     * @dev reverts if the transferred certificates is revoke AND the receiver is not the generator
+     * @param certificateID ID of the certificate being transferred
+     * @param receiver address of the receiver of the certificate
+     */
     function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
         IssuerStorage storage issuer = getStorage();
 
@@ -113,6 +215,13 @@ library LibIssuer {
         }
     }
 
+    /**
+     * @notice checkVolumeValidity - Checks if the volume of the certificate is in consensus
+     * @dev This function reverts if provided volume is not part of the merkle root hash reprensenting certified data
+     * @param volume volume of the certificate
+     * @param dataHash hash of the data associated to the certificate
+     * @param amountProof proof of the volume of the certificate
+     */
     function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
         bytes32 volumeHash = getAmountHash(volume);
 
@@ -122,46 +231,83 @@ library LibIssuer {
         }
     }
 
+    /**
+     * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
+     * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
+     * @param receiver address of the receiver of the certificate
+     */
     function preventZeroAddressReceiver(address receiver) internal pure {
         if (receiver == address(0)) {
             revert ForbiddenZeroAddressReceiver();
         }
     }
 
+    /**
+     *@notice claimedBalanceOf  - returns the amount volume of certifcates ID claimed by a user
+     * @param user - The user for whom we check claimed balance for
+     * @param certificateID - ID of the greenproof certificate
+     */
     function claimedBalanceOf(address user, uint256 certificateID) internal view returns (uint256) {
         IssuerStorage storage issuer = getStorage();
 
         return issuer.claimedBalances[certificateID][user];
     }
 
+    /**
+     * @notice revokeProof - Revokes a certificate
+     * @dev This function emits the `ProofRevoked` event
+     * @param certificateID ID of the certificate to revoke
+     */
     function revokeProof(uint256 certificateID) internal {
         IssuerStorage storage issuer = getStorage();
         issuer.certificates[certificateID].isRevoked = true;
     }
 
+    /**
+     * @notice getProof - Retrieves a certificate
+     * @param certificateID - ID of the certificate to retrieve
+     * @return proof - The greenproof certificate of id `certificateID`
+     */
     function getProof(uint256 certificateID) internal view returns (IGreenProof.Certificate memory proof) {
         IssuerStorage storage issuer = getStorage();
         proof = issuer.certificates[certificateID];
     }
 
+    /**
+     * @notice getProofIdByDataHash - Retrieves the ID of a green certificate by its data hash
+     * @param dataHash - Data hash of the certificate
+     * @return proofId - The certificate ID
+     */
     function getProofIdByDataHash(bytes32 dataHash) internal view returns (uint256 proofId) {
         IssuerStorage storage issuer = getStorage();
 
         return issuer.dataToCertificateID[dataHash];
     }
 
+    /**
+     * @notice getLatestCertificateId - Gets the id of the last certificate issued
+     * @return proofId - The ID of the latest issued certificate
+     */
     function getLatestCertificateId() internal view returns (uint256 proofId) {
         IssuerStorage storage issuer = getStorage();
 
         return issuer.latestCertificateId;
     }
 
+    /**
+     * @notice getRevocablePeriod - Retrieves the duration under which issued certificates are revocable
+     * @return revocablePeriod - the duration during which issued proofs can be revoked
+     */
     function getRevocablePeriod() internal view returns (uint256 revocablePeriod) {
         IssuerStorage storage issuer = getStorage();
 
         return issuer.revocablePeriod;
     }
 
+    /**
+     * @dev Get the storage for the issuer library
+     * @return issuerStorage - The pointer to the issuerStorage slot position
+     */
     function getStorage() internal pure returns (IssuerStorage storage issuerStorage) {
         bytes32 position = ISSUER_STORAGE_POSITION;
 
