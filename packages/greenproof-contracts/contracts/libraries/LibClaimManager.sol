@@ -4,12 +4,30 @@ pragma solidity 0.8.16;
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
 
+/**
+ * @title LibClaimManager
+ * @dev Library for managing claims and roles for the Greenproof smart contract.
+ */
 library LibClaimManager {
+    /**
+     * @notice Struct for storing role information.
+     * @param name - the role name
+     * @param version - the role version
+     */
     struct Role {
         bytes32 name;
         uint256 version;
     }
 
+    /**
+     * @notice Struct for storing claim manager storage information.
+     * @param claimManagerAddress -  Address of the claim manager contract.
+     * @param claimsRevocationRegistry - Address of the claims revocation registry contract.
+     * @param workerRole - Role for the worker.
+     * @param issuerRole - Role for the issuer.
+     * @param revokerRole - Role for the revoker.
+     * @param claimerRole - Role for the revoker
+     */
     struct ClaimManagerStorage {
         address claimManagerAddress;
         address claimsRevocationRegistry;
@@ -19,23 +37,80 @@ library LibClaimManager {
         Role claimerRole;
     }
 
+    /**
+     * @dev Constant tracking the storage slot position of the claimerStorage.
+     */
     bytes32 private constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
 
+    /**
+     * @dev Error message for when the claim manager is used not initialized.
+     */
     error NotInitializedClaimManager();
+
+    /**
+     * @dev Error message for when an operator is not enrolled as an issuer.
+     * @dev the address of the not enrolled user should be specified in the `operator` param
+     */
     error NotEnrolledIssuer(address operator);
+
+    /**
+     * @dev Error message for when an operator is not enrolled as a claimer.
+     * @dev the address of the not enrolled user should be specified in the `operator` param
+     */
     error NotEnrolledClaimer(address operator);
+
+    /**
+     * @dev Error message for when an operator is not enrolled as a revoker.
+     * @dev the address of the not enrolled user should be specified in the `operator` param
+     */
     error NotEnrolledRevoker(address operator);
+
+    /**
+     * @dev Error message for when an operator is not enrolled as a worker.
+     */
     error NotEnrolledWorker(address operator);
+
+    /**
+     * @dev Error message for when a worker is not revoked.
+     * @dev the address of the not revoked worker should be specified in the `operator` param
+     */
     error NotRevokedWorker(address operator);
+
+    /**
+     * @dev Error message for when there is an error updating a role.
+     * @dev the specific error should be specified in the `errorMessage` string
+     */
     error UpdateRoleError(string errorMessage);
+
+    /**
+     * @dev Error message for when there is an issue updating an address.
+     * @dev the specific error should be specified in the `errorMessage` string
+     */
     error UpdateAddressError(string errorMessage);
+
+    /**
+     * @dev Error message for when an operator is not authorized.
+     * @dev the missing authorization should be specified in the `requiredAuth` string
+     */
     error NotAuthorized(string requiredAuth);
 
+    /**
+     * @dev Modifier for allowing only the contract owner to call a function.
+     */
     modifier onlyOwner() {
         checkOwnership();
         _;
     }
 
+    /**
+     * @dev Function for initializing the claim manager.
+     * @param claimManagerAddress Address of the claim manager.
+     * @param issuerRole Role name for the issuer.
+     * @param revokerRole Role name
+     * @param workerRole Role name for the worker.
+     * @param claimerRole Role name for the claimer.
+     * @param claimsRevocationRegistry Address of the claims revocation registry.
+     */
     function init(
         address claimManagerAddress,
         bytes32 issuerRole,
@@ -54,6 +129,12 @@ library LibClaimManager {
         claimStore.claimerRole = Role({name: claimerRole, version: 1});
     }
 
+    /**
+     * @notice Function for updating the version of the issuer role.
+     * @param newVersion New version of the issuer role.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldRoleVersion The previous version of the issuer role.
+     */
     function setIssuerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
@@ -66,6 +147,12 @@ library LibClaimManager {
         claimStore.issuerRole.version = newVersion;
     }
 
+    /**
+     * @notice Function for updating the version of the worker role.
+     * @param newVersion New version of the worker role.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldRoleVersion The previous version of the worker role.
+     */
     function setWorkerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
@@ -77,6 +164,12 @@ library LibClaimManager {
         claimStore.workerRole.version = newVersion;
     }
 
+    /**
+     * @notice Function for updating the version of the revoker role.
+     * @param newVersion New version of the revoker role.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldRoleVersion The previous version of the revoker role.
+     */
     function setRevokerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
@@ -87,6 +180,13 @@ library LibClaimManager {
 
         claimStore.revokerRole.version = newVersion;
     }
+
+    /**
+     * @notice Function for updating the version of the claimer role.
+     * @param newVersion New version of the claimer role.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldRoleVersion The previous version of the claimer role.
+     */
 
     function setClaimerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
@@ -100,6 +200,12 @@ library LibClaimManager {
         claimStore.claimerRole.version = newVersion;
     }
 
+    /**
+     * @notice Function for updating the address of the claim manager.
+     * @param newAddress New address of the claim manager.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldAddress The previous address of the claim manager.
+     */
     function setClaimManagerAddress(address newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
@@ -116,6 +222,12 @@ library LibClaimManager {
         claimStore.claimManagerAddress = newAddress;
     }
 
+    /**
+     * @notice Function for updating the address of the claims revocation registry.
+     * @param newAddress New address of the claims revocation registry.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldAddress The previous address of the claims revocation registry.
+     */
     function setClaimRevocationRegistry(address newAddress) internal onlyOwner returns (address oldAddress) {
         if (newAddress == address(0)) {
             revert UpdateAddressError("Revocation Registry: null address");
@@ -131,6 +243,11 @@ library LibClaimManager {
         claimStore.claimsRevocationRegistry = newAddress;
     }
 
+    /**
+     * @notice checkEnrolledIssuer verifies that an operator is correctly enrolled as an issuer
+     * @dev This function reverts if the operator does not have the issuer role
+     * @param operator Address of the operator whose issuer role credential is checked.
+     */
     function checkEnrolledIssuer(address operator) internal view {
         Role memory issuerRole = getStorage().issuerRole;
 
@@ -141,6 +258,11 @@ library LibClaimManager {
         }
     }
 
+    /**
+     * @notice checkEnrolledRevoker verifies that an operator is correctly enrolled as a revoker
+     * @dev This function reverts if the operator does not have the revoker role
+     * @param operator Address of the operator whose revoker role credential is checked.
+     */
     function checkEnrolledRevoker(address operator) internal view {
         Role memory revokerRole = getStorage().revokerRole;
 
@@ -151,6 +273,11 @@ library LibClaimManager {
         }
     }
 
+    /**
+     * @notice checkEnrolledClaimer verifies that an operator is correctly enrolled as a claimer
+     * @dev This function reverts if the operator does not have the claimer role
+     * @param operator Address of the operator whose claimer role credential is checked.
+     */
     function checkEnrolledClaimer(address operator) internal view {
         Role memory claimerRole = getStorage().claimerRole;
 
@@ -161,6 +288,11 @@ library LibClaimManager {
         }
     }
 
+    /**
+     * @notice checkEnrolledWorker verifies that an operator is correctly enrolled as a worker
+     * @dev This function reverts if the operator does not have the worker role
+     * @param operator Address of the operator whose worker role credential is checked.
+     */
     function checkEnrolledWorker(address operator) internal view {
         Role memory workerRole = getStorage().workerRole;
 
@@ -171,6 +303,11 @@ library LibClaimManager {
         }
     }
 
+    /**
+     * @notice checkRevokedWorker verifies that an operator's worker role has been correctly revoked
+     * @dev This function reverts if the operator has the worker role
+     * @param operator Address of the operator whose worker role credential is checked.
+     */
     function checkRevokedWorker(address operator) internal view {
         Role memory workerRole = getStorage().workerRole;
 
@@ -181,13 +318,24 @@ library LibClaimManager {
         }
     }
 
+    /**
+     * @dev Modifier that checks if the caller is the contract owner.
+     * @custom:throws NotAuthorized error with the tag "Owner" if the caller is not the contract owner.
+     */
     function checkOwnership() internal view {
         if (OwnableStorage.layout().owner != msg.sender) {
             revert NotAuthorized("Owner");
         }
     }
 
-    function hasRole(address subject, bytes32 role, uint256 version) private view returns (bool) {
+    /**
+     * @notice hasRole - checks if an address has a specific role with a specific version
+     * @param subject The address to check.
+     * @param role The name of the role to check for.
+     * @param version The version of the role to check for.
+     * @return true if the `subject` is enrolled to the `role` role and with the `version` version, false otherwise
+     */
+    function hasRole(address subject, bytes32 role, uint256 version) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation
@@ -197,6 +345,10 @@ library LibClaimManager {
         return (isSubjectEnrolled && !isRoleRevoked);
     }
 
+    /**
+     * @dev retrieve the storage of the contract
+     * @return ClaimStore - the pointer to the ClaimManagerStorage slot position
+     */
     function getStorage() private pure returns (ClaimManagerStorage storage ClaimStore) {
         bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
         assembly {
