@@ -5,17 +5,17 @@ import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {LibClaimManager} from "./LibClaimManager.sol";
 
 library LibReward {
-    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
-
-    error RewardsDisabled(); // Invalid call to pay rewards to the winners. Rewards are disabled.
-    error NoFundsProvided(); // No funds sent in msg.value
-    error RewardStateNotChanged(bool state); // The rewarding toggle is in the same state as previous
-
     struct RewardStorage {
         bool rewardsEnabled;
         uint256 rewardAmount;
         address payable[] rewardQueue;
     }
+
+    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
+
+    error RewardsDisabled(); // Invalid call to pay rewards to the winners. Rewards are disabled.
+    error NoFundsProvided(); // No funds sent in msg.value
+    error RewardStateNotChanged(bool state); // The rewarding toggle is in the same state as previous
 
     modifier onlyOwner() {
         LibClaimManager.checkOwnership();

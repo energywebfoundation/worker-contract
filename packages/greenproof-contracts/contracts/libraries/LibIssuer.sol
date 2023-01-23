@@ -6,8 +6,6 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 
 library LibIssuer {
-    bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
-
     struct IssuerStorage {
         uint256 latestCertificateId;
         uint256 revocablePeriod;
@@ -29,6 +27,8 @@ library LibIssuer {
     error AlreadyDisclosedData(bytes32 dataHash, string key);
     error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
     error NotAllowedTransfer(uint256 certificateID, address sender, address receiver);
+
+    bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
     function init(uint256 revocablePeriod) internal {
         IssuerStorage storage issuer = _getStorage();
