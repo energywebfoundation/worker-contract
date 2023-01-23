@@ -21,6 +21,8 @@ library LibVoting {
         bytes32 matchResult;
         // Worker address to voted flag
         mapping(address => bool) workerToVoted;
+        //records each worker voting in this vote session
+        address payable[] voters;
         // To decide which actions are currently applicable to voting
         Status status;
         // If count of votes is enough for consensus
@@ -72,6 +74,8 @@ library LibVoting {
      */
     function _recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         VotingSession storage session = _getSession(votingID, sessionID);
+
+        session.voters.push(payable(msg.sender));
         session.votesCount++;
         session.workerToVoted[msg.sender] = true;
 
@@ -202,23 +206,9 @@ library LibVoting {
         return votingStorage.whitelistedWorkers.length;
     }
 
-    function _getVoters(bytes32 votingID, bytes32 sessionID) internal view returns (address payable[] memory _voters) {
-        VotingStorage storage _votingStorage = _getStorage();
-
-        VotingSession storage session = _votingStorage.votingIDToVoting[votingID].sessionIDToSession[sessionID];
-
-        uint256 numberOfWorkers = _getNumberOfWorkers();
-        address payable[] memory workersList = _votingStorage.whitelistedWorkers;
-
-        _voters = new address payable[](session.votesCount);
-        uint256 votersCount = 0;
-        for (uint256 i; i < numberOfWorkers; i++) {
-            address payable worker = workersList[i];
-            if (session.workerToVoted[worker]) {
-                _voters[votersCount] = worker;
-                votersCount++;
-            }
-        }
+    function _getVoters(bytes32 votingID, bytes32 sessionID) internal view returns (address payable[] memory) {
+        VotingSession storage session = _getSession(votingID, sessionID);
+        return session.voters;
     }
 
     function _getSession(bytes32 votingID, bytes32 sessionID) internal view returns (VotingSession storage) {
