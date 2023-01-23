@@ -19,7 +19,6 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _;
     }
 
-
     function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
         uint256 ownedBalance = _balanceOf(owner, certificateID);
 
@@ -82,16 +81,5 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
     function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool) {
         return LibProofManager._verifyProof(rootHash, leaf, proof);
-    }
-
-    function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
-        uint256 ownedBalance = _balanceOf(owner, certificateID);
-
-        LibProofManager.checkNotRevokedProof(certificateID);
-        LibProofManager.checkClaimedVolume(certificateID, owner, amount, ownedBalance);
-
-        LibIssuer._registerClaimedProof(certificateID, owner, amount);
-        _burn(owner, certificateID, amount);
-        emit ProofClaimed(certificateID, owner, block.timestamp, amount);
     }
 }
