@@ -56,7 +56,7 @@ library LibVoting {
     error AlreadyVoted(address worker); // Worker had already voted for a match result
     error NotInConsensus(bytes32 voteID); // Vote is not part of consensus
     error NotWhitelisted(address operator); // Sender is not whitelisted
-    error WorkerAlreadyAdded(address worker); // Worker has already been added
+    error AlreadyWhitelistedWorker(address worker); // Worker has already been added
     error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult); // Vote session is closed
 
     // initialize voting parameters at the diamond construction
@@ -272,7 +272,7 @@ library LibVoting {
 
     function checkNotWhiteListedWorker(address operator) internal view {
         if (isWhitelistedWorker(operator)) {
-            revert WorkerAlreadyAdded(operator);
+            revert AlreadyWhitelistedWorker(operator);
         }
     }
 
