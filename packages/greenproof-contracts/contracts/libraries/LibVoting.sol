@@ -6,8 +6,6 @@ import {IVoting} from "../interfaces/IVoting.sol";
 import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
 
 library LibVoting {
-    bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
-
     struct Voting {
         bytes32[] sessionIDs;
         mapping(bytes32 => VotingSession) sessionIDToSession;
@@ -53,6 +51,8 @@ library LibVoting {
         Completed
     }
 
+    bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
+
     error AlreadyVoted(address worker); // Worker had already voted for a match result
     error NotInConsensus(bytes32 voteID); // Vote is not part of consensus
     error NotWhitelisted(address operator); // Sender is not whitelisted
@@ -65,21 +65,6 @@ library LibVoting {
 
         _votingStorage.timeLimit = _timeLimit;
         _votingStorage.majorityPercentage = _majorityPercentage;
-    }
-
-    /**
-     * @notice _isSessionExpired: Checks if a voting session has exceeded the `timeLimit`
-     * @param sessionID - The voting session ID which validity we want to check
-     * @return isSessionExpired : boolean
-     * @dev the timeLimit duration is set once during contract construction
-     */
-    function _isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool) {
-        VotingSession storage session = _getSession(votingID, sessionID);
-        if (session.status == Status.Started && (session.startTimestamp + _getStorage().timeLimit < block.timestamp)) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     /**
@@ -132,10 +117,6 @@ library LibVoting {
         }
     }
 
-    function _getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(votingID, matchResult));
-    }
-
     /**
      * @notice Exposes result of the session
      */
@@ -171,6 +152,21 @@ library LibVoting {
             } else {
                 rs.rewardQueue.push(votingWinners[i]);
             }
+        }
+    }
+
+    /**
+     * @notice _isSessionExpired: Checks if a voting session has exceeded the `timeLimit`
+     * @param sessionID - The voting session ID which validity we want to check
+     * @return isSessionExpired : boolean
+     * @dev the timeLimit duration is set once during contract construction
+     */
+    function _isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool) {
+        VotingSession storage session = _getSession(votingID, sessionID);
+        if (session.status == Status.Started && (session.startTimestamp + _getStorage().timeLimit < block.timestamp)) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -286,5 +282,9 @@ library LibVoting {
         assembly {
             _votingStorage.slot := position
         }
+    }
+
+    function _getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(votingID, matchResult));
     }
 }
