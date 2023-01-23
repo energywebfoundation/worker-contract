@@ -329,7 +329,10 @@ module.exports.resultsTests = function () {
         },
       );
 
+      //We are making sure that all winners (included the removed one) are correctly rewarded
       expect(await tx).changeEtherBalance(workers[ 0 ].wallet, REWARD);
+      expect(await tx).changeEtherBalance(workers[ 1 ].wallet, REWARD);
+      expect(await tx).changeEtherBalance(workers[ 4 ].wallet, REWARD);
 
       expect(await ethers.provider.getBalance(ethers.constants.AddressZero)).to.equal(0);
 
