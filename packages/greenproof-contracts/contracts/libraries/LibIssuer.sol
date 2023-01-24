@@ -16,14 +16,14 @@ library LibIssuer {
     /**
      * @notice Certificate registry tracking issued certificates
      * @dev The certificate registry is represented by this storage structure
-     * @param latestCertificateId latest issued certificate ID
-     * @param revocablePeriod revocable period for certificates
-     * @param dataToCertificateID mapping of data hash to certificate ID
-     * @param certificates mapping of certificate ID to certificate information
-     * @param claimedBalances mapping of certificate ID to account balances, to track how much of a certificate ID a wallet has claimed
-     * @param disclosedData mapping of data hash to mapping of key-value pairs of disclosed data
-     * @param isDataDisclosed mapping of data hash to mapping of keys to booleans indicating whether the data has been disclosed for that key
-     * @param voteToCertificates mapping of vote ID to mapping of data hash to certificate ID
+     * @custom:field latestCertificateId - latest issued certificate ID
+     * @custom:field revocablePeriod - revocable period for certificates
+     * @custom:field dataToCertificateID - mapping of data hash to certificate ID
+     * @custom:field certificates - mapping of certificate ID to certificate information
+     * @custom:field claimedBalances - mapping of certificate ID to account balances, to track how much of a certificate ID a wallet has claimed
+     * @custom:field disclosedData - mapping of data hash to mapping of key-value pairs of disclosed data
+     * @custom:field isDataDisclosed - mapping of data hash to mapping of keys to booleans indicating whether the data has been disclosed for that key
+     * @custom:field voteToCertificates - mapping of vote ID to mapping of data hash to certificate ID
      */
     struct IssuerStorage {
         uint256 latestCertificateId;
