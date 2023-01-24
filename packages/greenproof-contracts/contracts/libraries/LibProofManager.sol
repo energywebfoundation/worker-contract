@@ -5,6 +5,7 @@ import {LibIssuer} from "./LibIssuer.sol";
 
 /**
  * @title LibProofManager
+ * @author EnergyWeb Foundation
  * @notice This library manages green proofs verification
  * @dev The library includes functions to check proof existance, proof revocability, claimable proof, certificates ownership, proof validity
  * @dev The librairy uses the OpenZeppelin MerkleProof contract to verify the proofs. (https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof)
