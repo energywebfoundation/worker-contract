@@ -73,7 +73,7 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
         uint256 certificateId = issuer.dataToCertificateID[data];
 
-        if (certificateId != 0 && !isProofRevoked(certificateId)) {
+        if (certificateId != 0 && !issuer.certificates[certificateID].isRevoked) {
             revert AlreadyCertifiedData(data);
         }
     }
@@ -83,7 +83,7 @@ library LibIssuer {
 
         return
             IGreenProof.Certificate({
-                isRevoked: isProofRevoked(certificateID),
+                isRevoked: issuer.certificates[certificateID].isRevoked,
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
                 volume: volumeInWei,
@@ -154,12 +154,6 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
 
         return issuer.latestCertificateId;
-    }
-
-    function isProofRevoked(uint256 certificateID) internal view returns (bool isRevoked) {
-        IssuerStorage storage issuer = getStorage();
-
-        return issuer.certificates[certificateID].isRevoked;
     }
 
     function getRevocablePeriod() internal view returns (uint256 revocablePeriod) {

@@ -22,7 +22,7 @@ library LibProofManager {
     function checkProofRevocability(uint256 certificateID) internal view {
         checkProofExistence(certificateID);
 
-        if (LibIssuer.isProofRevoked(certificateID)) {
+        if (issuer.certificates[certificateID].isRevoked) {
             revert ProofRevoked(certificateID);
         }
 
@@ -34,7 +34,7 @@ library LibProofManager {
     }
 
     function checkClaimableProof(uint256 certificateID, address claimer, uint256 claimedVolume, uint256 ownedBalance) internal view {
-        if (LibIssuer.isProofRevoked(certificateID)) {
+        if (issuer.certificates[certificateID].isRevoked) {
             revert ProofRevoked(certificateID);
         }
 
