@@ -38,7 +38,7 @@ library LibIssuer {
     function incrementAndGetProofIndex() internal returns (uint256) {
         IssuerStorage storage issuer = getStorage();
         issuer.latestCertificateId++;
-        return issuer.latestCertificateId;
+        return getLatestCertificateId();
     }
 
     function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
@@ -73,7 +73,7 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
         uint256 certificateId = issuer.dataToCertificateID[data];
 
-        if (certificateId != 0 && !issuer.certificates[certificateId].isRevoked) {
+        if (certificateId != 0 && !isProofRevoked(certificateId)) {
             revert AlreadyCertifiedData(data);
         }
     }
@@ -83,7 +83,7 @@ library LibIssuer {
 
         return
             IGreenProof.Certificate({
-                isRevoked: issuer.certificates[certificateID].isRevoked,
+                isRevoked: isProofRevoked(certificateID),
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
                 volume: volumeInWei,
@@ -108,7 +108,7 @@ library LibIssuer {
     function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
         IssuerStorage storage issuer = getStorage();
 
-        if (issuer.certificates[certificateID].isRevoked && receiver != issuer.certificates[certificateID].generator) {
+        if (isProofRevoked(certificateID) && receiver != issuer.certificates[certificateID].generator) {
             revert NotAllowedTransfer(certificateID, msg.sender, receiver);
         }
     }
