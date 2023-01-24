@@ -24,6 +24,12 @@ contract Greenproof is SolidStateDiamond {
 
     /**
      * @dev Structure storing the configuration of greenproof's roles credentials
+     * @custom:field issuerRole - Credential role name granting issuance rights
+     * @custom:field revokerRole - Credential role name granting revoker rights
+     * @custom:field workerRole - Credential role name allowing voters to be whitelisted and authorized in the voting system
+     * @custom:field claimerRole - Credential role name allowing to claim a certificate on the behalf of others
+     * @custom:field claimManagerAddress - Address of the Energy web's claim manager registy, handling DID-based roles
+     * @custom:field claimsRevocationRegistry -  Address of the Energy web's claimsRevocationRegistry, handling credential revocations
      */
     struct RolesConfig {
         bytes32 issuerRole;
@@ -36,6 +42,11 @@ contract Greenproof is SolidStateDiamond {
 
     /**
      * @dev Structure storing the configuration of the greenproof's voting system
+     * @custom:field votingTimeLimit - duration of a voting session
+     * @custom:field rewardAmount - value of the reward sent to each winning voter
+     * @custom:field majorityPercentage - Percentage of the number of workers vote required to reach a consensus
+     * @custom:field revocablePeriod - Duration under which a certificate can be revoked
+     * @custom:field rewardsEnabled - Flag defining wether or not workers should be rewarded on winning vote
      */
     struct VotingConfig {
         uint256 votingTimeLimit;

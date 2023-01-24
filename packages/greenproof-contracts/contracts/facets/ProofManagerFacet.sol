@@ -8,6 +8,11 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
+/**
+ * @title ProofManagerFacet - A Proof managager component of the the GreenProof core module
+ * @author Energyweb Foundation
+ * @notice  This facet handles certificates life cycle: claims, revocation, queries and verification
+ */
 contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     modifier onlyRevoker() {
         LibClaimManager.checkEnrolledRevoker(msg.sender);

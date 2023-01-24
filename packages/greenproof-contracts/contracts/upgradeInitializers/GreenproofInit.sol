@@ -9,6 +9,7 @@ import {IClaimManager} from "../interfaces/IClaimManager.sol";
 
 /**
  * @title GreenproofInit - Initialization contract
+ * @author EnergyWeb Foundation
  * @notice This contract is the initialization contract for the Greenproof smart contract.
  * @dev The contract sets the supported interfaces for the Greenproof contract and allows for the initialization of state variables.
  * @dev It is expected that this contract is customized if you want to deploy your greenProof diamond with data from a deployment script.
