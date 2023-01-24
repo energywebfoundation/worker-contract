@@ -319,7 +319,7 @@ library LibClaimManager {
     }
 
     /**
-     * @dev Modifier that checks if the caller is the contract owner.
+     * @dev function that checks if the caller is the contract owner.
      * @custom:throws NotAuthorized error with the tag "Owner" if the caller is not the contract owner.
      */
     function checkOwnership() internal view {
