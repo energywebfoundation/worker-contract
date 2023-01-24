@@ -7,7 +7,7 @@ import {LibClaimManager} from "./LibClaimManager.sol";
 /**
  * @title LibReward
  * @notice This library allows to manage rewards for greenproof workers.
- * @custom:errors RewardsDisabled, NoFundsProvided, RewardStateNotChanged.
+ * @author EnergyWeb Foundation
  */
 library LibReward {
     /**

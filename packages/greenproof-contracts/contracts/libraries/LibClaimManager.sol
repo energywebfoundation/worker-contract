@@ -7,6 +7,7 @@ import {IClaimManager} from "../interfaces/IClaimManager.sol";
 /**
  * @title LibClaimManager
  * @dev Library for managing claims and roles for the Greenproof smart contract.
+ * @author EnergyWeb Foundation
  */
 library LibClaimManager {
     /**
@@ -21,12 +22,12 @@ library LibClaimManager {
 
     /**
      * @notice Struct for storing claim manager storage information.
-     * @param claimManagerAddress -  Address of the claim manager contract.
-     * @param claimsRevocationRegistry - Address of the claims revocation registry contract.
-     * @param workerRole - Role for the worker.
-     * @param issuerRole - Role for the issuer.
-     * @param revokerRole - Role for the revoker.
-     * @param claimerRole - Role for the revoker
+     * @custom:field claimManagerAddress -  Address of the claim manager contract.
+     * @custom:field claimsRevocationRegistry - Address of the claims revocation registry contract.
+     * @custom:field workerRole - Role for the worker.
+     * @custom:field issuerRole - Role for the issuer.
+     * @custom:field revokerRole - Role for the revoker.
+     * @custom:field claimerRole - Role for the revoker
      */
     struct ClaimManagerStorage {
         address claimManagerAddress;
@@ -104,12 +105,12 @@ library LibClaimManager {
 
     /**
      * @dev Function for initializing the claim manager.
-     * @param claimManagerAddress Address of the claim manager.
-     * @param issuerRole Role name for the issuer.
-     * @param revokerRole Role name
-     * @param workerRole Role name for the worker.
-     * @param claimerRole Role name for the claimer.
-     * @param claimsRevocationRegistry Address of the claims revocation registry.
+     * @custom:field claimManagerAddress Address of the claim manager.
+     * @custom:field issuerRole Role name for the issuer.
+     * @custom:field revokerRole Role name
+     * @custom:field workerRole Role name for the worker.
+     * @custom:field claimerRole Role name for the claimer.
+     * @custom:field claimsRevocationRegistry Address of the claims revocation registry.
      */
     function init(
         address claimManagerAddress,
