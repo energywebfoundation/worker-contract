@@ -300,7 +300,5 @@ contract VotingFacet is IVoting, IReward {
         } else {
             emit NoConsensusReached(votingID, sessionID);
         }
-        emit Replenished(msg.value);
-        LibReward.payRewardsToAll();
     }
 }
