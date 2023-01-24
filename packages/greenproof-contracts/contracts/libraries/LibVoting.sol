@@ -62,37 +62,37 @@ library LibVoting {
     error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult); // Vote session is closed
 
     // initialize voting parameters at the diamond construction
-    function init(uint256 _timeLimit, uint256 _majorityPercentage) internal {
-        VotingStorage storage _votingStorage = _getStorage();
+    function init(uint256 timeLimit, uint256 majorityPercentage) internal {
+        VotingStorage storage votingStorage = getStorage();
 
-        _votingStorage.timeLimit = _timeLimit;
-        _votingStorage.majorityPercentage = _majorityPercentage;
+        votingStorage.timeLimit = timeLimit;
+        votingStorage.majorityPercentage = majorityPercentage;
     }
 
     /**
-     * @notice _recordVote: stores worker's vote
+     * @notice recordVote: stores worker's vote
      */
-    function _recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
-        VotingSession storage session = _getSession(votingID, sessionID);
+    function recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
+        VotingSession storage session = getSession(votingID, sessionID);
 
         session.voters.push(payable(msg.sender));
         session.votesCount++;
         session.workerToVoted[msg.sender] = true;
 
-        if (_hasReachedConsensus(session)) {
+        if (hasReachedConsensus(session)) {
             session.isConsensusReached = true;
-            numberOfRewardedWorkers = _completeSession(votingID, sessionID);
+            numberOfRewardedWorkers = completeSession(votingID, sessionID);
         }
     }
 
-    function _startSession(bytes32 votingID, bytes32 matchResult) internal {
+    function startSession(bytes32 votingID, bytes32 matchResult) internal {
         /// There can not be voting without some session
-        if (_getStorage().votingIDToVoting[votingID].sessionIDs.length == 0) {
-            _getStorage().votingIDs.push(votingID);
+        if (getStorage().votingIDToVoting[votingID].sessionIDs.length == 0) {
+            getStorage().votingIDs.push(votingID);
         }
 
-        Voting storage voting = _getStorage().votingIDToVoting[votingID];
-        bytes32 sessionID = _getSessionID(votingID, matchResult);
+        Voting storage voting = getStorage().votingIDToVoting[votingID];
+        bytes32 sessionID = getSessionID(votingID, matchResult);
         VotingSession storage session = voting.sessionIDToSession[sessionID];
 
         session.matchResult = matchResult;
@@ -104,8 +104,8 @@ library LibVoting {
     /**
      * @notice No further votes are accounted. If consensus has been reached then reward is paid and session results are exposed
      */
-    function _completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
-        Voting storage voting = _getStorage().votingIDToVoting[votingID];
+    function completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
+        Voting storage voting = getStorage().votingIDToVoting[votingID];
         VotingSession storage session = voting.sessionIDToSession[sessionID];
         session.status = Status.Completed;
 
@@ -113,109 +113,38 @@ library LibVoting {
             return 0;
         }
 
-        _revealMatch(votingID, sessionID);
-        _revealVoters(votingID, sessionID);
+        revealMatch(votingID, sessionID);
+        revealVoters(votingID, sessionID);
 
         if (LibReward.isRewardEnabled()) {
-            numberOfRewardedWorkers = _rewardWinners(votingID, sessionID);
+            numberOfRewardedWorkers = rewardWinners(votingID, sessionID);
         }
     }
 
     /**
-     * @notice Exposes result of the session
-     */
-    function _revealMatch(bytes32 votingID, bytes32 sessionID) internal {
-        VotingSession storage session = _getSession(votingID, sessionID);
-        _getStorage().matches[votingID][sessionID] = session.matchResult;
-    }
-
-    /**
-     * @notice Exposes workers, which voted in session
-     */
-    function _revealVoters(bytes32 votingID, bytes32 sessionID) internal {
-        VotingStorage storage _votingStorage = _getStorage();
-        _votingStorage.winners[votingID][sessionID] = _getVoters(votingID, sessionID);
-    }
-
-    /**
-     * @notice sends rewards to workers who casted winning vote
-     * @dev On missing funds, will add in the rewardQueue only the voters who could not be rewarded
-     */
-    function _rewardWinners(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfPayments) {
-        LibReward.RewardStorage storage rs = LibReward.getStorage();
-        address payable[] memory votingWinners = _getStorage().winners[votingID][sessionID];
-
-        uint256 rewardAmount = rs.rewardAmount;
-        uint256 numberOfVotingWinners = votingWinners.length;
-
-        for (uint256 i; i < numberOfVotingWinners; i++) {
-            if (address(this).balance >= rewardAmount) {
-                /// @dev `transfer` is safe, because worker is EOA
-                votingWinners[i].transfer(rewardAmount);
-                numberOfPayments++;
-            } else {
-                rs.rewardQueue.push(votingWinners[i]);
-            }
-        }
-    }
-
-    /**
-     * @notice _isSessionExpired: Checks if a voting session has exceeded the `timeLimit`
+     * @notice isSessionExpired: Checks if a voting session has exceeded the `timeLimit`
      * @param sessionID - The voting session ID which validity we want to check
      * @return isSessionExpired : boolean
      * @dev the timeLimit duration is set once during contract construction
      */
-    function _isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool) {
-        VotingSession storage session = _getSession(votingID, sessionID);
-        if (session.status == Status.Started && (session.startTimestamp + _getStorage().timeLimit < block.timestamp)) {
+    function isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool) {
+        VotingSession storage session = getSession(votingID, sessionID);
+        if (session.status == Status.Started && (session.startTimestamp + getStorage().timeLimit < block.timestamp)) {
             return true;
         } else {
             return false;
         }
     }
 
-    /**
-     *  @notice Number of votes sufficient to determine match winner
-     */
-    function _hasReachedConsensus(VotingSession storage session) internal view returns (bool) {
-        return _hasMajority(session.votesCount);
-    }
-
-    /**
-     * @notice Number of votes sufficient to determine match winner
-     */
-    function _hasMajority(uint256 numberOfWinningVotes) internal view returns (bool) {
-        VotingStorage storage votingStorage = _getStorage();
-
-        return ((100 * numberOfWinningVotes) / _getNumberOfWorkers()) >= votingStorage.majorityPercentage;
-    }
-
-    function _isClosed(VotingSession storage vote) internal view returns (bool) {
-        return vote.status == Status.Completed;
-    }
-
-    function isWhitelistedWorker(address worker) internal view returns (bool) {
-        VotingStorage storage votingStorage = _getStorage();
-        uint256 workerIndex = votingStorage.workerToIndex[worker];
-        return workerIndex < _getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
-    }
-
-    function _getNumberOfWorkers() internal view returns (uint256) {
-        VotingStorage storage votingStorage = _getStorage();
+    function getNumberOfWorkers() internal view returns (uint256) {
+        VotingStorage storage votingStorage = getStorage();
 
         return votingStorage.whitelistedWorkers.length;
     }
 
-    function _getVoters(bytes32 votingID, bytes32 sessionID) internal view returns (address payable[] memory) {
-        VotingSession storage session = _getSession(votingID, sessionID);
-        return session.voters;
+    function getSession(bytes32 votingID, bytes32 sessionID) internal view returns (VotingSession storage) {
+        return getStorage().votingIDToVoting[votingID].sessionIDToSession[sessionID];
     }
-
-    function _getSession(bytes32 votingID, bytes32 sessionID) internal view returns (VotingSession storage) {
-        return _getStorage().votingIDToVoting[votingID].sessionIDToSession[sessionID];
-    }
-
-    /** Data verification */
 
     /** checks that some data is part of a voting consensus
         @param voteID : the inputHash identifying the vote
@@ -234,11 +163,11 @@ library LibVoting {
     }
 
     function checkNotClosedSession(bytes32 votingID, bytes32 matchResult) internal view returns (bytes32) {
-        bytes32 sessionID = _getSessionID(votingID, matchResult);
+        bytes32 sessionID = getSessionID(votingID, matchResult);
 
-        LibVoting.VotingSession storage session = _getSession(votingID, sessionID);
+        LibVoting.VotingSession storage session = getSession(votingID, sessionID);
 
-        if (_isClosed(session)) {
+        if (isClosed(session)) {
             revert SessionCannotBeRestarted(votingID, matchResult);
         }
         return sessionID;
@@ -262,19 +191,88 @@ library LibVoting {
         }
     }
 
-    function _hasAlreadyVoted(address operator, VotingSession storage session) internal view returns (bool) {
+    function hasAlreadyVoted(address operator, VotingSession storage session) internal view returns (bool) {
         return session.workerToVoted[operator];
     }
 
-    function _getStorage() internal pure returns (VotingStorage storage _votingStorage) {
+    function getStorage() internal pure returns (VotingStorage storage votingStorage) {
         bytes32 position = VOTING_STORAGE_POSITION;
 
         assembly {
-            _votingStorage.slot := position
+            votingStorage.slot := position
         }
     }
 
-    function _getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
+    function getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(votingID, matchResult));
+    }
+
+    /**
+     * @notice Exposes result of the session
+     */
+    function revealMatch(bytes32 votingID, bytes32 sessionID) private {
+        VotingSession storage session = getSession(votingID, sessionID);
+        getStorage().matches[votingID][sessionID] = session.matchResult;
+    }
+
+    /**
+     * @notice Exposes workers, which voted in session
+     */
+    function revealVoters(bytes32 votingID, bytes32 sessionID) private {
+        VotingStorage storage votingStorage = getStorage();
+        votingStorage.winners[votingID][sessionID] = getVoters(votingID, sessionID);
+    }
+
+    /**
+     * @notice sends rewards to workers who casted winning vote
+     * @dev On missing funds, will add in the rewardQueue only the voters who could not be rewarded
+     */
+    function rewardWinners(bytes32 votingID, bytes32 sessionID) private returns (uint256 numberOfPayments) {
+        LibReward.RewardStorage storage rs = LibReward.getStorage();
+        address payable[] memory votingWinners = getStorage().winners[votingID][sessionID];
+
+        uint256 rewardAmount = rs.rewardAmount;
+        uint256 numberOfVotingWinners = votingWinners.length;
+
+        for (uint256 i; i < numberOfVotingWinners; i++) {
+            if (address(this).balance >= rewardAmount) {
+                /// @dev `transfer` is safe, because worker is EOA
+                votingWinners[i].transfer(rewardAmount);
+                numberOfPayments++;
+            } else {
+                rs.rewardQueue.push(votingWinners[i]);
+            }
+        }
+    }
+
+    /**
+     *  @notice Number of votes sufficient to determine match winner
+     */
+    function hasReachedConsensus(VotingSession storage session) private view returns (bool) {
+        return hasMajority(session.votesCount);
+    }
+
+    /**
+     * @notice Number of votes sufficient to determine match winner
+     */
+    function hasMajority(uint256 numberOfWinningVotes) private view returns (bool) {
+        VotingStorage storage votingStorage = getStorage();
+
+        return ((100 * numberOfWinningVotes) / getNumberOfWorkers()) >= votingStorage.majorityPercentage;
+    }
+
+    function isClosed(VotingSession storage vote) private view returns (bool) {
+        return vote.status == Status.Completed;
+    }
+
+    function isWhitelistedWorker(address worker) private view returns (bool) {
+        VotingStorage storage votingStorage = getStorage();
+        uint256 workerIndex = votingStorage.workerToIndex[worker];
+        return workerIndex < getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
+    }
+
+    function getVoters(bytes32 votingID, bytes32 sessionID) private view returns (address payable[] memory) {
+        VotingSession storage session = getSession(votingID, sessionID);
+        return session.voters;
     }
 }

@@ -11,20 +11,20 @@ library LibProofManager {
     error NonExistingCertificate(uint256 certificateID);
     error NonRevokableProof(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
 
-    function checkProofExistance(uint256 certificateID) internal view {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+    function checkProofExistence(uint256 certificateID) internal view {
+        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
 
-        // checks that certificat does exist
+        // checks that certificate does exist
         if (certificateID > issuer.latestCertificateId) {
             revert NonExistingCertificate(certificateID);
         }
     }
 
     function checkProofRevocability(uint256 certificateID) internal view {
-        // checks that certificat does exist
-        checkProofExistance(certificateID);
+        // checks that certificate does exist
+        checkProofExistence(certificateID);
 
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
 
         // checks that certificate is not revokedProof
         if (issuer.certificates[certificateID].isRevoked) {
@@ -40,7 +40,7 @@ library LibProofManager {
     }
 
     function checkClaimableProof(uint256 certificateID, address claimer, uint256 claimedVolume, uint256 ownedBalance) internal view {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
 
         // checks that certificate is not revokedProof
         if (issuer.certificates[certificateID].isRevoked) {
@@ -60,12 +60,12 @@ library LibProofManager {
     }
 
     function checkProofValidity(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) internal pure {
-        if (_verifyProof(rootHash, leaf, proof) == false) {
+        if (verifyProof(rootHash, leaf, proof) == false) {
             revert InvalidProof(rootHash, leaf, proof);
         }
     }
 
-    function _verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) internal pure returns (bool) {
+    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) internal pure returns (bool) {
         return MerkleProof.verify(proof, rootHash, leaf);
     }
 }

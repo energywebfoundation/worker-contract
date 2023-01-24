@@ -54,66 +54,66 @@ library LibClaimManager {
         claimStore.claimerRole = Role({name: claimerRole, version: 1});
     }
 
-    function setIssuerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+    function setIssuerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.issuerRole.version == _newVersion) {
+        if (claimStore.issuerRole.version == newVersion) {
             revert UpdateRoleError("Same version");
         }
 
         oldRoleVersion = claimStore.issuerRole.version;
 
-        claimStore.issuerRole.version = _newVersion;
+        claimStore.issuerRole.version = newVersion;
     }
 
-    function setWorkerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+    function setWorkerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.workerRole.version == _newVersion) {
+        if (claimStore.workerRole.version == newVersion) {
             revert UpdateRoleError("Same version");
         }
         oldRoleVersion = claimStore.workerRole.version;
 
-        claimStore.workerRole.version = _newVersion;
+        claimStore.workerRole.version = newVersion;
     }
 
-    function setRevokerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+    function setRevokerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.revokerRole.version == _newVersion) {
+        if (claimStore.revokerRole.version == newVersion) {
             revert UpdateRoleError("Same version");
         }
         oldRoleVersion = claimStore.revokerRole.version;
 
-        claimStore.revokerRole.version = _newVersion;
+        claimStore.revokerRole.version = newVersion;
     }
 
-    function setClaimerVersion(uint256 _newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+    function setClaimerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (claimStore.claimerRole.version == _newVersion) {
+        if (claimStore.claimerRole.version == newVersion) {
             revert UpdateRoleError("Same version");
         }
 
         oldRoleVersion = claimStore.claimerRole.version;
 
-        claimStore.claimerRole.version = _newVersion;
+        claimStore.claimerRole.version = newVersion;
     }
 
-    function setClaimManagerAddress(address _newAddress) internal onlyOwner returns (address oldAddress) {
+    function setClaimManagerAddress(address newAddress) internal onlyOwner returns (address oldAddress) {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        if (_newAddress == address(0)) {
+        if (newAddress == address(0)) {
             revert UpdateRoleError("Cannot update to null address");
         }
 
-        if (claimStore.claimManagerAddress == _newAddress) {
+        if (claimStore.claimManagerAddress == newAddress) {
             revert UpdateRoleError("Same address");
         }
 
         oldAddress = claimStore.claimManagerAddress;
 
-        claimStore.claimManagerAddress = _newAddress;
+        claimStore.claimManagerAddress = newAddress;
     }
 
     function setClaimRevocationRegistry(address newAddress) internal onlyOwner returns (address oldAddress) {
@@ -187,17 +187,17 @@ library LibClaimManager {
         }
     }
 
-    function hasRole(address _subject, bytes32 _role, uint256 _version) internal view returns (bool) {
+    function hasRole(address subject, bytes32 role, uint256 version) private view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation
-        bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(_subject, _role, _version);
-        bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(_role, _subject);
+        bool isSubjectEnrolled = IClaimManager(claimStore.claimManagerAddress).hasRole(subject, role, version);
+        bool isRoleRevoked = IClaimManager(claimStore.claimsRevocationRegistry).isRevoked(role, subject);
 
         return (isSubjectEnrolled && !isRoleRevoked);
     }
 
-    function getStorage() internal pure returns (ClaimManagerStorage storage ClaimStore) {
+    function getStorage() private pure returns (ClaimManagerStorage storage ClaimStore) {
         bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
         assembly {
             ClaimStore.slot := position

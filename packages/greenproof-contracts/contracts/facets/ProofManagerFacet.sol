@@ -19,26 +19,16 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _;
     }
 
-    function _claimProof(uint256 certificateID, address owner, uint256 amount) private {
-        uint256 ownedBalance = _balanceOf(owner, certificateID);
-
-        LibProofManager.checkClaimableProof(certificateID, owner, amount, ownedBalance);
-
-        LibIssuer._registerClaimedProof(certificateID, owner, amount);
-        _burn(owner, certificateID, amount);
-        emit ProofClaimed(certificateID, owner, block.timestamp, amount);
-    }
-
     function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
-        _claimProof(certificateID, owner, amount);
+        _claimProofFor(certificateID, owner, amount);
     }
 
     function claimProof(uint256 certificateID, uint256 amount) external {
-        _claimProof(certificateID, msg.sender, amount);
+        _claimProofFor(certificateID, msg.sender, amount);
     }
 
     function revokeProof(uint256 certificateID) external onlyRevoker {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
 
         LibProofManager.checkProofRevocability(certificateID);
         issuer.certificates[certificateID].isRevoked = true;
@@ -46,13 +36,13 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
-        LibProofManager.checkProofExistance(certificateID);
+        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
+        LibProofManager.checkProofExistence(certificateID);
         proof = issuer.certificates[certificateID];
     }
 
     function getProofIdByDataHash(bytes32 dataHash) external view returns (uint256 proofId) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
 
         return issuer.dataToCertificateID[dataHash];
     }
@@ -67,19 +57,29 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         for (uint256 i; i < numberOfCertificates; i++) {
             uint256 currentTokenID = userTokenList[i];
             uint256 volume = _balanceOf(userAddress, currentTokenID);
-            userProofs[i] = LibIssuer._getCertificate(currentTokenID, volume);
+            userProofs[i] = LibIssuer.getCertificate(currentTokenID, volume);
         }
 
         return userProofs;
     }
 
     function claimedBalanceOf(address user, uint256 certificateID) external view returns (uint256) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer._getStorage();
+        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
 
         return issuer.claimedBalances[certificateID][user];
     }
 
     function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool) {
-        return LibProofManager._verifyProof(rootHash, leaf, proof);
+        return LibProofManager.verifyProof(rootHash, leaf, proof);
+    }
+
+    function _claimProofFor(uint256 certificateID, address owner, uint256 amount) private {
+        uint256 ownedBalance = _balanceOf(owner, certificateID);
+
+        LibProofManager.checkClaimableProof(certificateID, owner, amount, ownedBalance);
+
+        LibIssuer.registerClaimedProof(certificateID, owner, amount);
+        _burn(owner, certificateID, amount);
+        emit ProofClaimed(certificateID, owner, block.timestamp, amount);
     }
 }
