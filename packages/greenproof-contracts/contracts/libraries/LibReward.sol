@@ -58,6 +58,12 @@ library LibReward {
         rewardedAmount = numberOfPays;
     }
 
+    function payRewardsToAll() internal returns (uint256 rewardedAmount) {
+        uint256 numberOfPays = getStorage().rewardQueue.length;
+
+        return payReward(numberOfPays);
+    }
+
     function isRewardEnabled() internal view returns (bool) {
         return getStorage().rewardsEnabled;
     }

@@ -35,9 +35,10 @@ library LibIssuer {
         issuer.revocablePeriod = revocablePeriod;
     }
 
-    function incrementProofIndex() internal {
+    function incrementAndGetProofIndex() internal returns (uint256) {
         IssuerStorage storage issuer = getStorage();
         issuer.latestCertificateId++;
+        return getLatestCertificateId();
     }
 
     function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
@@ -91,14 +92,6 @@ library LibIssuer {
             });
     }
 
-    function getStorage() internal pure returns (IssuerStorage storage issuerStorage) {
-        bytes32 position = ISSUER_STORAGE_POSITION;
-
-        assembly {
-            issuerStorage.slot := position
-        }
-    }
-
     function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
         string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
@@ -132,6 +125,48 @@ library LibIssuer {
     function preventZeroAddressReceiver(address receiver) internal pure {
         if (receiver == address(0)) {
             revert ForbiddenZeroAddressReceiver();
+        }
+    }
+
+    function claimedBalanceOf(address user, uint256 certificateID) internal view returns (uint256) {
+        IssuerStorage storage issuer = getStorage();
+
+        return issuer.claimedBalances[certificateID][user];
+    }
+
+    function revokeProof(uint256 certificateID) internal {
+        IssuerStorage storage issuer = getStorage();
+        issuer.certificates[certificateID].isRevoked = true;
+    }
+
+    function getProof(uint256 certificateID) internal view returns (IGreenProof.Certificate memory proof) {
+        IssuerStorage storage issuer = getStorage();
+        proof = issuer.certificates[certificateID];
+    }
+
+    function getProofIdByDataHash(bytes32 dataHash) internal view returns (uint256 proofId) {
+        IssuerStorage storage issuer = getStorage();
+
+        return issuer.dataToCertificateID[dataHash];
+    }
+
+    function getLatestCertificateId() internal view returns (uint256 proofId) {
+        IssuerStorage storage issuer = getStorage();
+
+        return issuer.latestCertificateId;
+    }
+
+    function getRevocablePeriod() internal view returns (uint256 revocablePeriod) {
+        IssuerStorage storage issuer = getStorage();
+
+        return issuer.revocablePeriod;
+    }
+
+    function getStorage() internal pure returns (IssuerStorage storage issuerStorage) {
+        bytes32 position = ISSUER_STORAGE_POSITION;
+
+        assembly {
+            issuerStorage.slot := position
         }
     }
 }

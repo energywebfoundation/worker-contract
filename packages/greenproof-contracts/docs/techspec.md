@@ -255,7 +255,7 @@ Second purpose of contract is token trasferring.
     - mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates (`votingID` -> `dataHash` -> `certificateID`). Maps voting session, which completed with consensus to certificate id.
   - **ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver)**: event emitted when new certificate is created.
   - **NonExistingCertificate(uint256 certificateID)**: reason of rejection when non issued certificate is requested.
-  - **NonRevokableProof(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit)**: reason of rejection, when revoker tries to revoke certificate which revocation period has expired.
+  - **TimeToRevokeElapsed(uint256 certificateID, uint256 issuanceDate, uint256 revocablePeriod)**: reason of rejection, when revoker tries to revoke certificate which revocation period has expired.
   - **NotInConsensus(bytes32 voteID)**: reason of rejection of certification of the voting, which has not reached consensus.
   - **AlreadyCertifiedData(bytes32 dataHash)**: reason of rejection to certify generation data which has already been certified.
 

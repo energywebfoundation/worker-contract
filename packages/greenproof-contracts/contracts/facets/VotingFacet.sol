@@ -72,10 +72,7 @@ contract VotingFacet is IVoting, IReward {
      */
     function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         LibVoting.checkNotWhiteListedWorker(workerAddress);
-        LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
-
-        votingStorage.workerToIndex[workerAddress] = LibVoting.getNumberOfWorkers();
-        votingStorage.whitelistedWorkers.push(workerAddress);
+        LibVoting.addWorker(workerAddress);
         emit WorkerAdded(workerAddress, block.timestamp);
     }
 
@@ -139,8 +136,7 @@ contract VotingFacet is IVoting, IReward {
         LibReward.checkFunds();
         emit Replenished(msg.value);
 
-        uint256 numberOfPays = LibReward.getStorage().rewardQueue.length;
-        uint256 rewardedAmount = LibReward.payReward(numberOfPays);
+        uint256 rewardedAmount = LibReward.payRewardsToAll();
         emit RewardsPaidOut(rewardedAmount);
     }
 
@@ -243,6 +239,6 @@ contract VotingFacet is IVoting, IReward {
             emit NoConsensusReached(votingID, sessionID);
         }
         emit Replenished(msg.value);
-        LibReward.payReward(LibReward.getStorage().rewardQueue.length);
+        LibReward.payRewardsToAll();
     }
 }
