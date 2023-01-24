@@ -17,8 +17,10 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
 contract IssuerFacet is SolidStateERC1155, IGreenProof {
-    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
-
+    /**
+     * @notice modifier that restricts the execution of functions only to users enrolled as Issuers
+     * @dev this modifer reverts the transaction if the msg.sender is not an enrolled issuer
+     */
     modifier onlyIssuer() {
         LibClaimManager.checkEnrolledIssuer(msg.sender);
         _;
@@ -83,11 +85,27 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         certificateOwners = _accountsByToken(certificateID);
     }
 
+    /**
+     * @notice transfer tokens between given addresses, checking for ERC1155Receiver implementation if applicable
+     * @param from sender of tokens
+     * @param to receiver of tokens
+     * @param id token ID
+     * @param amount quantity of tokens to transfer
+     * @param data data payload
+     */
     function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override(ERC1155Base, IERC1155) {
         LibIssuer.checkAllowedTransfer(id, to);
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
+    /**
+     * @notice transfer batch of tokens between given addresses, checking for ERC1155Receiver implementation if applicable
+     * @param from sender of tokens
+     * @param to receiver of tokens
+     * @param ids list of token IDs
+     * @param amounts list of quantities of tokens to transfer
+     * @param data data payload
+     */
     function safeBatchTransferFrom(
         address from,
         address to,
