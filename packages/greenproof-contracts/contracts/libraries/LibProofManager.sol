@@ -9,45 +9,35 @@ library LibProofManager {
     error NoProofsOwned(address user);
     error InsufficientBalance(address claimer, uint256 certificateID, uint256 claimedVolume);
     error NonExistingCertificate(uint256 certificateID);
-    error NonRevokableProof(uint256 certificateID, uint256 issuanceDate, uint256 revocableDateLimit);
+    error TimeToRevokeElapsed(uint256 certificateID, uint256 issuanceDate, uint256 revocablePeriod);
 
     function checkProofExistence(uint256 certificateID) internal view {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
+        uint256 latestCertificateId = LibIssuer.getLatestCertificateId();
 
-        // checks that certificate does exist
-        if (certificateID > issuer.latestCertificateId) {
+        if (certificateID > latestCertificateId) {
             revert NonExistingCertificate(certificateID);
         }
     }
 
     function checkProofRevocability(uint256 certificateID) internal view {
-        // checks that certificate does exist
         checkProofExistence(certificateID);
 
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
-
-        // checks that certificate is not revokedProof
-        if (issuer.certificates[certificateID].isRevoked) {
+        if (LibIssuer.isProofRevoked(certificateID)) {
             revert ProofRevoked(certificateID);
         }
 
-        uint256 issuanceDate = issuer.certificates[certificateID].issuanceDate;
-
-        // checks revocable period
-        if (issuanceDate + issuer.revocablePeriod < block.timestamp) {
-            revert NonRevokableProof(certificateID, issuanceDate, issuanceDate + issuer.revocablePeriod);
+        uint issuanceDate = LibIssuer.getProof(certificateID).issuanceDate;
+        uint256 revocablePeriod = LibIssuer.getRevocablePeriod();
+        if (issuanceDate + revocablePeriod < block.timestamp) {
+            revert TimeToRevokeElapsed(certificateID, issuanceDate, revocablePeriod);
         }
     }
 
     function checkClaimableProof(uint256 certificateID, address claimer, uint256 claimedVolume, uint256 ownedBalance) internal view {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
-
-        // checks that certificate is not revokedProof
-        if (issuer.certificates[certificateID].isRevoked) {
+        if (LibIssuer.isProofRevoked(certificateID)) {
             revert ProofRevoked(certificateID);
         }
 
-        // checks that the claimer owns enough volume
         if (ownedBalance < claimedVolume) {
             revert InsufficientBalance(claimer, certificateID, claimedVolume);
         }
