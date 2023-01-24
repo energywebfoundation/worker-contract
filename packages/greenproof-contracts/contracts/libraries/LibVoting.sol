@@ -195,6 +195,13 @@ library LibVoting {
         return session.workerToVoted[operator];
     }
 
+    function addWorker(address payable workerAddress) internal {
+        VotingStorage storage votingStorage = getStorage();
+
+        votingStorage.workerToIndex[workerAddress] = getNumberOfWorkers();
+        votingStorage.whitelistedWorkers.push(workerAddress);
+    }
+
     function getStorage() internal pure returns (VotingStorage storage votingStorage) {
         bytes32 position = VOTING_STORAGE_POSITION;
 

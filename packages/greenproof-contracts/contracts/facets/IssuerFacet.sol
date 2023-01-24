@@ -45,19 +45,17 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32[] memory amountProof,
         string memory tokenUri
     ) external onlyIssuer {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
-
         LibIssuer.preventZeroAddressReceiver(generator);
         LibIssuer.preventAlreadyCertified(dataHash);
         LibVoting.checkVoteInConsensus(voteID, dataHash, dataProof);
         LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
-        LibIssuer.incrementProofIndex();
+        uint256 nextCertificateId = LibIssuer.incrementAndGetProofIndex();
         uint256 volumeInWei = volume * 1 ether;
-        LibIssuer.registerProof(dataHash, generator, volumeInWei, issuer.latestCertificateId, voteID);
+        LibIssuer.registerProof(dataHash, generator, volumeInWei, nextCertificateId, voteID);
 
-        _safeMint(generator, issuer.latestCertificateId, volumeInWei, "");
-        _setTokenURI(issuer.latestCertificateId, tokenUri);
-        emit ProofMinted(issuer.latestCertificateId, volumeInWei, generator);
+        _safeMint(generator, nextCertificateId, volumeInWei, "");
+        _setTokenURI(nextCertificateId, tokenUri);
+        emit ProofMinted(nextCertificateId, volumeInWei, generator);
     }
 
     /**

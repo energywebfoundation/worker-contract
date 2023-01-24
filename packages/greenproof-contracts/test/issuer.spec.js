@@ -849,9 +849,7 @@ describe("IssuerFacet", function () {
 
       //The certificate should not be revocable anymore
       await expect(tx).to.be.revertedWith(
-        `NonRevokableProof(${1}, ${issuanceDate}, ${
-          issuanceDate + revokablePeriod
-        })`
+        `TimeToRevokeElapsed(${1}, ${issuanceDate}, ${revokablePeriod})`
       );
     });
 

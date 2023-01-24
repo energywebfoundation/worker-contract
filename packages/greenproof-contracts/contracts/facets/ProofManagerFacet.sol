@@ -28,23 +28,18 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function revokeProof(uint256 certificateID) external onlyRevoker {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
-
         LibProofManager.checkProofRevocability(certificateID);
-        issuer.certificates[certificateID].isRevoked = true;
+        LibIssuer.revokeProof(certificateID);
         emit ProofRevoked(certificateID);
     }
 
     function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
         LibProofManager.checkProofExistence(certificateID);
-        proof = issuer.certificates[certificateID];
+        proof = LibIssuer.getProof(certificateID);
     }
 
     function getProofIdByDataHash(bytes32 dataHash) external view returns (uint256 proofId) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
-
-        return issuer.dataToCertificateID[dataHash];
+        return LibIssuer.getProofIdByDataHash(dataHash);
     }
 
     function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory) {
@@ -64,9 +59,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     function claimedBalanceOf(address user, uint256 certificateID) external view returns (uint256) {
-        LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
-
-        return issuer.claimedBalances[certificateID][user];
+        return LibIssuer.claimedBalanceOf(user, certificateID);
     }
 
     function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool) {
