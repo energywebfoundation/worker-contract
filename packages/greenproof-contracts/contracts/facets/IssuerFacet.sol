@@ -49,7 +49,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer.preventAlreadyCertified(dataHash);
         LibVoting.checkVoteInConsensus(voteID, dataHash, dataProof);
         LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
-        uint nextCertificateId = LibIssuer.incrementAndGetProofIndex();
+        uint256 nextCertificateId = LibIssuer.incrementAndGetProofIndex();
         uint256 volumeInWei = volume * 1 ether;
         LibIssuer.registerProof(dataHash, generator, volumeInWei, nextCertificateId, voteID);
 

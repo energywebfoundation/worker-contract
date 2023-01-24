@@ -108,7 +108,7 @@ library LibIssuer {
     function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
         IssuerStorage storage issuer = getStorage();
 
-        if (isProofRevoked(certificateID) && receiver != issuer.certificates[certificateID].generator) {
+        if (issuer.certificates[certificateID].isRevoked && receiver != issuer.certificates[certificateID].generator) {
             revert NotAllowedTransfer(certificateID, msg.sender, receiver);
         }
     }

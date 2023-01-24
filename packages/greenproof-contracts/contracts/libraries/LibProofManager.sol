@@ -26,7 +26,7 @@ library LibProofManager {
             revert ProofRevoked(certificateID);
         }
 
-        uint issuanceDate = LibIssuer.getProof(certificateID).issuanceDate;
+        uint256 issuanceDate = LibIssuer.getProof(certificateID).issuanceDate;
         uint256 revocablePeriod = LibIssuer.getRevocablePeriod();
         if (issuanceDate + revocablePeriod < block.timestamp) {
             revert TimeToRevokeElapsed(certificateID, issuanceDate, revocablePeriod);
