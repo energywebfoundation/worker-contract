@@ -73,7 +73,7 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
         uint256 certificateId = issuer.dataToCertificateID[data];
 
-        if (certificateId != 0 && !issuer.certificates[certificateID].isRevoked) {
+        if (certificateId != 0 && !issuer.certificates[certificateId].isRevoked) {
             revert AlreadyCertifiedData(data);
         }
     }
@@ -162,7 +162,7 @@ library LibIssuer {
         return issuer.revocablePeriod;
     }
 
-    function getStorage() private pure returns (IssuerStorage storage issuerStorage) {
+    function getStorage() internal pure returns (IssuerStorage storage issuerStorage) {
         bytes32 position = ISSUER_STORAGE_POSITION;
 
         assembly {
