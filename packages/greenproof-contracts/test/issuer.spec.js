@@ -282,6 +282,10 @@ describe("IssuerFacet", function () {
       await expect(
         proofManagerContract.connect(owner).getProof(invalidCertificateID)
       ).to.be.revertedWith("NonExistingCertificate");
+      
+      await expect(
+        proofManagerContract.connect(owner).getProof(0)
+      ).to.be.revertedWith("NonExistingCertificate");
     });
 
     it("should get all certificates of one owner", async () => {
