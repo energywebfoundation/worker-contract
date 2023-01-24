@@ -31,17 +31,17 @@ library LibIssuer {
     bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
     function init(uint256 revocablePeriod) internal {
-        IssuerStorage storage issuer = _getStorage();
+        IssuerStorage storage issuer = getStorage();
         issuer.revocablePeriod = revocablePeriod;
     }
 
-    function _incrementProofIndex() internal {
-        IssuerStorage storage issuer = _getStorage();
+    function incrementProofIndex() internal {
+        IssuerStorage storage issuer = getStorage();
         issuer.latestCertificateId++;
     }
 
-    function _registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
-        LibIssuer.IssuerStorage storage issuer = _getStorage();
+    function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
+        LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.certificates[certificateID] = IGreenProof.Certificate({
             isRevoked: false,
@@ -55,13 +55,13 @@ library LibIssuer {
         issuer.voteToCertificates[voteID][dataHash] = certificateID;
     }
 
-    function _registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
-        IssuerStorage storage issuer = _getStorage();
+    function registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
+        IssuerStorage storage issuer = getStorage();
         issuer.claimedBalances[certificateID][user] += claimedAmount;
     }
 
     function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
-        LibIssuer.IssuerStorage storage issuer = _getStorage();
+        LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.disclosedData[dataHash][key] = value;
         issuer.isDataDisclosed[dataHash][key] = true;
@@ -69,7 +69,7 @@ library LibIssuer {
 
     // this prevents duplicate issuance of the same certificate ID
     function preventAlreadyCertified(bytes32 data) internal view {
-        IssuerStorage storage issuer = _getStorage();
+        IssuerStorage storage issuer = getStorage();
         uint256 certificateId = issuer.dataToCertificateID[data];
 
         if (certificateId != 0 && !issuer.certificates[certificateId].isRevoked) {
@@ -77,8 +77,8 @@ library LibIssuer {
         }
     }
 
-    function _getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
-        IssuerStorage storage issuer = _getStorage();
+    function getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
+        IssuerStorage storage issuer = getStorage();
 
         return
             IGreenProof.Certificate({
@@ -91,21 +91,21 @@ library LibIssuer {
             });
     }
 
-    function _getStorage() internal pure returns (IssuerStorage storage _issuerStorage) {
+    function getStorage() internal pure returns (IssuerStorage storage issuerStorage) {
         bytes32 position = ISSUER_STORAGE_POSITION;
 
         assembly {
-            _issuerStorage.slot := position
+            issuerStorage.slot := position
         }
     }
 
-    function _getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
+    function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
         string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }
 
     function checkNotDisclosed(bytes32 dataHash, string memory key) internal view {
-        IssuerStorage storage issuer = _getStorage();
+        IssuerStorage storage issuer = getStorage();
 
         if (issuer.isDataDisclosed[dataHash][key]) {
             revert AlreadyDisclosedData(dataHash, key);
@@ -113,7 +113,7 @@ library LibIssuer {
     }
 
     function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
-        IssuerStorage storage issuer = _getStorage();
+        IssuerStorage storage issuer = getStorage();
 
         if (issuer.certificates[certificateID].isRevoked && receiver != issuer.certificates[certificateID].generator) {
             revert NotAllowedTransfer(certificateID, msg.sender, receiver);
@@ -121,9 +121,9 @@ library LibIssuer {
     }
 
     function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
-        bytes32 volumeHash = _getAmountHash(volume);
+        bytes32 volumeHash = getAmountHash(volume);
 
-        bool isVolumeInConsensus = LibProofManager._verifyProof(dataHash, volumeHash, amountProof);
+        bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);
         if (!isVolumeInConsensus) {
             revert VolumeNotInConsensus(volume, dataHash);
         }

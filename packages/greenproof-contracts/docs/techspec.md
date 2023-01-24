@@ -177,23 +177,23 @@ Containes voting functions used by facets.
 
 ### Functions
 
-- **init(uint256 \_timeLimit, uint256 \_majorityPercentage)**: Sets vogings configuration.
-- **\_isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool)**: Checks if a voting session has exceeded the `timeLimit`.
-- **\_recordVote(bytes32 votingID, bytes32 sessionID)**: Persist vote and checks if this vote allowed to reach consensus.
-- **\_startSession(bytes32 votingID, bytes32 matchResult)**: Initializes session and corresponding voting if it wasn't initialized yet.
-- **\_completeSession(bytes32 votingID, bytes32 sessionID)**: No further votes are accounted. If consensus has been reached then reward is paid and session results are exposed.
-- **\_getSessionID(bytes32 votingID, bytes32 matchResult)**: Returns identifier of votinng for (`votingID`, `matchResult`).
-- **\_revealMatch(bytes32 votingID, bytes32 sessionID)**: Makes public match result corresponding to (votingID, sessionID).
-- **\_revealVoters(bytes32 votingID, bytes32 sessionID) internal**: Makes public workers voted for (`votingID`, `sessionID`).
-- **\_reward(address payable[] memory voters)**: Queues payments of `voters`. Reward will paid as soon reward pool balance will become sufficient.
-- **\_hasReachedConsensus(VotingSession storage session)**: Checks if `session` completed with consensus.
-- **\_hasMajority(uint256 numberOfWinningVotes)**: Checks if `numberOfWinningVotes` enough to reach consensus.
-- **\_getVoters(bytes32 votingID, bytes32 sessionID)**: Returns workers voted for (`votingID`, `matchResult`), if that voting has reached consensus.
-- **\_getSession(bytes32 votingID, bytes32 sessionID)**: Returns session structure by its and voting idenfitiers.
-- **\_isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof)**: Checks if `dataHash` is part of some `matchResult` merkle tree of `votingID`, which reached consensus.
-- **\_hasAlreadyVoted(address operator, VotingSession storage session)**: Checks if `operator` has voted in `session`.
-- **\_compareStrings(string memory a, string memory b)**: Checks if strings `a` and `b` has same content.
-- **\_getStorage()**: Returns voting storage.
+- **init(uint256 timeLimit, uint256 majorityPercentage)**: Sets vogings configuration.
+- **isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool)**: Checks if a voting session has exceeded the `timeLimit`.
+- **recordVote(bytes32 votingID, bytes32 sessionID)**: Persist vote and checks if this vote allowed to reach consensus.
+- **startSession(bytes32 votingID, bytes32 matchResult)**: Initializes session and corresponding voting if it wasn't initialized yet.
+- **completeSession(bytes32 votingID, bytes32 sessionID)**: No further votes are accounted. If consensus has been reached then reward is paid and session results are exposed.
+- **getSessionID(bytes32 votingID, bytes32 matchResult)**: Returns identifier of votinng for (`votingID`, `matchResult`).
+- **revealMatch(bytes32 votingID, bytes32 sessionID)**: Makes public match result corresponding to (votingID, sessionID).
+- **revealVoters(bytes32 votingID, bytes32 sessionID) internal**: Makes public workers voted for (`votingID`, `sessionID`).
+- **reward(address payable[] memory voters)**: Queues payments of `voters`. Reward will paid as soon reward pool balance will become sufficient.
+- **hasReachedConsensus(VotingSession storage session)**: Checks if `session` completed with consensus.
+- **hasMajority(uint256 numberOfWinningVotes)**: Checks if `numberOfWinningVotes` enough to reach consensus.
+- **getVoters(bytes32 votingID, bytes32 sessionID)**: Returns workers voted for (`votingID`, `matchResult`), if that voting has reached consensus.
+- **getSession(bytes32 votingID, bytes32 sessionID)**: Returns session structure by its and voting idenfitiers.
+- **isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof)**: Checks if `dataHash` is part of some `matchResult` merkle tree of `votingID`, which reached consensus.
+- **hasAlreadyVoted(address operator, VotingSession storage session)**: Checks if `operator` has voted in `session`.
+- **compareStrings(string memory a, string memory b)**: Checks if strings `a` and `b` has same content.
+- **getStorage()**: Returns voting storage.
 
 ## IssuerFacet
 
@@ -262,23 +262,23 @@ Second purpose of contract is token trasferring.
 ### Functions
 
 - **init(uint256 revocablePeriod)**: initializes `revocablePeriod`.
-- **\_incrementProofIndex()**: generates index of next certificate, when another one issued.
-- **\_registerProof(
+- **incrementProofIndex()**: generates index of next certificate, when another one issued.
+- **registerProof(
   bytes32 dataHash,
   address generatorAddress,
   uint256 amount,
   uint256 certificateID,
   bytes32 voteID
   )**: issues certificate with provided generation data.
-- **\_registerClaimedProof(
+- **registerClaimedProof(
   uint256 certificateID,
   address user,
   uint256 claimedAmount
   )**: Claims `clamedAmount` of certificate owned by `user.
-- **\_isCertified(bytes32 \_data)**: Checks if certified for generation data `_data` was issued and was not revoked.
-- **\_getCertificate(uint256 certificateID, uint256 volume)**: Returns certificate by its identifier. Certificate contains generation and issuance data.
-- **\_getStorage()**: returns contract slot containing issuance data.
-- **\_getAmountHash(uint256 volume)**: creates leaves of Merkle tree generation data containing `volume`.
+- **isCertified(bytes32 data)**: Checks if certified for generation data `data` was issued and was not revoked.
+- **getCertificate(uint256 certificateID, uint256 volume)**: Returns certificate by its identifier. Certificate contains generation and issuance data.
+- **getStorage()**: returns contract slot containing issuance data.
+- **getAmountHash(uint256 volume)**: creates leaves of Merkle tree generation data containing `volume`.
 
 ## ProofManagerFacet
 
@@ -291,8 +291,8 @@ Contract claiming certified energy generation.
 
 ### Functions
 
-- **\_claimProof(uint256 certificateID, address owner, uint256 amount)**: Claims `amount` of `certificateID` of `owner`.
-- **claimProofFor(uint256 certificateID, address owner, uint256 amount)**: Public version of **\_claimProof**.
+- **_claimProofFor(uint256 certificateID, address owner, uint256 amount)**: Claims `amount` of `certificateID` of `owner`.
+- **claimProofFor(uint256 certificateID, address owner, uint256 amount)**: Public version of **_claimProofFor**.
 - **claimProof(uint256 certificateID, uint256 amount)**: Does the same as **claimProofFor** except that claim owner is message sender.
 - **revokeProof(uint256 certificateID)**: Revoker revokes certificate `certificateID`.
 - **getProof(uint256 certificateID)**: Returns certificate by id.
@@ -311,8 +311,8 @@ Containes claim verification functions shared by facets.
 
 ### Functions
 
-- **\_isApprovedForAll(address account, address operator)**: Verifies that `operator` is allowed to transfer certificate tokens of `account`.
-- **\_verifyProof(
+- **isApprovedForAll(address account, address operator)**: Verifies that `operator` is allowed to transfer certificate tokens of `account`.
+- **verifyProof(
   bytes32 rootHash,
   bytes32 leaf,
   bytes32[] memory proof
@@ -343,10 +343,10 @@ Containes functions, which verifies authorization in facets.
 ### Functions
 
 - **hasRole(
-  address \_subject,
-  bytes32 \_role,
-  uint256 \_version
-  )**: Checks if `_subject` has `_role` of version `_version`.
+  address subject,
+  bytes32 role,
+  uint256 version
+  )**: Checks if `subject` has `role` of version `version`.
 - **init(
   address claimManagerAddress,
   bytes32 issuerRole,
@@ -355,11 +355,11 @@ Containes functions, which verifies authorization in facets.
   bytes32 claimerRole,
   address claimsRevocationRegistry
   )**: Sets claim manager configuration.
-- **setIssuerVersion(uint256 \_newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the issuer role.
-- **setWorkerVersion(uint256 \_newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the worker role.
-- **setRevokerVersion(uint256 \_newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the revoker role.
-- **setClaimerVersion(uint256 \_newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the claimer role.
-- **setClaimManagerAddress(address \_newAddress) internal onlyOwner returns (address oldAddress)**: Sets address of the claim manager contract.
+- **setIssuerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the issuer role.
+- **setWorkerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the worker role.
+- **setRevokerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the revoker role.
+- **setClaimerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion)**: Sets version of the claimer role.
+- **setClaimManagerAddress(address newAddress) internal onlyOwner returns (address oldAddress)**: Sets address of the claim manager contract.
 - **getStorage()**: Returns slot containing configuration of the claim manager library.
 - **isEnrolled(Issuer | Revoker | Claimer | Worker)(address operator)**: Checks if `operator` has required role.
 
@@ -379,7 +379,7 @@ Library managing reward payment.
   ### Modifiers
 
   - **onlyOwner()**: Verifies that message sender is contract owner.
-  - **initRewards(uint256 \_rewardAmount, bool \_rewardsEnabled)**: Sets reward payment configuration.
+  - **initRewards(uint256 rewardAmount, bool rewardsEnabled)**: Sets reward payment configuration.
   - **setRewardsEnabled(bool rewardsEnabled)**: Owner enables or disables reward payment.
   - **payReward()**: VotingFacet calls this function whenever consensus is reached.
   - **getStorage()**: Returns contract slot with reward payment configuration.

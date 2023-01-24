@@ -22,14 +22,14 @@ library LibReward {
         _;
     }
 
-    function initRewards(uint256 _rewardAmount, bool _rewardsEnabled) internal {
+    function initRewards(uint256 rewardAmount, bool rewardsEnabled) internal {
         RewardStorage storage rs = getStorage();
 
-        rs.rewardAmount = _rewardAmount;
-        rs.rewardsEnabled = _rewardsEnabled;
+        rs.rewardAmount = rewardAmount;
+        rs.rewardsEnabled = rewardsEnabled;
     }
 
-    function _setRewardsFeature(bool isEnabled) internal onlyOwner {
+    function setRewardsFeature(bool isEnabled) internal onlyOwner {
         RewardStorage storage rs = getStorage();
         if (rs.rewardsEnabled == isEnabled) {
             revert RewardStateNotChanged(isEnabled);
@@ -37,7 +37,7 @@ library LibReward {
         rs.rewardsEnabled = isEnabled;
     }
 
-    function _payReward(uint256 maxNumberOfPays) internal returns (uint256 rewardedAmount) {
+    function payReward(uint256 maxNumberOfPays) internal returns (uint256 rewardedAmount) {
         RewardStorage storage rs = getStorage();
 
         uint256 rewardAmount = rs.rewardAmount;
