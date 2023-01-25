@@ -281,25 +281,6 @@ library LibVoting {
     }
 
     /** Data verification */
-
-    /** checks that some data is part of a voting consensus
-        @param votingID : the inputHash identifying the vote
-        @param dataHash: the hash of the data we want to verify
-        @param dataProof: the merkle proof of the data
-        @return `True` if the dataHash is part of the voting merkle root, 'False` otherwise  
-
-     */
-    function isPartOfConsensus(bytes32 votingID, bytes32 dataHash, bytes32[] memory dataProof) internal view returns (bool) {
-        bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(votingID);
-        uint256 numberOfMatchResults = matchResults.length;
-        for (uint256 i; i < numberOfMatchResults; i++) {
-            if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     function preventGasLimit(uint256 maxTxAllowed, uint256 objectSize) internal pure returns (uint256 nbOfTxAllowed) {
         if (maxTxAllowed > objectSize) {
             nbOfTxAllowed = objectSize;
