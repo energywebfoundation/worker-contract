@@ -25,7 +25,7 @@ module.exports.expirationTests = function () {
     await workers[0].vote(timeframes[1].input, timeframes[1].output);
 
     await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
-    const maxVotesToCancel = 2;
+    const maxVotesToCancel = 100;
     const maxSessionsPerVoteToCancel = 2
     const tx = await votingContract.cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel);
 
@@ -46,8 +46,6 @@ module.exports.expirationTests = function () {
 
     await expect(tx2).to.not.emit(votingContract, "VotingSessionExpired")
   });
-
-
 
   it("voting which don't exceeded time limit are not cancelled", async () => {
     votingContract = await setupVotingContract({
