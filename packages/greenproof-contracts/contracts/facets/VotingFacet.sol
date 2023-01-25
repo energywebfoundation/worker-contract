@@ -134,12 +134,12 @@ contract VotingFacet is IVoting, IReward {
     function cancelExpiredVotings(uint256 numberOfVotingsLimit, uint256 numberOfSessionsLimit) external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        uint256 numberOfVotingsToCancel = LibVoting.preventGasLimit(numberOfVotingsLimit, votingStorage.votingIDs.length);
+        uint256 numberOfVotingsToCancel = LibVoting.getMinimum(numberOfVotingsLimit, votingStorage.votingIDs.length);
 
         for (uint256 i; i < numberOfVotingsToCancel; i++) {
             bytes32 votingID = votingStorage.votingIDs[i];
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
-            uint256 numberOfSessionsToCancel = LibVoting.preventGasLimit(numberOfSessionsLimit, voting.sessionIDs.length);
+            uint256 numberOfSessionsToCancel = LibVoting.getMinimum(numberOfSessionsLimit, voting.sessionIDs.length);
             for (uint256 j; j < numberOfSessionsToCancel; j++) {
                 bytes32 sessionID = voting.sessionIDs[j];
                 if (LibVoting.isSessionExpired(votingID, sessionID)) {
