@@ -141,15 +141,18 @@ describe("IssuerFacet", function () {
         matchResultProof,
         volume,
         volumeProof,
+        matchResult
       } = generateProofData();
 
+      await reachConsensus(inputHash, matchResult);
+      const wrongVolumeRootHash = ethers.utils.formatBytes32String("wrongVolumeRootHash");
       await expect(
         issuerContract
           .connect(issuer)
           .requestProofIssuance(
             inputHash,
             wallets[1].address,
-            volumeRootHash,
+            wrongVolumeRootHash,
             matchResultProof,
             volume.toString(10),
             volumeProof,
