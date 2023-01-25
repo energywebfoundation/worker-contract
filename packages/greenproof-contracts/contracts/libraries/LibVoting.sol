@@ -288,7 +288,7 @@ library LibVoting {
     }
 
     /** Data verification */
-    function preventGasLimit(uint256 maxTxAllowed, uint256 objectSize) internal pure returns (uint256 nbOfTxAllowed) {
+    function getMinimum(uint256 maxTxAllowed, uint256 objectSize) internal pure returns (uint256 nbOfTxAllowed) {
         if (maxTxAllowed > objectSize) {
             nbOfTxAllowed = objectSize;
         } else {
