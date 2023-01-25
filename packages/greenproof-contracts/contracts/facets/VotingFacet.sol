@@ -145,6 +145,7 @@ contract VotingFacet is IVoting, IReward {
                 if (LibVoting.isSessionExpired(votingID, sessionID)) {
                     uint256 numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
                     emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
+                    emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
                 }
             }
         }
