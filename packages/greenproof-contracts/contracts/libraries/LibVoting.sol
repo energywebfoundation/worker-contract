@@ -3,7 +3,8 @@ pragma solidity 0.8.16;
 
 import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
-import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
+import {LibProofManager} from "./LibProofManager.sol";
+import "hardhat/console.sol";
 
 library LibVoting {
     struct Voting {
@@ -213,16 +214,16 @@ library LibVoting {
     function checkVoteInConsensus(bytes32 voteID, bytes32 dataHash, bytes32[] memory dataProof) internal view {
         bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(voteID);
         uint256 numberOfMatchResults = matchResults.length;
-        bool found;
+        bool isVoteInConsensus;
+
         for (uint256 i; i < numberOfMatchResults; i++) {
-            if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
-                found = true;
-                break;
+            isVoteInConsensus = LibProofManager.verifyProof(dataHash, matchResults[i], dataProof);
+
+            if (isVoteInConsensus) {
+                return;
             }
         }
-        if (found == false) {
-            revert NotInConsensus(voteID);
-        }
+        revert NotInConsensus(voteID);
     }
 
     /**
