@@ -6,9 +6,11 @@ import {IVoting} from "../interfaces/IVoting.sol";
 import {LibProofManager} from "./LibProofManager.sol";
 import "hardhat/console.sol";
 
+// We can eliminate this by splitting Voting.sessionIDs on Voting.completedSessionIDs and Voting.activeSessionIDs
 library LibVoting {
     struct Voting {
         bytes32[] sessionIDs;
+        bytes32[] completedSessionIDs;
         mapping(bytes32 => VotingSession) sessionIDToSession;
     }
 
@@ -113,9 +115,9 @@ library LibVoting {
             getStorage().votingIDs.push(votingID);
         }
 
-        Voting storage voting = getStorage().votingIDToVoting[votingID];
+        Voting storage voting = getVoting(votingID);
         bytes32 sessionID = getSessionID(votingID, matchResult);
-        VotingSession storage session = voting.sessionIDToSession[sessionID];
+        VotingSession storage session = getSession(votingID, sessionID);
 
         session.matchResult = matchResult;
         session.startTimestamp = block.timestamp;
@@ -134,6 +136,7 @@ library LibVoting {
     function completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         VotingSession storage session = getSession(votingID, sessionID);
         session.status = Status.Completed;
+        getVoting(votingID).completedSessionIDs.push(sessionID);
 
         if (!session.isConsensusReached) {
             return 0;
@@ -148,6 +151,51 @@ library LibVoting {
         if (LibReward.isRewardEnabled()) {
             numberOfRewardedWorkers = rewardWinners(votingID, sessionID);
         }
+    }
+
+    function archiveSession(bytes32 votingID, bytes32 sessionID) internal {
+        VotingSession storage session = getSession(votingID, sessionID);
+
+        // we only archive votes which didn't reach consensus
+        if (session.isConsensusReached) {
+            return;
+        }
+
+        bytes32[] storage activeSessionIDs = getVoting(votingID).sessionIDs;
+
+        uint256 numberOfActiveSessions = activeSessionIDs.length;
+
+        if (numberOfActiveSessions == 0) {
+            return;
+        }
+
+        if (numberOfActiveSessions == 1) {
+            activeSessionIDs.pop();
+            return;
+        }
+        // proceed to replacement of the last session by the session to remove
+        // If the last session is the one we want to remove, we just pop
+        if (activeSessionIDs[numberOfActiveSessions - 1] == sessionID) {
+            activeSessionIDs.pop();
+        } else {
+            // Otherwise we put the last session at the index of the session to remove and we pop
+            bytes32 sessionToMove = activeSessionIDs[numberOfActiveSessions - 1];
+            for (uint256 i; i < activeSessionIDs.length; i++) {
+                if (activeSessionIDs[i] == sessionID) {
+                    activeSessionIDs[i] = sessionToMove;
+                    break;
+                }
+            }
+            activeSessionIDs.pop();
+        }
+    }
+
+    function checkExpiredSession(bytes32 votingID, bytes32 sessionID) internal returns (bool) {
+        if (isSessionExpired(votingID, sessionID)) {
+            completeSession(votingID, sessionID);
+            return true;
+        }
+        return false;
     }
 
     function addWorker(address payable workerAddress) internal {
@@ -202,6 +250,15 @@ library LibVoting {
      */
     function getSession(bytes32 votingID, bytes32 sessionID) internal view returns (VotingSession storage) {
         return getStorage().votingIDToVoting[votingID].sessionIDToSession[sessionID];
+    }
+
+    /**
+     * @notice `getVoting` - Gets the Voting details
+     * @param votingID The identifier of the voting to get
+     * @return The storage pointer to the actual voting
+     */
+    function getVoting(bytes32 votingID) internal view returns (Voting storage) {
+        return getStorage().votingIDToVoting[votingID];
     }
 
     /** Data verification */

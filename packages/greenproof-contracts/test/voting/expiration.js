@@ -25,10 +25,9 @@ module.exports.expirationTests = function () {
     await workers[0].vote(timeframes[1].input, timeframes[1].output);
 
     await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
-    const maxVotesToCancel = 100;
     const maxSessionsPerVoteToCancel = 2
-    const tx = await votingContract.cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel);
-
+    const tx = await votingContract.cancelExpiredVotings(maxSessionsPerVoteToCancel);
+    
     await expect(tx)
       .to.emit(votingContract, "VotingSessionExpired")
       .withArgs(timeframes[0].input, timeframes[0].output);
@@ -42,7 +41,7 @@ module.exports.expirationTests = function () {
       .to.emit(votingContract, "VotingSessionExpired")
       .withArgs(timeframes[1].input, timeframes[1].output);
     
-    const tx2 = await votingContract.cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel);
+    const tx2 = await votingContract.cancelExpiredVotings(maxSessionsPerVoteToCancel);
 
     await expect(tx2).to.not.emit(votingContract, "VotingSessionExpired")
   });
@@ -53,10 +52,9 @@ module.exports.expirationTests = function () {
     });
 
     await workers[0].vote(timeframes[0].input, timeframes[0].output);
-    const maxVotesToCancel = 1;
     const maxSessionsPerVoteToCancel = 1
 
-    await expect(votingContract.cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel))
+    await expect(votingContract.cancelExpiredVotings(maxSessionsPerVoteToCancel))
       .to.not.emit(votingContract, "VotingSessionExpired")
       .withArgs(timeframes[0].input, timeframes[0].output);
   });

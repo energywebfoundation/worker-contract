@@ -180,11 +180,10 @@ module.exports.permissionsTests = function () {
     workers[0].voteNotWinning(timeframes[0].input, timeframes[0].output);
 
     await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
-    const maxVotesToCancel = 1;
     const maxSessionsPerVoteToCancel = 1;
 
     await expect(
-      votingContract.connect(workers[1].wallet).cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel)
+      votingContract.connect(workers[1].wallet).cancelExpiredVotings(maxSessionsPerVoteToCancel)
     ).to.be.revertedWith(`NotAuthorized("Owner")`);
   });
 
@@ -198,11 +197,10 @@ module.exports.permissionsTests = function () {
       .vote(timeframes[0].input, timeframes[0].output);
 
     await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
-    const maxVotesToCancel = 1;
     const maxSessionsPerVoteToCancel = 1;
 
     await expect(
-      votingContract.connect(workers[0].wallet).cancelExpiredVotings(maxVotesToCancel, maxSessionsPerVoteToCancel)
+      votingContract.connect(workers[0].wallet).cancelExpiredVotings(maxSessionsPerVoteToCancel)
     ).to.be.revertedWith(`NotAuthorized("Owner")`);
   });
 };
