@@ -14,33 +14,59 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
 contract VotingFacet is IVoting, IReward {
+    /**
+     * @notice onlyEnrolledWorkers - A modifier that restricts the execution of functions only to users enrolled as workers
+     * @dev This reverts the transaction if the operator does not have the worker role
+     * @param operator - The address of the operator whose worker role credential is checked.
+     */
     modifier onlyEnrolledWorkers(address operator) {
         LibClaimManager.checkEnrolledWorker(operator);
         _;
     }
 
+    /**
+     * @notice onlyOwner - A modifier that restricts function execution to the contract owner.
+     * @dev his reverts the transaction if the caller is not the contract owner.
+     */
     modifier onlyOwner() {
         LibClaimManager.checkOwnership();
         _;
     }
 
+    /**
+     * @notice onlyWhitelistedWorker - A modifier that restricts the execution of functions only to whitelisted users
+     * @dev This reverts the transaction if the caller is not whiteListed into the worker list
+     */
     modifier onlyWhitelistedWorker() {
         LibVoting.checkWhiteListedWorker(msg.sender);
         _;
     }
 
+    /**
+     * @notice onlyWhenEnabledRewards - A modifier that allows the execution of functions only when the reward feature is enabled
+     * @dev This reverts the transaction if the the reward feature is NOT enabled
+     */
     modifier onlyWhenEnabledRewards() {
         LibReward.checkRewardEnabled();
         _;
     }
 
+    /**
+     * @notice onlyRevokedWorkers - A modifier that restricts the execution of functions only to users who are NOT enrolled as workers
+     * @dev This reverts the transaction if the `workerToRemove` still has the worker role credential
+     * @param workerToRemove - The address of the operator whose worker role credential is checked.
+     */
     modifier onlyRevokedWorkers(address workerToRemove) {
         LibClaimManager.checkRevokedWorker(workerToRemove);
         _;
     }
 
     /**
-     * @notice Increases the number of votes for this matchResult. Voting completes when that vote leads to consensus or when voting expires
+     * @notice Allows a worker to vote on a match result
+     * @dev Increases the number of votes for this matchResult.
+     * @dev Voting completes when that vote leads to consensus or when voting expires
+     * @param votingID - The id of the voting
+     * @param matchResult - The match result the worker is voting for
      */
     function vote(bytes32 votingID, bytes32 matchResult) external onlyWhitelistedWorker {
         bytes32 sessionID = LibVoting.checkNotClosedSession(votingID, matchResult);
@@ -67,8 +93,8 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice addWorker - Adds a worker to the whiteList of authorized workers.
-     * To be added, a worker should have the `workerRole` credential inside the claimManager
-     * @param workerAddress - The address of the worker we want to remove
+     * @dev To be added, a worker should have the `workerRole` credential inside the claimManager
+     * @param workerAddress - The address of the worker we want to add
      */
     function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         LibVoting.checkNotWhiteListedWorker(workerAddress);
@@ -78,7 +104,7 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice removeWorker - Removes a worker from the whiteList of authorized workers
-     * The `workerRole` credential of the worker should be revoked before the removal.
+     * @dev The `workerRole` credential of the worker should be revoked before the removal.
      * @param workerToRemove - The address of the worker we want to remove
      */
     function removeWorker(address workerToRemove) external onlyRevokedWorkers(workerToRemove) {
@@ -123,6 +149,12 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
+    /**
+     * @notice setRewardsEnabled - Enables/disables the rewards feature.
+     * @dev Only the contract owner can call this function. This restriction is set on the internal `setRewardsFeature` function.
+     * @dev The transaction will revert if the function is called while the rewarding is already in the desired state intor the `rewardStorage`
+     * @param rewardsEnabled - The status of rewarding feature
+     */
     function setRewardsEnabled(bool rewardsEnabled) external {
         LibReward.setRewardsFeature(rewardsEnabled);
         if (rewardsEnabled) {
@@ -132,6 +164,11 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
+    /**
+     * @notice replenishRewardPool - Allows the refunding of the contract to reward workers
+     * @dev This function will revert if reward feature is disabled.
+     * @dev When rewards are enabled, the transaction will revert if sent withoud providig funds into `msg.value`
+     */
     function replenishRewardPool() external payable onlyWhenEnabledRewards {
         LibReward.checkFunds();
         emit Replenished(msg.value);
@@ -140,12 +177,20 @@ contract VotingFacet is IVoting, IReward {
         emit RewardsPaidOut(rewardedAmount);
     }
 
-    /// @dev Only called when reward payment fails due to insufficient gas
+    /**
+     * @notice payReward - Allows to manually send rewards to workers waiting in the reward queue
+     * @dev This function will revert when the reward feature is disabled
+     * @param numberOfPays - The number of workers who have been rewarded
+     */
     function payReward(uint256 numberOfPays) external onlyWhenEnabledRewards {
         uint256 rewardedAmount = LibReward.payReward(numberOfPays);
         emit RewardsPaidOut(rewardedAmount);
     }
 
+    /**
+     * @dev Returns an array of all workers
+     * @return The list of all workers
+     */
     function getWorkers() external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
@@ -154,6 +199,10 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice Returns match results of the worker in the sessions, which has been reached consensus
+     * @dev Returns an array of match results for a specific worker
+     * @param votingID The input hash of the voting session
+     * @param worker The address of the worker
+     * @return votes - matchResults The
      */
     function getWorkerVotes(bytes32 votingID, address worker) external view returns (bytes32[] memory votes) {
         bytes32[] memory winningMatches = getWinningMatches(votingID);
@@ -177,7 +226,10 @@ contract VotingFacet is IVoting, IReward {
     }
 
     /**
-     * @notice Retreieves the list of workers who voted for the winning macth
+     * @notice Retreieves the list of workers who voted for the winning macth result
+     * @param votingID The id of the voting session
+     * @param matchResult The match result
+     * @return The addresses of the workers who voted for the match result
      */
     function getWinners(bytes32 votingID, bytes32 matchResult) external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
@@ -186,6 +238,10 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.winners[votingID][sessionID];
     }
 
+    /**
+     * @notice numberOfVotings - Returns the number of all votings
+     * @return The number of voting
+     */
     function numberOfVotings() external view returns (uint256) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
@@ -203,8 +259,8 @@ contract VotingFacet is IVoting, IReward {
      * @param votingID - The id of the voting for which we want to get the winning matches
      * @return winningMatches - An array of bytes32 representing the match results that have reached consensus
      * @dev This function returns the match results that have reached consensus in a specific voting.
-     *      It first retrieves all the voting sessions associated with the given votingID and iterates over them to check if consensus is reached.
-     *      The match results associated with these sessions are then returned as an array
+     * @dev It first retrieves all the voting sessions associated with the given votingID and iterates over them to check if consensus is reached.
+     * @dev The match results associated with these sessions are then returned as an array
      */
     function getWinningMatches(bytes32 votingID) public view returns (bytes32[] memory winningMatches) {
         LibVoting.Voting storage voting = LibVoting.getStorage().votingIDToVoting[votingID];
@@ -227,6 +283,12 @@ contract VotingFacet is IVoting, IReward {
         }
     }
 
+    /**
+     * @notice _emitSessionEvents - Casts different events resulting of the voting session
+     * @param votingID - The ID of the voting
+     * @param sessionID - The ID of voting session
+     * @param numberOfRewardedWorkers - The number of workers who have been rewarded when session was completed
+     */
     function emitSessionEvents(bytes32 votingID, bytes32 sessionID, uint256 numberOfRewardedWorkers) private {
         LibVoting.VotingSession storage session = LibVoting.getSession(votingID, sessionID);
         if (session.isConsensusReached) {
@@ -238,7 +300,5 @@ contract VotingFacet is IVoting, IReward {
         } else {
             emit NoConsensusReached(votingID, sessionID);
         }
-        emit Replenished(msg.value);
-        LibReward.payRewardsToAll();
     }
 }
