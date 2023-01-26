@@ -7,16 +7,30 @@ import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
 
-// It is expected that this contract is customized if you want to deploy your diamond
-// with data from a deployment script. Use the init function to initialize state variables
-// of your diamond. Add parameters to the init funciton if you need to.
-
+/**
+ * @title GreenproofInit - Initialization contract
+ * @author EnergyWeb Foundation
+ * @notice This contract is the initialization contract for the Greenproof smart contract.
+ * @dev The contract sets the supported interfaces for the Greenproof contract and allows for the initialization of state variables.
+ * @dev It is expected that this contract is customized if you want to deploy your greenProof diamond with data from a deployment script.
+ * @dev Use the init function to initialize state variables of your proxy.
+ * @dev Add parameters to the init funciton if you need to.
+ */
 contract GreenproofInit {
+    /**
+     * @dev Using the ERC165Storage library for the ERC165Storage.Layout struct
+     */
     using ERC165Storage for ERC165Storage.Layout;
 
-    // You can add parameters to this function in order to pass in
-    // data to set your own state variables
+    /**
+     * @notice Initialization function for setting the supported interfaces and initializing state variables.
+     * @dev This function is called during contract deployment or upgrades to accordingly setinterfaces
+     * @dev You can add parameters to this function in order to pass in data to set your own state variables.
+     */
     function init() external {
+        /**
+         * @dev Setting the supported interfaces for the Greenproof contract.
+         */
         ERC165Storage.Layout storage erc165 = ERC165Storage.layout();
         erc165.setSupportedInterface(type(IClaimManager).interfaceId, true);
         erc165.setSupportedInterface(type(IGreenProof).interfaceId, true);

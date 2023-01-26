@@ -11,21 +11,25 @@ library LibVoting {
         mapping(bytes32 => VotingSession) sessionIDToSession;
     }
 
-    /// Represents voting for given pair of (matchInput, matchResult)
+    /**
+     * @title VotingSession
+     * @dev Struct for managing a voting session for given pair of (matchInput, matchResult)
+     * @custom:field votesCount - Number of votes in this voting
+     * @custom:field startTimestamp - Timestamp of first voting
+     * @custom:field matchResult -  Winning match result
+     * @custom:field workerToVoted -  Worker address to voted flag
+     * @custom:field voters - Records each worker voting in this voting session
+     * @custom:field status - Tracks voting lifecycle state.
+     * @custom:field isConsensusReached - tracks wether count of votes for this session is has reached the majority to make a consensus
+     */
+
     struct VotingSession {
-        // Number of votes in this voting
         uint256 votesCount;
-        //Timestamp of first voting
         uint256 startTimestamp;
-        // Winning match result
         bytes32 matchResult;
-        // Worker address to voted flag
         mapping(address => bool) workerToVoted;
-        //records each worker voting in this vote session
         address payable[] voters;
-        // To decide which actions are currently applicable to voting
         Status status;
-        // If count of votes is enough for consensus
         bool isConsensusReached;
     }
 
@@ -61,7 +65,12 @@ library LibVoting {
     error AlreadyWhitelistedWorker(address worker); // Worker has already been added
     error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult); // Vote session is closed
 
-    // initialize voting parameters at the diamond construction
+    /**
+     * @notice init - Initializes voting parameters
+     * @dev This function will be called once during the deployment of the greenproof proxy contract.
+     * @param timeLimit The time limit of a voting session. The vote is considered expired after `startTimestamp` + `timeLimit`.
+     * @param majorityPercentage The percentage of workers that have to vote on the same result to reach the majority.
+     */
     function init(uint256 timeLimit, uint256 majorityPercentage) internal {
         VotingStorage storage votingStorage = getStorage();
 
@@ -70,7 +79,13 @@ library LibVoting {
     }
 
     /**
-     * @notice recordVote: stores worker's vote
+
+     * @notice recordVote - Stores worker's vote
+     * @dev This function stores a vote from a worker, and checks if the vote reached the consensus.
+     * If the consensus is reached, the function completes the voting session and rewards the workers.
+     * @param votingID - The identifier of the voting session.
+     * @param sessionID - The identifier of the specific voting session.
+     * @return numberOfRewardedWorkers -  The number of workers who were rewarded for their vote
      */
     function recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         VotingSession storage session = getSession(votingID, sessionID);
@@ -85,6 +100,12 @@ library LibVoting {
         }
     }
 
+    /**
+     * @notice startSession - Starts a new voting session
+     * @dev This function starts a voting session for a given pair of matchInput and matchResult.
+     * @param votingID - The voting identifier
+     * @param matchResult The match result for which the voting session is started.
+     */
     function startSession(bytes32 votingID, bytes32 matchResult) internal {
         /// There can not be voting without some session
         if (getStorage().votingIDToVoting[votingID].sessionIDs.length == 0) {
@@ -102,7 +123,12 @@ library LibVoting {
     }
 
     /**
-     * @notice No further votes are accounted. If consensus has been reached then reward is paid and session results are exposed
+     * @notice _completeSession - Marks a session as completed and if rewards are enabled, rewards the workers who voted for the winning match result
+     * @dev After a session is completed, no further votes are accounted for this session.
+     * @dev If consensus has been reached, the voting results are exposed. If rewards are enabled, then reward are paid to  the workers who voted for the winning match result
+     * @param votingID Voting identifier
+     * @param sessionID session identifier
+     * @return numberOfRewardedWorkers Count of rewarded workers
      */
     function completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
         Voting storage voting = getStorage().votingIDToVoting[votingID];
@@ -124,6 +150,7 @@ library LibVoting {
     /**
      * @notice isSessionExpired: Checks if a voting session has exceeded the `timeLimit`
      * @param sessionID - The voting session ID which validity we want to check
+     * @param votingID - The voting ID
      * @return isSessionExpired : boolean
      * @dev the timeLimit duration is set once during contract construction
      */
@@ -136,17 +163,40 @@ library LibVoting {
         }
     }
 
+    /**
+     * @notice `_hasReachedConsensus` - Check if a session has reached the consensus
+     * @dev This function checks if the session has reached the consensus by comparing the number of votes and the majority percentage.
+     * @param session - The ID of the voting session
+     * @return A boolean value indicating whether the session has reached the consensus or not.
+     */
+    function hasReachedConsensus(VotingSession storage session) internal view returns (bool) {
+        return hasMajority(session.votesCount);
+    }
+
+    /**
+     * @notice `getNumberOfWorkers` - Gets the total number of whitelisted workers
+     * @return number of whitelisted workers
+     */
     function getNumberOfWorkers() internal view returns (uint256) {
         VotingStorage storage votingStorage = getStorage();
 
         return votingStorage.whitelistedWorkers.length;
     }
 
+    /**
+     * @notice `getSession` - Gets the Voting session details
+     * @dev a session is uniquely represented by the pair values of (votingID, sessionID)
+     * @param votingID The identifier of the voting
+     * @param sessionID The identifier of the voting session
+     * @return  The storage pointer to the actual voting session
+     */
     function getSession(bytes32 votingID, bytes32 sessionID) internal view returns (VotingSession storage) {
         return getStorage().votingIDToVoting[votingID].sessionIDToSession[sessionID];
     }
 
-    /** checks that some data is part of a voting consensus
+    /** Data verification */
+
+    /** @notice checkVoteInConsensus - Checks that some data is part of a voting consensus
         @param voteID : the inputHash identifying the vote
         @param dataHash: the hash of the data we want to verify
         @param dataProof: the merkle proof of the data
@@ -162,6 +212,12 @@ library LibVoting {
         revert NotInConsensus(voteID);
     }
 
+    /**
+     * @dev Check that the session is not closed and return the session ID
+     * @param votingID ID of the voting
+     * @param matchResult Result of the match
+     * @return sessionID ID of the session
+     */
     function checkNotClosedSession(bytes32 votingID, bytes32 matchResult) internal view returns (bytes32) {
         bytes32 sessionID = getSessionID(votingID, matchResult);
 
@@ -173,24 +229,46 @@ library LibVoting {
         return sessionID;
     }
 
+    /**
+     * @notice checkNotVoted - Prevents a worker from voting several time for the same session
+     * @dev The function checks that a worker has not voted yet
+     * @dev It reverts if the operator/worker has already voted
+     * @param operator The address of the worker
+     * @param session The voting session
+     */
     function checkNotVoted(address operator, VotingSession storage session) internal view {
-        if (session.workerToVoted[operator] == true) {
+        if (hasAlreadyVoted(operator, session)) {
             revert AlreadyVoted(operator);
         }
     }
 
+    /**
+     * @notice checkWhiteListedWorker - Checks if the worker is whitelisted
+     * @param operator The address of the worker
+     */
     function checkWhiteListedWorker(address operator) internal view {
         if (!isWhitelistedWorker(operator)) {
             revert NotWhitelisted(operator);
         }
     }
 
+    /**
+     * @notice checkNotWhiteListedWorker - Checks that a worker is not already whitelisted
+     * @param operator The address of the worker
+     * @dev The function reverts with the `AlreadyWhitelistedWorker` error if the operator is withelisted
+     */
     function checkNotWhiteListedWorker(address operator) internal view {
         if (isWhitelistedWorker(operator)) {
             revert AlreadyWhitelistedWorker(operator);
         }
     }
 
+    /**
+     * @dev Checks if the operator has already voted
+     * @param operator The address of the worker
+     * @param session The voting session
+     * @return true if the operator has already voted, false otherwise
+     */
     function hasAlreadyVoted(address operator, VotingSession storage session) internal view returns (bool) {
         return session.workerToVoted[operator];
     }
@@ -202,6 +280,10 @@ library LibVoting {
         votingStorage.whitelistedWorkers.push(workerAddress);
     }
 
+    /**
+     * @dev Get the voting storage
+     * @return votingStorage The voting storage
+     */
     function getStorage() internal pure returns (VotingStorage storage votingStorage) {
         bytes32 position = VOTING_STORAGE_POSITION;
 
@@ -210,12 +292,23 @@ library LibVoting {
         }
     }
 
+    /**
+     * @notice getSessionID -  Calculates the session ID given a voteID and a matchResult
+     * @dev The sessionID is the resulting keccack256 of VotingID + matchResult
+     * @param votingID - ID of the voting
+     * @param matchResult - matchResult data
+     * @return sessionID - ID of the voting session
+     */
     function getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(votingID, matchResult));
     }
 
     /**
-     * @notice Exposes result of the session
+     * @notice `_revealMatch` - Reveals the match result
+     * @dev This function is called by the worker after the end of the voting session. It will reveal the match result
+     * and check if it is in consensus with the other workers. If it is in consensus, it calls the _rewardWinners function.
+     * @param votingID - ID of the voting session
+     * @param sessionID - ID of the voting session
      */
     function revealMatch(bytes32 votingID, bytes32 sessionID) private {
         VotingSession storage session = getSession(votingID, sessionID);
@@ -223,7 +316,11 @@ library LibVoting {
     }
 
     /**
-     * @notice Exposes workers, which voted in session
+     * @notice `revealVoters` - Reveals the addresses of the voters
+     * @dev This function is called by the worker after the end of the voting session. It will reveal the addresses of the voters
+     * and check if it is in consensus with the other workers. If it is in consensus, it calls the _rewardWinners function.
+     * @param votingID - The voting ID
+     * @param sessionID - ID of the session
      */
     function revealVoters(bytes32 votingID, bytes32 sessionID) private {
         VotingStorage storage votingStorage = getStorage();
@@ -231,8 +328,11 @@ library LibVoting {
     }
 
     /**
-     * @notice sends rewards to workers who casted winning vote
-     * @dev On missing funds, will add in the rewardQueue only the voters who could not be rewarded
+     * @notice `rewardWinners` - Rewards the winning workers
+     * @dev If funds are not sufficient to reward workers, the function will add in the rewardQueue only the voters who could not be rewarded
+     * @param votingID - The voting ID
+     * @param sessionID - ID of the session
+     * @return numberOfPayments - The number of workers who have been rewarded
      */
     function rewardWinners(bytes32 votingID, bytes32 sessionID) private returns (uint256 numberOfPayments) {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
@@ -253,14 +353,10 @@ library LibVoting {
     }
 
     /**
-     *  @notice Number of votes sufficient to determine match winner
-     */
-    function hasReachedConsensus(VotingSession storage session) private view returns (bool) {
-        return hasMajority(session.votesCount);
-    }
-
-    /**
-     * @notice Number of votes sufficient to determine match winner
+     * @notice `hasMajority` - Checks if a session has reached the majority
+     * @dev the majority is defined as the number of votes sufficient to determine match winner
+     * @param numberOfWinningVotes - The number of worker's votes for this session
+     * @return A boolean value indicating whether the session has reached the majority or not.
      */
     function hasMajority(uint256 numberOfWinningVotes) private view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
@@ -268,16 +364,33 @@ library LibVoting {
         return ((100 * numberOfWinningVotes) / getNumberOfWorkers()) >= votingStorage.majorityPercentage;
     }
 
+    /**
+     * @notice `_isClosed` - Checks if a voting session is closed
+     * @dev A voting session is considered closed when its status is completed
+     * @param vote -  The voting session to check
+     * @return true if voting session is closed, false otherwise
+     */
     function isClosed(VotingSession storage vote) private view returns (bool) {
         return vote.status == Status.Completed;
     }
 
+    /**
+     * @notice `isWhitelistedWorker` - checks if an address is a whitelisted worker
+     * @param worker The address to check
+     * @return true if the address is a whitelisted worker, false otherwise
+     */
     function isWhitelistedWorker(address worker) private view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
         return workerIndex < getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
     }
 
+    /**
+     * @notice `getVoters` - Gets the list of all workers participating to a voting session
+     * @param votingID The identifier of the voting
+     * @param sessionID The identifier of the voting session
+     * @return  array of addresses of all voters in this voting session
+     */
     function getVoters(bytes32 votingID, bytes32 sessionID) private view returns (address payable[] memory) {
         VotingSession storage session = getSession(votingID, sessionID);
         return session.voters;
