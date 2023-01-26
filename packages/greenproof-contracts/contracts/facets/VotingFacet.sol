@@ -127,25 +127,35 @@ contract VotingFacet is IVoting, IReward {
     }
 
     /**
-     * @notice Cancels votings that takes longer than time limit
+     * @notice cancelExpiredVotings - Cancels votings that exceeded time limit
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
 
-    function cancelExpiredVotings(uint256 numberOfVotingsLimit, uint256 numberOfSessionsLimit) external override onlyOwner {
+    function cancelExpiredVotings(uint256 numberOfSessionsLimit) external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        uint256 numberOfVotingsToCancel = LibVoting.getMinimum(numberOfVotingsLimit, votingStorage.votingIDs.length);
+        uint256 numberOfVotingsToCancel = votingStorage.votingIDs.length;
 
         for (uint256 i; i < numberOfVotingsToCancel; i++) {
             bytes32 votingID = votingStorage.votingIDs[i];
-            LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
+            LibVoting.Voting storage voting = LibVoting.getVoting(votingID);
+
             uint256 numberOfSessionsToCancel = LibVoting.getMinimum(numberOfSessionsLimit, voting.sessionIDs.length);
+            uint256 numberOfExpiredSessions;
+            bytes32[] memory expiredSessionIDs = new bytes32[](numberOfSessionsToCancel);
             for (uint256 j; j < numberOfSessionsToCancel; j++) {
                 bytes32 sessionID = voting.sessionIDs[j];
-                if (LibVoting.isSessionExpired(votingID, sessionID)) {
-                    uint256 numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
-                    emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
+                if (LibVoting.checkExpiredSession(votingID, sessionID)) {
+                    expiredSessionIDs[numberOfExpiredSessions] = sessionID;
+                    numberOfExpiredSessions++;
+                    emitSessionEvents(votingID, sessionID, 0);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
+                }
+            }
+            if (numberOfExpiredSessions != 0) {
+                for (uint256 k; k < numberOfExpiredSessions; k++) {
+                    bytes32 currentSession = expiredSessionIDs[k];
+                    LibVoting.archiveSession(votingID, currentSession);
                 }
             }
         }
