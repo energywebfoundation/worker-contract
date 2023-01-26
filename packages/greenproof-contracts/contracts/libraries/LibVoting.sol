@@ -3,7 +3,8 @@ pragma solidity 0.8.16;
 
 import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
-import {MerkleProof} from "@solidstate/contracts/cryptography/MerkleProof.sol";
+import {LibProofManager} from "./LibProofManager.sol";
+import "hardhat/console.sol";
 
 library LibVoting {
     struct Voting {
@@ -131,20 +132,29 @@ library LibVoting {
      * @return numberOfRewardedWorkers Count of rewarded workers
      */
     function completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
-        Voting storage voting = getStorage().votingIDToVoting[votingID];
-        VotingSession storage session = voting.sessionIDToSession[sessionID];
+        VotingSession storage session = getSession(votingID, sessionID);
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
             return 0;
         }
 
-        revealMatch(votingID, sessionID);
-        revealVoters(votingID, sessionID);
+        // Exposes result of the session
+        getStorage().matches[votingID][sessionID] = session.matchResult;
+
+        // Exposes workers, which voted in session
+        getStorage().winners[votingID][sessionID] = session.voters;
 
         if (LibReward.isRewardEnabled()) {
             numberOfRewardedWorkers = rewardWinners(votingID, sessionID);
         }
+    }
+
+    function addWorker(address payable workerAddress) internal {
+        VotingStorage storage votingStorage = getStorage();
+
+        votingStorage.workerToIndex[workerAddress] = getNumberOfWorkers();
+        votingStorage.whitelistedWorkers.push(workerAddress);
     }
 
     /**
@@ -204,8 +214,12 @@ library LibVoting {
     function checkVoteInConsensus(bytes32 voteID, bytes32 dataHash, bytes32[] memory dataProof) internal view {
         bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(voteID);
         uint256 numberOfMatchResults = matchResults.length;
+        bool isVoteInConsensus;
+
         for (uint256 i; i < numberOfMatchResults; i++) {
-            if (MerkleProof.verify(dataProof, matchResults[i], dataHash)) {
+            isVoteInConsensus = LibProofManager.verifyProof(dataHash, matchResults[i], dataProof);
+
+            if (isVoteInConsensus) {
                 return;
             }
         }
@@ -273,11 +287,13 @@ library LibVoting {
         return session.workerToVoted[operator];
     }
 
-    function addWorker(address payable workerAddress) internal {
-        VotingStorage storage votingStorage = getStorage();
-
-        votingStorage.workerToIndex[workerAddress] = getNumberOfWorkers();
-        votingStorage.whitelistedWorkers.push(workerAddress);
+    /** Data verification */
+    function getMinimum(uint256 maxTxAllowed, uint256 objectSize) internal pure returns (uint256 nbOfTxAllowed) {
+        if (maxTxAllowed > objectSize) {
+            nbOfTxAllowed = objectSize;
+        } else {
+            nbOfTxAllowed = maxTxAllowed;
+        }
     }
 
     /**
@@ -304,32 +320,9 @@ library LibVoting {
     }
 
     /**
-     * @notice `_revealMatch` - Reveals the match result
-     * @dev This function is called by the worker after the end of the voting session. It will reveal the match result
-     * and check if it is in consensus with the other workers. If it is in consensus, it calls the _rewardWinners function.
-     * @param votingID - ID of the voting session
-     * @param sessionID - ID of the voting session
-     */
-    function revealMatch(bytes32 votingID, bytes32 sessionID) private {
-        VotingSession storage session = getSession(votingID, sessionID);
-        getStorage().matches[votingID][sessionID] = session.matchResult;
-    }
-
-    /**
-     * @notice `revealVoters` - Reveals the addresses of the voters
-     * @dev This function is called by the worker after the end of the voting session. It will reveal the addresses of the voters
-     * and check if it is in consensus with the other workers. If it is in consensus, it calls the _rewardWinners function.
-     * @param votingID - The voting ID
-     * @param sessionID - ID of the session
-     */
-    function revealVoters(bytes32 votingID, bytes32 sessionID) private {
-        VotingStorage storage votingStorage = getStorage();
-        votingStorage.winners[votingID][sessionID] = getVoters(votingID, sessionID);
-    }
-
     /**
      * @notice `rewardWinners` - Rewards the winning workers
-     * @dev If funds are not sufficient to reward workers, the function will add in the rewardQueue only the voters who could not be rewarded
+     * @dev If funds are not sufficient to reward workers, will add in the rewardQueue only the voters who could not be rewarded
      * @param votingID - The voting ID
      * @param sessionID - ID of the session
      * @return numberOfPayments - The number of workers who have been rewarded
@@ -383,16 +376,5 @@ library LibVoting {
         VotingStorage storage votingStorage = getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
         return workerIndex < getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
-    }
-
-    /**
-     * @notice `getVoters` - Gets the list of all workers participating to a voting session
-     * @param votingID The identifier of the voting
-     * @param sessionID The identifier of the voting session
-     * @return  array of addresses of all voters in this voting session
-     */
-    function getVoters(bytes32 votingID, bytes32 sessionID) private view returns (address payable[] memory) {
-        VotingSession storage session = getSession(votingID, sessionID);
-        return session.voters;
     }
 }

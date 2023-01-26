@@ -123,5 +123,5 @@ interface IVoting {
      * @notice Cancels votings that takes longer than time limit
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
-    function cancelExpiredVotings() external;
+    function cancelExpiredVotings(uint256 numberOfVotingsLimit, uint256 numberOfSessionsLimit) external;
 }
