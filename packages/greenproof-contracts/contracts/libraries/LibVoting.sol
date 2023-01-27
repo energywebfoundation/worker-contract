@@ -4,7 +4,6 @@ pragma solidity 0.8.16;
 import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibProofManager} from "./LibProofManager.sol";
-import "hardhat/console.sol";
 
 library LibVoting {
     struct Voting {
@@ -50,6 +49,13 @@ library LibVoting {
         mapping(bytes32 => mapping(bytes32 => address payable[])) winners /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the right workers */;
     }
 
+    /**
+     * @title Status
+     * @dev enumeration keeping track of the state of a voting session
+     * @custom:state NotStarted - Default state when a voting is  created
+     * @custom:state Started - The voting has been started by the first voter who
+     * @custom:state Completed - achieved eitheir when a consensus or the session tiemeLimit has been reached on the voting session
+     */
     enum Status {
         NotStarted,
         /// Worker can vote
@@ -60,11 +66,40 @@ library LibVoting {
 
     bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
 
-    error AlreadyVoted(address worker); // Worker had already voted for a match result
+    /**
+     * @notice AlreadyVoted - Error raised when some worker tries to recast a vote on the same voting session
+     * @param worker - address of the voter
+     */
+    error AlreadyVoted(address worker);
+
+    /**
+     * @notice NotInConsensus - Error raised when trying to certify a vote which has not reached consensus
+     * @dev A vote is part of a consensus only if it is correctly verified within the merkle proof of the consensus
+     * @param voteID - The identifier of the voting
+     */
     error NotInConsensus(bytes32 voteID); // Vote is not part of consensus
-    error NotWhitelisted(address operator); // Sender is not whitelisted
-    error AlreadyWhitelistedWorker(address worker); // Worker has already been added
-    error SessionCannotBeRestarted(bytes32 inputHash, bytes32 matchResult); // Vote session is closed
+
+    /**
+     * @notice NotWhitelisted - Error raised when a non authorized operater attempts to vote
+     * @dev to be withelisted, an address should be added in the withelist by calling the function `addWorker`
+     * @dev Only addresses enrolled as a worker inside EW claimManager can be added to the worker whitelist
+     * @param operator - the address being rejected in voting attempt
+     */
+    error NotWhitelisted(address operator);
+
+    /**
+     * @notice AlreadyWhitelistedWorker - Error raised when one tries to whiteList an already authorized operater
+     * @param worker - The address of the already added worker
+     */
+    error AlreadyWhitelistedWorker(address worker);
+
+    /**
+     * @notice SessionCannotBeRestarted - Error raised when a worker votes on an already ended voting session
+     * @param votingID - The identifier of the voting
+     * @param matchResult - The result of the voting
+     * @dev a session is uniquely identified with the pair (votingID, matchResult)
+     */
+    error SessionCannotBeRestarted(bytes32 votingID, bytes32 matchResult); // Vote session is closed
 
     /**
      * @notice init - Initializes voting parameters
@@ -150,6 +185,11 @@ library LibVoting {
         }
     }
 
+    /**
+     * @notice addWorker - Adds a worker to the whiteList of authorized workers.
+     * @dev this is the internal function called by the `addWorker` function externally exposed in `VotingFacet.sol`
+     * @param workerAddress - The address of the worker we want to add
+     */
     function addWorker(address payable workerAddress) internal {
         VotingStorage storage votingStorage = getStorage();
 

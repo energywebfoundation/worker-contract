@@ -8,36 +8,59 @@
 
 ## Roles
 
-**Owner** The only account allowed to upgrade contract, add or remove participants of voting, cancel expired votings and enable or disable reward of voters, who has reached consensus.
-**Worker** Account who able to determine generator data by generation identifier. Since this process requires offchain data workers are offchain nodes. Only node which are able to present certain verifiable credentials are allowed to vote.
-**Issuer** Party authorized to mint energy certificates and make their data public.
-**Generator** Party which generates electricity energy and requests its certification.
+- **Owner** : The only account allowed to upgrade contract, add or remove participants of voting, cancel expired votings and enable or disable reward of voters who have reached consensus.
+
+- **Worker** : Account who is able to determine generator data by generation identifier. Since this process requires offchain data, workers are offchain nodes. Only nodes which are able to present `workerRole` verifiable credentials are allowed to vote. This credential role is delivred via EnergyWeb Self Sovreing Idendity stack, and requires workers to be EOA's with private keys.
+
+- **Issuer** :  Party authorized to issue energy certificates and publicly disclose their associated data.
+
+- **Generator** : Party which generates electricity energy and requests its certification.
+
+- **Revoker** : An EOA account holding the `revoker` verifiable credential role. This type of accounts are authorized to revoke issued certificates.
+
+- **Claimer** : Party authorized to claim issued certificates on behalf of users.
+
 
 ## Features
 
-- Create new voting for (`inputHash`, `matchResult`) on the first vote casted for this pair. (Worker)
-- Reward workers who voted for (`inputHahs`, `matchResult`), which has reaches consensus.
-- Make public voting (`inputHahs`, `matchResult`), which reaches consensus.
-- Mint energy attribute certificate to generator when workers reaches consensus about generation data (Issuer). This certificate is subject of transferring/trading.
+- Create new voting for (`inputHash`, `matchResult`) on the first vote casted for this pair. (Worker
+
+- Enabling and disabling reward feature on the contract. (Owner)
+
+- Reward workers who voted for (`inputHash`, `matchResult`), which has reached consensus.
+
+- Make public voting (`inputHash`, `matchResult`), which reaches consensus.
+
+- Mint energy attribute certificate to generator when workers reach consensus about generation data (Issuer). This certificate is subject of transferring/trading.
+
 - Claim certificate. Claiming makes certificate untransferrable. Only claimed certificate can be used to obtain benefits from certificate ownership. (Generator)
-- Expire voting which lasts more then it is specified by `Greenproof` contract configuration.
+
+- Expire voting which lasts more than a duration specified by `Greenproof` contract configuration (votingTimeLimit).
+
 - Authorize worker to participate in voting. (Owner)
-- Forbid previously authorized worker to participate in voting. (Owner)
-- Configure credentials required by become authorized worker. (Owner)
+
+- Forbid previously authorized worker to vote several time in the same voting session. (Owner)
+
+- Configure credentials required to become authorized worker. (Owner)
+
 - Configure credentials required to issue worker credentials. (Owner)
+
 - Configure credentials required to revoke worker credentials. (Owner)
+
 - Upgrade deployed `Greenproof` contract.
 
 ## Use cases
 
 - Owner authorizes worker to vote. The worker should have required credentials.
-- Worker casts vote for (`inputHash`, `matchResult`). Depending on the voting state following scenarios are possible:
+- Worker casts vote for (`inputHash`, `matchResult`). Each (`inputHash`, `matchResult`) pair uniquely identifies a voting `session`. Depending on the voting state following scenarios are possible:
   - No worker has voted for this pair yet. Voting session marked as `Started` and its start timestamp is set
   - Voting has already been started
     - Voting time limit has not expired
       - New vote is not enough to reach consensus. Vote is recorded
-      - Total number of votes with new vote enough to reach consensus. Voting marked as `Completed` and has been reached consensus, workers participated in this voting are added to reward list, `matchResult` is added to winning matches of `inputHash`. Further votes are rejected
-    - Voting time limit has been expired. Voting marked as `Completed` and has not been reached consensus. Further votes are rejected
+      - Total number of votes with new vote enough to reach consensus. Voting is marked as `Completed` and has been reached consensus; If the reward feature is enabled, workers participated in this voting are added to reward list; `matchResult` is added to winning matches of `inputHash`. Further votes are rejected for this completed session.
+
+    - Voting time limit has been expired. Voting marked as `Completed` and has not been reached consensus. Further votes are rejected for this session.
+
 - Issuer mints certificate to generator. Prerequisite for certification is consensus about certified data
 - Generator claims owned certificate
 
@@ -93,15 +116,18 @@ Proxy is implemented as EIP-2535 https://github.com/ethereum/EIPs/blob/master/EI
 Exposes API for driving and configuraion of the voting. Internal methods are separated into LibVoting library. Since voting is identified by input hash its been aliased as `votingID`.
 **Requirements**:
 
-- Reward per consensus. There is no final, “right” match result. Consensus can be reached for any pair of (input hash, match result) and each will be rewarded. This requires that the majority of workers are trusted, otherwise misbehaving workers will drain reward pool.
+- Reward per consensus. There is no final, “right” match result. Consensus can be reached for any pair of (input hash, match result) and each will be rewarded if reward feature is enabled. This requires that the majority of workers are trusted, otherwise misbehaving workers will drain reward pool.
 
-- If reward pool balance in insufficient, then reward must be paid after reward pool replenished
-
+- If reward pool balance in insufficient and reward feature is enabled, then workers elligibilble to reward are added to a reward queue. Reward must be paid :
+  
+  - automatically after reward pool is replenished
+  - manually by calling the `payReward` function
+  
 - Voting duration is limited. There are two reasons for this:
 
-- Workers expects to be paid in time
+  - Workers expects to be paid in time
 
-- Match result probably useful only for some time
+  - Match result probably useful only for some time
 
   Since Solidity doesn’t provide scheduling mechanism, expiration is checked and triggered on attemp to vote. Expired votings can also be completed explicitly.
 
@@ -112,23 +138,48 @@ Exposes API for driving and configuraion of the voting. Internal methods are sep
 ### Modifiers
 
 - **onlyEnrolledWorkers(address operator)**: checks if operator has `workerRole` credentials.
+
+- **onlyRevokedWorkers()**: checks if operator has NOT `workerRole` credentials.
+
 - **onlyOwner()**: checks if sender is owner of the Greenproof contract.
+
+- **onlyIssuer()**: checks if operator has `issuerRole` credentials.
+
+- **onlyClaimer()**: checks if operator has `claimerRole` credentials.
+
+- **onlyRevoker()**: checks if operator has `revokerRole` credentials.
+
 - **onlyWhitelistedWorker()**: checks if sender is authorized to vote.
+
+- **onlyWhenEnabledRewards()**: checks if reward featuure is enabled on the contract.
 
 ### Functions
 
 - **vote(bytes32 votingID, bytes32 matchResult)**: Increases number of votes casted for (votingID, matchResult) and checks if voting should be completed. Rejects on vote in completed voting.
+
 - **addWorker(address payable workerAddress)**: authorizes worker to participate in votings.
+
 - **removeWorker(address workerToRemove)**: cancels worker's right to participate in votings.
+
 - **cancelExpiredVotings()**: completes expired votings.
+
 - **getNumberOfWorkers()**: returns number of workers allowed to participate in votings.
+
 - **getWorkers()**: returns list of workers allowed to participate in votings.
+
 - **isWhitelistedWorker(address worker)**: checks if worker is allowed to participate in votings.
+
 - **getWorkerVotes(bytes32 votingID, address worker)**: returns `matchResult`'s casted by worker for votingID in those sessions which reached consensus.
+
 - **getWinners(bytes32 votingID, bytes32 matchResult)**: returns workers, who participated in (votingID, matchResult) session, which reached consensus.
+
 - **getWinningMatches(bytes32 votingID)**: returns `matchResult`'s casted for `votingID`, which reached consensus.
+
 - **numberOfVotings()**: returns number of ever started votings.
+
 - **replenishRewardPool()**: transfers ethers to this contract in order to be able to pay reward.
+
+- **payReward(uint256 numberOfPays)**: proceed to payement of rewards if reward feature is enabled and there are sufficient funds in the contract.
 
 ## LibVoting
 
