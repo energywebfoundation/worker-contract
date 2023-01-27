@@ -153,6 +153,11 @@ library LibVoting {
         }
     }
 
+    /**
+     * @notice archiveSession - Moves ID of session to completed sessions ID's
+     * @param votingID - The identifier of the voting
+     * @param sessionID - The identifier of the session
+     */
     function archiveSession(bytes32 votingID, bytes32 sessionID) internal {
         VotingSession storage session = getSession(votingID, sessionID);
 
@@ -169,7 +174,7 @@ library LibVoting {
             return;
         }
 
-        if (numberOfActiveSessions == 1) {
+        if (numberOfActiveSessions == 1 && activeSessionIDs[0] == sessionID) {
             activeSessionIDs.pop();
             return;
         }
@@ -183,10 +188,10 @@ library LibVoting {
             for (uint256 i; i < activeSessionIDs.length; i++) {
                 if (activeSessionIDs[i] == sessionID) {
                     activeSessionIDs[i] = sessionToMove;
-                    break;
+                    activeSessionIDs.pop();
+                    return;
                 }
             }
-            activeSessionIDs.pop();
         }
     }
 
