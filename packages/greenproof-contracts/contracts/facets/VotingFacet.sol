@@ -7,6 +7,8 @@ import {LibReward} from "../libraries/LibReward.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title `VotingFacet` - The voting component of the GreenProof core module.
  * @author EnergyWeb Foundation
@@ -147,6 +149,8 @@ contract VotingFacet is IVoting, IReward {
             for (uint256 j; j < numberOfSessionsToCancel; j++) {
                 bytes32 sessionID = voting.sessionIDs[j];
                 if (LibVoting.checkExpiredSession(votingID, sessionID)) {
+                    console.logBytes32(sessionID);
+                    console.log("EXPIRED !!");
                     expiredSessionIDs[numberOfExpiredSessions] = sessionID;
                     numberOfExpiredSessions++;
                     emitSessionEvents(votingID, sessionID, 0);
