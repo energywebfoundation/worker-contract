@@ -99,6 +99,8 @@ library LibVoting {
 
         if (hasReachedConsensus(session)) {
             session.isConsensusReached = true;
+            console.log("CONSENSUS REACHED FOR SEESION");
+            console.logBytes32(session.matchResult);
             numberOfRewardedWorkers = completeSession(votingID, sessionID);
         }
     }
@@ -110,14 +112,18 @@ library LibVoting {
      * @param matchResult The match result for which the voting session is started.
      */
     function startSession(bytes32 votingID, bytes32 matchResult) internal {
+        bytes32 sessionID = getSessionID(votingID, matchResult);
+        VotingSession storage session = getSession(votingID, sessionID);
         /// There can not be voting without some session
         if (getStorage().votingIDToVoting[votingID].sessionIDs.length == 0) {
+            //TO-DO: investigate session initalization;
+            // getStorage().votingIDToVoting[votingID].sessionIDToSession[sessionID] = session;
             getStorage().votingIDs.push(votingID);
         }
 
         Voting storage voting = getVoting(votingID);
-        bytes32 sessionID = getSessionID(votingID, matchResult);
-        VotingSession storage session = getSession(votingID, sessionID);
+        // bytes32 sessionID = getSessionID(votingID, matchResult);
+        // VotingSession storage session = getSession(votingID, sessionID);
 
         session.matchResult = matchResult;
         session.startTimestamp = block.timestamp;
@@ -196,7 +202,13 @@ library LibVoting {
     }
 
     function checkExpiredSession(bytes32 votingID, bytes32 sessionID) internal returns (bool) {
-        if (isSessionExpired(votingID, sessionID)) {
+        VotingSession storage session = getSession(votingID, sessionID);
+        if (isSessionExpired(votingID, sessionID) && (!session.isConsensusReached)) {
+            console.log("STATUS NOT CLOSED !!");
+            console.logBytes32(session.matchResult);
+            uint256 status = uint256(session.status);
+            console.logUint(status);
+
             completeSession(votingID, sessionID);
             return true;
         }
