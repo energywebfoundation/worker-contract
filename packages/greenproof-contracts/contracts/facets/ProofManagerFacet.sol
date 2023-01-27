@@ -19,6 +19,10 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _;
     }
 
+    /**
+     * @notice modifier that restricts the execution of functions only to users enrolled as Claimer
+     * @dev this modifer reverts the transaction if the msg.sender is not an enrolled Claimer
+     */
     modifier onlyClaimer() {
         LibClaimManager.checkEnrolledClaimer(msg.sender);
         _;
