@@ -127,7 +127,9 @@ contract VotingFacet is IVoting, IReward {
     }
 
     /**
-     * @notice Cancels votings that takes longer than time limit
+     * @notice cancelExpiredVotings - Cancels votings that takes longer than time limit
+     * @param numberOfVotingsLimit - The number of maximum voting we want to verify
+     * @param numberOfSessionsLimit - The number of maximum sessions we want to verify for each votes
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
 
@@ -190,6 +192,7 @@ contract VotingFacet is IVoting, IReward {
     }
 
     /**
+     * @notice getWorkers - Retrieves the list of whitelistedWorkers
      * @dev Returns an array of all workers
      * @return The list of all workers
      */
@@ -250,6 +253,12 @@ contract VotingFacet is IVoting, IReward {
         return votingStorage.votingIDs.length;
     }
 
+    /**
+     * @notice isWhitelistedWorker - Tells if a worker has been whitelisted
+     * @dev WhiteListing a worker means adding his/her address into the whitelistedWorkers array
+     * @param worker - The address of the worker we want to check
+     * @return true if the worker as been added to the whiteList, false otherwise
+     */
     function isWhitelistedWorker(address worker) public view returns (bool) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
@@ -286,7 +295,7 @@ contract VotingFacet is IVoting, IReward {
     }
 
     /**
-     * @notice _emitSessionEvents - Casts different events resulting of the voting session
+     * @notice emitSessionEvents - Casts different events resulting of the voting session
      * @param votingID - The ID of the voting
      * @param sessionID - The ID of voting session
      * @param numberOfRewardedWorkers - The number of workers who have been rewarded when session was completed
