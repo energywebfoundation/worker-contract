@@ -128,6 +128,7 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice cancelExpiredVotings - Cancels votings that exceeded time limit
+     *  @param numberOfSessionsLimit - maximum number of sessions which can be canceled without exceeding gas limit
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
 
