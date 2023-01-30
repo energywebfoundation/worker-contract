@@ -128,21 +128,28 @@ contract VotingFacet is IVoting, IReward {
 
     /**
      * @notice cancelExpiredVotings - Cancels votings that takes longer than time limit
+     * @param startVotingIndex - index of the position to start lopping from inside the array of votes
      * @param numberOfVotingsLimit - The number of maximum voting we want to verify
+     * @param startSessionIndex - index of the position to start lopping from inside the array of sessions
      * @param numberOfSessionsLimit - The number of maximum sessions we want to verify for each votes
      * @dev only the address referenced as the contract owner is allowed to perform this.
      */
 
-    function cancelExpiredVotings(uint256 numberOfVotingsLimit, uint256 numberOfSessionsLimit) external override onlyOwner {
+    function cancelExpiredVotings(
+        uint256 startVotingIndex,
+        uint256 numberOfVotingsLimit,
+        uint256 startSessionIndex,
+        uint256 numberOfSessionsLimit
+    ) external override onlyOwner {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
 
-        uint256 numberOfVotingsToCancel = LibVoting.getMinimum(numberOfVotingsLimit, votingStorage.votingIDs.length);
+        uint256 numberOfVotingsToCancel = LibVoting.getMinimum(numberOfVotingsLimit + startVotingIndex, votingStorage.votingIDs.length);
 
-        for (uint256 i; i < numberOfVotingsToCancel; i++) {
+        for (uint256 i = startVotingIndex; i < numberOfVotingsToCancel; i++) {
             bytes32 votingID = votingStorage.votingIDs[i];
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
-            uint256 numberOfSessionsToCancel = LibVoting.getMinimum(numberOfSessionsLimit, voting.sessionIDs.length);
-            for (uint256 j; j < numberOfSessionsToCancel; j++) {
+            uint256 numberOfSessionsToCancel = LibVoting.getMinimum(numberOfSessionsLimit + startSessionIndex, voting.sessionIDs.length);
+            for (uint256 j = startSessionIndex; j < numberOfSessionsToCancel; j++) {
                 bytes32 sessionID = voting.sessionIDs[j];
                 if (LibVoting.isSessionExpired(votingID, sessionID)) {
                     uint256 numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
