@@ -148,9 +148,7 @@ contract VotingFacet is IVoting, IReward {
             bytes32[] memory expiredSessionIDs = new bytes32[](numberOfSessionsToCancel);
             for (uint256 j; j < numberOfSessionsToCancel; j++) {
                 bytes32 sessionID = voting.sessionIDs[j];
-                if (LibVoting.checkExpiredSession(votingID, sessionID)) {
-                    console.logBytes32(sessionID);
-                    console.log("EXPIRED !!");
+                if (LibVoting.checkCompletedSession(votingID, sessionID)) {
                     expiredSessionIDs[numberOfExpiredSessions] = sessionID;
                     numberOfExpiredSessions++;
                     emitSessionEvents(votingID, sessionID, 0);

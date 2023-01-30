@@ -4,7 +4,6 @@ pragma solidity 0.8.16;
 import {LibReward} from "./LibReward.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibProofManager} from "./LibProofManager.sol";
-import "hardhat/console.sol";
 
 // We can eliminate this by splitting Voting.sessionIDs on Voting.completedSessionIDs and Voting.activeSessionIDs
 library LibVoting {
@@ -99,9 +98,8 @@ library LibVoting {
 
         if (hasReachedConsensus(session)) {
             session.isConsensusReached = true;
-            console.log("CONSENSUS REACHED FOR SEESION");
-            console.logBytes32(session.matchResult);
             numberOfRewardedWorkers = completeSession(votingID, sessionID);
+            archiveSession(votingID, sessionID);
         }
     }
 
@@ -201,14 +199,9 @@ library LibVoting {
         }
     }
 
-    function checkExpiredSession(bytes32 votingID, bytes32 sessionID) internal returns (bool) {
+    function checkCompletedSession(bytes32 votingID, bytes32 sessionID) internal returns (bool) {
         VotingSession storage session = getSession(votingID, sessionID);
-        if (isSessionExpired(votingID, sessionID) && (!session.isConsensusReached)) {
-            console.log("STATUS NOT CLOSED !!");
-            console.logBytes32(session.matchResult);
-            uint256 status = uint256(session.status);
-            console.logUint(status);
-
+        if (isSessionExpired(votingID, sessionID) && (session.status != Status.Completed)) {
             completeSession(votingID, sessionID);
             return true;
         }
