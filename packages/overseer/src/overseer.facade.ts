@@ -5,7 +5,8 @@ import { OverseerService } from './overseer.service';
 export class OverseerFacade {
   constructor(private service: OverseerService) { }
 
-  public async cancelExpiredVotings(numberOfVotingsLimit: number, numberOfSessionsLimit: number) {
-    await this.service.cancelExpiredVotings(numberOfVotingsLimit, numberOfSessionsLimit);
+  // eslint-disable-next-line max-params
+  public async cancelExpiredVotings(startVotingIndex: number, numberOfVotingsLimit: number, startSessionIndex: number, numberOfSessionsLimit: number) {
+    await this.service.cancelExpiredVotings(startVotingIndex, numberOfVotingsLimit, startSessionIndex, numberOfSessionsLimit);
   }
 }
