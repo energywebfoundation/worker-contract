@@ -46,7 +46,7 @@ module.exports.expirationTests = function () {
     await expect(tx2).to.not.emit(votingContract, "VotingSessionExpired")
   });
 
-  it.only("voting which reached consensus should not be archived after time limit", async () => {
+  it("voting which reached consensus should not be archived after time limit", async () => {
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1]],
     });
@@ -64,26 +64,20 @@ module.exports.expirationTests = function () {
       .to.emit(votingContract, "ConsensusReached")
       .withArgs(timeframes[0].output, timeframes[0].input);
 
-    // await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
+    await timeTravel(2 * DEFAULT_VOTING_TIME_LIMIT);
     const maxSessionsPerVoteToCancel = 1
     tx = await votingContract.cancelExpiredVotings(maxSessionsPerVoteToCancel);
     
     await expect(tx)
-      .to.not.emit(votingContract, "VotingSessionExpired")
-      .withArgs(timeframes[0].input, timeframes[0].output);
-    // await expect(tx)
-    //   .to.emit(votingContract, "VotingSessionExpired")
-    //   .withArgs(timeframes[0].input, timeframes[1].output);
-    // await expect(tx)
-    //   .to.emit(votingContract, "VotingSessionExpired")
-    //   .withArgs(timeframes[1].input, timeframes[0].output);
-    // await expect(tx)
-    //   .to.emit(votingContract, "VotingSessionExpired")
-    //   .withArgs(timeframes[1].input, timeframes[1].output);
+      .to.emit(votingContract, "VotingSessionExpired")
+      .withArgs(timeframes[1].input, timeframes[0].output);
+ 
     
-    // const tx2 = await votingContract.cancelExpiredVotings(maxSessionsPerVoteToCancel);
+    const tx2 = await votingContract.cancelExpiredVotings(maxSessionsPerVoteToCancel);
 
-    // await expect(tx2).to.not.emit(votingContract, "VotingSessionExpired")
+    await expect(tx2)
+      .to.emit(votingContract, "VotingSessionExpired")
+      .withArgs(timeframes[1].input, timeframes[1].output);
   });
 
   it("voting which don't exceeded time limit are not cancelled", async () => {
