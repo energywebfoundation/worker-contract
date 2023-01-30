@@ -161,7 +161,10 @@ Exposes API for driving and configuraion of the voting. Internal methods are sep
 
 - **removeWorker(address workerToRemove)**: cancels worker's right to participate in votings.
 
-- **cancelExpiredVotings()**: completes expired votings.
+- **cancelExpiredVotings(uint256 startVotingIndex, uint256 numberOfVotingsLimit, uint256 startSessionIndex, uint256 numberOfSessionsLimit)**: completes expired votings. For gas efficiency, ranges are provinded for sessions to be canceled: 
+  - [startVotingIndex; startVotingIndex + numberOfVotingsLimit] gives range for votings
+  - [startSessionIndex; startSessionIndex + numberOfSessionsLimit] gives range for sessions inside each voting
+
 
 - **getNumberOfWorkers()**: returns number of workers allowed to participate in votings.
 

@@ -51,8 +51,9 @@ export class OverseerService implements OnApplicationBootstrap, OnApplicationShu
     this.contract.off(this.contract.filters.WinningMatch(), this.handleWinningMatchEvent);
   }
 
-  public async cancelExpiredVotings(numberOfVotingsLimit: number, numberOfSessionsLimit: number): Promise<void> {
-    await this.contract.cancelExpiredVotings(numberOfVotingsLimit, numberOfSessionsLimit);
+  // eslint-disable-next-line max-params
+  public async cancelExpiredVotings(startVotingIndex: number, numberOfVotingsLimit: number, startSessionIndex: number, numberOfSessionsLimit: number): Promise<void> {
+    await this.contract.cancelExpiredVotings(startVotingIndex, numberOfVotingsLimit, startSessionIndex, numberOfSessionsLimit);
   }
 
   private async handleMissedEvents(getLastHandledBlockNumber: Function) {
