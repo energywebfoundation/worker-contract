@@ -1,12 +1,24 @@
 {
   "rules": {
     "ordering": "warn",
+    "reentrancy": "error",
     "imports-on-top": "error",
+    "no-unused-vars": "warn",
     "avoid-tx-origin": "warn",
+    "multiple-sends": "warn",
+    "payable-fallback": "warn",
+    "state-visibility": "warn",
     "check-send-result": "warn",
     "use-forbidden-name": "warn",
+    "constructor-syntax": "warn",
     "const-name-snakecase": "warn",
     "visibility-modifier-order": "warn",
+    "reason-string": [
+      "warn",
+      {
+        "maxLength": 32
+      }
+    ],
     "quotes": [
       "error",
       "double"
@@ -15,6 +27,12 @@
       "warn",
       {
         "strict": false
+      }
+    ],
+    "func-visibility": [
+      "warn",
+      {
+        "ignoreConstructors": true
       }
     ]
   }
