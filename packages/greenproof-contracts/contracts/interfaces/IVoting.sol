@@ -90,6 +90,21 @@ interface IVoting {
     function getWorkerVotes(bytes32 inputHash, address worker) external returns (bytes32[] memory matchResults);
 
     /**
+     * @notice cancelExpiredVotings - Cancels votings that takes longer than time limit
+     * @param startVotingIndex - index of the position to start lopping from inside the array of votes
+     * @param numberOfVotingsLimit - The number of maximum voting we want to verify
+     * @param startSessionIndex - index of the position to start lopping from inside the array of sessions
+     * @param numberOfSessionsLimit - The number of maximum sessions we want to verify for each votes
+     * @dev only the address referenced as the contract owner is allowed to perform this.
+     */
+    function cancelExpiredVotings(
+        uint256 startVotingIndex,
+        uint256 numberOfVotingsLimit,
+        uint256 startSessionIndex,
+        uint256 numberOfSessionsLimit
+    ) external;
+
+    /**
      * @dev Returns an array of all workers
      * @return The list of all workers
      */
@@ -118,19 +133,4 @@ interface IVoting {
      * @return The number of voting
      */
     function numberOfVotings() external view returns (uint256);
-
-    /**
-     * @notice cancelExpiredVotings - Cancels votings that takes longer than time limit
-     * @param startVotingIndex - index of the position to start lopping from inside the array of votes
-     * @param numberOfVotingsLimit - The number of maximum voting we want to verify
-     * @param startSessionIndex - index of the position to start lopping from inside the array of sessions
-     * @param numberOfSessionsLimit - The number of maximum sessions we want to verify for each votes
-     * @dev only the address referenced as the contract owner is allowed to perform this.
-     */
-    function cancelExpiredVotings(
-        uint256 startVotingIndex,
-        uint256 numberOfVotingsLimit,
-        uint256 startSessionIndex,
-        uint256 numberOfSessionsLimit
-    ) external;
 }
