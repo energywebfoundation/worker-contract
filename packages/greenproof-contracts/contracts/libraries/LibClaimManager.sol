@@ -41,7 +41,7 @@ library LibClaimManager {
     /**
      * @dev Constant tracking the storage slot position of the claimerStorage.
      */
-    bytes32 private constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
+    bytes32 private constant _CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
 
     /**
      * @dev Error message for when the claim manager is used not initialized.
@@ -350,8 +350,8 @@ library LibClaimManager {
      * @dev retrieve the storage of the contract
      * @return ClaimStore - the pointer to the ClaimManagerStorage slot position
      */
-    function getStorage() private pure returns (ClaimManagerStorage storage ClaimStore) {
-        bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
+    function getStorage() internal pure returns (ClaimManagerStorage storage ClaimStore) {
+        bytes32 position = _CLAIM_MANAGER_STORAGE_POSITION;
         assembly {
             ClaimStore.slot := position
         }
