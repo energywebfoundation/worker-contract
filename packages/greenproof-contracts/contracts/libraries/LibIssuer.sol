@@ -83,7 +83,7 @@ library LibIssuer {
     /**
      * @dev Tracking the storage position of the issuerStorage
      */
-    bytes32 private constant ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
+    bytes32 private constant _ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
     /**
      * @dev Initialize the contract with a revocable period for certificates
@@ -309,7 +309,7 @@ library LibIssuer {
      * @return issuerStorage - The pointer to the issuerStorage slot position
      */
     function getStorage() internal pure returns (IssuerStorage storage issuerStorage) {
-        bytes32 position = ISSUER_STORAGE_POSITION;
+        bytes32 position = _ISSUER_STORAGE_POSITION;
 
         assembly {
             issuerStorage.slot := position

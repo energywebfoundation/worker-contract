@@ -64,7 +64,7 @@ library LibVoting {
         Completed
     }
 
-    bytes32 private constant VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
+    bytes32 private constant _VOTING_STORAGE_POSITION = keccak256("ewc.greenproof.voting.diamond.storage");
 
     /**
      * @notice AlreadyVoted - Error raised when some worker tries to recast a vote on the same voting session
@@ -341,7 +341,7 @@ library LibVoting {
      * @return votingStorage The voting storage
      */
     function getStorage() internal pure returns (VotingStorage storage votingStorage) {
-        bytes32 position = VOTING_STORAGE_POSITION;
+        bytes32 position = _VOTING_STORAGE_POSITION;
 
         assembly {
             votingStorage.slot := position
@@ -367,7 +367,7 @@ library LibVoting {
      * @param sessionID - ID of the session
      * @return numberOfPayments - The number of workers who have been rewarded
      */
-    function rewardWinners(bytes32 votingID, bytes32 sessionID) private returns (uint256 numberOfPayments) {
+    function rewardWinners(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfPayments) {
         LibReward.RewardStorage storage rs = LibReward.getStorage();
         address payable[] memory votingWinners = getStorage().winners[votingID][sessionID];
 
@@ -391,7 +391,7 @@ library LibVoting {
      * @param numberOfWinningVotes - The number of worker's votes for this session
      * @return A boolean value indicating whether the session has reached the majority or not.
      */
-    function hasMajority(uint256 numberOfWinningVotes) private view returns (bool) {
+    function hasMajority(uint256 numberOfWinningVotes) internal view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
 
         return ((100 * numberOfWinningVotes) / getNumberOfWorkers()) >= votingStorage.majorityPercentage;
@@ -403,7 +403,7 @@ library LibVoting {
      * @param vote -  The voting session to check
      * @return true if voting session is closed, false otherwise
      */
-    function isClosed(VotingSession storage vote) private view returns (bool) {
+    function isClosed(VotingSession storage vote) internal view returns (bool) {
         return vote.status == Status.Completed;
     }
 
@@ -412,7 +412,7 @@ library LibVoting {
      * @param worker The address to check
      * @return true if the address is a whitelisted worker, false otherwise
      */
-    function isWhitelistedWorker(address worker) private view returns (bool) {
+    function isWhitelistedWorker(address worker) internal view returns (bool) {
         VotingStorage storage votingStorage = getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
         return workerIndex < getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
