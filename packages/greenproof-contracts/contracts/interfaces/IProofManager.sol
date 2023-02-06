@@ -47,7 +47,11 @@ interface IProofManager {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external;
+    function claimProofFor(
+        uint256 certificateID,
+        address owner,
+        uint256 amount
+    ) external;
 
     /**
      * @notice getProof - Retrieves a certificate
@@ -87,5 +91,9 @@ interface IProofManager {
      * @param proof - the proof being verified
      * @return true if the proof is valid, false otherwise
      */
-    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool);
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure returns (bool);
 }

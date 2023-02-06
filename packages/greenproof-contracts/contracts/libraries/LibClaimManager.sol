@@ -336,7 +336,11 @@ library LibClaimManager {
      * @param version The version of the role to check for.
      * @return true if the `subject` is enrolled to the `role` role and with the `version` version, false otherwise
      */
-    function hasRole(address subject, bytes32 role, uint256 version) internal view returns (bool) {
+    function hasRole(
+        address subject,
+        bytes32 role,
+        uint256 version
+    ) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation

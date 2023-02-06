@@ -7,10 +7,12 @@
   "scripts": {
     "clean": "npx hardhat clean",
     "build": "yarn compile && tsc",
-    "compile": "npx hardhat compile",
     "test:unit": "echo \"No unit tests\"",
     "test:coverage": "npx hardhat coverage",
     "test:e2e": "yarn build && npx hardhat test",
+    "compile": "yarn prettier && npx hardhat compile",
+    "prettier": "prettier --write 'contracts/**/*.sol'",
+    "lint": "prettier --list-different 'contracts/**/*.sol'",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
     "greenproof:test": "yarn build && npx hardhat test test/greenproof.spec.js"

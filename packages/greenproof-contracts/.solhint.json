@@ -1,6 +1,16 @@
 {
   "rules": {
     "ordering": "warn",
+    "imports-on-top": "error",
+    "avoid-tx-origin": "warn",
+    "check-send-result": "warn",
+    "use-forbidden-name": "warn",
+    "const-name-snakecase": "warn",
+    "visibility-modifier-order": "warn",
+    "quotes": [
+      "error",
+      "double"
+    ],
     "private-vars-leading-underscore": [
       "warn",
       {
