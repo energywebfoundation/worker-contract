@@ -26,6 +26,14 @@ interface IGreenProof {
     }
 
     /**
+     *  @notice ProofMinted - Event emitted when a proof is minted
+     *  @param certificateID - unique identifier for the proof
+     *  @param volume - certified volume
+     *  @param receiver -  address of the receiver of the proof
+     */
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
+
+    /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
      * @param voteID - The identifier of the vote
@@ -63,12 +71,4 @@ interface IGreenProof {
      * @return certificateOwners - The List of all users / wallets holding a share of this `certificateID`.
      */
     function getCertificateOwners(uint256 certificateID) external view returns (address[] memory);
-
-    /**
-     *  @notice ProofMinted - Event emitted when a proof is minted
-     *  @param certificateID - unique identifier for the proof
-     *  @param volume - certified volume
-     *  @param receiver -  address of the receiver of the proof
-     */
-    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 }
