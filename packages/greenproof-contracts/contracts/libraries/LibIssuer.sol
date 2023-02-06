@@ -111,7 +111,13 @@ library LibIssuer {
      * @param certificateID ID of the certificate
      * @param voteID ID of the vote associated to the certificate
      */
-    function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
+    function registerProof(
+        bytes32 dataHash,
+        address generatorAddress,
+        uint256 volumeInWei,
+        uint256 certificateID,
+        bytes32 voteID
+    ) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.certificates[certificateID] = IGreenProof.Certificate({
@@ -132,7 +138,11 @@ library LibIssuer {
      * @param user address of the user claiming the certificate
      * @param claimedAmount amount of the certificate being claimed
      */
-    function registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
+    function registerClaimedProof(
+        uint256 certificateID,
+        address user,
+        uint256 claimedAmount
+    ) internal {
         IssuerStorage storage issuer = getStorage();
         issuer.claimedBalances[certificateID][user] += claimedAmount;
     }
@@ -143,7 +153,11 @@ library LibIssuer {
      * @param key key of the data being disclosed
      * @param value value of the data being disclosed
      */
-    function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
+    function discloseData(
+        bytes32 dataHash,
+        string memory key,
+        string memory value
+    ) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.disclosedData[dataHash][key] = value;
@@ -222,7 +236,11 @@ library LibIssuer {
      * @param dataHash hash of the data associated to the certificate
      * @param amountProof proof of the volume of the certificate
      */
-    function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
+    function checkVolumeValidity(
+        uint256 volume,
+        bytes32 dataHash,
+        bytes32[] memory amountProof
+    ) internal pure {
         bytes32 volumeHash = getAmountHash(volume);
 
         bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);

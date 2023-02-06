@@ -63,7 +63,12 @@ interface IGreenProof {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external;
+    function discloseData(
+        string memory key,
+        string memory value,
+        bytes32[] memory dataProof,
+        bytes32 dataHash
+    ) external;
 
     /**
      * @notice `getCertificateOwners` - Get the listing of all the wallets which hold a share of a specific certificate
