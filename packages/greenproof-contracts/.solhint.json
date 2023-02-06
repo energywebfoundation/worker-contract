@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "ordering": "warn",
+    "private-vars-leading-underscore": [
+      "warn",
+      {
+        "strict": false
+      }
+    ]
+  }
+}
