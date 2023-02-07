@@ -188,7 +188,6 @@ library LibClaimManager {
      * @dev This function can only be called by the owner of the Greenproof instance.
      * @return oldRoleVersion The previous version of the claimer role.
      */
-
     function setClaimerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
