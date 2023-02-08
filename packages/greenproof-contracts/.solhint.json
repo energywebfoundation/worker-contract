@@ -1,9 +1,10 @@
 {
+  "extends": "solhint:recommended",
   "rules": {
     "ordering": "warn",
     "reentrancy": "error",
     "imports-on-top": "error",
-    "no-unused-vars": "warn",
+    "no-unused-vars": "error",
     "avoid-tx-origin": "warn",
     "multiple-sends": "warn",
     "payable-fallback": "warn",
@@ -13,6 +14,10 @@
     "constructor-syntax": "warn",
     "const-name-snakecase": "warn",
     "visibility-modifier-order": "warn",
+    "compiler-version": [
+      "error",
+      "^0.8.16"
+    ],
     "reason-string": [
       "warn",
       {
