@@ -145,6 +145,7 @@ library LibReward {
     function getStorage() internal pure returns (RewardStorage storage rs) {
         bytes32 position = _REWARD_STORAGE_POSITION;
 
+        /* solhint-disable-next-line no-inline-assembly */
         assembly {
             rs.slot := position
         }

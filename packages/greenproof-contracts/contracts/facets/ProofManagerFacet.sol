@@ -149,6 +149,8 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
         LibIssuer.registerClaimedProof(certificateID, owner, amount);
         _burn(owner, certificateID, amount);
+
+        /* solhint-disable-next-line not-rely-on-time */
         emit ProofClaimed(certificateID, owner, block.timestamp, amount);
     }
 }
