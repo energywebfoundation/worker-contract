@@ -74,7 +74,7 @@ contract VotingFacet is IVoting, IReward {
 
         if (LibVoting.isSessionExpired(votingID, sessionID)) {
             numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
-            emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
+            _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
             emit VotingSessionExpired(votingID, matchResult);
             return;
         }
@@ -88,7 +88,7 @@ contract VotingFacet is IVoting, IReward {
         LibVoting.checkNotVoted(msg.sender, session);
 
         numberOfRewardedWorkers = LibVoting.recordVote(votingID, sessionID);
-        emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
+        _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
     }
 
     /**
@@ -99,6 +99,8 @@ contract VotingFacet is IVoting, IReward {
     function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         LibVoting.checkNotWhiteListedWorker(workerAddress);
         LibVoting.addWorker(workerAddress);
+
+        /* solhint-disable-next-line not-rely-on-time */
         emit WorkerAdded(workerAddress, block.timestamp);
     }
 
@@ -123,6 +125,8 @@ contract VotingFacet is IVoting, IReward {
 
         delete votingStorage.workerToIndex[workerToRemove];
         votingStorage.whitelistedWorkers.pop();
+
+        /* solhint-disable-next-line not-rely-on-time */
         emit WorkerRemoved(workerToRemove, block.timestamp);
     }
 
@@ -153,7 +157,7 @@ contract VotingFacet is IVoting, IReward {
                 bytes32 sessionID = voting.sessionIDs[j];
                 if (LibVoting.isSessionExpired(votingID, sessionID)) {
                     uint256 numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
-                    emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
+                    _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
                     emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
                 }
             }
@@ -168,11 +172,14 @@ contract VotingFacet is IVoting, IReward {
      */
     function setRewardsEnabled(bool rewardsEnabled) external {
         LibReward.setRewardsFeature(rewardsEnabled);
+
+        /* solhint-disable not-rely-on-time */
         if (rewardsEnabled) {
             emit RewardsActivated(block.timestamp);
         } else {
             emit RewardsDeactivated(block.timestamp);
         }
+        /* solhint-enable not-rely-on-time */
     }
 
     /**
@@ -307,7 +314,11 @@ contract VotingFacet is IVoting, IReward {
      * @param sessionID - The ID of voting session
      * @param numberOfRewardedWorkers - The number of workers who have been rewarded when session was completed
      */
-    function emitSessionEvents(bytes32 votingID, bytes32 sessionID, uint256 numberOfRewardedWorkers) private {
+    function _emitSessionEvents(
+        bytes32 votingID,
+        bytes32 sessionID,
+        uint256 numberOfRewardedWorkers
+    ) private {
         LibVoting.VotingSession storage session = LibVoting.getSession(votingID, sessionID);
         if (session.isConsensusReached) {
             emit WinningMatch(votingID, session.matchResult, session.votesCount);

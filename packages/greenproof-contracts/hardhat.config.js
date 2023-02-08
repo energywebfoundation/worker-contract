@@ -1,9 +1,10 @@
 /* global ethers task */
 // require("hardhat-diamond-abi");
 require('solidity-coverage');
+require("@typechain/hardhat");
 require("hardhat-gas-reporter");
 require("@nomiclabs/hardhat-waffle");
-require("@typechain/hardhat");
+require("@nomiclabs/hardhat-solhint");
 const dotenv = require("dotenv");
 const path = require('path');
 

@@ -26,6 +26,14 @@ interface IGreenProof {
     }
 
     /**
+     *  @notice ProofMinted - Event emitted when a proof is minted
+     *  @param certificateID - unique identifier for the proof
+     *  @param volume - certified volume
+     *  @param receiver -  address of the receiver of the proof
+     */
+    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
+
+    /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
      * @param voteID - The identifier of the vote
@@ -55,7 +63,12 @@ interface IGreenProof {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external;
+    function discloseData(
+        string memory key,
+        string memory value,
+        bytes32[] memory dataProof,
+        bytes32 dataHash
+    ) external;
 
     /**
      * @notice `getCertificateOwners` - Get the listing of all the wallets which hold a share of a specific certificate
@@ -63,12 +76,4 @@ interface IGreenProof {
      * @return certificateOwners - The List of all users / wallets holding a share of this `certificateID`.
      */
     function getCertificateOwners(uint256 certificateID) external view returns (address[] memory);
-
-    /**
-     *  @notice ProofMinted - Event emitted when a proof is minted
-     *  @param certificateID - unique identifier for the proof
-     *  @param volume - certified volume
-     *  @param receiver -  address of the receiver of the proof
-     */
-    event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 }

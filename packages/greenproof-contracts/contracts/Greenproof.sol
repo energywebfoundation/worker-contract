@@ -110,7 +110,11 @@ contract Greenproof is SolidStateDiamond {
      * @param votingConfig Configuration of the greenproof's voting system
      * @param rolesConfig Configuration of greenproof's roles credentials
      */
-    constructor(GreenproofConfig memory diamondConfig, VotingConfig memory votingConfig, RolesConfig memory rolesConfig) payable {
+    constructor(
+        GreenproofConfig memory diamondConfig,
+        VotingConfig memory votingConfig,
+        RolesConfig memory rolesConfig
+    ) payable {
         require(votingConfig.rewardAmount > 0, "init: Null reward amount");
         require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
         require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");

@@ -34,7 +34,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
+    function claimProofFor(
+        uint256 certificateID,
+        address owner,
+        uint256 amount
+    ) external onlyClaimer {
         _claimProofFor(certificateID, owner, amount);
     }
 
@@ -117,7 +121,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param proof - the proof being verified
      * @return true if the proof is valid, false otherwise
      */
-    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool) {
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure returns (bool) {
         return LibProofManager.verifyProof(rootHash, leaf, proof);
     }
 
@@ -130,13 +138,19 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function _claimProofFor(uint256 certificateID, address owner, uint256 amount) private {
+    function _claimProofFor(
+        uint256 certificateID,
+        address owner,
+        uint256 amount
+    ) private {
         uint256 ownedBalance = _balanceOf(owner, certificateID);
 
         LibProofManager.checkClaimableProof(certificateID, owner, amount, ownedBalance);
 
         LibIssuer.registerClaimedProof(certificateID, owner, amount);
         _burn(owner, certificateID, amount);
+
+        /* solhint-disable-next-line not-rely-on-time */
         emit ProofClaimed(certificateID, owner, block.timestamp, amount);
     }
 }

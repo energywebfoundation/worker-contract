@@ -54,6 +54,7 @@ library LibProofManager {
         uint256 revocablePeriod = LibIssuer.getRevocablePeriod();
 
         // checks that the issuance duration is below the revocable period
+        // solhint-disable-next-line not-rely-on-time
         if (issuanceDate + revocablePeriod < block.timestamp) {
             revert TimeToRevokeElapsed(certificateID, issuanceDate, revocablePeriod);
         }
@@ -69,7 +70,12 @@ library LibProofManager {
      * @param claimedVolume - volume of the certificate being claimed
      * @param ownedBalance - balance of the certificate owned by the claimer
      */
-    function checkClaimableProof(uint256 certificateID, address claimer, uint256 claimedVolume, uint256 ownedBalance) internal view {
+    function checkClaimableProof(
+        uint256 certificateID,
+        address claimer,
+        uint256 claimedVolume,
+        uint256 ownedBalance
+    ) internal view {
         LibIssuer.IssuerStorage storage issuer = LibIssuer.getStorage();
 
         if (issuer.certificates[certificateID].isRevoked) {
@@ -101,7 +107,11 @@ library LibProofManager {
      * @param leaf - leaf of the proof
      * @param proof - the proof being verified
      */
-    function checkProofValidity(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) internal pure {
+    function checkProofValidity(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) internal pure {
         if (verifyProof(rootHash, leaf, proof) == false) {
             revert InvalidProof(rootHash, leaf, proof);
         }
@@ -115,7 +125,11 @@ library LibProofManager {
      * @param proof - the proof being verified
      * @return true if the proof is valid, false otherwise
      */
-    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) internal pure returns (bool) {
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) internal pure returns (bool) {
         return MerkleProof.verify(proof, rootHash, leaf);
     }
 }

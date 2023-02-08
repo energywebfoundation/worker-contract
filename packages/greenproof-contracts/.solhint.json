@@ -1,0 +1,44 @@
+{
+  "extends": "solhint:recommended",
+  "rules": {
+    "ordering": "warn",
+    "reentrancy": "error",
+    "imports-on-top": "error",
+    "no-unused-vars": "error",
+    "avoid-tx-origin": "warn",
+    "multiple-sends": "warn",
+    "payable-fallback": "warn",
+    "state-visibility": "warn",
+    "check-send-result": "warn",
+    "use-forbidden-name": "warn",
+    "constructor-syntax": "warn",
+    "const-name-snakecase": "warn",
+    "visibility-modifier-order": "warn",
+    "compiler-version": [
+      "error",
+      "^0.8.16"
+    ],
+    "reason-string": [
+      "warn",
+      {
+        "maxLength": 32
+      }
+    ],
+    "quotes": [
+      "error",
+      "double"
+    ],
+    "private-vars-leading-underscore": [
+      "warn",
+      {
+        "strict": false
+      }
+    ],
+    "func-visibility": [
+      "warn",
+      {
+        "ignoreConstructors": true
+      }
+    ]
+  }
+}
