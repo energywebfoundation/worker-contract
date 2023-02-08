@@ -123,7 +123,7 @@ library LibIssuer {
         issuer.certificates[certificateID] = IGreenProof.Certificate({
             isRevoked: false,
             certificateID: certificateID,
-            issuanceDate: block.timestamp,
+            issuanceDate: block.timestamp, // solhint-disable-line not-rely-on-time
             volume: volumeInWei,
             merkleRootHash: dataHash,
             generator: generatorAddress
@@ -329,6 +329,7 @@ library LibIssuer {
     function getStorage() internal pure returns (IssuerStorage storage issuerStorage) {
         bytes32 position = _ISSUER_STORAGE_POSITION;
 
+        /* solhint-disable-next-line no-inline-assembly */
         assembly {
             issuerStorage.slot := position
         }

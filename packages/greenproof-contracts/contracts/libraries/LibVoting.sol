@@ -153,7 +153,7 @@ library LibVoting {
         VotingSession storage session = voting.sessionIDToSession[sessionID];
 
         session.matchResult = matchResult;
-        session.startTimestamp = block.timestamp;
+        session.startTimestamp = block.timestamp; // solhint-disable-line not-rely-on-time
         session.status = Status.Started;
         voting.sessionIDs.push(sessionID);
     }
@@ -206,6 +206,8 @@ library LibVoting {
      */
     function isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool) {
         VotingSession storage session = getSession(votingID, sessionID);
+
+        /* solhint-disable-next-line not-rely-on-time */
         if (session.status == Status.Started && (session.startTimestamp + getStorage().timeLimit < block.timestamp)) {
             return true;
         } else {
@@ -347,6 +349,7 @@ library LibVoting {
     function getStorage() internal pure returns (VotingStorage storage votingStorage) {
         bytes32 position = _VOTING_STORAGE_POSITION;
 
+        /* solhint-disable-next-line no-inline-assembly */
         assembly {
             votingStorage.slot := position
         }

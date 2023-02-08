@@ -99,6 +99,8 @@ contract VotingFacet is IVoting, IReward {
     function addWorker(address payable workerAddress) external onlyEnrolledWorkers(workerAddress) {
         LibVoting.checkNotWhiteListedWorker(workerAddress);
         LibVoting.addWorker(workerAddress);
+
+        /* solhint-disable-next-line not-rely-on-time */
         emit WorkerAdded(workerAddress, block.timestamp);
     }
 
@@ -123,6 +125,8 @@ contract VotingFacet is IVoting, IReward {
 
         delete votingStorage.workerToIndex[workerToRemove];
         votingStorage.whitelistedWorkers.pop();
+
+        /* solhint-disable-next-line not-rely-on-time */
         emit WorkerRemoved(workerToRemove, block.timestamp);
     }
 
@@ -168,11 +172,14 @@ contract VotingFacet is IVoting, IReward {
      */
     function setRewardsEnabled(bool rewardsEnabled) external {
         LibReward.setRewardsFeature(rewardsEnabled);
+
+        /* solhint-disable not-rely-on-time */
         if (rewardsEnabled) {
             emit RewardsActivated(block.timestamp);
         } else {
             emit RewardsDeactivated(block.timestamp);
         }
+        /* solhint-enable not-rely-on-time */
     }
 
     /**

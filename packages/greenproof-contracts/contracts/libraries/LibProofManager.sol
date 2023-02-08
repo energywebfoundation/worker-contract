@@ -54,6 +54,7 @@ library LibProofManager {
         uint256 revocablePeriod = LibIssuer.getRevocablePeriod();
 
         // checks that the issuance duration is below the revocable period
+        // solhint-disable-next-line not-rely-on-time
         if (issuanceDate + revocablePeriod < block.timestamp) {
             revert TimeToRevokeElapsed(certificateID, issuanceDate, revocablePeriod);
         }
