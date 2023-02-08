@@ -23,7 +23,7 @@ library LibReward {
         address payable[] rewardQueue;
     }
 
-    bytes32 private constant REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
+    bytes32 private constant _REWARD_STORAGE_POSITION = keccak256("ewc.greenproof.rewardVoting.diamond.storage");
 
     /**
      * @notice Error message thrown when trying to pay rewards while rewards are disabled
@@ -143,8 +143,9 @@ library LibReward {
      * @return rs - A pointer to the rewardStorage slot position
      */
     function getStorage() internal pure returns (RewardStorage storage rs) {
-        bytes32 position = REWARD_STORAGE_POSITION;
+        bytes32 position = _REWARD_STORAGE_POSITION;
 
+        /* solhint-disable-next-line no-inline-assembly */
         assembly {
             rs.slot := position
         }

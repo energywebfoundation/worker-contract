@@ -41,7 +41,7 @@ library LibClaimManager {
     /**
      * @dev Constant tracking the storage slot position of the claimerStorage.
      */
-    bytes32 private constant CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
+    bytes32 private constant _CLAIM_MANAGER_STORAGE_POSITION = keccak256("ewc.greenproof.claimManager.diamond.storage");
 
     /**
      * @dev Error message for when the claim manager is used not initialized.
@@ -188,7 +188,6 @@ library LibClaimManager {
      * @dev This function can only be called by the owner of the Greenproof instance.
      * @return oldRoleVersion The previous version of the claimer role.
      */
-
     function setClaimerVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
         ClaimManagerStorage storage claimStore = getStorage();
 
@@ -336,7 +335,11 @@ library LibClaimManager {
      * @param version The version of the role to check for.
      * @return true if the `subject` is enrolled to the `role` role and with the `version` version, false otherwise
      */
-    function hasRole(address subject, bytes32 role, uint256 version) internal view returns (bool) {
+    function hasRole(
+        address subject,
+        bytes32 role,
+        uint256 version
+    ) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation
@@ -348,12 +351,14 @@ library LibClaimManager {
 
     /**
      * @dev retrieve the storage of the contract
-     * @return ClaimStore - the pointer to the ClaimManagerStorage slot position
+     * @return claimStore - the pointer to the ClaimManagerStorage slot position
      */
-    function getStorage() private pure returns (ClaimManagerStorage storage ClaimStore) {
-        bytes32 position = CLAIM_MANAGER_STORAGE_POSITION;
+    function getStorage() internal pure returns (ClaimManagerStorage storage claimStore) {
+        bytes32 position = _CLAIM_MANAGER_STORAGE_POSITION;
+
+        /* solhint-disable-next-line no-inline-assembly */
         assembly {
-            ClaimStore.slot := position
+            claimStore.slot := position
         }
     }
 }

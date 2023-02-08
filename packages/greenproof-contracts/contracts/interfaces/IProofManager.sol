@@ -10,6 +10,21 @@ import {IGreenProof} from "./IGreenProof.sol";
  */
 interface IProofManager {
     /**
+     * @notice ProofRevoked - Event emitted when a certificate is revoked
+     * @param certificateID - ID of the revoked certificate
+     */
+    event ProofRevoked(uint256 indexed certificateID);
+
+    /**
+     * @notice ProofClaimed - Event emitted when a certificate is claimed
+     * @param certificateID - ID of the claimed certificate
+     * @param to - Address of the claimer
+     * @param timestamp - Timestamp of the claim
+     * @param amount -  Amount of energy claimed
+     */
+    event ProofClaimed(uint256 indexed certificateID, address indexed to, uint256 indexed timestamp, uint256 amount);
+
+    /**
      * @notice revokeProof - Revokes a certificate
      * @dev This function emits the `ProofRevoked` event
      * @param certificateID ID of the certificate to revoke
@@ -32,7 +47,11 @@ interface IProofManager {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external;
+    function claimProofFor(
+        uint256 certificateID,
+        address owner,
+        uint256 amount
+    ) external;
 
     /**
      * @notice getProof - Retrieves a certificate
@@ -72,20 +91,9 @@ interface IProofManager {
      * @param proof - the proof being verified
      * @return true if the proof is valid, false otherwise
      */
-    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool);
-
-    /**
-     * @notice ProofRevoked - Event emitted when a certificate is revoked
-     * @param certificateID - ID of the revoked certificate
-     */
-    event ProofRevoked(uint256 indexed certificateID);
-
-    /**
-     * @notice ProofClaimed - Event emitted when a certificate is claimed
-     * @param certificateID - ID of the claimed certificate
-     * @param to - Address of the claimer
-     * @param timestamp - Timestamp of the claim
-     * @param amount -  Amount of energy claimed
-     */
-    event ProofClaimed(uint256 indexed certificateID, address indexed to, uint256 indexed timestamp, uint256 amount);
+    function verifyProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        bytes32[] memory proof
+    ) external pure returns (bool);
 }
