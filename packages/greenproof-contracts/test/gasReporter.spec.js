@@ -208,7 +208,7 @@ describe('Gas consumption report', function() {
         receiver.address,
         volumeRootHash,
         matchResultProof,
-        parseEther(volume.toString()),
+        volume,
         volumeProof,
         tokenURI,
       )
