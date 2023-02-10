@@ -11,7 +11,7 @@
     "lint:fix": "yarn lint --fix",
     "test:unit": "echo no unit tests for package",
     "test:e2e": "echo no e2e tests for package",
-    "generate:client": "rm -rf src/client && orval && barrelsby -d src/client && (eslint --fix src/client/*.ts || true)"
+    "generate:client": "rimraf src/client && orval && barrelsby -d src/client && (eslint --fix src/client/*.ts || true)"
   },
   "dependencies": {
     "axios": "^0.27.2",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "barrelsby": "^2.4.0",
-    "orval": "^6.9.6"
+    "orval": "^6.9.6",
+    "rimraf": "^4.1.2"
   }
 }
