@@ -99,7 +99,10 @@ describe('Gas consumption report', function() {
     receiver = wallets[1];
   });
 
-  describe('', () => {
+  describe('Proof lifecycle', () => {
+
+    const mintedVolume = 42;
+    proofData = generateProofData({ volume: mintedVolume });
 
     it ('Removing worker', async () => {
       await revokeRole(workerToRemove, roles.workerRole);
@@ -107,10 +110,6 @@ describe('Gas consumption report', function() {
     });
 
     it('Voting process', async () => {
-      const mintedVolume = 42;
-
-      proofData = generateProofData({ volume: mintedVolume });
-
       await reachConsensus(proofData.inputHash, proofData.matchResult);
     });
 
