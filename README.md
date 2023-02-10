@@ -1,38 +1,21 @@
 # green-proof
 
-### DEV
+Collection of packages from Energyweb *Green Proof* project used to create Green Proof applications.
 
-#### 1. Prepare workspace packages
+List of packages:
+
+1. [@energyweb/greenproof-algorithms](./packages/algorithms/)
+2. [@energyweb/greenproof-ddhub-client](./packages/ddhub-client/)
+3. [@energyweb/greenproof-contracts](./packages/contracts/)
+4. [@energyweb/greenproof-merkle-tree](./packages/algorithms/)
+5. [@energyweb/greenproof-overseer](./packages/overseer/)
+6. [@energyweb/greenproof-worker](./packages/worker/)
+
+## Development
+
+### Prepare workspace packages
 ```shell
 yarn purge && yarn && yarn build
-
-```
-
-#### 2. Run all GP parts using docker compose (in watch mode)
-```
-docker compose -f docker-compose.dev.yml up
-```
-or (without logs)
-
-```
-docker compose -f docker-compose.dev.yml up -d
-```
-
-### PROD?
-
-#### 1. Build base image
-```
-docker build -t greenproofs:latest .
-```
-
-#### 2. Run all GP parts using docker compose (in prod mode)
-```
-docker compose up
-```
-or (without logs)
-
-```
-docker compose up -d
 ```
 
 ## Release
