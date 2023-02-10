@@ -53,19 +53,13 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     }
   },
-  // settings: {
-  //   optimizer: {
-  //     enabled: true,
-  //     runs: 2100,
-  //   },
-  // },
   gasReporter: {
     currency: 'USD',
     gasPrice: 21,
     enabled: false,
     coinmarketcap: process.env.COIN_MARKET_CAP_API,
     token: "EWT",
-    enabled: process.env.GAS_REPORTING == "activate" ?  true : false,
+    enabled: process.env.ENABLE_GAS_REPORTING == "true" ?  true : false,
     outputFile: process.env.GAS_REPORT_OUTPUT_FILE,
     noColors: process.env.GAS_REPORT_OUTPUT_FILE ? true : false,
   },
