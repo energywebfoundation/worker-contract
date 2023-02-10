@@ -1,10 +1,10 @@
 {
   "name": "docs",
+  "private": true,
   "version": "1.0.1",
-  "description": "Documentation for green-proof sdk",
   "license": "MIT",
   "scripts": {
-    "build": "./build.sh",
+    "build": "echo No build script.",
     "test:unit": "echo No unit tests.",
     "test:e2e": "echo No e2e tests."
   },
