@@ -24,6 +24,7 @@ describe('Gas consumption report', function() {
   let owner;
   let issuer;
   let worker;
+  let workerToRemove;
   let revoker;
   let claimer;
   let wallets;
@@ -47,6 +48,7 @@ describe('Gas consumption report', function() {
       worker,
       revoker,
       claimer,
+      workerToRemove,
       ...wallets
     ] = await ethers.getSigners();
 
@@ -86,7 +88,9 @@ describe('Gas consumption report', function() {
 
     await resetRoles();
     await grantRole(worker, roles.workerRole);
+    await grantRole(workerToRemove, roles.workerRole);
     await votingContract.addWorker(worker.address);
+    await votingContract.addWorker(workerToRemove.address);
     await grantRole(issuer, roles.issuerRole);
     await grantRole(revoker, roles.revokerRole);
     await grantRole(claimer, roles.claimerRole);
@@ -96,6 +100,11 @@ describe('Gas consumption report', function() {
   });
 
   describe('', () => {
+
+    it ('Removing worker', async () => {
+      await revokeRole(workerToRemove, roles.workerRole);
+      await votingContract.removeWorker(workerToRemove.address);
+    });
 
     it('Voting process', async () => {
       const mintedVolume = 42;
@@ -114,7 +123,7 @@ describe('Gas consumption report', function() {
       await transfer(sender, receiver, transferVolume);
     });
 
-        it('Retirement ', async () => {
+    it('Retirement ', async () => {
       const claimedVolume = parseEther("2");
 
       await claimVolume(sender, claimedVolume);
