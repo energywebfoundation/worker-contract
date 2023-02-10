@@ -1,0 +1,30 @@
+{
+  "name": "algorithms-website",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "deploy": "surge",
+    "lint:check": "echo 'No linter for package'",
+    "test:unit": "echo 'No unit tests for package'",
+    "test:e2e": "echo 'No e2e tests for package'"
+  },
+  "dependencies": {
+    "algorithms": "*"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "1.0.5",
+    "@tsconfig/svelte": "3.0.0",
+    "surge": "0.23.1",
+    "svelte": "3.50.0",
+    "svelte-check": "2.9.0",
+    "svelte-preprocess": "4.10.7",
+    "tslib": "2.4.0",
+    "typescript": "4.8.2",
+    "vite": "3.1.0"
+  }
+}
