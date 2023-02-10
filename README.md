@@ -1,4 +1,4 @@
-# green-proof
+# Energyweb Green Proof
 
 Collection of packages from Energyweb *Green Proof* project used to create Green Proof applications.
 
