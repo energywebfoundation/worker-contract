@@ -6,8 +6,8 @@ List of packages:
 
 1. [@energyweb/greenproof-algorithms](./packages/algorithms/)
 2. [@energyweb/greenproof-ddhub-client](./packages/ddhub-client/)
-3. [@energyweb/greenproof-contracts](./packages/contracts/)
-4. [@energyweb/greenproof-merkle-tree](./packages/algorithms/)
+3. [@energyweb/greenproof-contracts](./packages/greenproof-contracts/)
+4. [@energyweb/greenproof-merkle-tree](./packages/merkle-tree/)
 5. [@energyweb/greenproof-overseer](./packages/overseer/)
 6. [@energyweb/greenproof-worker](./packages/worker/)
 
