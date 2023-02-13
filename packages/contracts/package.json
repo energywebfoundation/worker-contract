@@ -25,6 +25,7 @@
     "prettier:format": "prettier --write contracts/**/*.sol",
     "prettier:check": "prettier --list-different contracts/**/*.sol",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
+    "deploy:volta": "npx hardhat run scripts/deploy/deployContracts.js --network volta",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
     "proxy:test": "yarn build && npx hardhat test test/proxy.spec.js",
     "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
