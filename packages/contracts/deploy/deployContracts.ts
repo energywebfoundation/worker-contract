@@ -1,15 +1,31 @@
-import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
-import { ethers } from "hardhat";
 import { config } from "dotenv";
-import { FacetCutAction, getSelectors } from "./libraries/greenproof";
-import { BigNumber, Contract, ContractFactory } from "ethers";
+import { ethers, hardhatArguments } from "hardhat";
+import "@nomiclabs/hardhat-waffle";
 import { Greenproof__factory } from "../src";
+import { Contract, ContractFactory } from "ethers";
+import { FacetCutAction, getSelectors } from "./libraries/greenproof";
+import {
+  DeployGreeproofOptions,
+  GreenproofFacet,
+  Logger,
+} from "./libraries/utils/types/config-types";
 
 config();
 
-export const VOLTA_CLAIM_MANAGER = "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
-export const VOLTA_CLAIM_REVOKER = "0x9876d992D124f8E05e3eB35132226a819aaC840A";
+export const EWC_CLAIM_MANAGER =
+  process.env.EWC_CLAIM_MANAGER ?? "0x23b026631A6f265d17CFee8aa6ced1B244f3920C";
+export const EWC_CLAIM_REVOKER =
+  process.env.EWC_CLAIMS_REVOCATION_REGISTRY ??
+  "0xd72B4c8D5B1a1A4C7085259548bDF1A175CFc48D";
+
+export const VOLTA_CLAIM_MANAGER =
+  process.env.VOLTA_CLAIM_MANAGER ??
+  "0x5339adE9332A604A1c957B9bC1C6eee0Bcf7a031";
+export const VOLTA_CLAIM_REVOKER =
+  process.env.VOLTA_CLAIMS_REVOCATION_REGISTRY ??
+  "0x9876d992D124f8E05e3eB35132226a819aaC840A";
+
 export const DEFAULT_REVOCABLE_PERIOD = 60 * 60 * 24 * 7 * 4 * 12; // aprox. 12 months
 export const DEFAULT_VOTING_TIME_LIMIT = 15 * 60;
 export const DEFAULT_MAJORITY_PERCENTAGE = 51;
@@ -17,35 +33,8 @@ export const DEFAULT_REWARD_AMOUNT = ethers.utils.parseEther(
   process.env.REWARD_AMOUNT_IN_ETHER ?? "1"
 );
 
-const runningFromCLI = () => require.main === module;
-
-type Logger = (...msg: any[]) => void;
-type DeployGreeproofOptions = {
-  votingTimeLimit?: number;
-  rewardAmount?: BigNumber;
-  claimManagerAddress: string;
-  claimRevokerAddress: string;
-  facets?: Facet[];
-  roles?: {
-    workerRole?: string;
-    issuerRole?: string;
-    revokerRole?: string;
-    claimerRole?: string;
-    approverRole?: string;
-  };
-  contractOwner?: string;
-  revocablePeriod?: number;
-  majorityPercentage?: number;
-  rewardsEnabled?: boolean;
-  logger?: Logger;
-};
-
-export enum Facet {
-  IssuerFacet = "IssuerFacet",
-  VotingFacet = "VotingFacet",
-  MetaTokenFacet = "MetaTokenFacet",
-  ProofManagerFacet = "ProofManagerFacet",
-}
+const IS_RUNNING_FROM_CLI = require.main === module;
+let deployedFacets: { facetName: string; facetAddress: string }[] = [];
 
 export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   const contractOwner =
@@ -59,10 +48,11 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
     rewardsEnabled = true,
-    facets = Object.values(Facet),
+    facets = Object.values(GreenproofFacet),
     logger = () => {},
   } = options;
-  const deploy = createDeployer(logger);
+  const facetsList = facets as string[];
+  const deploy = createDeployer(logger, facetsList);
   const {
     issuerRole = ethers.utils.namehash(process.env.ISSUER_ROLE ?? "issuer"),
     revokerRole = ethers.utils.namehash(process.env.REVOKER_ROLE ?? "revoker"),
@@ -72,6 +62,7 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
       process.env.APPROVER_ROLE ?? "approver"
     ),
   } = roles;
+  console.log("All greenproof facets --> ", facets);
 
   // deploy GreenproofInit
   // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables
@@ -101,6 +92,8 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   });
 
   logger("Deploying facets...");
+  console.log("Deploying facets...");
+
   const cuts = [];
   for (const facetName of facets) {
     const facet = await deploy(facetName);
@@ -129,6 +122,7 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   );
 
   logger("Diamond cuts tx", tx.hash);
+  // console.log("Diamond cuts tx", tx.hash);
   const receipt = await tx.wait();
 
   if (!receipt.status) {
@@ -136,17 +130,34 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   }
 
   logger("Completed diamond cuts");
+  console.log("Completed diamond cuts");
   return { greenproofAddress: greenproof.address };
 };
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-if (runningFromCLI()) {
+if (IS_RUNNING_FROM_CLI) {
+  console.log(
+    `Deploying Greenproof contracts on ${hardhatArguments.network?.toUpperCase()} network ...`
+  );
+
+  const claimManager =
+    hardhatArguments.network === "volta"
+      ? VOLTA_CLAIM_MANAGER
+      : EWC_CLAIM_MANAGER;
+  const claimsRevoker =
+    hardhatArguments.network === "volta"
+      ? VOLTA_CLAIM_REVOKER
+      : EWC_CLAIM_REVOKER;
+
   deployGreenproof({
-    claimManagerAddress: VOLTA_CLAIM_MANAGER,
-    claimRevokerAddress: VOLTA_CLAIM_REVOKER,
+    claimManagerAddress: claimManager,
+    claimRevokerAddress: claimsRevoker,
   })
-    .then(() => process.exit(0))
+    .then(() => {
+      console.log("\nDeployed facets ==> ", deployedFacets);
+      process.exit(0);
+    })
     .catch((error) => {
       console.error(error);
       process.exit(1);
@@ -154,7 +165,7 @@ if (runningFromCLI()) {
 }
 
 const createDeployer =
-  (logger: Logger) =>
+  (logger: Logger, facetsList: string[] = []) =>
   async (
     contractName: string,
     deployFn: (factory: ContractFactory) => Promise<Contract> = (factory) =>
@@ -165,6 +176,13 @@ const createDeployer =
     const contract = await deployFn(factory);
     await contract.deployed();
     logger(`Contract: ${contractName} deployed to `, contract.address);
+    console.log(`${contractName} deployed to`, contract.address);
+    if (facetsList.includes(contractName)) {
+      deployedFacets.push({
+        facetName: contractName,
+        facetAddress: contract.address,
+      });
+    }
 
     return contract;
   };
