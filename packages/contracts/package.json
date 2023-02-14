@@ -54,6 +54,12 @@
   },
   "dependencies": {
     "@solidstate/contracts": "^0.0.40",
-    "hardhat-diamond-abi": "^3.0.1"
-  }
+    "hardhat-diamond-abi": "^3.0.1",
+    "iam-client-lib": "^7.1.0"
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "keywords": []
 }

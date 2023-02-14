@@ -122,7 +122,6 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   );
 
   logger("Diamond cuts tx", tx.hash);
-  // console.log("Diamond cuts tx", tx.hash);
   const receipt = await tx.wait();
 
   if (!receipt.status) {
