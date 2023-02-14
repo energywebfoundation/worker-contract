@@ -17,7 +17,7 @@
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
     "greenproof:test": "yarn build && npx hardhat test test/greenproof.spec.js",
-    "consumption:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
+    "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
   },
   "repository": {
     "type": "git",
