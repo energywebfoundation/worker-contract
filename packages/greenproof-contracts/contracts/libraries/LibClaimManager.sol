@@ -28,6 +28,7 @@ library LibClaimManager {
      * @custom:field issuerRole - Role for the issuer.
      * @custom:field revokerRole - Role for the revoker.
      * @custom:field claimerRole - Role for the revoker
+     * @custom:field approverRole - Role for the approver
      */
     struct ClaimManagerStorage {
         address claimManagerAddress;
@@ -36,6 +37,7 @@ library LibClaimManager {
         Role issuerRole;
         Role revokerRole;
         Role claimerRole;
+        Role approverRole;
     }
 
     /**
@@ -65,6 +67,12 @@ library LibClaimManager {
      * @dev the address of the not enrolled user should be specified in the `operator` param
      */
     error NotEnrolledRevoker(address operator);
+
+    /**
+     * @dev Error message for when an operator is not enrolled as an approver.
+     * @dev the address of the not enrolled user should be specified in the `operator` param
+     */
+    error NotEnrolledApprover(address operator);
 
     /**
      * @dev Error message for when an operator is not enrolled as a worker.
@@ -106,10 +114,11 @@ library LibClaimManager {
     /**
      * @dev Function for initializing the claim manager.
      * @custom:field claimManagerAddress Address of the claim manager.
-     * @custom:field issuerRole Role name for the issuer.
-     * @custom:field revokerRole Role name
-     * @custom:field workerRole Role name for the worker.
-     * @custom:field claimerRole Role name for the claimer.
+     * @custom:field issuerRole Role name for the issuers.
+     * @custom:field revokerRole Role name for revokers
+     * @custom:field workerRole Role name for the workerq.
+     * @custom:field claimerRole Role name for the claimerq.
+     * @custom:field approverRole Role name for the approvers.
      * @custom:field claimsRevocationRegistry Address of the claims revocation registry.
      */
     function init(
@@ -118,6 +127,7 @@ library LibClaimManager {
         bytes32 revokerRole,
         bytes32 workerRole,
         bytes32 claimerRole,
+        bytes32 approverRole,
         address claimsRevocationRegistry
     ) internal {
         ClaimManagerStorage storage claimStore = getStorage();
@@ -128,6 +138,7 @@ library LibClaimManager {
         claimStore.revokerRole = Role({name: revokerRole, version: 1});
         claimStore.workerRole = Role({name: workerRole, version: 1});
         claimStore.claimerRole = Role({name: claimerRole, version: 1});
+        claimStore.approverRole = Role({name: approverRole, version: 1});
     }
 
     /**
@@ -180,6 +191,23 @@ library LibClaimManager {
         oldRoleVersion = claimStore.revokerRole.version;
 
         claimStore.revokerRole.version = newVersion;
+    }
+
+    /**
+     * @notice setApproverVersion - Function for updating the version of the approver role.
+     * @param newVersion New version of the approver role.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldRoleVersion The previous version of the approver role.
+     */
+    function setApproverVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        if (claimStore.approverRole.version == newVersion) {
+            revert UpdateRoleError("Same version");
+        }
+        oldRoleVersion = claimStore.approverRole.version;
+
+        claimStore.approverRole.version = newVersion;
     }
 
     /**
@@ -270,6 +298,21 @@ library LibClaimManager {
 
         if (!isRevoker) {
             revert NotEnrolledRevoker(operator);
+        }
+    }
+
+    /**
+     * @notice checkEnrolledApprover verifies that an operator is correctly enrolled as an approver
+     * @dev This function reverts if the operator does not have the approver role
+     * @param operator Address of the operator whose approver role credential is checked.
+     */
+    function checkEnrolledApprover(address operator) internal view {
+        Role memory approverRole = getStorage().revokerRole;
+
+        bool isRevoker = hasRole(operator, approverRole.name, approverRole.version);
+
+        if (!isRevoker) {
+            revert NotEnrolledApprover(operator);
         }
     }
 

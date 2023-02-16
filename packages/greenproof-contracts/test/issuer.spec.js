@@ -30,6 +30,7 @@ describe("IssuerFacet", function () {
   let worker;
   let revoker;
   let claimer;
+  let approver;
   let wallets;
 
   let greenproofAddress;
@@ -41,7 +42,7 @@ describe("IssuerFacet", function () {
   let revokeRole;
 
   beforeEach(async () => {
-    [owner, issuer, worker, revoker, claimer, ...wallets] =
+    [owner, issuer, worker, revoker, claimer, approver, ...wallets] =
       await ethers.getSigners();
 
     const claimManagerMocked = await initMockClaimManager(owner);
@@ -93,6 +94,7 @@ describe("IssuerFacet", function () {
     await grantRole(issuer, roles.issuerRole);
     await grantRole(revoker, roles.revokerRole);
     await grantRole(claimer, roles.claimerRole);
+    await grantRole(approver, roles.approverRole);
   });
 
   describe("Proof issuance tests", () => {

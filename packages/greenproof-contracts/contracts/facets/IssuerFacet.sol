@@ -25,6 +25,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         _;
     }
 
+    modifier onlyApprover() {
+        LibClaimManager.checkEnrolledApprover(msg.sender);
+        _;
+    }
+
     /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
@@ -78,6 +83,19 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         LibIssuer.checkNotDisclosed(dataHash, key);
         LibProofManager.checkProofValidity(dataHash, leaf, dataProof);
         LibIssuer.discloseData(dataHash, key, value);
+    }
+
+    /**
+     * @notice approveOperator -  Grants approval to an operator to transfer certificates of a specific certificate owner
+     * @param operator The address of the operator being approved
+     * @param certificateOwner The address of the certificate owner for whom the operator is being approved
+     * @dev If the operator is already approved, the function will revert.
+     * @dev If the caller of this function does not have the `approver` role, the function will revert.
+     * @dev `msg.sender` cannot be the same as `operator`
+     */
+    function approveOperator(address operator, address certificateOwner) external onlyApprover {
+        LibIssuer.preventAlreadyApproved(operator, certificateOwner);
+        LibIssuer.approveFor(certificateOwner, operator);
     }
 
     /**
