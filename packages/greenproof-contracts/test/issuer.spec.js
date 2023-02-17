@@ -643,17 +643,21 @@ describe("IssuerFacet", function () {
       
       const generator = wallets[0];
       const approvedSender = wallets[6];
+      const maxIterations = 100;
       
-      // 1 - We first grant transfer rights to the operator for the generator
-      await expect(
-        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
-      ).to.emit(issuerContract, "OperatorApproved")
-      .withArgs(approvedSender.address, generator.address, approver.address);
+      //checking that we can add/ remove transfer rights several times
+      for (i = 0; i < maxIterations; i++) {
+        // 1 - We first grant transfer rights to the operator for the generator
+        await expect(
+          issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+        ).to.emit(issuerContract, "OperatorApproved")
+        .withArgs(approvedSender.address, generator.address, approver.address);
 
-      // 2 - We later remove the approval of the operator
-      await expect(
-        issuerContract.connect(approver).removeApprovedOperator(approvedSender.address, generator.address)
-      ).to.emit(issuerContract, "OperatorRemoved").withArgs(approvedSender.address, generator.address, approver.address);
+        // 2 - We later remove the approval of the operator
+        await expect(
+          issuerContract.connect(approver).removeApprovedOperator(approvedSender.address, generator.address)
+        ).to.emit(issuerContract, "OperatorRemoved").withArgs(approvedSender.address, generator.address, approver.address);
+      }
     });
 
     it("should prevent already approved operators from being approved again", async () => {
