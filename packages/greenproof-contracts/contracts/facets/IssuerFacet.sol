@@ -95,8 +95,21 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      */
     function approveOperator(address operator, address certificateOwner) external onlyApprover {
         LibIssuer.preventAlreadyApproved(operator, certificateOwner);
-        LibIssuer.approveFor(certificateOwner, operator);
+        LibIssuer.setApprovalFor(certificateOwner, operator, true);
         emit OperatorApproved(operator, certificateOwner, msg.sender);
+    }
+
+    /**
+     * @notice removeApprovedOperator -  revoke approval of an operator to transfer certificates of a specific certificate owner
+     * @param operator The address of the operator being revoked
+     * @param certificateOwner address of the user for whom the operator is being revoked transfer rights
+     * @dev If transfer rights of operator has already been removed for this certificate owner, the function will revert.
+     * @dev If the caller of this function does not have the `approver` role, the function will revert.
+     */
+    function removeApprovedOperator(address operator, address certificateOwner) external onlyApprover {
+        LibIssuer.preventAlreadyRemovedOperator(operator, certificateOwner);
+        LibIssuer.setApprovalFor(certificateOwner, operator, false);
+        emit OperatorRemoved(operator, certificateOwner, msg.sender);
     }
 
     /**

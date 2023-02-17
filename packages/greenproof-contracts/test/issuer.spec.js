@@ -576,6 +576,26 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith(expectedErrorMessage);
 
     });
+
+    it("should revert when non approvers tries to remove operators' approval", async () => {
+      
+      const generator = wallets[0];
+      const approvedSender = wallets[6];
+
+      const expectedErrorMessage = `NotEnrolledApprover("${owner.address}")`;
+      
+      // 1 - checks that operator is correctly approved
+      await expect(
+        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorApproved")
+            .withArgs(approvedSender.address, generator.address, approver.address);
+      
+      // 2 - Non approver tries to remove operator
+      await expect(
+        issuerContract.removeApprovedOperator(approvedSender.address, generator.address)
+      ).to.be.revertedWith(expectedErrorMessage);
+
+    });
     
     it("should revert when approver tries to self approve as operators", async () => {
       
@@ -588,6 +608,25 @@ describe("IssuerFacet", function () {
 
     });
     
+    it("should not revert when approver self removes from operators", async () => {
+      
+      const generator = wallets[0];
+      const secondApprover = wallets[6];
+      await grantRole(secondApprover, roles.approverRole);
+
+      // Since an approver cannot self approve, another approver has to do it first
+      await expect(
+        issuerContract.connect(approver).approveOperator(secondApprover.address, generator.address)
+      ).to.emit(issuerContract, "OperatorApproved")
+            .withArgs(secondApprover.address, generator.address, approver.address);
+      
+      // the approver should be allowed to self remove approval rights
+      await expect(
+        issuerContract.connect(secondApprover).removeApprovedOperator(secondApprover.address, generator.address)
+      ).to.emit(issuerContract, "OperatorRemoved")
+            .withArgs(secondApprover.address, generator.address, secondApprover.address);
+    });
+    
     it("should correctly approve operators for certificate owners", async () => {
       
       const generator = wallets[0];
@@ -598,6 +637,23 @@ describe("IssuerFacet", function () {
       ).to.emit(issuerContract, "OperatorApproved")
       .withArgs(approvedSender.address, generator.address, approver.address);
 
+    });
+
+    it("should correctly remove operators approval's for transferring other certificates", async () => {
+      
+      const generator = wallets[0];
+      const approvedSender = wallets[6];
+      
+      // 1 - We first grant transfer rights to the operator for the generator
+      await expect(
+        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorApproved")
+      .withArgs(approvedSender.address, generator.address, approver.address);
+
+      // 2 - We later remove the approval of the operator
+      await expect(
+        issuerContract.connect(approver).removeApprovedOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorRemoved").withArgs(approvedSender.address, generator.address, approver.address);
     });
 
     it("should prevent already approved operators from being approved again", async () => {
@@ -613,6 +669,30 @@ describe("IssuerFacet", function () {
       await expect(
         issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
       ).to.be.revertedWith(expectedErrorMessage);
+    });
+
+    it("should prevent already removed operators from being removed again", async () => {
+      
+      const generator = wallets[0];
+      const approvedSender = wallets[6];
+      const expectedRevertMessage = `AlreadyRemovedOperator("${approvedSender.address}", "${generator.address}")`
+      
+      // 1 - We first grant transfer rights to the operator for the generator
+      await expect(
+        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorApproved")
+      .withArgs(approvedSender.address, generator.address, approver.address);
+
+      // 2 - We later remove the approval of the operator
+      await expect(
+        issuerContract.connect(approver).removeApprovedOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorRemoved").withArgs(approvedSender.address, generator.address, approver.address);
+
+      // 2 - We should be able to call `removeApprovedOperator`function again
+      await expect(
+        issuerContract.connect(approver).removeApprovedOperator(approvedSender.address, generator.address)
+      ).to.be.revertedWith(expectedRevertMessage);
+
     });
     
     it("should allow approved parties to transfer certificates on behalf of certificate owner", async () => {
