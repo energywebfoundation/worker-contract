@@ -281,6 +281,31 @@ describe("GreenproofTest", async function () {
       });
 
     });
+    
+    describe("- ApproverRole update tests", () => {
+      it("should revert when updating approverRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(greenproof.updateApproverVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update approverRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          greenproof.connect(nonOwner).updateApproverVersion(newRoleVersion)
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      });
+
+      it("should update approverRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(greenproof.updateApproverVersion(newRoleVersion))
+          .to.emit(greenproof, "ApproverVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
   })
 
   describe("\n****** Proxy setting tests ******", () => {
