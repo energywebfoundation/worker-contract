@@ -628,11 +628,13 @@ describe("IssuerFacet", function () {
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(certificateID, proofData, generator);
 
+      // 1 - The authorized appover approves the new sender
       await expect(
         issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
       ).to.emit(issuerContract, "OperatorApproved")
               .withArgs(approvedSender.address, generator.address, approver.address);
 
+      // 2 - The approved sender transfers the certificate to the receiver on behalf of the generator
       await expect(
         transferFor(approvedSender, generator, receiver, certificateID, transferVolume)
       ).to.emit(issuerContract, "TransferSingle")
@@ -642,7 +644,16 @@ describe("IssuerFacet", function () {
                 receiver.address,
                 certificateID,
                 transferVolume
-              );
+      );
+      
+      // 3 - We verify that the transfer has been correctly made
+      const generatorBalance = await issuerContract.balanceOf(generator.address, certificateID);
+      const receiverBalance = await issuerContract.balanceOf(receiver.address, certificateID);
+
+      expect(generatorBalance).to.equal(
+        parseEther(mintedVolume.toString()).sub(transferVolume)
+      );
+      expect(receiverBalance).to.equal(transferVolume);
     });
 
   });
