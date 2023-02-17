@@ -307,11 +307,11 @@ library LibClaimManager {
      * @param operator Address of the operator whose approver role credential is checked.
      */
     function checkEnrolledApprover(address operator) internal view {
-        Role memory approverRole = getStorage().revokerRole;
+        Role memory approverRole = getStorage().approverRole;
 
-        bool isRevoker = hasRole(operator, approverRole.name, approverRole.version);
+        bool isApprover = hasRole(operator, approverRole.name, approverRole.version);
 
-        if (!isRevoker) {
+        if (!isApprover) {
             revert NotEnrolledApprover(operator);
         }
     }
