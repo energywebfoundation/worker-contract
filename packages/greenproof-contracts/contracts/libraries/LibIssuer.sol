@@ -63,16 +63,22 @@ library LibIssuer {
     /**
      * @dev ForbiddenSelfApproval: raised when an approver user tries to approve set transfer approval for self
      * @param approver address of the operator to grant transfer rights for
-     * @param certificateOwner owner on the belhalf the approver want to be allowed  for certificate transfers
+     * @param certificateOwner owner on the belhalf the approver want to be allowed for certificates transfers
      */
     error ForbiddenSelfApproval(address approver, address certificateOwner);
 
     /**
-     * @dev AlreadyApprovedOperator: raised when an approver tries to approve and already approved operator for transfers
+     * @dev AlreadyApprovedOperator: raised when an approver tries to approve an already approved operator for transfers
      * @param operator address of the operator to grant transfer rights for
-     * @param certificateOwner owner on the belhalf the operator has been allowed for certificate transfers
+     * @param certificateOwner owner on the belhalf the operator has been allowed for certificates transfers
      */
     error AlreadyApprovedOperator(address operator, address certificateOwner);
+    /**
+     * @dev AlreadyRemovedOperator: raised when an approver tries to removed an already removed operator for transfers
+     * @param operator address of the operator to revoke transfer rights for
+     * @param certificateOwner owner on the belhalf the operator has been revoked for certificates transfers
+     */
+    error AlreadyRemovedOperator(address operator, address certificateOwner);
 
     /**
      * @dev Error: Data has already been disclosed for a specific key
@@ -184,13 +190,18 @@ library LibIssuer {
      * @notice approveFor - Grants approval to the operator to transfer certificates owned by another wallet.
      * @param certificateOwner address of the account owning the certificate to be transferred
      * @param operator address of the account to be granted approval
-     * @dev `msg.sender` cannot be the same as `operator`
+     * @param shouldBeApproved status of the approval to set
+     * @dev when the approval is being set to true, `msg.sender` cannot be the same as `operator`
      */
-    function approveFor(address certificateOwner, address operator) internal {
-        if (msg.sender == operator) {
+    function setApprovalFor(
+        address certificateOwner,
+        address operator,
+        bool shouldBeApproved
+    ) internal {
+        if (shouldBeApproved && msg.sender == operator) {
             revert ForbiddenSelfApproval(msg.sender, certificateOwner);
         }
-        ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator] = true;
+        ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator] = shouldBeApproved;
     }
 
     /**
@@ -204,6 +215,20 @@ library LibIssuer {
 
         if (isOperatorApproved) {
             revert AlreadyApprovedOperator(operator, certificateOwner);
+        }
+    }
+
+    /**
+     * @notice preventAlreadyRemovedOperator - Prevents an operator from being removed twice for the given certificate owner.
+     * @param operator The address of the operator to check.
+     * @param certificateOwner The address of the certificate owner to check.
+     * @dev If the operator transfer's right is already removed, the function will revert.
+     */
+    function preventAlreadyRemovedOperator(address operator, address certificateOwner) internal view {
+        bool isOperatorApproved = ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator];
+
+        if (isOperatorApproved == false) {
+            revert AlreadyRemovedOperator(operator, certificateOwner);
         }
     }
 

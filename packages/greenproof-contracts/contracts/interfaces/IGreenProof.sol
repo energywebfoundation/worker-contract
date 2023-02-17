@@ -42,6 +42,14 @@ interface IGreenProof {
     event OperatorApproved(address indexed operator, address indexed certificateOwner, address indexed approver);
 
     /**
+     * @notice OperatorRemoved - Event emitted when transfer rights of an operator has been revoked for a certificate owner.
+     * @param operator The address of the operator that was removed.
+     * @param certificateOwner The address of the certificate owner for whom the operator is revoked.
+     * @param approver The address of the authorized approver that removed the operator.
+     */
+    event OperatorRemoved(address indexed operator, address indexed certificateOwner, address indexed approver);
+
+    /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
      * @param voteID - The identifier of the vote
@@ -87,6 +95,15 @@ interface IGreenProof {
      * @dev `msg.sender` cannot be the same as `operator`
      */
     function approveOperator(address operator, address certificateOwner) external;
+
+    /**
+     * @notice removeApprovedOperator -  revoke approval of an operator to transfer certificates of a specific certificate owner
+     * @param operator The address of the operator being revoked
+     * @param certificateOwner address of the user for whom the operator is being revoked transfer rights
+     * @dev If transfer rights of operator has already been removed for this certificate owner, the function will revert.
+     * @dev If the caller of this function does not have the `approver` role, the function will revert.
+     */
+    function removeApprovedOperator(address operator, address certificateOwner) external;
 
     /**
      * @notice `getCertificateOwners` - Get the listing of all the wallets which hold a share of a specific certificate
