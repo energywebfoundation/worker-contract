@@ -563,6 +563,88 @@ describe("IssuerFacet", function () {
       );
       expect(receiverBalance).to.equal(transferVolume);
     });
+
+    it("should revert when non approvers tries to approve operators", async () => {
+      
+      const generator = wallets[0];
+      const approvedSender = wallets[6];
+
+      const expectedErrorMessage = `NotEnrolledApprover("${owner.address}")`;
+      
+      await expect(
+        issuerContract.approveOperator(approvedSender.address, generator.address)
+      ).to.be.revertedWith(expectedErrorMessage);
+
+    });
+    
+    it("should revert when approver tries to self approve as operators", async () => {
+      
+      const generator = wallets[0];
+      const expectedErrorMessage = `ForbiddenSelfApproval("${approver.address}", "${generator.address}")`;
+      
+      await expect(
+        issuerContract.connect(approver).approveOperator(approver.address, generator.address)
+      ).to.be.revertedWith(expectedErrorMessage);
+
+    });
+    
+    it("should correctly approve operators for certificate owners", async () => {
+      
+      const generator = wallets[0];
+      const approvedSender = wallets[6];
+      
+      await expect(
+        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorApproved")
+      .withArgs(approvedSender.address, generator.address, approver.address);
+
+    });
+
+    it("should prevent already approved operators from being approved again", async () => {
+      const generator = wallets[0];
+      const approvedSender = wallets[6];
+      const expectedErrorMessage = `AlreadyApprovedOperator("${approvedSender.address}", "${generator.address}")`;
+
+      await expect(
+        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorApproved")
+              .withArgs(approvedSender.address, generator.address, approver.address);
+
+      await expect(
+        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+      ).to.be.revertedWith(expectedErrorMessage);
+    });
+    
+    it("should allow approved parties to transfer certificates on behalf of certificate owner", async () => {
+      
+      const mintedVolume = 5;
+      const certificateID = 1;
+      const receiver = wallets[1];
+      const generator = wallets[0];
+      const approvedSender = wallets[6];
+      const transferVolume = parseEther("2");
+      const proofData = generateProofData({ volume: mintedVolume });
+
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(certificateID, proofData, generator);
+
+      await expect(
+        issuerContract.connect(approver).approveOperator(approvedSender.address, generator.address)
+      ).to.emit(issuerContract, "OperatorApproved")
+              .withArgs(approvedSender.address, generator.address, approver.address);
+
+      await expect(
+        transferFor(approvedSender, generator, receiver, certificateID, transferVolume)
+      ).to.emit(issuerContract, "TransferSingle")
+              .withArgs(
+                approvedSender.address,
+                generator.address,
+                receiver.address,
+                certificateID,
+                transferVolume
+              );
+    });
+
   });
 
   describe("Proof revocation tests", () => {
@@ -1132,6 +1214,20 @@ describe("IssuerFacet", function () {
         1,
         transferVolume
       );
+  };
+
+  const transferFor = async (operator, owner, receiver, certificateID, transferVolume) => {
+
+    const tx = await issuerContract
+                        .connect(operator)
+                        .safeTransferFrom(
+                          owner.address,
+                          receiver.address,
+                          certificateID,
+                          transferVolume,
+                          transferBytesData
+                        );
+    return tx;
   };
 
   const resetRoles = async () => {

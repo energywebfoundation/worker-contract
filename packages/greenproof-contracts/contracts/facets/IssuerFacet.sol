@@ -96,6 +96,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     function approveOperator(address operator, address certificateOwner) external onlyApprover {
         LibIssuer.preventAlreadyApproved(operator, certificateOwner);
         LibIssuer.approveFor(certificateOwner, operator);
+        emit OperatorApproved(operator, certificateOwner, msg.sender);
     }
 
     /**
