@@ -34,6 +34,14 @@ interface IGreenProof {
     event ProofMinted(uint256 indexed certificateID, uint256 indexed volume, address indexed receiver);
 
     /**
+     * @notice OperatorApproved - Event emitted when an operator is approved for a certificate owner.
+     * @param operator The address of the operator that was approved.
+     * @param certificateOwner The address of the certificate owner for whom the operator is approved.
+     * @param approver The address of the authorized approver that approved the operator.
+     */
+    event OperatorApproved(address indexed operator, address indexed certificateOwner, address indexed approver);
+
+    /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
      * @param voteID - The identifier of the vote
@@ -69,6 +77,16 @@ interface IGreenProof {
         bytes32[] memory dataProof,
         bytes32 dataHash
     ) external;
+
+    /**
+     * @notice approveOperator -  Grants approval to an operator to transfer certificates of a specific certificate owner
+     * @param operator The address of the operator being approved
+     * @param certificateOwner The address of the certificate owner for whom the operator is being approved
+     * @dev If the operator is already approved, the function will revert.
+     * @dev If the caller of this function does not have the `approver` role, the function will revert.
+     * @dev `msg.sender` cannot be the same as `operator`
+     */
+    function approveOperator(address operator, address certificateOwner) external;
 
     /**
      * @notice `getCertificateOwners` - Get the listing of all the wallets which hold a share of a specific certificate
