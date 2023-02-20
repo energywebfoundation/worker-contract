@@ -306,6 +306,31 @@ describe("GreenproofTest", async function () {
       });
 
     });
+
+    describe("- TransferRole update tests", () => {
+      it("should revert when updating transferRole version with same version", async () => {
+        const sameRoleVersion = 1;
+        await expect(greenproof.updateTransferVersion(sameRoleVersion))
+          .to.be.revertedWith("Same version");
+      });
+
+      it("should revert when non owner tries to update transferRole version", async () => {
+        const newRoleVersion = 2;
+        
+        await expect(
+          greenproof.connect(nonOwner).updateTransferVersion(newRoleVersion)
+        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      });
+
+      it("should update transferRole version", async () => {
+        const oldRoleVersion = 1;
+        const newRoleVersion = 2;
+        
+        await expect(greenproof.updateTransferVersion(newRoleVersion))
+          .to.emit(greenproof, "TransferVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+      });
+
+    });
   })
 
   describe("\n****** Proxy setting tests ******", () => {

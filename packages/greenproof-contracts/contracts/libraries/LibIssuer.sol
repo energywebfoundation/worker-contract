@@ -1,9 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
+
+import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
@@ -101,6 +104,13 @@ library LibIssuer {
      * @param receiver address of the receiver of the certificate
      */
     error NotAllowedTransfer(uint256 certificateID, address sender, address receiver);
+
+    /**
+     * @dev Error: reverts when the user is neither the owner of the certificate nor approved
+     * @param operator address of the operator trying to trasnfer the certificate
+     * @param owner address of the owner of the certificate
+     */
+    error NotOwnerOrApproved(address operator, address owner);
 
     /**
      * @dev Tracking the storage position of the issuerStorage
@@ -279,6 +289,25 @@ library LibIssuer {
 
         if (issuer.isDataDisclosed[dataHash][key]) {
             revert AlreadyDisclosedData(dataHash, key);
+        }
+    }
+
+    /**
+     * @notice checkApprovedSender - Checks if the operator is approved to send certificates on behalf of the owner.
+     *
+     * @param from The address of the owner of the certificates.
+     * @param operator The address of the operator whose approval is being checked.
+     *
+     * @dev reverts with `NotOwnerOrApproved` error if the operator is neither approved nor the owner of certificate.
+     */
+    function checkApprovedSender(address from, address operator) internal view {
+        bool isApproved = IERC1155(address(this)).isApprovedForAll(from, operator);
+
+        LibClaimManager.Role memory transferRole = LibClaimManager.getStorage().transferRole;
+        bool hasTransferRole = LibClaimManager.hasRole(operator, transferRole.name, transferRole.version);
+
+        if (!isApproved && from != operator && !hasTransferRole) {
+            revert NotOwnerOrApproved(operator, from);
         }
     }
 
