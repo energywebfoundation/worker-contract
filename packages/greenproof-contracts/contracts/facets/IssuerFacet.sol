@@ -122,11 +122,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     }
 
     /**
-     * @notice transfer tokens between given addresses, checking for ERC1155Receiver implementation if applicable
-     * @param from sender of tokens
-     * @param to receiver of tokens
-     * @param id token ID
-     * @param amount quantity of tokens to transfer
+     * @notice transfer certificate between given addresses, checking for ERC1155Receiver implementation if applicable
+     * @param from owner of certificate
+     * @param to receiver of certificate
+     * @param id certificate ID
+     * @param amount quantity of certificate to transfer
      * @param data data payload
      */
     function safeTransferFrom(
@@ -136,16 +136,17 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256 amount,
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
+        LibIssuer.checkApprovedSender(from, msg.sender);
         LibIssuer.checkAllowedTransfer(id, to);
-        super.safeTransferFrom(from, to, id, amount, data);
+        _safeTransfer(msg.sender, from, to, id, amount, data);
     }
 
     /**
-     * @notice transfer batch of tokens between given addresses, checking for ERC1155Receiver implementation if applicable
-     * @param from sender of tokens
-     * @param to receiver of tokens
-     * @param ids list of token IDs
-     * @param amounts list of quantities of tokens to transfer
+     * @notice transfer batch of certificates between given addresses, checking for ERC1155Receiver implementation if applicable
+     * @param from owner of certificates
+     * @param to receiver of certificates
+     * @param ids list of certificate IDs
+     * @param amounts list of quantities of certificates to transfer
      * @param data data payload
      */
     function safeBatchTransferFrom(
@@ -155,10 +156,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256[] memory amounts,
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
+        LibIssuer.checkApprovedSender(from, msg.sender);
         uint256 numberOfIds = ids.length;
         for (uint256 i; i < numberOfIds; i++) {
             LibIssuer.checkAllowedTransfer(ids[i], to);
         }
-        super.safeBatchTransferFrom(from, to, ids, amounts, data);
+        _safeTransferBatch(msg.sender, from, to, ids, amounts, data);
     }
 }

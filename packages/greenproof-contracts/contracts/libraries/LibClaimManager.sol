@@ -38,6 +38,7 @@ library LibClaimManager {
         Role revokerRole;
         Role claimerRole;
         Role approverRole;
+        Role transferRole;
     }
 
     /**
@@ -128,6 +129,7 @@ library LibClaimManager {
         bytes32 workerRole,
         bytes32 claimerRole,
         bytes32 approverRole,
+        bytes32 transferRole,
         address claimsRevocationRegistry
     ) internal {
         ClaimManagerStorage storage claimStore = getStorage();
@@ -139,6 +141,8 @@ library LibClaimManager {
         claimStore.workerRole = Role({name: workerRole, version: 1});
         claimStore.claimerRole = Role({name: claimerRole, version: 1});
         claimStore.approverRole = Role({name: approverRole, version: 1});
+        claimStore.approverRole = Role({name: approverRole, version: 1});
+        claimStore.transferRole = Role({name: transferRole, version: 1});
     }
 
     /**
@@ -208,6 +212,23 @@ library LibClaimManager {
         oldRoleVersion = claimStore.approverRole.version;
 
         claimStore.approverRole.version = newVersion;
+    }
+
+    /**
+     * @notice setTransferVersion - Function for updating the version of the transfer role.
+     * @param newVersion New version of the transfer role.
+     * @dev This function can only be called by the owner of the Greenproof instance.
+     * @return oldRoleVersion The previous version of the transfer role.
+     */
+    function setTransferVersion(uint256 newVersion) internal onlyOwner returns (uint256 oldRoleVersion) {
+        ClaimManagerStorage storage claimStore = getStorage();
+
+        if (claimStore.transferRole.version == newVersion) {
+            revert UpdateRoleError("Same version");
+        }
+        oldRoleVersion = claimStore.transferRole.version;
+
+        claimStore.transferRole.version = newVersion;
     }
 
     /**

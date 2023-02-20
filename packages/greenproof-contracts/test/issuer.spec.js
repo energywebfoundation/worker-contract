@@ -31,6 +31,7 @@ describe("IssuerFacet", function () {
   let revoker;
   let claimer;
   let approver;
+  let transferer;
   let wallets;
 
   let greenproofAddress;
@@ -42,7 +43,7 @@ describe("IssuerFacet", function () {
   let revokeRole;
 
   beforeEach(async () => {
-    [owner, issuer, worker, revoker, claimer, approver, ...wallets] =
+    [owner, issuer, worker, revoker, claimer, approver, transferer, ...wallets] =
       await ethers.getSigners();
 
     const claimManagerMocked = await initMockClaimManager(owner);
@@ -95,6 +96,7 @@ describe("IssuerFacet", function () {
     await grantRole(revoker, roles.revokerRole);
     await grantRole(claimer, roles.claimerRole);
     await grantRole(approver, roles.approverRole);
+    await grantRole(transferer, roles.transferRole);
   });
 
   describe("Proof issuance tests", () => {
@@ -390,23 +392,25 @@ describe("IssuerFacet", function () {
       const receiver = wallets[1];
       const transferVolume = parseEther("2");
       const mintedVolume = 5;
+      const certificateID = 1;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(1, proofData, minter);
+      await mintProof(certificateID, proofData, minter);
 
       const transferBytesData = ethers.utils.formatBytes32String("");
+      const expectedRevertMessage = `NotOwnerOrApproved("${receiver.address}", "${minter.address}")`
 
       await expect(
         issuerContract
-          .connect(wallets[1])
+          .connect(receiver)
           .safeBatchTransferFrom(
-            wallets[0].address,
+            minter.address,
             owner.address,
-            [1, 1],
-            [parseEther("2"), parseEther("2")],
+            [certificateID, certificateID],
+            [transferVolume, transferVolume],
             transferBytesData
           )
-      ).to.be.revertedWith("ERC1155: caller is not owner nor approved");
+      ).to.be.revertedWith(expectedRevertMessage);
     });
 
     it("should allow Batch certificates transfer when caller is approved", async () => {
@@ -738,6 +742,65 @@ describe("IssuerFacet", function () {
         parseEther(mintedVolume.toString()).sub(transferVolume)
       );
       expect(receiverBalance).to.equal(transferVolume);
+    });
+
+    it("should correctly allow parties with transfer role to transfer certificates on behalf of certificate owner", async () => {
+      
+      const mintedVolume = 5;
+      const certificateID = 1;
+      const receiver = wallets[1];
+      const generator = wallets[0];
+      const transferVolume = parseEther("2");
+      const proofData = generateProofData({ volume: mintedVolume });
+
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await mintProof(certificateID, proofData, generator);
+
+      // 1 - The enrolled transferer moves the certificate to the receiver on behalf of the generator
+      await expect(
+        transferFor(transferer, generator, receiver, certificateID, transferVolume)
+      ).to.emit(issuerContract, "TransferSingle")
+              .withArgs(
+                transferer.address,
+                generator.address,
+                receiver.address,
+                certificateID,
+                transferVolume
+      );
+      
+      // 2 - We verify that the transfer has been correctly made
+      const generatorBalance = await issuerContract.balanceOf(generator.address, certificateID);
+      const receiverBalance = await issuerContract.balanceOf(receiver.address, certificateID);
+
+      expect(generatorBalance).to.equal(
+        parseEther(mintedVolume.toString()).sub(transferVolume)
+      );
+      expect(receiverBalance).to.equal(transferVolume);
+
+      // 3 - We revoke transfer role to the sender
+      await revokeRole(transferer, roles.transferRole);
+
+      const expectedRevertMessage = `NotOwnerOrApproved("${transferer.address}", "${receiver.address}")`
+
+      // Moving back certificate from receiver to generator should fail
+      await expect(
+        transferFor(transferer, receiver, generator,  certificateID, transferVolume)
+      ).to.be.revertedWith(expectedRevertMessage);
+
+      // 4 - we restore transfer role to the transferer
+      await grantRole(transferer, roles.transferRole);
+
+      // Moving back certificate from receiver to generator should succeed
+      await expect(
+        transferFor(transferer, receiver, generator, certificateID, transferVolume)
+      ).to.emit(issuerContract, "TransferSingle")
+              .withArgs(
+                transferer.address,
+                receiver.address,
+                generator.address,
+                certificateID,
+                transferVolume
+      );
     });
 
   });
