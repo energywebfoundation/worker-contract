@@ -59,12 +59,10 @@ module.exports = {
     enabled: false,
     coinmarketcap: process.env.COIN_MARKET_CAP_API,
     token: "EWT",
-    enabled: process.env.GAS_REPORTING == "activate" ?  true : false
+    enabled: process.env.ENABLE_GAS_REPORTING == "true",
+    outputFile: process.env.GAS_REPORT_OUTPUT_FILE,
+    noColors: process.env.GAS_REPORT_OUTPUT_FILE ? true : false,
   },
-  // diamondAbi: {
-  //   // (required) The name of your Diamond ABI
-  //   name: "GreenproofContracts",
-  // },
   typechain: {
     outDir: path.join(__dirname, "src"),
   },
