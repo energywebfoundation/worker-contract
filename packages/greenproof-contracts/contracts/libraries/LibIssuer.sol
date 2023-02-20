@@ -298,7 +298,7 @@ library LibIssuer {
      * @param from The address of the owner of the certificates.
      * @param operator The address of the operator whose approval is being checked.
      *
-     * @dev reverts with `NotOwnerOrApproved` error if the operator is neither approved nor the owner of certificate.
+     * @dev reverts with `NotOwnerOrApproved` error if the operator is neither approved nor the owner of certificate nor enrolled with transfer Role.
      */
     function checkApprovedSender(address from, address operator) internal view {
         bool isApproved = IERC1155(address(this)).isApprovedForAll(from, operator);
