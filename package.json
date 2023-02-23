@@ -1,5 +1,6 @@
 {
   "name": "greenproof-sdk",
+  "license": "MIT",
   "private": true,
   "workspaces": [
     "packages/merkle-tree",

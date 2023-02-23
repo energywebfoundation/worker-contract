@@ -1,5 +1,7 @@
 {
   "name": "algorithms-website",
+  "author": "Energyweb Foundation",
+  "license": "MIT",
   "private": true,
   "version": "0.0.0",
   "type": "module",

@@ -2,7 +2,7 @@
   "name": "@energyweb/greenproof-worker",
   "version": "6.0.31-alpha.3",
   "license": "MIT",
-  "author": "EnergyWeb DevHub GmbH;",
+  "author": "Energyweb Foundation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
