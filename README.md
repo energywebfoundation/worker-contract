@@ -9,8 +9,11 @@ List of packages:
 3. [@energyweb/greenproof-contracts](./packages/greenproof-contracts/)
 4. [@energyweb/greenproof-merkle-tree](./packages/merkle-tree/)
 5. [@energyweb/greenproof-overseer](./packages/overseer/)
-6. [@energyweb/greenproof-worker-base](./packages/worker/)
-7. [@energyweb/greenproof-24/7-worker](./packages/worker-example/)
+6. [@energyweb/greenproof-worker](./packages/worker/)
+
+Examples of decentralized worker implementation:
+
+1. [24/7 Energy Matching](./packages/worker-example/)
 
 ## Flows
 

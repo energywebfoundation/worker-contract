@@ -18,10 +18,6 @@ import { ResultSource } from '../src/results/types';
 import type { ExternalResultInMemorySource } from '../src/results/results-inmemory.source';
 import { up as migrationsUp } from '../db/migration-up';
 
-/**
- * @NOTE BEWARE
- * This is used in maintenance package
- */
 export class MatchTest {
   private inputSource!: InputInMemorySource;
   private resultSource!: ExternalResultInMemorySource;

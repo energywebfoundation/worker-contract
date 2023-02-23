@@ -82,7 +82,6 @@ export class BatteryManager {
     const previous = this.previousBatteryStates[batteryId]?.lastSoC;
 
     if (previous === undefined) {
-      // https://energyweb.atlassian.net/wiki/spaces/GREENPROOFS/pages/3208249351/Assumptions+and+design+decisions
       return greenVolume;
     }
 

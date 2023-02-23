@@ -106,7 +106,7 @@ export const algorithm = (data: AlgorithmInput): AlgorithmOutput => {
  * in one field for matching purposes.
  */
 
-const separator = '_,-,_'; // no way some meter id will have this inside xD
+const separator = '_,-,_';
 
 export const compositeId = (p: { batteryId: string, generationId: string }) =>
   `${p.batteryId}${separator}${p.generationId}`;

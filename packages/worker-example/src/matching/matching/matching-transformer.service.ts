@@ -28,8 +28,6 @@ export class MatchingTransformerService {
   ): number {
     const countryIntensity = carbonIntensities[params.countryId];
 
-    // This should not happen in practice
-    // @see https://energyweb.atlassian.net/wiki/spaces/GREENPROOFS/pages/3208249351/Assumptions+and+design+decisions
     if (!countryIntensity) {
       return 0;
     }
@@ -41,7 +39,7 @@ export class MatchingTransformerService {
       ? countryIntensity.regions[params.regionId]
       : null;
 
-    // Use site, then region is not availalbe, then country which is guaranteed
+    // Use site, then region is not available, then country which is guaranteed
     const intensity =
       siteIntensity ?? regionIntensity ?? countryIntensity.carbonIntensity;
     return Math.ceil(params.volume * intensity);
@@ -110,8 +108,7 @@ export class MatchingTransformerService {
           timestamp: matchingData.timestamp,
           carbonUsage: (() => {
             const countryIntensity = carbonIntensities[countryId];
-            // This should not happen in practice
-            // @see https://energyweb.atlassian.net/wiki/spaces/GREENPROOFS/pages/3208249351/Assumptions+and+design+decisions
+            
             if (!countryIntensity) {
               return 0;
             }
@@ -123,7 +120,7 @@ export class MatchingTransformerService {
               ? countryIntensity.regions[regionId]
               : null;
 
-            // Use site, then region is not availalbe, then country which is guaranteed
+            // Use site, then region is not available, then country which is guaranteed
             const intensity =
               siteIntensity ??
               regionIntensity ??

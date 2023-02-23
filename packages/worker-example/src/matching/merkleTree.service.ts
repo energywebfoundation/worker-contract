@@ -90,7 +90,6 @@ export class MerkleTree {
   }
 }
 
-// It is copied over from merkle tree, this is generalized thing that can be JSON.stringified
 interface HashingTarget {
   [k: string]: string | number | boolean | null | undefined | Date | HashingTarget | HashingTarget[] | string[] | number[] | boolean[] | Date[];
 }
