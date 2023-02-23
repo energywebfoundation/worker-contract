@@ -36,7 +36,7 @@ export class BatteryManager {
     );
 
     const distributedVolume = distributeVolume(battery.volume, generations.map(g => g.volume), true);
-    const generationsWithDistributedVolume = zipWith(generations, distributedVolume, (g, volume) => ({
+    const generationsWithDistributedVolume = zipWith(generations, distributedVolume, (g, volume: number) => ({
       ...g,
       volume,
     }));
