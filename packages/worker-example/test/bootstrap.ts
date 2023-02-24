@@ -1,5 +1,5 @@
-import type { BatteryState, InputDTO, MatchingResult, PreferenceDTO } from 'types';
-import { EnergyType } from 'types';
+import type { BatteryState, InputDTO, MatchingResult, PreferenceDTO } from '../types';
+import { EnergyType } from '../types';
 import { MatchingService } from '../src/matching/matching/matching.service';
 import { VotingManager } from '../src/matching/voting-manager/types';
 import { MerkleTree } from '../src/matching/merkleTree.service';

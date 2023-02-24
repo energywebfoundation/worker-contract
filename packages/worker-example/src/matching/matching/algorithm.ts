@@ -1,4 +1,4 @@
-import { ProportionalMatcher } from 'algorithms';
+import { ProportionalMatcher } from '@energyweb/greenproof-algorithms';
 import type { AlgorithmInput, AlgorithmOutput } from '../types';
 
 export const algorithm = (data: AlgorithmInput): AlgorithmOutput => {

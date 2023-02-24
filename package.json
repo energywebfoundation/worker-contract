@@ -3,6 +3,7 @@
   "license": "MIT",
   "private": true,
   "workspaces": [
+    "packages/algorithms",
     "packages/merkle-tree",
     "packages/greenproof-contracts",
     "packages/ddhub-client",

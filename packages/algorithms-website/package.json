@@ -16,7 +16,7 @@
     "test:e2e": "echo 'No e2e tests for package'"
   },
   "dependencies": {
-    "algorithms": "*"
+    "@energyweb/greenproof-algorithms": "0.0.1"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "1.0.5",
