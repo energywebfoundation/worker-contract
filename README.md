@@ -1,6 +1,12 @@
-# Energyweb Green Proof
+# Energy Web Green Proof
 
-Collection of packages from Energyweb *Green Proof* project used to create Green Proof applications.
+Collection of packages from Energy Web *Green Proof* project used to create Green Proof applications.
+
+The Green Proofs enables anyone to build and run a digital tracking system for clean energy by leveraging decentralization easily and quickly. Primary components in this repo include  
+1. Example of a decentralized logic execution for verifying data input and logic for creating digital proofs of clean energy
+2. Smart contracts on Energy Web Chain (EWC) for creating verifiable digital proofs representing clean energy
+
+An ideal user of Green Proofs is a platform operator with the following problem: “I am an organization trying to generate a digital representation of proof of greenness  but I cannot generate a green proof that is trusted by the community because there is no system that efficiently identifies and authorizes actors AND enables trusted data to enter the system.”
 
 List of packages:
 
@@ -15,7 +21,7 @@ Examples of decentralized worker implementation:
 
 1. [24/7 Energy Matching](./packages/worker-example/)
 
-Green Proofs Smart Contract was [audited](./docs/smart_contract_audit.pdf).
+Green Proofs Smart Contract successfully passed a smart contract [audit](./docs/smart_contract_audit.pdf) by Hacken in February 2023.
 
 ## Flows
 
