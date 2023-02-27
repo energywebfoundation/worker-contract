@@ -15,6 +15,8 @@ Examples of decentralized worker implementation:
 
 1. [24/7 Energy Matching](./packages/worker-example/)
 
+Green Proofs Smart Contract was [audited](./docs/smart_contract_audit.pdf).
+
 ## Flows
 
 ### 1. Reaching Consensus
