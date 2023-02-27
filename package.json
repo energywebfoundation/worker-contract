@@ -1,11 +1,14 @@
 {
   "name": "greenproof-sdk",
+  "license": "MIT",
   "private": true,
   "workspaces": [
+    "packages/algorithms",
     "packages/merkle-tree",
     "packages/greenproof-contracts",
     "packages/ddhub-client",
     "packages/worker",
+    "packages/worker-example",
     "packages/*"
   ],
   "scripts": {

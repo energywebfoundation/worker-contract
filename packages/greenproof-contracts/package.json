@@ -1,6 +1,16 @@
 {
   "name": "@energyweb/greenproof-contracts",
   "version": "1.0.5-alpha.3",
+  "author": "Energyweb Foundation",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/energywebfoundation/greenproof-sdk/"
+  },
+  "bugs": {
+    "url": "https://github.com/energywebfoundation/greenproof-sdk/issues"
+  },
+  "homepage": "https://www.energyweb.org/",
   "description": "Onchain module of the Greenproof core SDK of Energyweb Foundation.",
   "main": "scripts/deploy/index.js",
   "types": "scripts/deploy/index.d.ts",
@@ -19,16 +29,6 @@
     "greenproof:test": "yarn build && npx hardhat test test/greenproof.spec.js",
     "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/energywebfoundation/greenproof-sdk/"
-  },
-  "author": "Energyweb Foundation",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/energywebfoundation/greenproof-sdk/issues"
-  },
-  "homepage": "https://www.energyweb.org/",
   "devDependencies": {
     "@energyweb/greenproof-merkle-tree": "^2.0.6",
     "@nomiclabs/hardhat-ethers": "^2.0.2",

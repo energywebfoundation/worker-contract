@@ -3,59 +3,59 @@
 
 AddElementTag("cooperation", $bgColor="#452E66")
 
-Container(ddhub, "DDHUB", "Multicast encrypted messages based on authorized DID role")
+Container(broadcast, "Broadcast Service", "Multicast encrypted messages")
 Container(cache, "Reporting Backend", "Stores consensus based results")
 
 System_Boundary(participant1, "System Participant") {
   Person(provider, "Data Provider")
-  Container(communication_client1, "Communication Layer", "Encrypt Message using DID auth" )
+  Container(communication_client1, "Communication Layer", "Encrypt Message" )
 }
 
 Person(gov, "Governance Body", "Creates communication schema")
 Person(gov_1, "Governance Body", "Adds eligible worker voters")
 
 System_Boundary(worker_node1, "Decentralized Worker") {
-  Container(communication1, "Communication Layer", "Decrypt Message using DID auth" )
+  Container(communication1, "Communication Layer", "Decrypt Message" )
   Container(worker1, "Decentralized Logic Execution", "Executes customised verification logic", $tags="cooperation")
   Container(contractClient1, "Voting Contract Client", "Casts a vote on created result")
 }
 
 System_Boundary(worker_node2, "Decentralized Worker") {
-  Container(communication2, "Communication Layer", "Decrypt Message using DID auth" )
+  Container(communication2, "Communication Layer", "Decrypt Message" )
   Container(worker2, "Decentralized Logic Execution", "Executes customised verification logic", $tags="cooperation")
   Container(contractClient2, "Voting Contract Client", "Casts a vote on created result")
 }
 
 System_Boundary(worker_node3, "Decentralized Worker") {
-  Container(communication3, "Communication Layer", "Decrypt Message using DID auth" )
+  Container(communication3, "Communication Layer", "Decrypt Message" )
   Container(worker3, "Decentralized Logic Execution", "Executes customised verification logic", $tags="cooperation")
   Container(contractClient3, "Voting Contract Client", "Casts a vote on created result")
 }
 
 System_Boundary(ewc, "Energy Web Chain") {
-  Container(votingContract, "Voting Contract", "Gathers votes form workers nodes")
-  Container(nft, "Proof Certificate", "Minted when consensus was reached")
+  Container(votingContract, "Green Proofs Contract", "Gathers votes form workers nodes")
+  Container(nft, "Green Proof Certificate", "Minted when consensus was reached")
 }
 
 Rel(provider, communication_client1, "API", "HTTPS")
-Rel(communication_client1, ddhub, "uses", "mTLS")
+Rel(communication_client1, broadcast, "uses", "mTLS")
 
-Rel_R(gov, ddhub, "communication schema")
+Rel_R(gov, broadcast, "communication schema")
 
 Rel(communication1, worker1, "decrypted\n message")
 Rel(worker1, contractClient1, "merkle tree\n root hash")
 Rel(contractClient1, votingContract, "vote")
-Rel(ddhub, communication1, "uses", "mTLS")
+Rel(broadcast, communication1, "uses", "mTLS")
 
 Rel(communication2, worker2, "decrypted\n message")
 Rel(worker2, contractClient2, "merkle tree\n root hash")
 Rel(contractClient2, votingContract, "vote")
-Rel(ddhub, communication2, "uses", "mTLS")
+Rel(broadcast, communication2, "uses", "mTLS")
 
 Rel(communication3, worker3, "decrypted\n message")
 Rel(worker3, contractClient3, "merkle tree\n root hash")
 Rel(contractClient3, votingContract, "vote")
-Rel(ddhub, communication3, "uses", "mTLS")
+Rel(broadcast, communication3, "uses", "mTLS")
 
 Rel(votingContract, nft, "Generate on-chain proof")
 Rel_R(votingContract, cache, "Consensus reached event")
