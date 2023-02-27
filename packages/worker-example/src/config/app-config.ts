@@ -92,7 +92,7 @@ const prepareConfig = (): Readonly<Config> => {
     },
     nodeEnv: (process.env.NODE_ENV! as Env) ?? Env.DEV,
     messagingConfig: {
-      url: process.env.DDHUB_URL!,
+      url: process.env.COMMUNICATION_URL!,
       matchingResultTopicName: process.env.MATCHING_RESULT_TOPIC_NAME! ?? 'result',
       inputTopicName: process.env.INPUT_TOPIC_NAME! ?? 'input',
     },

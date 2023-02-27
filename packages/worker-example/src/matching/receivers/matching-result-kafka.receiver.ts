@@ -7,7 +7,7 @@ export const getMatchingResultKafkaSender = async (): Promise<MatchingResultRece
   const producer = kafka.producer();
   await producer.connect();
   return async (result) => {
-    console.log(`Sending result to ddhub results topic: ${result.result.resultHash}`);
+    console.log(`Sending result to results topic: ${result.result.resultHash}`);
     await producer.send({ topic: appConfig.messagingConfig.matchingResultTopicName, messages: [
       {
         value: JSON.stringify(result.result),

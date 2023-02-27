@@ -1,5 +1,5 @@
 process.env.NODE_ENV = 'test';
-process.env.DDHUB_URL = 'http://localhost:3000';
+process.env.COMMUNICATION_URL = 'http://localhost:3000';
 process.env['PORT'] = '3030';
 process.env['RPC_HOST'] = 'http://localhost:8545';
 process.env['DIAMOND_CONTRACT_ADDRESS'] = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
