@@ -73,6 +73,13 @@ library LibIssuer {
     error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
 
     /**
+     * @dev Error: Data don't match to voteID
+     * @param dataHash hash of the data to verify
+     * @param voteID identifier of the voting
+     */
+    error InvalidData(bytes32 dataHash, bytes32 voteID);
+
+    /**
      * @dev Error: Transfer not allowed
      * @param certificateID ID of the certificate
      * @param sender address of the sender of the certificate
@@ -230,26 +237,6 @@ library LibIssuer {
     }
 
     /**
-     * @notice checkVolumeValidity - Checks if the volume of the certificate is in consensus
-     * @dev This function reverts if provided volume is not part of the merkle root hash reprensenting certified data
-     * @param volume volume of the certificate
-     * @param dataHash hash of the data associated to the certificate
-     * @param amountProof proof of the volume of the certificate
-     */
-    function checkVolumeValidity(
-        uint256 volume,
-        bytes32 dataHash,
-        bytes32[] memory amountProof
-    ) internal pure {
-        bytes32 volumeHash = getAmountHash(volume);
-
-        bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);
-        if (!isVolumeInConsensus) {
-            revert VolumeNotInConsensus(volume, dataHash);
-        }
-    }
-
-    /**
      * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
      * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
      * @param receiver address of the receiver of the certificate
@@ -320,6 +307,38 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
 
         return issuer.revocablePeriod;
+    }
+
+    /**
+     * @notice checkVolumeValidity - Checks if the volume of the certificate is in consensus
+     * @dev This function reverts if provided volume is not part of the merkle root hash reprensenting certified data
+     * @param volume volume of the certificate
+     * @param dataHash hash of the data associated to the certificate
+     * @param amountProof proof of the volume of the certificate
+     */
+    function checkVolumeValidity(
+        uint256 volume,
+        bytes32 dataHash,
+        bytes32[] memory amountProof
+    ) internal pure {
+        bytes32 volumeHash = getAmountHash(volume);
+
+        bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);
+        if (!isVolumeInConsensus) {
+            revert VolumeNotInConsensus(volume, dataHash);
+        }
+    }
+
+    /**
+     * @notice checkDataValidity - Checks if the data of the certificate match to the voteID
+     * @dev This function reverts if provided data is different to voteID
+     * @param dataHash hash of the data to verify
+     * @param voteID Identifier of the voting
+     */
+    function checkDataValidity(bytes32 dataHash, bytes32 voteID) internal pure {
+        if (dataHash != voteID) {
+            revert InvalidData(dataHash, voteID);
+        }
     }
 
     /**

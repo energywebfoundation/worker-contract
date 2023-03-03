@@ -134,10 +134,31 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("ForbiddenZeroAddressReceiver()");
     });
 
-    it("should reject proof issuance requests for data not in consensus", async () => {
+  it("should reject simple proof issuance requests if generator is the zero address", async () => {
       const {
         inputHash,
         volumeRootHash,
+        volume,
+        volumeProof,
+      } = generateProofData();
+
+      await expect(
+        issuerContract
+          .connect(issuer)
+          .requestSimpleProofIssuance(
+            inputHash,
+            ethers.constants.AddressZero,
+            volumeRootHash,
+            volume.toString(10),
+            volumeProof,
+            tokenURI
+          )
+      ).to.be.revertedWith("ForbiddenZeroAddressReceiver()");
+    });
+
+    it("should reject proof issuance requests for data not in consensus", async () => {
+      const {
+        inputHash,
         matchResultProof,
         volume,
         volumeProof,
@@ -189,6 +210,31 @@ describe("IssuerFacet", function () {
           )
       ).to.be.revertedWith(`VolumeNotInConsensus(${wrongVolume}, "${volumeRootHash}"`);
     });
+    it("should reject simple proof issuance requests for volume not in vote", async () => {
+      const {
+        inputHash,
+        volumeRootHash,
+        volumeProof,
+        matchResult,
+      } = generateProofData({ volume: 42 });
+
+      await reachConsensus(inputHash, matchResult);
+
+      const wrongVolume = 21;
+
+      await expect(
+        issuerContract
+          .connect(issuer)
+          .requestSimpleProofIssuance(
+            inputHash,
+            wallets[1].address,
+            volumeRootHash,
+            wrongVolume,
+            volumeProof,
+            tokenURI
+          )
+      ).to.be.revertedWith(`VolumeNotInConsensus(${wrongVolume}, "${volumeRootHash}"`);
+    });
 
     it("should reject proof issuance requests by non issuers", async () => {
       const {
@@ -214,12 +260,51 @@ describe("IssuerFacet", function () {
         )
       ).to.be.revertedWith(`NotEnrolledIssuer("${owner.address}")`);
     });
+    
+    it("should reject simple proof issuance requests by non issuers", async () => {
+      const {
+        inputHash,
+        volumeRootHash,
+        volumeProof,
+        matchResult,
+      } = generateProofData();
+
+      await reachConsensus(inputHash, matchResult);
+
+      await expect(
+        issuerContract.requestSimpleProofIssuance(
+          inputHash,
+          wallets[1].address,
+          volumeRootHash,
+          10,
+          volumeProof,
+          tokenURI
+        )
+      ).to.be.revertedWith(`NotEnrolledIssuer("${owner.address}")`);
+    });
 
     it("Authorized issuers can send proof issuance requests", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData);
+    });
+    
+    it("Authorized issuers can send simple proof issuance requests", async () => {
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const receiver = wallets[5]
+
+      await issuerContract
+      .connect(issuer)
+      .requestSimpleProofIssuance(
+        proofData.matchResult,
+        receiver.address,
+        proofData.volumeRootHash,
+        proofData.volume,
+        proofData.volumeProof,
+        tokenURI
+      );
     });
 
     it("reverts when issuers send duplicate proof issuance requests", async () => {
@@ -228,6 +313,53 @@ describe("IssuerFacet", function () {
 
       await mintProof(1, proofData);
       await expectAlreadyCertified(proofData);
+    });
+
+    it("reverts when issuers send duplicate proof issuance requests", async () => {
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const receiver = wallets[5]
+
+      await issuerContract
+      .connect(issuer)
+      .requestSimpleProofIssuance(
+        proofData.matchResult,
+        receiver.address,
+        proofData.volumeRootHash,
+        proofData.volume,
+        proofData.volumeProof,
+        tokenURI
+      );
+
+      await expect(
+        issuerContract
+      .connect(issuer)
+      .requestSimpleProofIssuance(
+        proofData.matchResult,
+        receiver.address,
+        proofData.volumeRootHash,
+        proofData.volume,
+        proofData.volumeProof,
+        tokenURI
+      )).to.be.revertedWith(`AlreadyCertifiedData("${proofData.volumeRootHash}")`);
+    });
+    
+    it("reverts when issuers request simple proof issuance with wrong data", async () => {
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const receiver = wallets[5]
+
+      await expect(
+        issuerContract
+      .connect(issuer)
+      .requestSimpleProofIssuance(
+        proofData.inputHash,
+        receiver.address,
+        proofData.volumeRootHash,
+        proofData.volume,
+        proofData.volumeProof,
+        tokenURI
+      )).to.be.revertedWith(`InvalidData("${proofData.volumeRootHash}", "${proofData.inputHash}")`);
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {

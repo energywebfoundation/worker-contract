@@ -18,7 +18,9 @@ const generateProofData = (
 
   const inputHash = '0x' + hash(stringify(inputData)).toString('hex');
 
+
   const leaves = inputData.map(i => createPreciseProof(i).getHexRoot());
+
   const dataTree = createMerkleTree(leaves);
   const matchResultProof = dataTree.getHexProof(leaves[0]);
   const matchResult = dataTree.getHexRoot();
@@ -39,5 +41,6 @@ const generateProofData = (
     matchResult,
   };
 };
+
 
 module.exports = { generateProofData };
