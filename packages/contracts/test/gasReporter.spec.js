@@ -10,7 +10,7 @@ const { initMockClaimRevoker } = require('./utils/claimRevocation.utils');
 const { generateProofData } = require('./utils/issuer.utils');
 const { BigNumber } = require('ethers');
 const { timeTravel } = require('./utils/time.utils');
-const { createPreciseProof, createMerkleTree, hash } = require('@energyweb/greenproof-merkle-tree');
+const { createPreciseProof, createMerkleTree, hash } = require('@energyweb/merkle-tree');
 const { getMerkleProof } = require('./utils/merkleProof.utils');
 
 chai.use(solidity);

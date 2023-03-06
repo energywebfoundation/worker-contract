@@ -1,5 +1,5 @@
-import type { MerkleTree as MT, contracts } from '@energyweb/greenproof-worker';
-import { merkleTree } from '@energyweb/greenproof-worker';
+import type { MerkleTree as MT, contracts } from '@energyweb/worker';
+import { merkleTree } from '@energyweb/worker';
 import type { DynamicModule } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { InputInMemoryModule, InputModule } from '../input/input.module';

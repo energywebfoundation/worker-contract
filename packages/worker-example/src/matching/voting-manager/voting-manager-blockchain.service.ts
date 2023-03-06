@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { VotingManager } from './types';
-import { contracts } from '@energyweb/greenproof-worker';
+import { contracts } from '@energyweb/worker';
 
 @Injectable()
 export class VotingManagerBlockchain implements VotingManager {
@@ -10,14 +10,17 @@ export class VotingManagerBlockchain implements VotingManager {
 
   public async getConsensusResultHash(inputHash: string): Promise<string | null> {
 
-    const resultHash = await this.votingContract.getWinningMatch(inputHash);
+    const resultHashes = await this.votingContract.getWinningMatches(inputHash);
 
-    return Number(resultHash) === 0 ? null : resultHash;
+    const [hash] = resultHashes.filter(h => Number(h) !== 0)
+
+    return hash ?? null
+
   }
 
   public async wasConsensusReached(inputHash: string): Promise<boolean> {
-    const hash = await this.votingContract.getWinningMatch(inputHash);
+    const hashes = await this.votingContract.getWinningMatches(inputHash);
 
-    return Number(hash) !== 0;
+    return hashes.length > 0;
   }
 }

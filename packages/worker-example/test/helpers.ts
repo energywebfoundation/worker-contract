@@ -1,5 +1,5 @@
 import type { BatteryState, MatchingResult } from 'types';
-import { merkleTree } from '@energyweb/greenproof-worker';
+import { merkleTree } from '@energyweb/worker';
 import { mapValues } from 'lodash';
 
 const { createPreciseProof, verify } = merkleTree;

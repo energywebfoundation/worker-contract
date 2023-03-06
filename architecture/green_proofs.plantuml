@@ -1,4 +1,4 @@
-@startuml GreenProofs
+@startuml Worker Contract
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 
 AddElementTag("cooperation", $bgColor="#452E66")
@@ -16,24 +16,24 @@ Person(gov_1, "Governance Body", "Adds eligible worker voters")
 
 System_Boundary(worker_node1, "Decentralized Worker") {
   Container(communication1, "Communication Layer", "Decrypt Message" )
-  Container(worker1, "Decentralized Logic Execution", "Executes customised verification logic", $tags="cooperation")
+  Container(worker1, "Decentralized Logic Execution", "Executes customized verification logic", $tags="cooperation")
   Container(contractClient1, "Voting Contract Client", "Casts a vote on created result")
 }
 
 System_Boundary(worker_node2, "Decentralized Worker") {
   Container(communication2, "Communication Layer", "Decrypt Message" )
-  Container(worker2, "Decentralized Logic Execution", "Executes customised verification logic", $tags="cooperation")
+  Container(worker2, "Decentralized Logic Execution", "Executes customized verification logic", $tags="cooperation")
   Container(contractClient2, "Voting Contract Client", "Casts a vote on created result")
 }
 
 System_Boundary(worker_node3, "Decentralized Worker") {
   Container(communication3, "Communication Layer", "Decrypt Message" )
-  Container(worker3, "Decentralized Logic Execution", "Executes customised verification logic", $tags="cooperation")
+  Container(worker3, "Decentralized Logic Execution", "Executes customized verification logic", $tags="cooperation")
   Container(contractClient3, "Voting Contract Client", "Casts a vote on created result")
 }
 
 System_Boundary(ewc, "Energy Web Chain") {
-  Container(votingContract, "Green Proofs Contract", "Gathers votes form workers nodes")
+  Container(votingContract, "Worker Contract", "Gathers votes form workers nodes")
   Container(nft, "Green Proof Certificate", "Minted when consensus was reached")
 }
 
