@@ -1,4 +1,4 @@
-const { hash, stringify, createPreciseProof, createMerkleTree } = require('@energyweb/greenproof-merkle-tree');
+const { hash, stringify, createPreciseProof, createMerkleTree } = require('@energyweb/merkle-tree');
 
 const generateRandomInt = () => Math.floor(Math.random() * 1_000_000);
 

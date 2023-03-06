@@ -1,4 +1,4 @@
-import type { VotingFacet } from '@energyweb/greenproof-worker';
+import type { VotingFacet } from '@energyweb/worker';
 import { ExponentialBackoff, retry, handleAll } from 'cockatiel';
 import { PinoLogger } from 'nestjs-pino';
 import type { MatchingResultReceiver } from '../types';

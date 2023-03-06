@@ -1,8 +1,8 @@
-# Energy Web Green Proof
+# Energy Web Worker Contract
 
-Collection of packages from Energy Web *Green Proof* project used to create Green Proof applications.
+Collection of packages from Energy Web to create Green Proof applications.
 
-The Green Proofs enables anyone to build and run a digital tracking system for clean energy by leveraging decentralization easily and quickly. Primary components in this repo include  
+The Worker Contract enables anyone to build and run a digital tracking system for clean energy by leveraging decentralization easily and quickly. Primary components in this repo include  
 1. Example of a decentralized logic execution for verifying data input and logic for creating digital proofs of clean energy
 2. Smart contracts on Energy Web Chain (EWC) for creating verifiable digital proofs representing clean energy
 
@@ -10,18 +10,18 @@ An ideal user of Green Proofs is a platform operator with the following problem:
 
 List of packages:
 
-1. [@energyweb/greenproof-algorithms](./packages/algorithms/)
-2. [@energyweb/greenproof-ddhub-client](./packages/ddhub-client/)
-3. [@energyweb/greenproof-contracts](./packages/greenproof-contracts/)
-4. [@energyweb/greenproof-merkle-tree](./packages/merkle-tree/)
-5. [@energyweb/greenproof-overseer](./packages/overseer/)
-6. [@energyweb/greenproof-worker](./packages/worker/)
+1. [@energyweb/algorithms-24-7](./packages/algorithms/)
+2. [@energyweb/ddhub-client](./packages/ddhub-client/)
+3. [@energyweb/contracts](./packages/contracts/)
+4. [@energyweb/merkle-tree](./packages/merkle-tree/)
+5. [@energyweb/overseer](./packages/overseer/)
+6. [@energyweb/worker](./packages/worker/)
 
 Examples of decentralized worker implementation:
 
 1. [24/7 Energy Matching](./packages/worker-example/)
 
-Green Proofs Smart Contract successfully passed a smart contract [audit](./docs/smart_contract_audit.pdf) by Hacken in February 2023.
+Smart Contract successfully passed a smart contract [audit](./docs/smart_contract_audit.pdf) by Hacken in February 2023.
 
 ## Flows
 
@@ -38,7 +38,7 @@ participant D as Off-Chain Worker ...n
 note over D: Worker Pool
 
 Participant E as Voting Facet
-note over E: Green Proofs Contract
+note over E: Worker Contract
 Participant F as Energy Web Chain
 Participant H as Event Listener Node (overseer)
 
@@ -64,10 +64,10 @@ H->>H: Process Result of Voting
 sequenceDiagram
 
 actor Issuer
-note over Issuer Facet: Green Proof Contract
+note over Issuer Facet: Worker Contract
 participant Issuer Facet
 participant Voting Facet
-note over Voting Facet: Green Proof Contract
+note over Voting Facet: Worker Contract
 
 actor Token Holder
 
