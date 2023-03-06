@@ -4,7 +4,7 @@ This package is a wrapper around `merkletreejs` and can be used to create unifie
 
 # Installation
 
-1. ```yarn add @energyweb/greenproof-merkle-tree```
+1. ```yarn add @energyweb/merkle-tree```
 
 # Usage
 
@@ -15,7 +15,7 @@ This package is a wrapper around `merkletreejs` and can be used to create unifie
 
 Full example:
 ```typescript
-import {createMerkleTree, hash} from '@energyweb/greenproof-merkle-tree';
+import {createMerkleTree, hash} from '@energyweb/merkle-tree';
 
 const leavesForMerkleTree = [
     hash('my data'),

@@ -14,7 +14,7 @@ const {
   createPreciseProof,
   createMerkleTree,
   hash,
-} = require("@energyweb/greenproof-merkle-tree");
+} = require("@energyweb/merkle-tree");
 const { getMerkleProof } = require("./utils/merkleProof.utils");
 
 chai.use(solidity);

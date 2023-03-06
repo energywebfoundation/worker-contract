@@ -551,31 +551,6 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@energyweb/greenproof-contracts@1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@energyweb/greenproof-contracts/-/greenproof-contracts-1.0.4.tgz#9f33ff581768f8bed8828e66a2828827c3ecd00c"
-  integrity sha512-Ewdh73gApSnNWQZYHLfcmQ2yP6abBsMS1RFSB7thCp8zvlfTRcDmYpHXt4iZvYdfh6OsdigLHDhd2rylaciIiQ==
-  dependencies:
-    "@solidstate/contracts" "^0.0.40"
-    hardhat-diamond-abi "^3.0.1"
-
-"@energyweb/greenproof-worker@6.0.30":
-  version "6.0.30"
-  resolved "https://registry.yarnpkg.com/@energyweb/greenproof-worker/-/greenproof-worker-6.0.30.tgz#64635c50b7390f9243cc2f768b42f62510b8a3c0"
-  integrity sha512-xViMgr/ZudTGKLdqVwsaSKbBWGHM6+ncrCnV8HLFwIwZ0+/fe0zoieIonNH2HIMAz01paLSNdnqyTrFAhui/ig==
-  dependencies:
-    "@energyweb/greenproof-contracts" "1.0.4"
-    "@energyweb/greenproof-ddhub-client" "1.0.7"
-    "@energyweb/greenproof-merkle-tree" "2.0.6"
-    "@nestjs/common" "9.0.11"
-    "@nestjs/core" "9.0.11"
-    "@nestjs/platform-express" "9.0.11"
-    ethers "5.7.0"
-    joi "17.6.0"
-    reflect-metadata "0.1.13"
-    rimraf "3.0.2"
-    rxjs "7.5.6"
-
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
   resolved "https://registry.npmjs.org/@ensdomains/ens/-/ens-0.4.5.tgz"

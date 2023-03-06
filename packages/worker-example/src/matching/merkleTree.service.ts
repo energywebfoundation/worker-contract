@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MerkleTree as MT } from '@energyweb/greenproof-worker';
+import { MerkleTree as MT } from '@energyweb/worker';
 import type { BatteryState, MatchingConsumptionLeftover, MatchingGenerationLeftover, MatchingResult, MatchingResultGeneration, MatchingResultMatch } from 'types';
 import { omit } from 'lodash';
 

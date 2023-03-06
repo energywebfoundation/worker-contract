@@ -1,4 +1,4 @@
-import { distributeVolume } from '@energyweb/greenproof-algorithms';
+import { distributeVolume } from '@energyweb/algorithms';
 import { orderBy, values, zipWith } from 'lodash';
 import type { BatteryDTO, BatteryState, GenerationDTO, InputDTO } from 'types';
 import type { AlgorithmInput, AlgorithmOutput } from '../types';

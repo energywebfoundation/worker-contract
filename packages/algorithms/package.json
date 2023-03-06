@@ -1,6 +1,6 @@
 {
-  "name": "@energyweb/greenproof-algorithms",
-  "version": "0.0.1",
+  "name": "@energyweb/algorithms",
+  "version": "1.0.0",
   "author": "Energyweb Foundation",
   "license": "MIT",
   "main": "./dist/index.js",

@@ -1,5 +1,5 @@
 import type { BatteryDTO, BatteryStore, ConsumptionDTO, GenerationDTO, InputDTO, MatchingResult, PreferenceDTO } from 'types';
-import type { ProportionalMatcher } from '@energyweb/greenproof-algorithms';
+import type { ProportionalMatcher } from '@energyweb/algorithms';
 
 export const MATCHING_RECEIVERS_TOKEN = Symbol.for('MATCHING_RECEIVERS_TOKEN');
 
