@@ -73,13 +73,6 @@ library LibIssuer {
     error VolumeNotInConsensus(uint256 volume, bytes32 dataHash);
 
     /**
-     * @dev Error: Data don't match to voteID
-     * @param dataHash hash of the data to verify
-     * @param voteID identifier of the voting
-     */
-    error InvalidData(bytes32 dataHash, bytes32 voteID);
-
-    /**
      * @dev Error: Transfer not allowed
      * @param certificateID ID of the certificate
      * @param sender address of the sender of the certificate
@@ -326,18 +319,6 @@ library LibIssuer {
         bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);
         if (!isVolumeInConsensus) {
             revert VolumeNotInConsensus(volume, dataHash);
-        }
-    }
-
-    /**
-     * @notice checkDataValidity - Checks if the data of the certificate match to the voteID
-     * @dev This function reverts if provided data is different to voteID
-     * @param dataHash hash of the data to verify
-     * @param voteID Identifier of the voting
-     */
-    function checkDataValidity(bytes32 dataHash, bytes32 voteID) internal pure {
-        if (dataHash != voteID) {
-            revert InvalidData(dataHash, voteID);
         }
     }
 

@@ -59,27 +59,6 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         emit ProofMinted(nextCertificateId, volumeInWei, generator);
     }
 
-    function requestSimpleProofIssuance(
-        bytes32 voteID,
-        address generator,
-        bytes32 dataHash,
-        uint256 volume,
-        bytes32[] memory amountProof,
-        string memory tokenUri
-    ) external onlyIssuer {
-        LibIssuer.preventZeroAddressReceiver(generator);
-        LibIssuer.preventAlreadyCertified(dataHash);
-        LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
-        LibIssuer.checkDataValidity(dataHash, voteID);
-        uint256 nextCertificateId = LibIssuer.incrementAndGetProofIndex();
-        uint256 volumeInWei = volume * 1 ether;
-        LibIssuer.registerProof(dataHash, generator, volumeInWei, nextCertificateId, voteID);
-
-        _safeMint(generator, nextCertificateId, volumeInWei, "");
-        _setTokenURI(nextCertificateId, tokenUri);
-        emit ProofMinted(nextCertificateId, volumeInWei, generator);
-    }
-
     /**
      * @notice `discloseData` - Publicly exposes specific a information of the certified data.
      * This information is a key-value pair composing the dataHash merkleTree
