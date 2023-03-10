@@ -10,8 +10,10 @@
     "payable-fallback": "warn",
     "state-visibility": "warn",
     "check-send-result": "warn",
+    "no-inline-assembly": "off",
     "use-forbidden-name": "warn",
     "constructor-syntax": "warn",
+    "no-complex-fallback": "off",
     "const-name-snakecase": "warn",
     "visibility-modifier-order": "warn",
     "compiler-version": [
