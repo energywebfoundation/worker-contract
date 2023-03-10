@@ -26,7 +26,7 @@
     "prettier:check": "prettier --list-different contracts/**/*.sol",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
-    "contract:test": "yarn build && npx hardhat test test/contract.spec.js",
+    "proxy:test": "yarn build && npx hardhat test test/contract.spec.js",
     "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
   },
   "devDependencies": {
