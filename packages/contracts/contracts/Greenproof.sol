@@ -341,6 +341,8 @@ contract Greenproof is SolidStateDiamond {
             revert AlreadyPausedContract();
         }
         _isContractPaused = true;
+
+        // solhint-disable-next-line not-rely-on-time
         emit ContractPaused(block.timestamp, msg.sender);
     }
 
@@ -356,6 +358,8 @@ contract Greenproof is SolidStateDiamond {
             revert AlreadyUnpausedContract();
         }
         _isContractPaused = false;
+
+        // solhint-disable-next-line not-rely-on-time
         emit ContractUnPaused(block.timestamp, msg.sender);
     }
 }
