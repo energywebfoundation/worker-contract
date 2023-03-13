@@ -18,7 +18,7 @@
     "clean": "npx hardhat clean",
     "build": "yarn compile && tsc",
     "test:unit": "echo \"No unit tests\"",
-    "test:coverage": "npx hardhat coverage",
+    "test:coverage": "npx hardhat clean && npx hardhat coverage",
     "test:e2e": "yarn build && npx hardhat test",
     "compile": "yarn prettier:format && yarn lint && npx hardhat compile",
     "lint": "npx hardhat check",
@@ -26,7 +26,7 @@
     "prettier:check": "prettier --list-different contracts/**/*.sol",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
-    "proxy:test": "yarn build && npx hardhat test test/contract.spec.js",
+    "proxy:test": "yarn build && npx hardhat test test/proxy.spec.js",
     "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
   },
   "devDependencies": {
