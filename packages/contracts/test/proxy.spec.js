@@ -286,6 +286,13 @@ describe("GreenproofTest", async function () {
   })
 
   describe("\n****** Proxy setting tests ******", () => {
+
+    it("should revert when non owner tries to pause contract", async () => {
+      await expect(
+        greenproof.connect(nonOwner).pause()
+      ).to.be.revertedWith(`NotAuthorized("Owner")`);
+    });
+
     it("should correctly pause contract", async () => {
       tx = await greenproof.pause();
 
@@ -300,6 +307,12 @@ describe("GreenproofTest", async function () {
       await expect(
         greenproof.pause()
       ).to.be.revertedWith(`AlreadyPausedContract()`);
+    });
+
+    it("should revert when non owner tries to unpause contract", async () => {
+      await expect(
+        greenproof.connect(nonOwner).unPause()
+      ).to.be.revertedWith(`NotAuthorized("Owner")`);
     });
 
     it("should correctly unpause contract", async () => {
