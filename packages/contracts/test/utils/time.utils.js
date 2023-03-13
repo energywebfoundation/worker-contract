@@ -5,4 +5,10 @@ const timeTravel = async (seconds) => {
   await network.provider.send('evm_mine', []);
 };
 
-module.exports = { timeTravel };
+const getTimeStamp = async (tx) => {
+  const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+  return timestamp;
+}
+
+module.exports = { timeTravel, getTimeStamp };
