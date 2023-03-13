@@ -343,7 +343,7 @@ describe("GreenproofTest", async function () {
       ).to.be.revertedWith(`AlreadyUnpausedContract()`);
     });
 
-    it("should revert if facet does no exist", async () => {
+    it("should revert if implementation logic address is not a contract", async () => {
       const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
 
       //setting fallback address to be a wallet
