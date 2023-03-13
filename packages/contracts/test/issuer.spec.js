@@ -9,7 +9,7 @@ const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 const { generateProofData } = require("./utils/issuer.utils");
 const { BigNumber } = require("ethers");
-const { timeTravel } = require("./utils/time.utils");
+const { timeTravel, getTimeStamp } = require("./utils/time.utils");
 const {
   createPreciseProof,
   createMerkleTree,
@@ -190,12 +190,24 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith(`VolumeNotInConsensus(${wrongVolume}, "${volumeRootHash}"`);
     });
 
+    it("should revert proof issuance when contract is paused", async () => {
+      const greenproofContract = await ethers.getContractAt("Greenproof", greenproofAddress);
+      
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      tx = await greenproofContract.pause();
+
+      await expect(
+        requestMinting(proofData, wallets[1], issuer)
+      ).to.be.revertedWith("PausedContract()");
+    })
+
     it("should reject proof issuance requests by non issuers", async () => {
       const {
         inputHash,
         volumeRootHash,
         matchResultProof,
-        volume,
         volumeProof,
         matchResult,
       } = generateProofData();
@@ -221,6 +233,36 @@ describe("IssuerFacet", function () {
 
       await mintProof(1, proofData);
     });
+
+    it("should allow proof issuance after contract is unpaused", async () => {
+      const greenproofContract = await ethers.getContractAt("Greenproof", greenproofAddress);
+      
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      //Pausing contract
+      tx = await greenproofContract.pause();
+      let timestamp = await getTimeStamp(tx);
+      
+      await expect(tx)
+        .to.emit(greenproofContract, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+
+      await expect(
+        requestMinting(proofData, wallets[1], issuer)
+      ).to.be.revertedWith("PausedContract()");
+
+      //Unpausing contract
+      tx = await greenproofContract.unPause();
+      timestamp = await getTimeStamp(tx);
+      
+      await expect(tx)
+        .to.emit(greenproofContract, "ContractUnPaused")
+        .withArgs(timestamp, owner.address);
+      
+      const certificateID = 1;
+      mintProof(certificateID, proofData, wallets[ 1 ]);
+    })
 
     it("reverts when issuers send duplicate proof issuance requests", async () => {
       const proofData = generateProofData();

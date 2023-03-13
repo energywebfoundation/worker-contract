@@ -113,6 +113,20 @@ contract Greenproof is SolidStateDiamond {
     event ClaimsRevocationRegistryUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
+     * @notice ContractPaused - emitted when the contract gets paused
+     * @param timestamp unix date and time recording when the contract was paused
+     * @param operator - address of the operator who paused the contract
+     */
+    event ContractPaused(uint256 timestamp, address operator);
+
+    /**
+     * @notice ContractUnPaused - emitted when the contract gets paused
+     * @param timestamp unix date and time recording when the contract was unpaused
+     * @param operator - address of the operator who unpaused the contract
+     */
+    event ContractUnPaused(uint256 timestamp, address operator);
+
+    /**
      * @dev Error: Thrown when a transaction occurs while contract is paused
      */
     error PausedContract();
@@ -131,16 +145,6 @@ contract Greenproof is SolidStateDiamond {
      * @dev Error: Thrown when an error occurs at proxy level
      */
     error ProxyError(string errorMsg);
-
-    /**
-     * @dev Modifier to prevent fowarding transactions when the contract is paused.
-     */
-    modifier onlywhenUnpaused() {
-        if (_isContractPaused) {
-            revert PausedContract();
-        }
-        _;
-    }
 
     /**
      * @dev Constructor setting the contract's initial parameters
@@ -192,7 +196,10 @@ contract Greenproof is SolidStateDiamond {
         );
     }
 
-    fallback() external payable override(IProxy, Proxy) onlywhenUnpaused {
+    fallback() external payable override(IProxy, Proxy) {
+        if (_isContractPaused) {
+            revert PausedContract();
+        }
         address implementation = _getImplementation();
 
         if (!implementation.isContract()) {
@@ -322,6 +329,11 @@ contract Greenproof is SolidStateDiamond {
         emit ClaimerVersionUpdated(oldVersion, newVersion);
     }
 
+    /**
+     * @notice pause - when called, this function prevents all calls of facet functions from being executed
+     * @dev only the contract admistrator is allowed to execute this halting function
+     * @dev if the system is already paused, a call to this function will revert with `AlreadyPausedContract` error
+     */
     function pause() external {
         LibClaimManager.checkOwnership();
 
@@ -329,8 +341,14 @@ contract Greenproof is SolidStateDiamond {
             revert AlreadyPausedContract();
         }
         _isContractPaused = true;
+        emit ContractPaused(block.timestamp, msg.sender);
     }
 
+    /**
+     * @notice unPause - when called, this function reverts the pausing and unlocks facet function executions
+     * @dev only the contract admistrator is allowed to execute this unlocking function
+     * @dev if the system is already unpaused, a call to this function will revert with `AlreadyUnpausedContract` error
+     */
     function unPause() external {
         LibClaimManager.checkOwnership();
 
@@ -338,5 +356,6 @@ contract Greenproof is SolidStateDiamond {
             revert AlreadyUnpausedContract();
         }
         _isContractPaused = false;
+        emit ContractUnPaused(block.timestamp, msg.sender);
     }
 }
