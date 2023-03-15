@@ -130,6 +130,6 @@ library LibProofManager {
         bytes32 leaf,
         bytes32[] memory proof
     ) internal pure returns (bool) {
-        return MerkleProof.verify(rootHash, leaf, proof);
+        return MerkleProof.verify(proof, rootHash, leaf);
     }
 }
