@@ -166,7 +166,6 @@ describe("IssuerFacet", function () {
         inputHash,
         volumeRootHash,
         matchResultProof,
-        volume,
         volumeProof,
         matchResult,
       } = generateProofData({ volume: 42 });
@@ -362,8 +361,6 @@ describe("IssuerFacet", function () {
 
     it("should revert when one tries to transfer Batch certificates containing token ID = 0", async () => {
       const minter = wallets[0];
-      const receiver = wallets[1];
-      const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -385,8 +382,6 @@ describe("IssuerFacet", function () {
     });
     it("should revert Batch certificates transfer when caller is not approved", async () => {
       const minter = wallets[0];
-      const receiver = wallets[1];
-      const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -435,8 +430,6 @@ describe("IssuerFacet", function () {
 
     it("should revert when one tries to transfer Batch certificates containing token ID > lastTokenIndex", async () => {
       const minter = wallets[0];
-      const receiver = wallets[1];
-      const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -461,7 +454,6 @@ describe("IssuerFacet", function () {
 
     it("should revert Batch certificates transfers to a non generator wallet containing revoked certificate", async () => {
       const minter = wallets[0];
-      const receiver = wallets[1];
       const transferVolume = parseEther("2");
       const mintedVolume1 = 21;
       const mintedVolume2 = 42;
@@ -829,8 +821,6 @@ describe("IssuerFacet", function () {
       const minter = wallets[0];
       await mintProof(1, proofData, minter);
       const claimedVolume = parseEther("5");
-      const proof = await proofManagerContract.connect(owner).getProof(1);
-      const issuanceDate = Number(proof.issuanceDate.toString());
       await claimVolumeFor(minter, claimedVolume);
 
       const tx = proofManagerContract.connect(revoker).revokeProof(1);
