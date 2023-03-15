@@ -1,7 +1,7 @@
 ### Example implementation:
 
 ```ts
-import { GreenProofWorker } from '@energyweb/greenproof-worker';
+import { GreenProofWorker } from '@energyweb/worker';
 
 const worker = new GreenProofWorker({
   privateKey: '035678b90179a...c4f078ac00bc45fc9fb674ddfe2f17c14f',
