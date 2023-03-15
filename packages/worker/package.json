@@ -18,8 +18,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@energyweb/greenproof-ddhub-client": "1.0.7",
-    "@energyweb/greenproof-merkle-tree": "2.0.6",
+    "@energyweb/ddhub-client": "2.0.0",
+    "@energyweb/merkle-tree": "3.0.0",
     "@energyweb/contracts": "2.0.0",
     "@nestjs/common": "9.0.11",
     "@nestjs/core": "9.0.11",

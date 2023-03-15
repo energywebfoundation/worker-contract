@@ -1,8 +1,7 @@
 # Green Proofs DDHUB Client
 ### Installation
 
-[//]: # (TODO: Change after deployment)
-```yarn add @energyweb/greenproof-ddhub-client```
+```yarn add @energyweb/ddhub-client```
 
 ### Example
 
