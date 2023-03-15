@@ -551,14 +551,6 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@energyweb/merkle-tree@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@energyweb/merkle-tree/-/merkle-tree-3.0.0.tgz#b1dac2580eb6e34030a2af6b171d25f6bb716fe1"
-  integrity sha512-aNo9GMfUitshByrGpMyTyrCzXlthxy+PD6kg/mCtepoclgJYs0S3/UGUgNVKNubsiR07Jy8FeB5vNjpGvqaFiw==
-  dependencies:
-    keccak256 "^1.0.6"
-    merkletreejs "0.2.32"
-
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
   resolved "https://registry.npmjs.org/@ensdomains/ens/-/ens-0.4.5.tgz"
