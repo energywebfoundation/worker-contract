@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/merkle-tree",
-    "packages/contracts",
+    "packages/greenproof-contracts",
     "packages/ddhub-client",
     "packages/worker",
     "packages/*"
