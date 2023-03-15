@@ -1,4 +1,4 @@
-const { createPreciseProof } = require("@energyweb/greenproof-merkle-tree");
+const { createPreciseProof } = require("@energyweb/merkle-tree");
 
 const getStringLeaves = (dataObject) => {
   const stringLeaves = [];

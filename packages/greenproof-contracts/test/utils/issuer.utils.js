@@ -3,7 +3,7 @@ const {
   stringify,
   createPreciseProof,
   createMerkleTree,
-} = require("@energyweb/greenproof-merkle-tree");
+} = require("@energyweb/merkle-tree");
 
 const generateRandomInt = () => Math.floor(Math.random() * 1_000_000);
 

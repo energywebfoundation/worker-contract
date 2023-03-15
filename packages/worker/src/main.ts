@@ -1,9 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { createMerkleTree, stringify, verify, createPreciseProof, hash } from '@energyweb/greenproof-merkle-tree';
+import { createMerkleTree, stringify, verify, createPreciseProof, hash } from '@energyweb/merkle-tree';
 import { providers, Wallet } from 'ethers';
-import type { Config } from '@energyweb/greenproof-ddhub-client';
-import { DDHubClient } from '@energyweb/greenproof-ddhub-client';
+import type { Config } from '@energyweb/ddhub-client';
+import { DDHubClient } from '@energyweb/ddhub-client';
 import * as Joi from 'joi';
 import type { VotingFacet} from '@energyweb/contracts';
 import { VotingFacet__factory } from '@energyweb/contracts';
