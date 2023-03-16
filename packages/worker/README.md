@@ -6,9 +6,9 @@ It mostly preconfigures communication with blockchain.
 ## Example implementation:
 
 ```ts
-import { GreenProofWorker } from '@energyweb/greenproof-worker';
+import { Worker } from '@energyweb/worker';
 
-const worker = new GreenProofWorker({
+const worker = new Worker({
   privateKey: '035678b90179a...c4f078ac00bc45fc9fb674ddfe2f17c14f',
   rpcUrl: 'https://rpc.url.com',
   votingContractAddress: '0xCD2a3d9F938...c05AbC7FE734Df8DD826',
