@@ -385,7 +385,9 @@ describe("IssuerFacet", function () {
     it("should revert Batch certificates transfer when caller is not approved", async () => {
       const minter = wallets[0];
       const mintedVolume = 5;
+      const transferVolume = 2;
       const certificateID = 1;
+      const receiver = wallets[ 1 ];
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(certificateID, proofData, minter);
