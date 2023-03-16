@@ -8,7 +8,7 @@ It can be also be used to periodically trigger timeouted votings cancellation.
 
 ## Usage
 
-1. Install: `@energyweb/greenproof-overseer`
+1. Install: `@energyweb/overseer`
 2. Import `OverseerModule.register({ ...config })` to your application
 3. Inject `OverseerFacade`
 
