@@ -1,11 +1,6 @@
-const { expect } = require("chai");
 const { itEach } = require("mocha-it-each");
-const {
-  DEFAULT_REWARD_AMOUNT,
-} = require("../../scripts/deploy/deployContracts");
 
 module.exports.consensusTests = function () {
-  let diamondAddress;
   let workers;
   let votingContract;
   let timeframes;

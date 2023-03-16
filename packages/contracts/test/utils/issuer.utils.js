@@ -1,6 +1,9 @@
 const { hash, stringify, createPreciseProof, createMerkleTree } = require('@energyweb/merkle-tree');
+const { randomUUID } = require('crypto');
 
 const generateRandomInt = () => Math.floor(Math.random() * 1_000_000);
+
+const generateJunkLeaf = () => ({ id: generateRandomInt(), generatorID: randomUUID(), volume: generateRandomInt(), consumerID: randomUUID() })
 
 const generateProofData = (
   {
@@ -9,12 +12,13 @@ const generateProofData = (
     volume = generateRandomInt(),
     consumerID = generateRandomInt(),
   } = {}) => {
+  const junkLeaves = new Array(50).fill(null).map(() => generateJunkLeaf())
   const inputData = [{
     id: id !== undefined ? id : 1,
     generatorID: generatorID,
     volume,
     consumerID,
-  }];
+  }, ...junkLeaves];
 
   const inputHash = '0x' + hash(stringify(inputData)).toString('hex');
 
