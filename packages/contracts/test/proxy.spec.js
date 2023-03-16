@@ -437,12 +437,22 @@ describe("GreenproofTest", async function () {
       await test1Facet.isInterfaceSupported("0x43a7aEeb");
     });
 
-    it("should add test2 functions", async () => {
+    it("should add test2 functions even when contract is paused", async () => {
       const Test2Facet = await ethers.getContractFactory("Test2Facet");
       const test2Facet = await Test2Facet.deploy();
       await test2Facet.deployed();
       addresses.push(test2Facet.address);
       const selectors = getSelectors(test2Facet);
+
+      // Pausing the system
+      tx = await greenproof.pause();
+
+      let timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(greenproof, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+      
+      // Upgrading the contract
       tx = await greenproof.diamondCut(
         [
           {
@@ -456,6 +466,14 @@ describe("GreenproofTest", async function () {
         { gasLimit: 800000 }
       );
       receipt = await tx.wait();
+
+      // Unpausing the system
+      tx = await greenproof.unPause();
+
+      timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(greenproof, "ContractUnPaused")
+        .withArgs(timestamp, owner.address);
       if (!receipt.status) {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
