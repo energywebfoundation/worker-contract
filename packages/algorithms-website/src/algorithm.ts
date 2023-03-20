@@ -1,5 +1,5 @@
-import type { ProportionalMatcher } from 'algorithms';
-import { visualizeProportionalMatcher } from 'algorithms';
+import type { ProportionalMatcher } from '@energyweb/algorithms';
+import { visualizeProportionalMatcher } from '@energyweb/algorithms';
 
 const makeColor = (color: string) => (content: any) => `<span style="color: ${color}">${content}</span>`;
 
