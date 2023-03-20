@@ -4,7 +4,7 @@ Used to communicate with Energyweb DDHUB messaging server
 
 ## Installation
 
-```yarn add @energyweb/greenproof-ddhub-client```
+```yarn add @energyweb/ddhub-client```
 
 ## Example
 
