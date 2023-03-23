@@ -10,6 +10,7 @@ const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 const { generateProofData } = require("./utils/issuer.utils");
 const { BigNumber } = require("ethers");
 const { timeTravel, getTimeStamp } = require("./utils/time.utils");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const {
   createPreciseProof,
   createMerkleTree,
@@ -40,9 +41,17 @@ describe("IssuerFacet", function () {
   let grantRole;
   let revokeRole;
 
-  beforeEach(async () => {
-    [owner, issuer, worker, revoker, claimer, ...wallets] =
-      await ethers.getSigners();
+  const initFixture = async() => {
+    [
+      owner,
+      issuer,
+      worker,
+      revoker,
+      claimer,
+      minter,
+      receiver,
+      ...wallets
+    ] = await ethers.getSigners();
 
     const claimManagerMocked = await initMockClaimManager(owner);
     const claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
@@ -57,15 +66,15 @@ describe("IssuerFacet", function () {
     };
 
     revokeRole = async (wallet, role) => {
-      await claimManagerMocked.grantRole(wallet.address, role);
-      await claimsRevocationRegistryMocked.isRevoked(
-        role,
-        wallet.address,
-        true
-      );
+        await claimManagerMocked.grantRole(wallet.address, role);
+        await claimsRevocationRegistryMocked.isRevoked(
+          role,
+          wallet.address,
+          true
+        );
     };
 
-    ({ greenproofAddress } = await deployGreenproof({
+  ({ greenproofAddress } = await deployGreenproof({
       claimManagerAddress: claimManagerMocked.address,
       claimRevokerAddress: claimsRevocationRegistryMocked.address,
       contractOwner: owner.address,
@@ -75,8 +84,8 @@ describe("IssuerFacet", function () {
     }));
 
     issuerContract = await ethers.getContractAt(
-      "IssuerFacet",
-      greenproofAddress
+    "IssuerFacet",
+    greenproofAddress
     );
     votingContract = await ethers.getContractAt(
       "VotingFacet",
@@ -87,16 +96,44 @@ describe("IssuerFacet", function () {
       greenproofAddress
     );
 
+    const greenproofContract = await ethers.getContractAt(
+      "Greenproof",
+      greenproofAddress
+    );
+
+    const proofData = generateProofData();
+
+
     await resetRoles();
     await grantRole(worker, roles.workerRole);
     await votingContract.addWorker(worker.address);
     await grantRole(issuer, roles.issuerRole);
     await grantRole(revoker, roles.revokerRole);
     await grantRole(claimer, roles.claimerRole);
-  });
+
+    return {
+      owner,
+      issuer,
+      worker,
+      minter,
+      revoker,
+      claimer,
+      receiver,
+      proofData,
+      issuerContract,
+      votingContract,
+      proofManagerContract,
+      greenproofContract,
+      greenproofAddress,
+      claimManagerMocked,
+      claimsRevocationRegistryMocked
+    }
+  }
 
   describe("Proof issuance tests", () => {
     it("checks that every one has 0 balance initially", async () => {
+      const { issuerContract } = await loadFixture(initFixture);
+
       for (const wallet of await ethers.getSigners()) {
         const first20TokenIds = new Array(20).fill(0).map((_, i) => i);
         for (const tokenId of first20TokenIds) {
@@ -111,6 +148,7 @@ describe("IssuerFacet", function () {
     });
 
     it("should reject proof issuance requests if generator is the zero address", async () => {
+      const { issuerContract, issuer} = await loadFixture(initFixture);
       const {
         inputHash,
         volumeRootHash,
@@ -135,6 +173,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should reject proof issuance requests for data not in consensus", async () => {
+      const { issuerContract, issuer} = await loadFixture(initFixture);
+      
       const {
         inputHash,
         volumeRootHash,
@@ -162,6 +202,10 @@ describe("IssuerFacet", function () {
     });
 
     it("should reject proof issuance requests for volume not in consensus", async () => {
+      
+      const { issuerContract, issuer} = await loadFixture(initFixture);
+
+
       const {
         inputHash,
         volumeRootHash,
@@ -191,7 +235,9 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert proof issuance when contract is paused", async () => {
-      const greenproofContract = await ethers.getContractAt("Greenproof", greenproofAddress);
+
+      const { greenproofContract, issuer} = await loadFixture(initFixture);
+
       
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -204,6 +250,8 @@ describe("IssuerFacet", function () {
     })
 
     it("should reject proof issuance requests by non issuers", async () => {
+      const { issuerContract} = await loadFixture(initFixture);
+      
       const {
         inputHash,
         volumeRootHash,
@@ -228,6 +276,8 @@ describe("IssuerFacet", function () {
     });
 
     it("Authorized issuers can send proof issuance requests", async () => {
+      await loadFixture(initFixture);
+      
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
@@ -235,8 +285,10 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow proof issuance after contract is unpaused", async () => {
-      const greenproofContract = await ethers.getContractAt("Greenproof", greenproofAddress);
       
+      const { greenproofContract, issuer} = await loadFixture(initFixture);
+
+
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
@@ -265,7 +317,8 @@ describe("IssuerFacet", function () {
     })
 
     it("reverts when issuers send duplicate proof issuance requests", async () => {
-      const proofData = generateProofData();
+      const { proofData } = await loadFixture(initFixture);
+      
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData);
@@ -273,8 +326,10 @@ describe("IssuerFacet", function () {
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {
-      const receiver = wallets[1];
-      const proofData = generateProofData();
+      const { proofData, issuerContract } = await loadFixture(initFixture);
+      
+      const receiver = wallets[ 1 ];
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, receiver);
 
@@ -286,7 +341,9 @@ describe("IssuerFacet", function () {
     });
 
     it("should get the list of all certificate owners", async () => {
-      const minter = wallets[0];
+      const { issuerContract } = await loadFixture(initFixture);
+      
+      const minter = wallets[ 0 ];
       const receiver = wallets[1];
       const transferVolume = parseEther("2");
       const mintedVolume = 5;
@@ -305,8 +362,10 @@ describe("IssuerFacet", function () {
 
     it("should get details of a minted certificate", async () => {
       const mintedVolume = 5;
+
+      const { proofManagerContract } = await loadFixture(initFixture);    
       const certificaID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
+      const proofData = generateProofData({volume: mintedVolume})
 
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       const minter = wallets[0];
@@ -323,6 +382,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when asking details for an invalid certificateID", async () => {
+      const { proofManagerContract, owner } = await loadFixture(initFixture);    
+
       const invalidCertificateID = 42;
       await expect(
         proofManagerContract.connect(owner).getProof(invalidCertificateID)
@@ -334,7 +395,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should get all certificates of one owner", async () => {
-      const proofData = generateProofData();
+      const { proofManagerContract, proofData } = await loadFixture(initFixture);    
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, wallets[0]);
 
@@ -366,15 +428,19 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when trying to fetch all certificates of non owner", async () => {
+      const { proofManagerContract } = await loadFixture(initFixture);    
+
       await expect(
         proofManagerContract.getProofsOf(wallets[0].address)
       ).to.be.revertedWith(`NoProofsOwned`);
     });
 
     it("Should reject issuance requests for wrongs voteIDs", async () => {
+      const { proofData } = await loadFixture(initFixture);    
+
       const { inputHash: someOtherHash } = generateProofData();
-      const receiver = wallets[0];
-      const proofData = generateProofData();
+      const receiver = wallets[ 0 ];
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       const wrongData = { ...proofData, inputHash: someOtherHash };
@@ -387,6 +453,8 @@ describe("IssuerFacet", function () {
 
   describe("Proof transfers tests", () => {
     it("should revert when one tries to transfer token ID = 0", async () => {
+      const { issuerContract } = await loadFixture(initFixture);
+
       const transferBytesData = ethers.utils.formatBytes32String("");
 
       await expect(
@@ -403,9 +471,9 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when one tries to transfer Batch certificates containing token ID = 0", async () => {
-      const minter = wallets[0];
-      const receiver = wallets[1];
-      const transferVolume = parseEther("2");
+      const { issuerContract, owner } = await loadFixture(initFixture);
+      
+      const minter = wallets[ 0 ];
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -426,9 +494,9 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("ERC1155: insufficient balances for transfer");
     });
     it("should revert Batch certificates transfer when caller is not approved", async () => {
+      const { issuerContract } = await loadFixture(initFixture);
+
       const minter = wallets[0];
-      const receiver = wallets[1];
-      const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -450,8 +518,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow Batch certificates transfer when caller is approved", async () => {
-      const minter = wallets[0];
-      const receiver = wallets[1];
+      const { issuerContract, minter, receiver } = await loadFixture(initFixture);
+
       const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
@@ -476,9 +544,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when one tries to transfer Batch certificates containing token ID > lastTokenIndex", async () => {
-      const minter = wallets[0];
-      const receiver = wallets[1];
-      const transferVolume = parseEther("2");
+      const { issuerContract, minter } = await loadFixture(initFixture);
+      
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -502,8 +569,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert Batch certificates transfers to a non generator wallet containing revoked certificate", async () => {
-      const minter = wallets[0];
-      const receiver = wallets[1];
+      const { issuerContract, proofManagerContract, minter } = await loadFixture(initFixture);
+      
       const transferVolume = parseEther("2");
       const mintedVolume1 = 21;
       const mintedVolume2 = 42;
@@ -519,12 +586,12 @@ describe("IssuerFacet", function () {
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       const transferBytesData = ethers.utils.formatBytes32String("");
-      const expectedRevertMessage = `NotAllowedTransfer(2, "${wallets[0].address}", "${owner.address}")`
+      const expectedRevertMessage = `NotAllowedTransfer(2, "${minter.address}", "${owner.address}")`
       await expect(
         issuerContract
-          .connect(wallets[0])
+          .connect(minter)
           .safeBatchTransferFrom(
-            wallets[0].address,
+            minter.address,
             owner.address,
             [1, 2],
             [transferVolume, transferVolume],
@@ -534,7 +601,13 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow Batch certificates transfers of revoked certificate to the generator wallet", async () => {
-      const minter = wallets[0];
+      const {
+        minter,
+        revoker,
+        issuerContract,
+        proofManagerContract,
+      } = await loadFixture(initFixture);
+      
       const transferVolume = parseEther("2");
       const mintedVolume1 = 21;
       const mintedVolume2 = 42;
@@ -553,9 +626,9 @@ describe("IssuerFacet", function () {
 
       await expect(
         issuerContract
-          .connect(wallets[0])
+          .connect(minter)
           .safeBatchTransferFrom(
-            wallets[0].address,
+            minter.address,
             minter.address,
             [1, 2],
             [transferVolume, transferVolume],
@@ -565,13 +638,15 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when one tries to transfer token ID > lastTokenIndex", async () => {
+      const { issuerContract, minter } = await loadFixture(initFixture);
+      
       const invalidTokenIndex = 1;
 
       await expect(
         issuerContract
-          .connect(wallets[0])
+          .connect(minter)
           .safeTransferFrom(
-            wallets[0].address,
+            minter.address,
             owner.address,
             invalidTokenIndex,
             parseEther("2"),
@@ -583,8 +658,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should correctly transfer certificates", async () => {
-      const minter = wallets[0];
-      const receiver = wallets[1];
+      const { issuerContract, minter, receiver } = await loadFixture(initFixture);
+      
       const transferVolume = parseEther("2");
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
@@ -607,9 +682,11 @@ describe("IssuerFacet", function () {
 
   describe("Proof revocation tests", () => {
     it("should prevent a non authorized entity from revoking non retired proof", async () => {
-      const proofData = generateProofData();
+      const { proofManagerContract, proofData, minter } = await loadFixture(initFixture);
+      
+      
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      const unauthorizedOperator = wallets[0];
+      const unauthorizedOperator = minter;
       await mintProof(1, proofData, unauthorizedOperator);
       await revokeRole(unauthorizedOperator, roles.revokerRole);
 
@@ -619,6 +696,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should prevent revocation of non existing certificates", async () => {
+      const { proofManagerContract, revoker } = await loadFixture(initFixture);
+      
       const nonExistingCertificateID = 1;
 
       await expect(
@@ -631,7 +710,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow an authorized entity to revoke a non retired proof", async () => {
-      const proofData = generateProofData();
+      const { proofData, revoker } = await loadFixture(initFixture);
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, revoker);
 
@@ -641,7 +721,14 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when transfering revoked proof", async () => {
-      const proofData = generateProofData();
+      const {
+        owner,
+        revoker,
+        proofData,
+        issuerContract,
+        proofManagerContract
+      } = await loadFixture(initFixture);
+
       const certificateID = 1;
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(certificateID, proofData, owner);
@@ -664,6 +751,14 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow transfer of revoked proof only to generator", async () => {
+      const {
+        owner,
+        issuer,
+        revoker,
+        issuerContract,
+        proofManagerContract
+      } = await loadFixture(initFixture);
+      
       const proofData = generateProofData({ volume: 42 });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       const certificateID = 1;
@@ -711,7 +806,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should prevent duplicate revocation", async () => {
-      const proofData = generateProofData();
+      const { proofData, revoker, proofManagerContract } = await loadFixture(initFixture);
+
       const certificateID = 1;
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(certificateID, proofData, revoker);
@@ -726,7 +822,7 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert if claimer tries to retire a revoked proof", async () => {
-      const proofData = generateProofData();
+      const { proofData, revoker, claimer, proofManagerContract } = await loadFixture(initFixture);
       const certificateID = 1;
 
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -742,7 +838,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert if non claimer tries to claim proof", async () => {
-      const proofData = generateProofData();
+      const { proofData, worker, owner, proofManagerContract } = await loadFixture(initFixture);
+
       const notClaimer = worker;
       await reachConsensus(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, owner);
@@ -755,7 +852,9 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert if owner tries to retire a revoked proof", async () => {
-      const proofData = generateProofData();
+
+      const { proofData, issuer, proofManagerContract, revoker } = await loadFixture(initFixture);
+
       const certificateID = 1;
       const claimedVolume = 1;
 
@@ -773,10 +872,11 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow claiming proofs for others", async () => {
+      const { proofManagerContract, minter } = await loadFixture(initFixture);
+
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      const minter = wallets[0];
       await mintProof(1, proofData, minter);
       const claimedVolume = parseEther((proofData.volume - 2).toString());
 
@@ -803,10 +903,11 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow claiming proofs", async () => {
+      const { proofManagerContract, minter } = await loadFixture(initFixture);
+
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      const minter = wallets[0];
       await mintProof(1, proofData, minter);
       const claimedVolume = parseEther((proofData.volume - 2).toString());
 
@@ -833,9 +934,10 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when retirement for others amount exceeds owned volume", async () => {
+      const { proofManagerContract, minter, claimer } = await loadFixture(initFixture);
+
       const mintedVolume = 5;
       const certificateID = 1;
-      const minter = wallets[0];
       const proofData = generateProofData({ volume: mintedVolume });
 
       await reachConsensus(proofData.inputHash, proofData.matchResult);
@@ -850,9 +952,10 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when retirement amount exceeds owned volume", async () => {
+      const { proofManagerContract, minter } = await loadFixture(initFixture);
+
       const mintedVolume = 5;
       const certificateID = 1;
-      const minter = wallets[0];
       const claimedVolume = parseEther("6");
       const proofData = generateProofData({ volume: mintedVolume });
       
@@ -865,14 +968,13 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow authorized revoker to revoke a retired proof during the revocable Period", async () => {
+      const { proofManagerContract, minter, revoker } = await loadFixture(initFixture);
+      
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      const minter = wallets[0];
       await mintProof(1, proofData, minter);
       const claimedVolume = parseEther("5");
-      const proof = await proofManagerContract.connect(owner).getProof(1);
-      const issuanceDate = Number(proof.issuanceDate.toString());
       await claimVolumeFor(minter, claimedVolume);
 
       const tx = proofManagerContract.connect(revoker).revokeProof(1);
@@ -881,10 +983,11 @@ describe("IssuerFacet", function () {
     });
 
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
+      const { proofManagerContract, minter, owner, revoker } = await loadFixture(initFixture);
+      
       const mintedVolume = 5;
       const proofData = generateProofData({ volume: mintedVolume });
       await reachConsensus(proofData.inputHash, proofData.matchResult);
-      const minter = wallets[0];
       await mintProof(1, proofData, minter);
       const claimedVolume = parseEther("5");
       const proof = await proofManagerContract.connect(owner).getProof(1);
@@ -903,7 +1006,9 @@ describe("IssuerFacet", function () {
     });
 
     it("allows to reissue revoked certificate", async () => {
-      const proofData = generateProofData();
+
+      const { proofManagerContract, proofData, revoker } = await loadFixture(initFixture);
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData, revoker);
@@ -918,7 +1023,8 @@ describe("IssuerFacet", function () {
     });
 
     it("allows to get proof ID by data hash", async () => {
-      const proofData = generateProofData();
+      const { proofData, proofManagerContract, revoker } = await loadFixture(initFixture);
+
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData, revoker);
@@ -933,6 +1039,8 @@ describe("IssuerFacet", function () {
 
   describe("Proof verification tests", () => {
     it("should verify all kinds of proofs", async () => {
+      const { proofManagerContract, owner } = await loadFixture(initFixture);
+
       const data = [
         { id: 1, generatorID: 2, volume: 10, consumerID: 500 },
         { id: 2, generatorID: 3, volume: 10, consumerID: 522 },
@@ -969,6 +1077,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should successfully verify a proof", async () => {
+      const { proofManagerContract, owner } = await loadFixture(initFixture);
+
       const data = [
         { id: 7, generatorID: 4735, volume: 7, consumerID: 7408562 },
         { id: 7408562, generatorID: 7408562, volume: 4735, consumerID: 7 },
@@ -989,11 +1099,12 @@ describe("IssuerFacet", function () {
     });
   });
 
-  describe("Data disclosure tests", () => {
+  describe("Data disclosure tests", async () => {
     it("should revert when non authorized user tries to disclose data", async () => {
-      const unauthorizedOperator = wallets[0];
+      const { minter, proofData, issuerContract } = await loadFixture(initFixture);
+
+      const unauthorizedOperator = minter;
       await revokeRole(unauthorizedOperator, roles.issuerRole);
-      const proofData = generateProofData();
       const key = "consumerID";
 
       const disclosedDataTree = proofData.volumeTree;
@@ -1009,7 +1120,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow authorized user to disclose data", async () => {
-      const proofData = generateProofData();
+      const { issuer, proofData, issuerContract } = await loadFixture(initFixture);
+
       const key = "consumerID";
       const dataLeaf = hash(key + `${proofData.consumerID}`);
       const disclosedDataTree = proofData.volumeTree;
@@ -1022,7 +1134,8 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when one tries to disclose not verified data", async () => {
-      const proofData = generateProofData();
+      const { issuer, proofData, issuerContract } = await loadFixture(initFixture);
+
       const key = "consumerID";
       const dataLeaf = hash(key + `${proofData.consumerID}`);
       const disclosedDataTree = proofData.volumeTree;
@@ -1054,8 +1167,9 @@ describe("IssuerFacet", function () {
       ).to.be.revertedWith("InvalidProof");
     });
 
-    it("should revert when one tries to disclose already disclosed data", async () => {
-      const proofData = generateProofData();
+    it("should revert when one tries to disclose already disclosed data", async () => {    
+      const { issuer, proofData, issuerContract } = await loadFixture(initFixture);
+
       const key = "consumerID";
       const dataLeaf = hash(key + `${proofData.consumerID}`);
       const disclosedDataTree = proofData.volumeTree;
