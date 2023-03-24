@@ -1,21 +1,17 @@
 const { expect } = require("chai");
 
 module.exports.replayingTests = function () {
-  let workers;
-  let votingContract;
-  let timeframes;
-  let addWorkers;
-  let setupVotingContract;
-  let expectVotingResults;
 
-  beforeEach(function () {
+  const { initFixture, loadFixture } = this.parent;
+
+  beforeEach(async function () {
     ({
       workers,
       timeframes,
       addWorkers,
       setupVotingContract,
       expectVotingResults,
-    } = this);
+    } = await loadFixture(initFixture));
   });
 
   it("should allow workers to replay the vote", async () => {
