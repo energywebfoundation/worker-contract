@@ -1,19 +1,10 @@
-const { expect } = require("chai");
 const { itEach } = require("mocha-it-each");
-const {
-  DEFAULT_REWARD_AMOUNT,
-} = require("../../scripts/deploy/deployContracts");
 
 module.exports.consensusTests = function () {
-  let diamondAddress;
-  let workers;
-  let votingContract;
-  let timeframes;
-  let setupVotingContract;
-  let faucet;
+  const { initFixture, loadFixture } = this.parent;
 
-  beforeEach(function () {
-    ({ workers, timeframes, setupVotingContract, faucet } = this);
+  beforeEach(async function () {
+    ({ workers, timeframes, setupVotingContract, faucet } =  await loadFixture(initFixture));
   });
 
   itEach(
