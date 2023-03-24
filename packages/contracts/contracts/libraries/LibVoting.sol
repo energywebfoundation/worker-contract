@@ -262,6 +262,10 @@ library LibVoting {
         uint256 numberOfMatchResults = matchResults.length;
         bool isVoteInConsensus;
 
+        if (dataHash == voteID) {
+            return;
+        }
+
         for (uint256 i; i < numberOfMatchResults; i++) {
             isVoteInConsensus = LibProofManager.verifyProof(matchResults[i], dataHash, dataProof);
 
