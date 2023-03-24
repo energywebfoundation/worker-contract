@@ -7,18 +7,15 @@ const {
 const { formatEther } = utils;
 
 module.exports.resultsTests = function () {
-  let workers;
-  let votingContract;
-  let timeframes;
-  let setupVotingContract;
-  let faucet;
-  let removeWorkers;
-
-  beforeEach(function () {
-    ({ workers, timeframes, setupVotingContract, faucet, removeWorkers } = this);
-  });
+  const { initFixture, loadFixture } = this.parent;
 
   it("should not reveal workers vote before the end of vote", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0], workers[1]],
@@ -35,6 +32,12 @@ module.exports.resultsTests = function () {
   });
 
   it("should reveal workers vote after the end of vote", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0], workers[1]],
@@ -60,6 +63,12 @@ module.exports.resultsTests = function () {
   });
 
   it("should not reveal winners before the end of vote", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0], workers[1]],
@@ -79,6 +88,12 @@ module.exports.resultsTests = function () {
   });
 
   it("should not reveal winningMatches before the end of vote", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
@@ -105,6 +120,12 @@ module.exports.resultsTests = function () {
   });
 
   it("should get the winner with the most votes", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
@@ -120,6 +141,11 @@ module.exports.resultsTests = function () {
   });
 
   it("should be able to get the list of whiteListed workers", async () => {
+    const {
+      workers,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0]],
     });
@@ -136,6 +162,12 @@ module.exports.resultsTests = function () {
   });
 
   it("should get the number of voteIDs casted in the system", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
@@ -159,6 +191,12 @@ module.exports.resultsTests = function () {
   });
 
   it("should not be able to restart session", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       majorityPercentage: 50,
       participatingWorkers: [workers[0], workers[1]],
@@ -180,6 +218,12 @@ module.exports.resultsTests = function () {
     const REWARD = ethers.utils.parseEther("123");
 
     it("pays proper reward to the winners", async () => {
+      const {
+        workers,
+        timeframes,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+      
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [
@@ -211,6 +255,13 @@ module.exports.resultsTests = function () {
     });
 
     it("reward should be paid after replenishment of funds", async () => {
+      const {
+        faucet,
+        workers,
+        timeframes,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+      
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
@@ -236,6 +287,12 @@ module.exports.resultsTests = function () {
     });
 
     it("should revert when calling replenishment of funds with no funds", async () => {
+      const {
+        faucet,
+        workers,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+      
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
@@ -249,6 +306,12 @@ module.exports.resultsTests = function () {
     });
 
     it("should correctly proceed to rewardPool replenishment", async () => {
+      const {
+        faucet,
+        workers,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+      
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
@@ -262,7 +325,12 @@ module.exports.resultsTests = function () {
     });
 
     it("should revert when calling replenishment of funds with rewards disabled", async () => {
-      
+      const {
+        faucet,
+        workers,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
@@ -277,6 +345,13 @@ module.exports.resultsTests = function () {
     });
 
     it("rewards should be paid partially and then fully after charging up the pool", async () => {
+      const {
+        faucet,
+        workers,
+        timeframes,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
@@ -309,6 +384,13 @@ module.exports.resultsTests = function () {
     });
 
     it("rewards should be paid partially then fully after calling PayReward manually", async () => {
+      const {
+        faucet,
+        workers,
+        timeframes,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+      
       votingContract = await setupVotingContract({
         reward: REWARD,
         participatingWorkers: [workers[0], workers[1]],
@@ -349,6 +431,13 @@ module.exports.resultsTests = function () {
     });
 
     it("rewards transactions are correctly limited when we PayReward manually", async () => {
+      const {
+        faucet,
+        workers,
+        timeframes,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+
       const OneWei = 1;
 
       votingContract = await setupVotingContract({
@@ -409,6 +498,13 @@ module.exports.resultsTests = function () {
     });
     
     it("Should not allow to PayReward manually when rewards are disabled", async () => {
+      const {
+        faucet,
+        workers,
+        timeframes,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+
       const OneWei = 1;
 
       votingContract = await setupVotingContract({
@@ -469,6 +565,13 @@ module.exports.resultsTests = function () {
     });
 
     it("Should correctly reward after voting worker has been removed", async () => {
+      const {
+        workers,
+        timeframes,
+        removeWorkers,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+
       const REWARD = ethers.utils.parseEther("1");
 
       votingContract = await setupVotingContract({
@@ -509,6 +612,11 @@ module.exports.resultsTests = function () {
     describe("Rewards management", function () {
 
       it("should correctly update reward feature", async () => {
+        const {
+        workers,
+        setupVotingContract
+        } = await loadFixture(initFixture);
+
         votingContract = await setupVotingContract({
           reward: REWARD,
           participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
@@ -525,6 +633,11 @@ module.exports.resultsTests = function () {
       });
 
       it("should revert when updating reward feature to the same state", async () => {
+      const {
+        workers,
+        setupVotingContract
+      } = await loadFixture(initFixture);
+        
         votingContract = await setupVotingContract({
           reward: REWARD,
           participatingWorkers: [ workers[ 0 ], workers[ 1 ] ],
@@ -541,6 +654,12 @@ module.exports.resultsTests = function () {
       });
 
       it("should not pay the winners if rewards are disabled", async () => {
+        const {
+          workers,
+          timeframes,
+          setupVotingContract
+        } = await loadFixture(initFixture);
+        
         votingContract = await setupVotingContract({
           reward: REWARD,
           participatingWorkers: [
@@ -572,6 +691,12 @@ module.exports.resultsTests = function () {
       });
 
       it("should revert when non owner tries to enable and disable rewards", async () => {
+        const {
+          faucet,
+          workers,
+          setupVotingContract
+        } = await loadFixture(initFixture);
+        
         const nonOwner = faucet;
         
         votingContract = await setupVotingContract({
@@ -587,6 +712,12 @@ module.exports.resultsTests = function () {
       });
 
       it("should revert when tries to enable rewards twice", async () => {
+        const {
+          faucet,
+          workers,
+          setupVotingContract
+        } = await loadFixture(initFixture);
+        
         const nonOwner = faucet;
         
         votingContract = await setupVotingContract({
@@ -602,6 +733,13 @@ module.exports.resultsTests = function () {
       });
 
       it("should pay the rewards after enabling rewards", async () => {
+        const {
+          faucet,
+          workers,
+          timeframes,
+          setupVotingContract
+        } = await loadFixture(initFixture);
+        
         votingContract = await setupVotingContract({
           reward: REWARD,
           participatingWorkers: [workers[0], workers[1]],
