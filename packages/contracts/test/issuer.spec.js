@@ -219,6 +219,33 @@ describe("IssuerFacet", function () {
       await mintProof(1, proofData);
     });
 
+    it("Authorized issuers can send simple proof issuance requests", async () => {
+      const proofData = generateProofData();
+      const certificateID = 1;
+      const receiver = wallets[ 1 ];
+
+      await reachConsensus(proofData.simpleInputHash, proofData.simpleMatchResult);
+
+      await expect(
+        issuerContract
+          .connect(issuer)
+          .requestProofIssuance(
+            proofData.simpleMatchResult,
+            receiver.address,
+            proofData.simpleMatchResult,
+            proofData.matchResultProof,
+            proofData.volume,
+            proofData.volumeProof,
+            tokenURI
+          )
+      ).to.emit(issuerContract, "ProofMinted")
+      .withArgs(
+        certificateID,
+        parseEther(proofData.volume.toString()).toString(),
+        receiver.address
+      );
+    });
+
     it("reverts when issuers send duplicate proof issuance requests", async () => {
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
