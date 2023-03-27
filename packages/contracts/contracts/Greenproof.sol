@@ -39,7 +39,6 @@ contract Greenproof is SolidStateDiamond {
         bytes32 workerRole;
         bytes32 claimerRole;
         bytes32 approverRole;
-        bytes32 transferRole;
         address claimManagerAddress;
         address claimsRevocationRegistry;
     }
@@ -101,14 +100,6 @@ contract Greenproof is SolidStateDiamond {
     event ApproverVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
 
     /**
-     * @notice TransferVersionUpdated - logs Transfer role version updates
-     * @param oldVersion - The value of the previous Transfer role credential
-     * @param newVersion - The value of the updated Transfer role credential
-     * @dev Event emitted when the version of the Transfer role is updated
-     */
-    event TransferVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
-
-    /**
      * @notice ClaimManagerUpdated - logs claim manager contract's address updates
      * @param oldAddress - The previous value of the claim manager contract address
      * @param newAddress - The updated value of the claim manager contract address
@@ -154,7 +145,6 @@ contract Greenproof is SolidStateDiamond {
             rolesConfig.workerRole,
             rolesConfig.claimerRole,
             rolesConfig.approverRole,
-            rolesConfig.transferRole,
             rolesConfig.claimsRevocationRegistry
         );
     }
@@ -283,23 +273,5 @@ contract Greenproof is SolidStateDiamond {
          * @dev Emitting event for the updated claimer role version
          */
         emit ApproverVersionUpdated(oldVersion, newVersion);
-    }
-
-    /**
-     * @notice updateApproverVersion
-     * @param newVersion The new version of the claimer role
-     * @dev Allows only the contract owner to update the claimer version
-     * @dev This restriction is set on the internal `setApproverVersion` function
-     */
-    function updateTransferVersion(uint256 newVersion) external {
-        /**
-         * @dev `setTransferVersion` updates the claimer role version and retrieves the previous version for logging purposes
-         */
-        uint256 oldVersion = LibClaimManager.setTransferVersion(newVersion);
-
-        /**
-         * @dev Emitting event for the updated claimer role version
-         */
-        emit TransferVersionUpdated(oldVersion, newVersion);
     }
 }

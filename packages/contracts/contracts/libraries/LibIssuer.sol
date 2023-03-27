@@ -303,10 +303,7 @@ library LibIssuer {
     function checkApprovedSender(address from, address operator) internal view {
         bool isApproved = IERC1155(address(this)).isApprovedForAll(from, operator);
 
-        LibClaimManager.Role memory transferRole = LibClaimManager.getStorage().transferRole;
-        bool hasTransferRole = LibClaimManager.hasRole(operator, transferRole.name, transferRole.version);
-
-        if (!isApproved && from != operator && !hasTransferRole) {
+        if (!isApproved && from != operator) {
             revert NotOwnerOrApproved(operator, from);
         }
     }

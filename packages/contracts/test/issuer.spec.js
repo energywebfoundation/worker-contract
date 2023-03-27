@@ -735,66 +735,6 @@ describe("IssuerFacet", function () {
       );
       expect(receiverBalance).to.equal(transferVolume);
     });
-
-    it("should correctly allow parties with transfer role to transfer certificates on behalf of certificate owner", async () => {
-      
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const receiver = wallets[1];
-      const generator = wallets[0];
-      const transferVolume = parseEther("2");
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(proofData.inputHash, proofData.matchResult);
-      await mintProof(certificateID, proofData, generator);
-
-      // 1 - The enrolled transferer moves the certificate to the receiver on behalf of the generator
-      await expect(
-        transferFor(transferer, generator, receiver, certificateID, transferVolume)
-      ).to.emit(issuerContract, "TransferSingle")
-              .withArgs(
-                transferer.address,
-                generator.address,
-                receiver.address,
-                certificateID,
-                transferVolume
-      );
-      
-      // 2 - We verify that the transfer has been correctly made
-      const generatorBalance = await issuerContract.balanceOf(generator.address, certificateID);
-      const receiverBalance = await issuerContract.balanceOf(receiver.address, certificateID);
-
-      expect(generatorBalance).to.equal(
-        parseEther(mintedVolume.toString()).sub(transferVolume)
-      );
-      expect(receiverBalance).to.equal(transferVolume);
-
-      // 3 - We revoke transfer role to the sender
-      await revokeRole(transferer, roles.transferRole);
-
-      const expectedRevertMessage = `NotOwnerOrApproved("${transferer.address}", "${receiver.address}")`
-
-      // Moving back certificate from receiver to generator should fail
-      await expect(
-        transferFor(transferer, receiver, generator,  certificateID, transferVolume)
-      ).to.be.revertedWith(expectedRevertMessage);
-
-      // 4 - we restore transfer role to the transferer
-      await grantRole(transferer, roles.transferRole);
-
-      // Moving back certificate from receiver to generator should succeed
-      await expect(
-        transferFor(transferer, receiver, generator, certificateID, transferVolume)
-      ).to.emit(issuerContract, "TransferSingle")
-              .withArgs(
-                transferer.address,
-                receiver.address,
-                generator.address,
-                certificateID,
-                transferVolume
-      );
-    });
-
   });
 
   describe("Proof revocation tests", () => {
