@@ -32,8 +32,6 @@ type DeployGreeproofOptions = {
     revokerRole?: string;
     claimerRole?: string;
     approverRole?: string;
-    transferRole?: string;
-
   };
   contractOwner?: string;
   revocablePeriod?: number;
@@ -70,7 +68,6 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
     workerRole = ethers.utils.namehash(process.env.WORKER_ROLE ?? "worker"),
     claimerRole = ethers.utils.namehash(process.env.CLAIMER_ROLE ?? "claimer"),
     approverRole = ethers.utils.namehash(process.env.APPROVER_ROLE ?? "approver"),
-    transferRole = ethers.utils.namehash(process.env.TRANSFER_ROLE ?? "transferRole"),
   } = roles;
 
   // deploy GreenproofInit
@@ -94,7 +91,6 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
         workerRole,
         claimerRole,
         approverRole,
-        transferRole,
         claimsRevocationRegistry: claimRevokerAddress,
       },
     ];
