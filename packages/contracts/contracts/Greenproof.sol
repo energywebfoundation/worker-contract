@@ -29,7 +29,6 @@ contract Greenproof is SolidStateDiamond {
      * @custom:field workerRole - Credential role name allowing voters to be whitelisted and authorized in the voting system
      * @custom:field claimerRole - Credential role name allowing to claim a certificate on the behalf of others
      * @custom:field approverRole - Credential role name allowing to set certificate transfer approvals on the behalf of others
-     * @custom:field transferRole - Credential role name allowing to transfer certificates on the behalf of others
      * @custom:field claimManagerAddress - Address of the Energy web's claim manager registy, handling DID-based roles
      * @custom:field claimsRevocationRegistry -  Address of the Energy web's claimsRevocationRegistry, handling credential revocations
      */
