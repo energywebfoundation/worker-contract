@@ -139,7 +139,6 @@ library LibClaimManager {
         claimStore.workerRole = Role({name: workerRole, version: 1});
         claimStore.claimerRole = Role({name: claimerRole, version: 1});
         claimStore.approverRole = Role({name: approverRole, version: 1});
-        claimStore.approverRole = Role({name: approverRole, version: 1});
     }
 
     /**
