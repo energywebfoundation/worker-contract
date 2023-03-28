@@ -1,9 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
+
+import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+
+import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
 /**
  * @title LibIssuer
@@ -59,6 +64,26 @@ library LibIssuer {
     error AlreadyCertifiedData(bytes32 dataHash);
 
     /**
+     * @dev ForbiddenSelfApproval: raised when an approver user tries to approve set transfer approval for self
+     * @param approver address of the operator to grant transfer rights for
+     * @param certificateOwner owner on the belhalf the approver want to be allowed for certificates transfers
+     */
+    error ForbiddenSelfApproval(address approver, address certificateOwner);
+
+    /**
+     * @dev AlreadyApprovedOperator: raised when an approver tries to approve an already approved operator for transfers
+     * @param operator address of the operator to grant transfer rights for
+     * @param certificateOwner owner on the belhalf the operator has been allowed for certificates transfers
+     */
+    error AlreadyApprovedOperator(address operator, address certificateOwner);
+    /**
+     * @dev AlreadyRemovedOperator: raised when an approver tries to removed an already removed operator for transfers
+     * @param operator address of the operator to revoke transfer rights for
+     * @param certificateOwner owner on the belhalf the operator has been revoked for certificates transfers
+     */
+    error AlreadyRemovedOperator(address operator, address certificateOwner);
+
+    /**
      * @dev Error: Data has already been disclosed for a specific key
      * @param dataHash hash of the data associated with the certificate
      * @param key key of the data being disclosed
@@ -79,6 +104,13 @@ library LibIssuer {
      * @param receiver address of the receiver of the certificate
      */
     error NotAllowedTransfer(uint256 certificateID, address sender, address receiver);
+
+    /**
+     * @dev Error: reverts when the user is neither the owner of the certificate nor approved
+     * @param operator address of the operator trying to trasnfer the certificate
+     * @param owner address of the owner of the certificate
+     */
+    error NotOwnerOrApproved(address operator, address owner);
 
     /**
      * @dev Tracking the storage position of the issuerStorage
@@ -165,6 +197,52 @@ library LibIssuer {
     }
 
     /**
+     * @notice approveFor - Grants approval to the operator to transfer certificates owned by another wallet.
+     * @param certificateOwner address of the account owning the certificate to be transferred
+     * @param operator address of the account to be granted approval
+     * @param shouldBeApproved status of the approval to set
+     * @dev when the approval is being set to true, `msg.sender` cannot be the same as `operator`
+     */
+    function setApprovalFor(
+        address certificateOwner,
+        address operator,
+        bool shouldBeApproved
+    ) internal {
+        if (shouldBeApproved && msg.sender == operator) {
+            revert ForbiddenSelfApproval(msg.sender, certificateOwner);
+        }
+        ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator] = shouldBeApproved;
+    }
+
+    /**
+     * @notice preventAlreadyApproved - Prevents an operator from being approved twice for the given certificate owner.
+     * @param operator The address of the operator to check.
+     * @param certificateOwner The address of the certificate owner to check.
+     * @dev If the operator is already approved, the function will revert.
+     */
+    function preventAlreadyApproved(address operator, address certificateOwner) internal view {
+        bool isOperatorApproved = ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator];
+
+        if (isOperatorApproved) {
+            revert AlreadyApprovedOperator(operator, certificateOwner);
+        }
+    }
+
+    /**
+     * @notice preventAlreadyRemovedOperator - Prevents an operator from being removed twice for the given certificate owner.
+     * @param operator The address of the operator to check.
+     * @param certificateOwner The address of the certificate owner to check.
+     * @dev If the operator transfer's right is already removed, the function will revert.
+     */
+    function preventAlreadyRemovedOperator(address operator, address certificateOwner) internal view {
+        bool isOperatorApproved = ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator];
+
+        if (isOperatorApproved == false) {
+            revert AlreadyRemovedOperator(operator, certificateOwner);
+        }
+    }
+
+    /**
      * @notice Checks if a certificate with a specific data hash has already been issued
      * @dev This prevents duplicate issuance of the same certificate ID
      * @param data hash of the data associated with the certificate
@@ -211,6 +289,22 @@ library LibIssuer {
 
         if (issuer.isDataDisclosed[dataHash][key]) {
             revert AlreadyDisclosedData(dataHash, key);
+        }
+    }
+
+    /**
+     * @notice checkApprovedSender - Checks if the operator is approved to send certificates on behalf of the owner.
+     *
+     * @param from The address of the owner of the certificates.
+     * @param operator The address of the operator whose approval is being checked.
+     *
+     * @dev reverts with `NotOwnerOrApproved` error if the operator is neither approved nor the owner of certificate nor enrolled with transfer Role.
+     */
+    function checkApprovedSender(address from, address operator) internal view {
+        bool isApproved = IERC1155(address(this)).isApprovedForAll(from, operator);
+
+        if (!isApproved && from != operator) {
+            revert NotOwnerOrApproved(operator, from);
         }
     }
 

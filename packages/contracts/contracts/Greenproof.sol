@@ -28,6 +28,7 @@ contract Greenproof is SolidStateDiamond {
      * @custom:field revokerRole - Credential role name granting revoker rights
      * @custom:field workerRole - Credential role name allowing voters to be whitelisted and authorized in the voting system
      * @custom:field claimerRole - Credential role name allowing to claim a certificate on the behalf of others
+     * @custom:field approverRole - Credential role name allowing to set certificate transfer approvals on the behalf of others
      * @custom:field claimManagerAddress - Address of the Energy web's claim manager registy, handling DID-based roles
      * @custom:field claimsRevocationRegistry -  Address of the Energy web's claimsRevocationRegistry, handling credential revocations
      */
@@ -36,6 +37,7 @@ contract Greenproof is SolidStateDiamond {
         bytes32 revokerRole;
         bytes32 workerRole;
         bytes32 claimerRole;
+        bytes32 approverRole;
         address claimManagerAddress;
         address claimsRevocationRegistry;
     }
@@ -89,6 +91,14 @@ contract Greenproof is SolidStateDiamond {
     event ClaimerVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
 
     /**
+     * @notice ApproverVersionUpdated - logs Approver role version updates
+     * @param oldVersion - The value of the previous approver role credential
+     * @param newVersion - The value of the updated approver role credential
+     * @dev Event emitted when the version of the approver role is updated
+     */
+    event ApproverVersionUpdated(uint256 indexed oldVersion, uint256 indexed newVersion);
+
+    /**
      * @notice ClaimManagerUpdated - logs claim manager contract's address updates
      * @param oldAddress - The previous value of the claim manager contract address
      * @param newAddress - The updated value of the claim manager contract address
@@ -133,6 +143,7 @@ contract Greenproof is SolidStateDiamond {
             rolesConfig.revokerRole,
             rolesConfig.workerRole,
             rolesConfig.claimerRole,
+            rolesConfig.approverRole,
             rolesConfig.claimsRevocationRegistry
         );
     }
@@ -243,5 +254,23 @@ contract Greenproof is SolidStateDiamond {
          * @dev Emitting event for the updated claimer role version
          */
         emit ClaimerVersionUpdated(oldVersion, newVersion);
+    }
+
+    /**
+     * @notice updateApproverVersion
+     * @param newVersion The new version of the claimer role
+     * @dev Allows only the contract owner to update the claimer version
+     * @dev This restriction is set on the internal `setApproverVersion` function
+     */
+    function updateApproverVersion(uint256 newVersion) external {
+        /**
+         * @dev `setApproverVersion` updates the claimer role version and retrieves the previous version for logging purposes
+         */
+        uint256 oldVersion = LibClaimManager.setApproverVersion(newVersion);
+
+        /**
+         * @dev Emitting event for the updated claimer role version
+         */
+        emit ApproverVersionUpdated(oldVersion, newVersion);
     }
 }

@@ -25,6 +25,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         _;
     }
 
+    modifier onlyApprover() {
+        LibClaimManager.checkEnrolledApprover(msg.sender);
+        _;
+    }
+
     /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
@@ -81,6 +86,33 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     }
 
     /**
+     * @notice approveOperator -  Grants approval to an operator to transfer certificates of a specific certificate owner
+     * @param operator The address of the operator being approved
+     * @param certificateOwner The address of the certificate owner for whom the operator is being approved
+     * @dev If the operator is already approved, the function will revert.
+     * @dev If the caller of this function does not have the `approver` role, the function will revert.
+     * @dev `msg.sender` cannot be the same as `operator`
+     */
+    function approveOperator(address operator, address certificateOwner) external onlyApprover {
+        LibIssuer.preventAlreadyApproved(operator, certificateOwner);
+        LibIssuer.setApprovalFor(certificateOwner, operator, true);
+        emit OperatorApproved(operator, certificateOwner, msg.sender);
+    }
+
+    /**
+     * @notice removeApprovedOperator -  revoke approval of an operator to transfer certificates of a specific certificate owner
+     * @param operator The address of the operator being revoked
+     * @param certificateOwner address of the user for whom the operator is being revoked transfer rights
+     * @dev If transfer rights of operator has already been removed for this certificate owner, the function will revert.
+     * @dev If the caller of this function does not have the `approver` role, the function will revert.
+     */
+    function removeApprovedOperator(address operator, address certificateOwner) external onlyApprover {
+        LibIssuer.preventAlreadyRemovedOperator(operator, certificateOwner);
+        LibIssuer.setApprovalFor(certificateOwner, operator, false);
+        emit OperatorRemoved(operator, certificateOwner, msg.sender);
+    }
+
+    /**
      * @notice `getCertificateOwners` - Get the listing of all the wallets which hold a share of a specific certificate
      * @param certificateID - the id of the minted certificate
      * @return certificateOwners - The List of all users / wallets holding a share of this `certificateID`.
@@ -90,11 +122,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     }
 
     /**
-     * @notice transfer tokens between given addresses, checking for ERC1155Receiver implementation if applicable
-     * @param from sender of tokens
-     * @param to receiver of tokens
-     * @param id token ID
-     * @param amount quantity of tokens to transfer
+     * @notice transfer certificate between given addresses, checking for ERC1155Receiver implementation if applicable
+     * @param from owner of certificate
+     * @param to receiver of certificate
+     * @param id certificate ID
+     * @param amount quantity of certificate to transfer
      * @param data data payload
      */
     function safeTransferFrom(
@@ -104,16 +136,17 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256 amount,
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
+        LibIssuer.checkApprovedSender(from, msg.sender);
         LibIssuer.checkAllowedTransfer(id, to);
-        super.safeTransferFrom(from, to, id, amount, data);
+        _safeTransfer(msg.sender, from, to, id, amount, data);
     }
 
     /**
-     * @notice transfer batch of tokens between given addresses, checking for ERC1155Receiver implementation if applicable
-     * @param from sender of tokens
-     * @param to receiver of tokens
-     * @param ids list of token IDs
-     * @param amounts list of quantities of tokens to transfer
+     * @notice transfer batch of certificates between given addresses, checking for ERC1155Receiver implementation if applicable
+     * @param from owner of certificates
+     * @param to receiver of certificates
+     * @param ids list of certificate IDs
+     * @param amounts list of quantities of certificates to transfer
      * @param data data payload
      */
     function safeBatchTransferFrom(
@@ -123,10 +156,11 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         uint256[] memory amounts,
         bytes memory data
     ) public override(ERC1155Base, IERC1155) {
+        LibIssuer.checkApprovedSender(from, msg.sender);
         uint256 numberOfIds = ids.length;
         for (uint256 i; i < numberOfIds; i++) {
             LibIssuer.checkAllowedTransfer(ids[i], to);
         }
-        super.safeBatchTransferFrom(from, to, ids, amounts, data);
+        _safeTransferBatch(msg.sender, from, to, ids, amounts, data);
     }
 }
