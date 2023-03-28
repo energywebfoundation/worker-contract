@@ -96,7 +96,6 @@ describe("IssuerFacet", function () {
     await grantRole(revoker, roles.revokerRole);
     await grantRole(claimer, roles.claimerRole);
     await grantRole(approver, roles.approverRole);
-    await grantRole(transferer, roles.transferRole);
   });
 
   describe("Proof issuance tests", () => {
