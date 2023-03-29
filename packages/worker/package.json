@@ -1,6 +1,6 @@
 {
   "name": "@energyweb/worker",
-  "version": "7.0.2",
+  "version": "7.0.3",
   "license": "MIT",
   "author": "Energyweb Foundation",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
   "dependencies": {
     "@energyweb/ddhub-client": "2.0.0",
     "@energyweb/merkle-tree": "3.0.0",
-    "@energyweb/contracts": "2.0.1",
+    "@energyweb/contracts": "2.0.2",
     "@nestjs/common": "9.0.11",
     "@nestjs/core": "9.0.11",
     "@nestjs/platform-express": "9.0.11",
