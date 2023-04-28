@@ -21,6 +21,8 @@ library LibIssuer {
     /**
      * @notice Certificate registry tracking issued certificates
      * @dev The certificate registry is represented by this storage structure
+     * @custom:field name - name of the certificate
+     * @custom:field symbol - symbol of the certificate
      * @custom:field latestCertificateId - latest issued certificate ID
      * @custom:field revocablePeriod - revocable period for certificates
      * @custom:field dataToCertificateID - mapping of data hash to certificate ID
@@ -31,6 +33,8 @@ library LibIssuer {
      * @custom:field voteToCertificates - mapping of vote ID to mapping of data hash to certificate ID
      */
     struct IssuerStorage {
+        string name;
+        string symbol;
         uint256 latestCertificateId;
         uint256 revocablePeriod;
         mapping(bytes32 => uint256) dataToCertificateID;
@@ -394,6 +398,26 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
 
         return issuer.revocablePeriod;
+    }
+
+    /**
+     * @notice getTokeName - Retrieves the name of the token
+     * @return name - The name of the certificate token
+     */
+    function getTokenName() internal view returns (string memory) {
+        IssuerStorage storage dataStore = getStorage();
+
+        return dataStore.name;
+    }
+
+    /**
+     * @notice getTokenSymbol - Retrieves the symbol of the token
+     * @return symbol - The symbol of the certificate token
+     */
+    function getTokenSymbol() internal view returns (string memory) {
+        IssuerStorage storage dataStore = getStorage();
+
+        return dataStore.symbol;
     }
 
     /**

@@ -43,6 +43,7 @@ type DeployGreeproofOptions = {
 export enum Facet {
   IssuerFacet = "IssuerFacet",
   VotingFacet = "VotingFacet",
+  MetaTokenFacet = "MetaTokenFacet",
   ProofManagerFacet = "ProofManagerFacet",
 }
 
@@ -110,9 +111,11 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   }
 
   logger("List of Cuts to execute", cuts);
-  // const greenproof = await ethers.getContractAt("Greenproof", greenproof.address);
+  const certificateInfos = ["SAF Certificate", "SAFC"];
+  const metaCertificateInfos = ["SER Certificate", "SERC"];
+
   // call to init function
-  const functionCall = greeproofInit.interface.encodeFunctionData("init");
+  const functionCall = greeproofInit.interface.encodeFunctionData("init", [greenproof.address, certificateInfos, metaCertificateInfos]);
   const tx = await greenproof.diamondCut(
     cuts,
     greeproofInit.address,
