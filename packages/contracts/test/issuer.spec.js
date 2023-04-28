@@ -38,6 +38,7 @@ describe("IssuerFacet", function () {
   let votingContract;
   let proofManagerContract;
   let issuerContract;
+  let metatokenContract;
 
   let grantRole;
   let revokeRole;
@@ -97,6 +98,10 @@ describe("IssuerFacet", function () {
       "ProofManagerFacet",
       greenproofAddress
     );
+    metatokenContract = await ethers.getContractAt(
+      "MetaTokenFacet",
+      greenproofAddress
+    );
 
     const greenproofContract = await ethers.getContractAt(
       "Greenproof",
@@ -135,6 +140,14 @@ describe("IssuerFacet", function () {
   }
 
   describe("Proof issuance tests", () => {
+    it("should correctly read the main token name", async () => { 
+      const tokenName = await issuerContract.name();
+      const tokenSymbol = await issuerContract.symbol();
+
+      expect(tokenName).to.equal("SAF Certificate");
+      expect(tokenSymbol).to.equal("SAFC");
+    });
+
     it("checks that every one has 0 balance initially", async () => {
       const { issuerContract } = await loadFixture(initFixture);
 
@@ -1403,6 +1416,193 @@ describe("IssuerFacet", function () {
           .connect(issuer)
           .discloseData(key, `${proofData.consumerID}`, dataProof, dataRootHash)
       ).to.be.revertedWith(`AlreadyDisclosedData("${dataRootHash}", "${key}")`)
+    });
+  });
+
+  describe("Meta-Certificate Issuance", () => {
+
+    it("should correctly retrieve the token address", async () => {
+      const tokenAddress = await metatokenContract.getTokenAddress();
+      expect(tokenAddress).to.be.properAddress;
+    });
+
+    it("should correctly read the metoken name", async () => {
+      const tokenAddress = await metatokenContract.getTokenAddress();
+      const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
+      const metaTokenName = await metaToken.name();
+      const metaTokenSymbol = await metaToken.symbol();
+
+      expect(metaTokenName).to.equal("SER Certificate");
+      expect(metaTokenSymbol).to.equal("SERC");
+    });
+    
+    it("should revert when non admin tries to issue meta-certificate on token contract", async () => { 
+      const tokenAddress = await metatokenContract.getTokenAddress();
+      const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
+      const nonAdmin = wallets[1];
+
+      // Trying to direclty call the issuance function on the token contract without being admin
+      await expect(
+        metaToken.connect(nonAdmin).issueMetaToken(1, 1, wallets[0].address)
+      ).to.be.revertedWith(`NotAdmin("${nonAdmin.address}")`);
+    });
+
+    it("should revert when non Issuer tries to issue meta-certificate", async () => {
+      const unauthorizedOperator = wallets[0];
+      await revokeRole(unauthorizedOperator, roles.issuerRole);
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      await expect(
+        metatokenContract
+          .connect(unauthorizedOperator)
+          .issueMetaToken(
+            safcParentID,
+            tokenAmount,
+            receiver.address
+          )
+      ).to.be.revertedWith(`NotEnrolledIssuer("${unauthorizedOperator.address}")`);
+    });
+
+    it("should revert when one tries to issue meta-certificate to zeroAddress", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const zeroAddress = ethers.constants.AddressZero;
+
+      // issue SAFC
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      // impersonate greenproof contract signer
+      const asGreenPoofContractSigner = await ethers.getImpersonatedSigner(greenproofAddress);
+      // Sending ethers to greenproof contract signer
+      await wallets[ 0 ].sendTransaction({
+        to: asGreenPoofContractSigner.address,
+        value: ethers.utils.parseEther("10")
+      });
+      const tokenAddress = await metatokenContract.getTokenAddress();
+      const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
+      
+      // Trying to direclty call the issuance function as admin with address 0 as receiver
+      await expect(
+        metaToken.connect(asGreenPoofContractSigner).issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          zeroAddress
+        )
+      ).to.be.revertedWith(`invalidZeroAddress()`);
+
+      await expect(
+        metatokenContract
+          .connect(issuer)
+          .issueMetaToken(
+            safcParentID,
+            tokenAmount,
+            zeroAddress
+          )
+      ).to.be.revertedWith(`ForbiddenZeroAddressReceiver()`);
+    });
+    it("Should revert when issuing meta-certitificate for not owned parent certificate", async () => {
+      const safcParentID = 1;
+      const tokenAmount = ethers.utils.parseEther("42");
+      const receiver = wallets[ 1 ];
+
+      await expect(
+        metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address
+      )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, 0)`);
+    });
+
+    it("Should revert when issuing more meta-certitificate than owned parent certificate volume", async () => {
+      const safcParentID = 1;
+      const tokenAmount = ethers.utils.parseEther("42");
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData({ volume: 21 });
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      const availableVolume = ethers.utils.parseEther("21");
+
+      await mintProof(safcParentID, proofData, receiver);
+
+      await expect(
+        metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address
+      )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${availableVolume})`);
+    });
+
+    it("Should revert when issuing more meta-certitificate than allowed", async () => {
+      const safcParentID = 1;
+      const tokenAmount = ethers.utils.parseEther("42");
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData({ volume: 42 });
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData, receiver);
+
+       const tx = await metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount.div(2),
+          receiver.address
+      );
+
+      const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+      await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount.div(2));
+      
+      const remainingIssuableVolume = ethers.utils.parseEther("21");
+      
+
+      await expect(
+        metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address
+      )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${remainingIssuableVolume})`);
+    });
+
+    it("Authorized issuer should be able to issue meta-certificate", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData();
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      const tx = await metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address
+      );
+
+      const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+      await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
     });
   });
 
