@@ -58,10 +58,11 @@ library LibMetaToken {
     function issueMetaToken(
         uint256 safcParentID,
         uint256 amount,
-        address receiver
+        address receiver,
+        string memory tokenUri
     ) internal {
         address metaTokenAddress = getMetaTokenManager();
-        IMetaToken(metaTokenAddress).issueMetaToken(safcParentID, amount, receiver);
+        IMetaToken(metaTokenAddress).issueMetaToken(safcParentID, amount, receiver, tokenUri);
         getStorage().metaTokenIssued[receiver][safcParentID] += amount;
     }
 

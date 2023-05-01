@@ -1421,6 +1421,8 @@ describe("IssuerFacet", function () {
 
   describe("Meta-Certificate Issuance", () => {
 
+    const metaTokenURI = "";
+
     it("should correctly retrieve the token address", async () => {
       const tokenAddress = await metatokenContract.getTokenAddress();
       expect(tokenAddress).to.be.properAddress;
@@ -1443,7 +1445,7 @@ describe("IssuerFacet", function () {
 
       // Trying to direclty call the issuance function on the token contract without being admin
       await expect(
-        metaToken.connect(nonAdmin).issueMetaToken(1, 1, wallets[0].address)
+        metaToken.connect(nonAdmin).issueMetaToken(1, 1, wallets[0].address, metaTokenURI)
       ).to.be.revertedWith(`NotAdmin("${nonAdmin.address}")`);
     });
 
@@ -1466,7 +1468,8 @@ describe("IssuerFacet", function () {
           .issueMetaToken(
             safcParentID,
             tokenAmount,
-            receiver.address
+            receiver.address,
+            metaTokenURI
           )
       ).to.be.revertedWith(`NotEnrolledIssuer("${unauthorizedOperator.address}")`);
     });
@@ -1497,7 +1500,8 @@ describe("IssuerFacet", function () {
         metaToken.connect(asGreenPoofContractSigner).issueMetaToken(
           safcParentID,
           tokenAmount,
-          zeroAddress
+          zeroAddress,
+          metaTokenURI
         )
       ).to.be.revertedWith(`invalidZeroAddress()`);
 
@@ -1507,7 +1511,8 @@ describe("IssuerFacet", function () {
           .issueMetaToken(
             safcParentID,
             tokenAmount,
-            zeroAddress
+            zeroAddress,
+            metaTokenURI
           )
       ).to.be.revertedWith(`ForbiddenZeroAddressReceiver()`);
     });
@@ -1521,7 +1526,8 @@ describe("IssuerFacet", function () {
         .issueMetaToken(
           safcParentID,
           tokenAmount,
-          receiver.address
+          receiver.address,
+          metaTokenURI
       )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, 0)`);
     });
 
@@ -1542,7 +1548,8 @@ describe("IssuerFacet", function () {
         .issueMetaToken(
           safcParentID,
           tokenAmount,
-          receiver.address
+          receiver.address,
+          metaTokenURI
       )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${availableVolume})`);
     });
 
@@ -1561,7 +1568,8 @@ describe("IssuerFacet", function () {
         .issueMetaToken(
           safcParentID,
           tokenAmount.div(2),
-          receiver.address
+          receiver.address,
+          metaTokenURI
       );
 
       const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
@@ -1577,7 +1585,8 @@ describe("IssuerFacet", function () {
         .issueMetaToken(
           safcParentID,
           tokenAmount,
-          receiver.address
+          receiver.address,
+          metaTokenURI
       )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${remainingIssuableVolume})`);
     });
 
@@ -1596,7 +1605,8 @@ describe("IssuerFacet", function () {
         .issueMetaToken(
           safcParentID,
           tokenAmount,
-          receiver.address
+          receiver.address,
+          metaTokenURI
       );
 
       const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
