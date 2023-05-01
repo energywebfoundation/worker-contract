@@ -15,12 +15,13 @@ contract MetaTokenFacet is IMetaToken {
     function issueMetaToken(
         uint256 parentCertificateID,
         uint256 amount,
-        address receiver
+        address receiver,
+        string memory tokenUri
     ) external {
         LibClaimManager.checkEnrolledIssuer(msg.sender); //verify that the sender is an authorized issuer
         LibIssuer.preventZeroAddressReceiver(receiver); //verify that the receiver is not a zero address
         LibMetaToken.checkAllowedIssuance(receiver, parentCertificateID, amount); // verify that the receiver is allowed to issue this amount meta tokens
-        LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver);
+        LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
         emit MetaTokenIssued(parentCertificateID, receiver, block.timestamp, amount);
     }
 

@@ -28,6 +28,7 @@ interface IMetaToken {
     function issueMetaToken(
         uint256 tokenID,
         uint256 amount,
-        address receiver
+        address receiver,
+        string memory tokenUri
     ) external;
 }

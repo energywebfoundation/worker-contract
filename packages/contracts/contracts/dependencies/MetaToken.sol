@@ -4,6 +4,8 @@ pragma solidity 0.8.16;
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
 import {ProofManagerFacet} from "../facets/ProofManagerFacet.sol";
 
+import {ERC1155Metadata} from "@solidstate/contracts/token/ERC1155/metadata/ERC1155Metadata.sol";
+
 /**
  * @title SercToken
  * @dev This contract is used to issue SERC tokens.
@@ -12,7 +14,7 @@ import {ProofManagerFacet} from "../facets/ProofManagerFacet.sol";
  * @notice This contract is used to issue SERC tokens.
  */
 
-contract MetaToken is ProofManagerFacet, IMetaToken {
+contract MetaToken is ProofManagerFacet, IMetaToken, ERC1155Metadata {
     address private _admin;
     string public name;
     string public symbol;
@@ -44,9 +46,12 @@ contract MetaToken is ProofManagerFacet, IMetaToken {
     function issueMetaToken(
         uint256 tokenID,
         uint256 amount,
-        address receiver
+        address receiver,
+        string memory tokenUri
     ) external onlyAdmin preventZeroAddressReceiver(receiver) {
+        // TODO: use _safeMint instead of _mint
         _mint(receiver, tokenID, amount, "");
+        _setTokenURI(tokenID, tokenUri);
         emit MetaTokenIssued(tokenID, receiver, block.timestamp, amount);
     }
 }
