@@ -3,8 +3,8 @@ pragma solidity 0.8.16;
 
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
 import {ProofManagerFacet} from "../facets/ProofManagerFacet.sol";
-
 import {ERC1155Metadata} from "@solidstate/contracts/token/ERC1155/metadata/ERC1155Metadata.sol";
+import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 /**
  * @title SercToken
@@ -14,7 +14,7 @@ import {ERC1155Metadata} from "@solidstate/contracts/token/ERC1155/metadata/ERC1
  * @notice This contract is used to issue SERC tokens.
  */
 
-contract MetaToken is ProofManagerFacet, IMetaToken, ERC1155Metadata {
+contract MetaToken is IMetaToken, ERC1155EnumerableInternal, ERC1155Metadata {
     address private _admin;
     string public name;
     string public symbol;
