@@ -49,8 +49,7 @@ contract MetaToken is IMetaToken, ERC1155EnumerableInternal, ERC1155Metadata {
         address receiver,
         string memory tokenUri
     ) external onlyAdmin preventZeroAddressReceiver(receiver) {
-        // TODO: use _safeMint instead of _mint
-        _mint(receiver, tokenID, amount, "");
+        _safeMint(receiver, tokenID, amount, "");
         _setTokenURI(tokenID, tokenUri);
         emit MetaTokenIssued(tokenID, receiver, block.timestamp, amount);
     }
