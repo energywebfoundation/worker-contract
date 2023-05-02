@@ -1531,6 +1531,34 @@ describe("IssuerFacet", function () {
       )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, 0)`);
     });
 
+    it("should revert when one tries to issue meta-certificate from revoked certificate", async () => {
+      const safcParentID = 1;
+      const tokenAmount = ethers.utils.parseEther("21");
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData({ volume: 42});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      const availableVolume = ethers.utils.parseEther("42")
+
+      // revoke certificate
+      await expect(
+        proofManagerContract.connect(revoker).revokeProof(safcParentID)
+      ).to.emit(proofManagerContract, "ProofRevoked");
+
+      await expect(
+        metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address,
+          metaTokenURI
+      )).to.be.revertedWith(`NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${availableVolume})`);
+    });
+
     it("Should revert when issuing more meta-certitificate than owned parent certificate volume", async () => {
       const safcParentID = 1;
       const tokenAmount = ethers.utils.parseEther("42");

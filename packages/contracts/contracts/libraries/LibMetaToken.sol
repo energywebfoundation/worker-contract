@@ -1,5 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
+import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
 import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 
@@ -44,7 +45,8 @@ library LibMetaToken {
         uint256 availableParentVolume = IERC1155(address(this)).balanceOf(receiver, parentCertificateID);
         uint256 alreadyIssuedVolume = getStorage().metaTokenIssued[receiver][parentCertificateID];
         uint256 allowedIssuanceVolume = availableParentVolume - alreadyIssuedVolume;
-        if (availableParentVolume == 0 || allowedIssuanceVolume < toIssueVolume) {
+        bool isParentCertificateRevoked = LibIssuer.isCertificateRevoked(parentCertificateID);
+        if (availableParentVolume == 0 || allowedIssuanceVolume < toIssueVolume || isParentCertificateRevoked) {
             revert NotAllowedIssuance(parentCertificateID, receiver, toIssueVolume, allowedIssuanceVolume);
         }
     }
