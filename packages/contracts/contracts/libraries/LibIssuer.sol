@@ -255,7 +255,7 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
         uint256 certificateId = issuer.dataToCertificateID[data];
 
-        if (certificateId != 0 && !issuer.certificates[certificateId].isRevoked) {
+        if (certificateId != 0 && !isCertificateRevoked(certificateId)) {
             revert AlreadyCertifiedData(data);
         }
     }
@@ -286,6 +286,15 @@ library LibIssuer {
     function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
         string memory volumeString = UintUtils.toString(volume);
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+
+    /**
+     * @notice Checks if a certificate has been revoked
+     * @param certificateID ID of the certificate
+     * @return true if the certificate has been revoked, false otherwise
+     */
+    function isCertificateRevoked(uint256 certificateID) internal view returns (bool) {
+        return getStorage().certificates[certificateID].isRevoked;
     }
 
     function checkNotDisclosed(bytes32 dataHash, string memory key) internal view {
@@ -322,7 +331,7 @@ library LibIssuer {
     function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
         IssuerStorage storage issuer = getStorage();
 
-        if (issuer.certificates[certificateID].isRevoked && receiver != issuer.certificates[certificateID].generator) {
+        if (isCertificateRevoked(certificateID) && receiver != issuer.certificates[certificateID].generator) {
             revert NotAllowedTransfer(certificateID, msg.sender, receiver);
         }
     }
