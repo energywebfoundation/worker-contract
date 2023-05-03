@@ -52,4 +52,6 @@ contract MetaToken is IMetaToken, ERC1155EnumerableInternal, ERC1155Metadata {
         _setTokenURI(tokenID, tokenUri);
         emit MetaTokenIssued(tokenID, receiver, block.timestamp, amount);
     }
+
+    //TODO: override the transfer functions to check if the meta token is not revoked
 }
