@@ -1424,12 +1424,12 @@ describe("IssuerFacet", function () {
     const metaTokenURI = "";
 
     it("should correctly retrieve the token address", async () => {
-      const tokenAddress = await metatokenContract.getTokenAddress();
+      const tokenAddress = await metatokenContract.getMetaTokenAddress();
       expect(tokenAddress).to.be.properAddress;
     });
 
     it("should correctly read the metoken name", async () => {
-      const tokenAddress = await metatokenContract.getTokenAddress();
+      const tokenAddress = await metatokenContract.getMetaTokenAddress();
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
       const metaTokenName = await metaToken.name();
       const metaTokenSymbol = await metaToken.symbol();
@@ -1439,7 +1439,7 @@ describe("IssuerFacet", function () {
     });
     
     it("should revert when non admin tries to issue meta-certificate on token contract", async () => { 
-      const tokenAddress = await metatokenContract.getTokenAddress();
+      const tokenAddress = await metatokenContract.getMetaTokenAddress();
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
       const nonAdmin = wallets[1];
 
@@ -1492,7 +1492,7 @@ describe("IssuerFacet", function () {
         to: asGreenPoofContractSigner.address,
         value: ethers.utils.parseEther("10")
       });
-      const tokenAddress = await metatokenContract.getTokenAddress();
+      const tokenAddress = await metatokenContract.getMetaTokenAddress();
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
       
       // Trying to direclty call the issuance function as admin with address 0 as receiver

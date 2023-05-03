@@ -7,11 +7,10 @@ import {ERC1155Metadata} from "@solidstate/contracts/token/ERC1155/metadata/ERC1
 import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
 
 /**
- * @title SercToken
- * @dev This contract is used to issue SERC tokens.
- * @dev This contract is inherits from ProofManager contract, which is based on the ERC1155 standard.
+ * @title MetaToken
+ * @dev This contract is used to issue derived tokens from a parent token contract.
  * @author EnergyWeb Foundation
- * @notice This contract is used to issue SERC tokens.
+ * @notice This contract is used to issue derived tokens from a parent token contract.
  */
 
 contract MetaToken is IMetaToken, ERC1155EnumerableInternal, ERC1155Metadata {

@@ -7,9 +7,10 @@ import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 library LibMetaToken {
     struct MetaTokenStorage {
         // address of the deployed ERC1155 meta token contract
-        address metaTokenManager;
+        address metaTokenAddress;
         // Mapping from parent certificate ID to the amount of meta tokens issued
         mapping(address => mapping(uint256 => uint256)) metaTokenIssued;
+        mapping(uint256 => bool) isTokenRevoked;
     }
 
     event MetaTokenIssued(uint256 indexed parentCertificateID, address indexed receiver, uint256 timestamp, uint256 amount);
@@ -63,19 +64,20 @@ library LibMetaToken {
         address receiver,
         string memory tokenUri
     ) internal {
-        address metaTokenAddress = getMetaTokenManager();
+        LibIssuer.preventZeroAddressReceiver(receiver); //verify that the receiver is not a zero address
+        checkAllowedIssuance(receiver, safcParentID, amount); // verify that the receiver is allowed to issue this amount meta tokens
+        address metaTokenAddress = getMetaTokenAddress();
+
         IMetaToken(metaTokenAddress).issueMetaToken(safcParentID, amount, receiver, tokenUri);
         getStorage().metaTokenIssued[receiver][safcParentID] += amount;
     }
 
     /**
-     * @notice getMetaTokenManager - Gets the address of the deployed ERC1155 meta token contract
+     * @notice getMetaTokenAddress - Gets the address of the deployed ERC1155 meta token contract
      * @return metaTokenManager - The address of the deployed ERC1155 meta token contract
      */
-    function getMetaTokenManager() internal view returns (address) {
-        MetaTokenStorage storage tokenStorage = getStorage();
-
-        return tokenStorage.metaTokenManager;
+    function getMetaTokenAddress() internal view returns (address) {
+        return getStorage().metaTokenAddress;
     }
 
     /**

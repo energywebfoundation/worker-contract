@@ -55,7 +55,7 @@ contract GreenproofInit {
         // Deployment of an autonomous contract - the meta token
         // In order to allow meta-certificate issuance only from the GreenProof system, the main proxy contract is set as the admin of the meta token
         MetaToken metaToken = new MetaToken(proxy, metaCertificateInfos.name, metaCertificateInfos.symbol);
-        LibMetaToken.getStorage().metaTokenManager = address(metaToken);
+        LibMetaToken.getStorage().metaTokenAddress = address(metaToken);
         // EIP-2535 specifies that the `diamondCut` function takes two optional
         // arguments: address _init and bytes calldata _calldata
         // These arguments are used to execute an arbitrary function using delegatecall
