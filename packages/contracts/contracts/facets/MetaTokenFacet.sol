@@ -19,8 +19,6 @@ contract MetaTokenFacet is IMetaToken {
         string memory tokenUri
     ) external {
         LibClaimManager.checkEnrolledIssuer(msg.sender); //verify that the sender is an authorized issuer
-        LibIssuer.preventZeroAddressReceiver(receiver); //verify that the receiver is not a zero address
-        LibMetaToken.checkAllowedIssuance(receiver, parentCertificateID, amount); // verify that the receiver is allowed to issue this amount meta tokens
         LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
         emit MetaTokenIssued(parentCertificateID, receiver, block.timestamp, amount);
     }
@@ -29,7 +27,7 @@ contract MetaTokenFacet is IMetaToken {
      * @notice `getTokenAddress` - Returns the address of the ERC1155 tokenn contract
      * @return address - The address of the ERC1155 token contract
      */
-    function getTokenAddress() external view returns (address) {
-        return LibMetaToken.getMetaTokenManager();
+    function getMetaTokenAddress() external view returns (address) {
+        return LibMetaToken.getMetaTokenAddress();
     }
 }
