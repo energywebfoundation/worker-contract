@@ -5,9 +5,7 @@ import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-
 import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
-
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
 /**
@@ -216,6 +214,14 @@ library LibIssuer {
     }
 
     /**
+     * @notice revokeProof - Revokes a certificate
+     * @param certificateID ID of the certificate to revoke
+     */
+    function revokeProof(uint256 certificateID) internal {
+        getStorage().certificates[certificateID].isRevoked = true;
+    }
+
+    /**
      * @notice preventAlreadyApproved - Prevents an operator from being approved twice for the given certificate owner.
      * @param operator The address of the operator to check.
      * @param certificateOwner The address of the certificate owner to check.
@@ -347,15 +353,6 @@ library LibIssuer {
      */
     function claimedBalanceOf(address user, uint256 certificateID) internal view returns (uint256) {
         return getStorage().claimedBalances[certificateID][user];
-    }
-
-    /**
-     * @notice revokeProof - Revokes a certificate
-     * @dev This function emits the `ProofRevoked` event
-     * @param certificateID ID of the certificate to revoke
-     */
-    function revokeProof(uint256 certificateID) internal {
-        getStorage().certificates[certificateID].isRevoked = true;
     }
 
     /**

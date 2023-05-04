@@ -10,11 +10,23 @@ library LibMetaToken {
         address metaTokenAddress;
         // Mapping from parent certificate ID to the amount of meta tokens issued
         mapping(address => mapping(uint256 => uint256)) metaTokenIssued;
-        mapping(uint256 => bool) isTokenRevoked;
     }
 
-    event MetaTokenIssued(uint256 indexed parentCertificateID, address indexed receiver, uint256 timestamp, uint256 amount);
+    /**
+     * @notice event emitted when meta tokens are issued
+     * @param parentCertificateID - ID of the meta token to be issued
+     * @param receiver - address of the receiver of the issued tokens
+     * @param issuanceDate - date of the issuance
+     * @param amount - amount of meta tokens to be issued
+     */
+    event MetaTokenIssued(uint256 indexed parentCertificateID, address indexed receiver, uint256 issuanceDate, uint256 amount);
 
+    /**
+     * @notice event emitted when meta tokens are revoked
+     * @param tokenID - ID of the meta token to be revoked
+     * @param revocationDate - date of the revocation
+     */
+    event MetaTokenRevoked(uint256 indexed tokenID, uint256 indexed revocationDate);
     /**
      * @notice NotAllowedIssuance - error raised when a user tries to issue more meta certificates than owned balance of parent certificate
      * @dev Error: Issuance of the meta-certificate is not allowed
@@ -72,12 +84,28 @@ library LibMetaToken {
         getStorage().metaTokenIssued[receiver][safcParentID] += amount;
     }
 
+    function revokeMetaToken(uint256 tokenID) internal {
+        address metaTokenAddress = getMetaTokenAddress();
+        IMetaToken(metaTokenAddress).revokeMetaToken(tokenID);
+        // solhint-disable-next-line not-rely-on-time
+        emit MetaTokenRevoked(tokenID, block.timestamp);
+    }
+
     /**
      * @notice getMetaTokenAddress - Gets the address of the deployed ERC1155 meta token contract
      * @return metaTokenManager - The address of the deployed ERC1155 meta token contract
      */
     function getMetaTokenAddress() internal view returns (address) {
         return getStorage().metaTokenAddress;
+    }
+
+    /**
+     * @notice totalSupply - Returns the total supply of a meta token
+     * @param tokenID - ID of the meta token
+     * @return uint256 - The total supply of the meta token
+     */
+    function totalSupply(uint256 tokenID) internal view returns (uint256) {
+        return IMetaToken(getMetaTokenAddress()).tokenSupply(tokenID);
     }
 
     /**
