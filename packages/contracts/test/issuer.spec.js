@@ -1516,6 +1516,7 @@ describe("IssuerFacet", function () {
           )
       ).to.be.revertedWith(`ForbiddenZeroAddressReceiver()`);
     });
+
     it("Should revert when issuing meta-certitificate for not owned parent certificate", async () => {
       const safcParentID = 1;
       const tokenAmount = ethers.utils.parseEther("42");
@@ -1641,6 +1642,178 @@ describe("IssuerFacet", function () {
 
       await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
         .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+    });
+
+    it("should correctly retrieve the totalSupply of meta-certificates", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData({volume: tokenAmount});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      // totalSupply of meta certificate should be null before issuance
+      let totalSupply = await metatokenContract.tokenSupply(safcParentID);
+      expect(totalSupply).to.equals(0);
+
+      const metaToken = await ethers.getContractAt("MetaToken", await metatokenContract.getMetaTokenAddress());
+
+      expect(
+        await metaToken.tokenSupply(safcParentID)
+      ).to.equals(0);
+
+      const tx = await metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address,
+          metaTokenURI
+      );
+
+      const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+      await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+      
+      // totalSupply of meta certificate should be updated to ${tokenAmount}
+      totalSupply = await metatokenContract.tokenSupply(safcParentID);
+      expect(totalSupply).to.equals(tokenAmount);
+      expect(
+        await metaToken.tokenSupply(safcParentID)
+      ).to.equals(tokenAmount);
+
+    });
+
+    it("Authorized revoker should be able to revoke meta-certificate", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData({volume: tokenAmount});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      // issue meta-certificate
+      tx = await metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address,
+          metaTokenURI
+      );
+
+      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+      await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+      
+        // check that meta-certificate is not revoked
+      const tokenAddress = await metatokenContract.getMetaTokenAddress();
+      
+      const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
+      
+      let isRevoked = await metaToken.isTokenRevoked(safcParentID);
+      expect(isRevoked).to.be.false;
+      
+
+      // revoke meta-certificate
+      tx = await metatokenContract.connect(revoker).revokeMetaToken(safcParentID)
+      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      await expect(tx).to.emit(metatokenContract, "MetaTokenRevoked")
+        .withArgs(safcParentID, timestamp);
+      
+      // check if meta-certificate is revoked
+      isRevoked = await metaToken.isTokenRevoked(safcParentID);
+      expect(isRevoked).to.be.true;
+    });
+
+    it("should revert when non authorized revoker tries to revoke meta-certificate", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData({volume: tokenAmount});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      // issue meta-certificate
+      tx = await metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address,
+          metaTokenURI
+      );
+
+      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+      await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+
+      // revocation of meta-certificate should revert
+      const nonRevoker = wallets[ 2 ];
+      await expect(
+        metatokenContract.connect(nonRevoker).revokeMetaToken(safcParentID)
+      ).to.be.revertedWith(`NotEnrolledRevoker("${nonRevoker.address}")`);
+    });
+
+    it("Meta-certificate should correctly be revoked when parent certificate is revoked", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+      let tx;
+      let timestamp;
+
+      // issue SAFC
+      const proofData = generateProofData({volume: tokenAmount});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData, receiver);
+
+      // issue meta-certificate
+      tx = await metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address,
+          metaTokenURI
+      );
+
+      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+      await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+
+      // revoking parent certificate should revoke associated meta-certificate
+      tx = await proofManagerContract.connect(revoker).revokeProof(safcParentID)
+      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      await expect(tx).to.emit(proofManagerContract, "ProofRevoked");
+      await expect(tx).to.emit(metatokenContract, "MetaTokenRevoked").withArgs(safcParentID, timestamp);
+    });
+
+    it("Should not revoke any meta-certificate when revoking a certificate with no derived certificates", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+      let tx;
+
+      // issue SAFC
+      const proofData = generateProofData({volume: tokenAmount});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData, receiver);
+
+      // revoking a certificate with no derived certificates should not revoke any meta-certificate
+      tx = await proofManagerContract.connect(revoker).revokeProof(safcParentID);
+      await expect(tx).to.emit(proofManagerContract, "ProofRevoked");
+      await expect(tx).to.not.emit(metatokenContract, "MetaTokenRevoked");
     });
   });
 

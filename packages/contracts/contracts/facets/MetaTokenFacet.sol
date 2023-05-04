@@ -24,10 +24,30 @@ contract MetaTokenFacet is IMetaToken {
     }
 
     /**
+     * @notice `revokeMetaToken` - Revokes a meta token
+     * @param tokenID - ID of the meta token to be revoked
+     * @dev This function can only be called by an authorized revoker
+     */
+    function revokeMetaToken(uint256 tokenID) external {
+        LibClaimManager.checkEnrolledRevoker(msg.sender); //verify that the sender is an authorized revoker
+        LibMetaToken.revokeMetaToken(tokenID);
+        emit MetaTokenRevoked(tokenID, block.timestamp);
+    }
+
+    /**
      * @notice `getTokenAddress` - Returns the address of the ERC1155 tokenn contract
      * @return address - The address of the ERC1155 token contract
      */
     function getMetaTokenAddress() external view returns (address) {
         return LibMetaToken.getMetaTokenAddress();
+    }
+
+    /**
+     * @notice tokenSupply - Returns the total supply of a meta token
+     * @param id - ID of the meta token
+     * @return uint256 - The total supply of the meta token
+     */
+    function tokenSupply(uint256 id) external view returns (uint256) {
+        return LibMetaToken.totalSupply(id);
     }
 }
