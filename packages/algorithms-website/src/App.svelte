@@ -1,5 +1,5 @@
 <script lang="ts">
-import { matchIntoTable } from './algorithm';
+import { matchIntoTable } from './algo';
 
 import ConsumerForm from './lib/ConsumerForm.svelte'
 import GeneratorForm from './lib/GeneratorForm.svelte';
@@ -49,8 +49,8 @@ function onGeneratorRemove () {
 
 function onMatch () {
   matchResultsTable = matchIntoTable({
-    consumptions: consumers,
-    generations: generators,
+    consumptions: consumers as any,
+    generations: generators as any,
   });
 }
 </script>
