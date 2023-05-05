@@ -1732,6 +1732,40 @@ describe("IssuerFacet", function () {
       expect(isRevoked).to.be.true;
     });
 
+    it("should revert when non admin tries to direclty revoke meta-certificate", async () => {
+      const safcParentID = 1;
+      const tokenAmount = 42;
+      const receiver = wallets[ 1 ];
+
+      // issue SAFC
+      const proofData = generateProofData({volume: tokenAmount});
+      await reachConsensus(proofData.inputHash, proofData.matchResult);
+
+      await mintProof(safcParentID, proofData);
+
+      // issue meta-certificate
+      tx = await metatokenContract.connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address,
+          metaTokenURI
+      );
+
+      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+
+      await expect(tx).to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+
+      // direct revocation of meta-certificate on metaToken contract should revert
+      const metaToken = await ethers.getContractAt("MetaToken", await metatokenContract.getMetaTokenAddress());
+      const nonAdmin = wallets[ 2 ];
+
+      await expect(
+        metaToken.connect(wallets[2]).revokeMetaToken(safcParentID)
+      ).to.be.revertedWith(`NotAdmin("${nonAdmin.address}")`);
+    });
+
     it("should revert when non authorized revoker tries to revoke meta-certificate", async () => {
       const safcParentID = 1;
       const tokenAmount = 42;
