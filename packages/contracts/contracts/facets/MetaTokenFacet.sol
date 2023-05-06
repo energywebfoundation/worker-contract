@@ -50,4 +50,13 @@ contract MetaTokenFacet is IMetaToken {
     function tokenSupply(uint256 id) external view returns (uint256) {
         return LibMetaToken.totalSupply(id);
     }
+
+    /**
+     * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked
+     * @param tokenID - ID of the meta token
+     * @return bool - True if the meta token is revoked
+     */
+    function isMetaTokenRevoked(uint256 tokenID) external view returns (bool) {
+        return LibMetaToken.isMetaTokenRevoked(tokenID);
+    }
 }

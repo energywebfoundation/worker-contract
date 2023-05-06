@@ -109,6 +109,15 @@ library LibMetaToken {
     }
 
     /**
+     * @notice isMetaTokenRevoked - Checks if a meta token is revoked
+     * @param tokenID - ID of the meta token
+     * @return bool - True if the meta token is revoked
+     */
+    function isMetaTokenRevoked(uint256 tokenID) internal view returns (bool) {
+        return IMetaToken(getMetaTokenAddress()).isMetaTokenRevoked(tokenID);
+    }
+
+    /**
      * @dev Get the storage slot for MetaTokenStorage struct
      * @return metaTokenStorage - The pointer to the MetaToken storage
      */
