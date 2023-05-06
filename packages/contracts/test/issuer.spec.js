@@ -2,7 +2,6 @@ const chai = require("chai");
 const { utils } = require("ethers");
 const { expect } = require("chai");
 const { deployGreenproof } = require("../scripts/deploy/deployContracts");
-const { ethers } = require("hardhat");
 const { solidity } = require("ethereum-waffle");
 const { roles } = require("./utils/roles.utils");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
@@ -52,6 +51,7 @@ describe("IssuerFacet", function () {
       claimer,
       minter,
       receiver,
+      approver,
       ...wallets
     ] = await ethers.getSigners();
 
@@ -112,6 +112,7 @@ describe("IssuerFacet", function () {
     await grantRole(issuer, roles.issuerRole);
     await grantRole(revoker, roles.revokerRole);
     await grantRole(claimer, roles.claimerRole);
+    await grantRole(approver, roles.approverRole);
 
     return {
       owner,
@@ -121,6 +122,7 @@ describe("IssuerFacet", function () {
       revoker,
       claimer,
       receiver,
+      approver,
       proofData,
       issuerContract,
       votingContract,
@@ -285,6 +287,8 @@ describe("IssuerFacet", function () {
     });
 
     it("Authorized issuers can send simple proof issuance requests", async () => {
+      await loadFixture(initFixture);
+      
       const proofData = generateProofData();
       const certificateID = 1;
       const receiver = wallets[ 1 ];
@@ -724,7 +728,7 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when non approvers tries to remove operators' approval", async () => {
-      
+      await loadFixture(initFixture);
       const generator = wallets[0];
       const approvedSender = wallets[6];
 
@@ -755,6 +759,7 @@ describe("IssuerFacet", function () {
     });
     
     it("should not revert when approver self removes from operators", async () => {
+      await loadFixture(initFixture);
       
       const generator = wallets[0];
       const secondApprover = wallets[6];
@@ -774,6 +779,7 @@ describe("IssuerFacet", function () {
     });
     
     it("should correctly approve operators for certificate owners", async () => {
+      await loadFixture(initFixture);
       
       const generator = wallets[0];
       const approvedSender = wallets[6];
@@ -786,6 +792,7 @@ describe("IssuerFacet", function () {
     });
 
     it("should correctly remove operators approval's for transferring other certificates", async () => {
+      await loadFixture(initFixture);
       
       const generator = wallets[0];
       const approvedSender = wallets[6];
@@ -807,7 +814,9 @@ describe("IssuerFacet", function () {
     });
 
     it("should prevent already approved operators from being approved again", async () => {
-      const generator = wallets[0];
+      await loadFixture(initFixture);
+      
+      const generator = wallets[ 0 ];
       const approvedSender = wallets[6];
       const expectedErrorMessage = `AlreadyApprovedOperator("${approvedSender.address}", "${generator.address}")`;
 
@@ -822,6 +831,7 @@ describe("IssuerFacet", function () {
     });
 
     it("should prevent already removed operators from being removed again", async () => {
+      await loadFixture(initFixture);
       
       const generator = wallets[0];
       const approvedSender = wallets[6];
@@ -846,6 +856,7 @@ describe("IssuerFacet", function () {
     });
     
     it("should allow approved parties to transfer certificates on behalf of certificate owner", async () => {
+      await loadFixture(initFixture);
       
       const mintedVolume = 5;
       const certificateID = 1;
