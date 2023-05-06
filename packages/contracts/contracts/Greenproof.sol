@@ -147,7 +147,7 @@ contract Greenproof is SolidStateDiamond {
     error AlreadyPausedContract();
 
     /**
-     * @dev Error: Thrown when contract owner is trying to pause an already unpaused contract
+     * @dev Error: Thrown when contract owner is trying to unpause an already unpaused contract
      */
     error AlreadyUnpausedContract();
 
@@ -216,12 +216,16 @@ contract Greenproof is SolidStateDiamond {
         if (!implementation.isContract()) {
             revert ProxyError("implementation must be contract");
         }
-
+        // The below assembly code executes external function from facet using delegatecall and return any value.
+        // solhint-disable-next-line no-inline-assembly
         assembly {
+            // copy the data payload of the transaction, i.e the function selector and any arguments
             calldatacopy(0, 0, calldatasize())
+            // delegateCall the copied data payload to execute the function and arguments on the implementation facet
             let result := delegatecall(gas(), implementation, 0, calldatasize(), 0, 0)
+            // get any return value from the delegateCall and return it to the caller
             returndatacopy(0, 0, returndatasize())
-
+            // return any return value or error back to the caller
             switch result
             case 0 {
                 revert(0, returndatasize())

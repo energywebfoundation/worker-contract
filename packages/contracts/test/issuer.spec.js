@@ -340,7 +340,7 @@ describe("IssuerFacet", function () {
         .withArgs(timestamp, owner.address);
       
       const certificateID = 1;
-      mintProof(certificateID, proofData, wallets[ 1 ]);
+      await mintProof(certificateID, proofData, wallets[ 1 ]);
     })
 
     it("reverts when issuers send duplicate proof issuance requests", async () => {
