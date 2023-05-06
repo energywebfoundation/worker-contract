@@ -23,8 +23,25 @@ interface IMetaToken {
      */
     event MetaTokenRevoked(uint256 indexed tokenID, uint256 indexed revocationDate);
 
+    /**
+     * @notice error emitted when zero address is passed as receiver
+     * @dev emitted when zero address is passed as receiver
+     */
     error invalidZeroAddress();
+
+    /**
+     * @notice error emitted when caller is not admin
+     * @dev emitted when caller is not admin
+     * @param caller - address of the caller
+     */
     error NotAdmin(address caller);
+
+    /**
+     * @notice error emitted when an action is performed on a revoked token
+     * @dev emitted when an action is performed on a revoked token
+     * @param tokenID - ID of the token
+     */
+    error RevokedToken(uint256 tokenID, uint256 revocationDate);
 
     /**
      * @notice issueMetaToken - Issues a child token from a parent certificate
@@ -47,8 +64,18 @@ interface IMetaToken {
     function tokenSupply(uint256 id) external view returns (uint256);
 
     /**
-     * @notice revokeMetaToken - Revokes a meta token
+     * @notice revokeMeToken - Revokes a meta token
+     * @dev This function can only be called by the admin
+     * @dev This function reverts if the meta token is already revoked
+     * @dev the timestamp of the revocation is stored in the tokenRevocationDate mapping
      * @param tokenID - ID of the meta token to be revoked
      */
     function revokeMetaToken(uint256 tokenID) external;
+
+    /**
+     * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked
+     * @param tokenID - ID of the meta token
+     * @return bool - True if the meta token is revoked
+     */
+    function isMetaTokenRevoked(uint256 tokenID) external view returns (bool);
 }

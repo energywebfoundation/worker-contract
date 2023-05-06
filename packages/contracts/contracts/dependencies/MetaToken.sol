@@ -2,9 +2,7 @@
 pragma solidity 0.8.16;
 
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
-import {ProofManagerFacet} from "../facets/ProofManagerFacet.sol";
-import {ERC1155Metadata} from "@solidstate/contracts/token/ERC1155/metadata/ERC1155Metadata.sol";
-import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol";
+import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
 /**
  * @title MetaToken
@@ -13,11 +11,11 @@ import {ERC1155EnumerableInternal} from "@solidstate/contracts/token/ERC1155/enu
  * @notice This contract is used to issue derived tokens from a parent token contract.
  */
 
-contract MetaToken is IMetaToken, ERC1155EnumerableInternal, ERC1155Metadata {
+contract MetaToken is IMetaToken, SolidStateERC1155 {
     address private _admin;
     string public name;
     string public symbol;
-    mapping(uint256 => bool) public isTokenRevoked;
+    mapping(uint256 => uint256) public tokenRevocationDate;
 
     modifier onlyAdmin() {
         if (msg.sender != _admin) {
@@ -56,10 +54,17 @@ contract MetaToken is IMetaToken, ERC1155EnumerableInternal, ERC1155Metadata {
 
     /**
      * @notice revokeMeToken - Revokes a meta token
+     * @dev This function can only be called by the admin
+     * @dev This function reverts if the meta token is already revoked
+     * @dev the timestamp of the revocation is stored in the tokenRevocationDate mapping
      * @param tokenID - ID of the meta token to be revoked
      */
     function revokeMetaToken(uint256 tokenID) external onlyAdmin {
-        isTokenRevoked[tokenID] = true;
+        if (tokenRevocationDate[tokenID] != 0) {
+            revert RevokedToken(tokenID, tokenRevocationDate[tokenID]);
+        }
+        //solhint-disable-next-line not-rely-on-time
+        tokenRevocationDate[tokenID] = block.timestamp;
     }
 
     /**
@@ -71,5 +76,33 @@ contract MetaToken is IMetaToken, ERC1155EnumerableInternal, ERC1155Metadata {
         return _totalSupply(id);
     }
 
-    //TODO: override the transfer functions to check if the meta token is not revoked
+    /**
+     * _beforeTokenTransfer - internal hook override for revocation check before any token transfer
+     */
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal virtual override {
+        uint256 nbTokens = ids.length;
+        for (uint256 i; i < nbTokens; i++) {
+            uint256 currentToken = ids[i];
+            if (isMetaTokenRevoked(currentToken)) {
+                revert RevokedToken(currentToken, tokenRevocationDate[currentToken]);
+            }
+        }
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    }
+
+    /**
+     * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked
+     * @param tokenID - ID of the meta token
+     * @return bool - True if the meta token is revoked
+     */
+    function isMetaTokenRevoked(uint256 tokenID) public view returns (bool) {
+        return tokenRevocationDate[tokenID] != 0;
+    }
 }
