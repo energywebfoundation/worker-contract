@@ -49,6 +49,7 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
     ) external onlyAdmin preventZeroAddressReceiver(receiver) {
         _safeMint(receiver, tokenID, amount, "");
         _setTokenURI(tokenID, tokenUri);
+        // solhint-disable-next-line not-rely-on-time
         emit MetaTokenIssued(tokenID, receiver, block.timestamp, amount);
     }
 
@@ -77,6 +78,15 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
     }
 
     /**
+     * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked
+     * @param tokenID - ID of the meta token
+     * @return bool - True if the meta token is revoked
+     */
+    function isMetaTokenRevoked(uint256 tokenID) public view returns (bool) {
+        return tokenRevocationDate[tokenID] != 0;
+    }
+
+    /**
      * _beforeTokenTransfer - internal hook override for revocation check before any token transfer
      */
     function _beforeTokenTransfer(
@@ -95,14 +105,5 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
             }
         }
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
-    }
-
-    /**
-     * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked
-     * @param tokenID - ID of the meta token
-     * @return bool - True if the meta token is revoked
-     */
-    function isMetaTokenRevoked(uint256 tokenID) public view returns (bool) {
-        return tokenRevocationDate[tokenID] != 0;
     }
 }

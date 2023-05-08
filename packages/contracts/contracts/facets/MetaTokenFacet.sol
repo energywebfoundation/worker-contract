@@ -20,6 +20,7 @@ contract MetaTokenFacet is IMetaToken {
     ) external {
         LibClaimManager.checkEnrolledIssuer(msg.sender); //verify that the sender is an authorized issuer
         LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
+        // solhint-disable-next-line not-rely-on-time
         emit MetaTokenIssued(parentCertificateID, receiver, block.timestamp, amount);
     }
 
@@ -31,6 +32,7 @@ contract MetaTokenFacet is IMetaToken {
     function revokeMetaToken(uint256 tokenID) external {
         LibClaimManager.checkEnrolledRevoker(msg.sender); //verify that the sender is an authorized revoker
         LibMetaToken.revokeMetaToken(tokenID);
+        // solhint-disable-next-line not-rely-on-time
         emit MetaTokenRevoked(tokenID, block.timestamp);
     }
 
