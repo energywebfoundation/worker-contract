@@ -8,28 +8,17 @@ const {
 const { workerRole } = roles;
 
 module.exports.permissionsTests = function () {
-  let owner;
-  let workers;
-  let mockClaimManager;
-  let votingContract;
-  let timeframes;
-  let addWorkers;
-  let removeWorkers;
-  let setupVotingContract;
 
-  beforeEach(function () {
-    ({
-      owner,
-      workers,
-      mockClaimManager,
-      timeframes,
-      addWorkers,
-      removeWorkers,
-      setupVotingContract,
-    } = this);
-  });
+  const { initFixture, loadFixture } = this.parent;
 
   it("should allow to vote whitelisted worker", async () => {
+
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0]],
@@ -48,6 +37,12 @@ module.exports.permissionsTests = function () {
   });
 
   it("should not allow to vote not whitelisted worker", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [],
@@ -59,6 +54,12 @@ module.exports.permissionsTests = function () {
   });
 
   it("should not register a non enrolled worker", async () => {
+    const {
+      workers,
+      mockClaimManager,
+      setupVotingContract,
+    } = await loadFixture(initFixture);
+
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [],
@@ -71,6 +72,13 @@ module.exports.permissionsTests = function () {
   });
 
   it("should revert when we try to remove a not whiteListed worker", async () => {
+    const {
+      owner,
+      workers,
+      mockClaimManager,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [],
@@ -84,6 +92,12 @@ module.exports.permissionsTests = function () {
   });
 
   it("should not allow an enrolled worker to be unregistered", async () => {
+    const {
+      owner,
+      workers,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       majorityPercentage: 100,
       participatingWorkers: [workers[0], workers[1]],
@@ -99,6 +113,11 @@ module.exports.permissionsTests = function () {
   });
 
   it("should not be able to add same worker twice", async () => {
+    const {
+      workers,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0]],
     });
@@ -108,9 +127,13 @@ module.exports.permissionsTests = function () {
     ).to.be.revertedWith("AlreadyWhitelistedWorker");
   });
 
-  //SIARA
-
   it("should allow non owner address to add enrolled workers", async () => {
+    const {
+      workers,
+      mockClaimManager,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract();
     await mockClaimManager.grantRole(workers[0].address, workerRole);
     await mockClaimManager.grantRole(workers[1].address, workerRole);
@@ -132,6 +155,13 @@ module.exports.permissionsTests = function () {
   });
 
   it("should allow non owner address to remove not enrolled workers", async () => {
+    const {
+      workers,
+      addWorkers,
+      removeWorkers,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract();
     await addWorkers([workers[0], workers[1], workers[2]]);
 
@@ -146,6 +176,14 @@ module.exports.permissionsTests = function () {
   });
 
   it("should allow to remove workers and add it again", async () => {
+    const {
+      workers,
+      addWorkers,
+      removeWorkers,
+      mockClaimManager,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+
     votingContract = await setupVotingContract();
 
     await addWorkers([workers[0], workers[1], workers[2]]);
@@ -173,6 +211,12 @@ module.exports.permissionsTests = function () {
   });
 
   it("voting can not be cancelled by non owner", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
@@ -191,6 +235,12 @@ module.exports.permissionsTests = function () {
   });
 
   it("reverts when non owner tries to cancel expired votings", async () => {
+    const {
+      workers,
+      timeframes,
+      setupVotingContract
+    } = await loadFixture(initFixture);
+    
     votingContract = await setupVotingContract({
       participatingWorkers: [workers[0]],
     });
