@@ -2,6 +2,10 @@
 pragma solidity 0.8.16;
 
 import {SolidStateDiamond} from "@solidstate/contracts/proxy/diamond/SolidStateDiamond.sol";
+import {Proxy} from "@solidstate/contracts/proxy/Proxy.sol";
+import {IProxy} from "@solidstate/contracts/proxy/IProxy.sol";
+
+import {AddressUtils} from "@solidstate/contracts/utils/AddressUtils.sol";
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
 import {LibReward} from "./libraries/LibReward.sol";
 import {LibVoting} from "./libraries/LibVoting.sol";
@@ -15,6 +19,8 @@ import {LibClaimManager} from "./libraries/LibClaimManager.sol";
  */
 
 contract Greenproof is SolidStateDiamond {
+    using AddressUtils for address;
+
     /**
      * @dev Structure storing the configuration of the contract's owner
      */
@@ -57,6 +63,8 @@ contract Greenproof is SolidStateDiamond {
         uint256 revocablePeriod;
         bool rewardsEnabled;
     }
+
+    bool private _isContractPaused;
 
     /**
      * @notice IssuerVersionUpdated - logs issuer role version updates
@@ -115,6 +123,40 @@ contract Greenproof is SolidStateDiamond {
     event ClaimsRevocationRegistryUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
+     * @notice ContractPaused - emitted when the contract gets paused
+     * @param timestamp unix date and time recording when the contract was paused
+     * @param operator - address of the operator who paused the contract
+     */
+    event ContractPaused(uint256 timestamp, address operator);
+
+    /**
+     * @notice ContractUnPaused - emitted when the contract gets paused
+     * @param timestamp unix date and time recording when the contract was unpaused
+     * @param operator - address of the operator who unpaused the contract
+     */
+    event ContractUnPaused(uint256 timestamp, address operator);
+
+    /**
+     * @dev Error: Thrown when a transaction occurs while contract is paused
+     */
+    error PausedContract();
+
+    /**
+     * @dev Error: Thrown when contract owner is trying to pause an already paused contract
+     */
+    error AlreadyPausedContract();
+
+    /**
+     * @dev Error: Thrown when contract owner is trying to unpause an already unpaused contract
+     */
+    error AlreadyUnpausedContract();
+
+    /**
+     * @dev Error: Thrown when an error occurs at proxy level
+     */
+    error ProxyError(string errorMsg);
+
+    /**
      * @dev Constructor setting the contract's initial parameters
      * @param diamondConfig Configuration of the contract's owner
      * @param votingConfig Configuration of the greenproof's voting system
@@ -125,12 +167,29 @@ contract Greenproof is SolidStateDiamond {
         VotingConfig memory votingConfig,
         RolesConfig memory rolesConfig
     ) payable {
-        require(votingConfig.rewardAmount > 0, "init: Null reward amount");
-        require(rolesConfig.claimManagerAddress != address(0), "init: Invalid claimManager");
-        require(rolesConfig.claimsRevocationRegistry != address(0), "init: Invalid claimsRevocationRegistry");
-        require(votingConfig.revocablePeriod > 0, "init: Invalid revocable period");
-        require(diamondConfig.contractOwner != address(0), "init: Invalid contract Owner");
-        require(votingConfig.majorityPercentage <= 100, "init: Majority percentage must be between 0 and 100");
+        if (votingConfig.rewardAmount == 0) {
+            revert ProxyError("init: Null reward amount");
+        }
+
+        if (rolesConfig.claimManagerAddress == address(0)) {
+            revert ProxyError("init: Invalid claimManager");
+        }
+
+        if (rolesConfig.claimsRevocationRegistry == address(0)) {
+            revert ProxyError("init: Invalid claimsRevocationRegistry");
+        }
+
+        if (votingConfig.revocablePeriod == 0) {
+            revert ProxyError("init: Invalid revocable period");
+        }
+
+        if (diamondConfig.contractOwner == address(0)) {
+            revert ProxyError("init: Invalid contract Owner");
+        }
+
+        if (votingConfig.majorityPercentage > 100) {
+            revert ProxyError("init: Majority percentage must be between 0 and 100");
+        }
 
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
         LibIssuer.init(votingConfig.revocablePeriod);
@@ -146,6 +205,35 @@ contract Greenproof is SolidStateDiamond {
             rolesConfig.approverRole,
             rolesConfig.claimsRevocationRegistry
         );
+    }
+
+    fallback() external payable override(IProxy, Proxy) {
+        if (_isContractPaused) {
+            revert PausedContract();
+        }
+        address implementation = _getImplementation();
+
+        if (!implementation.isContract()) {
+            revert ProxyError("implementation must be contract");
+        }
+        // The below assembly code executes external function from facet using delegatecall and return any value.
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            // copy the data payload of the transaction, i.e the function selector and any arguments
+            calldatacopy(0, 0, calldatasize())
+            // delegateCall the copied data payload to execute the function and arguments on the implementation facet
+            let result := delegatecall(gas(), implementation, 0, calldatasize(), 0, 0)
+            // get any return value from the delegateCall and return it to the caller
+            returndatacopy(0, 0, returndatasize())
+            // return any return value or error back to the caller
+            switch result
+            case 0 {
+                revert(0, returndatasize())
+            }
+            default {
+                return(0, returndatasize())
+            }
+        }
     }
 
     /**
@@ -272,5 +360,39 @@ contract Greenproof is SolidStateDiamond {
          * @dev Emitting event for the updated claimer role version
          */
         emit ApproverVersionUpdated(oldVersion, newVersion);
+    }
+
+    /**
+     * @notice pause - when called, this function prevents all calls of facet functions from being executed
+     * @dev only the contract admistrator is allowed to execute this halting function
+     * @dev if the system is already paused, a call to this function will revert with `AlreadyPausedContract` error
+     */
+    function pause() external {
+        LibClaimManager.checkOwnership();
+
+        if (_isContractPaused) {
+            revert AlreadyPausedContract();
+        }
+        _isContractPaused = true;
+
+        // solhint-disable-next-line not-rely-on-time
+        emit ContractPaused(block.timestamp, msg.sender);
+    }
+
+    /**
+     * @notice unPause - when called, this function reverts the pausing and unlocks facet function executions
+     * @dev only the contract admistrator is allowed to execute this unlocking function
+     * @dev if the system is already unpaused, a call to this function will revert with `AlreadyUnpausedContract` error
+     */
+    function unPause() external {
+        LibClaimManager.checkOwnership();
+
+        if (!_isContractPaused) {
+            revert AlreadyUnpausedContract();
+        }
+        _isContractPaused = false;
+
+        // solhint-disable-next-line not-rely-on-time
+        emit ContractUnPaused(block.timestamp, msg.sender);
     }
 }

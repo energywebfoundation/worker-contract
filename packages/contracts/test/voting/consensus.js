@@ -1,14 +1,10 @@
 const { itEach } = require("mocha-it-each");
 
 module.exports.consensusTests = function () {
-  let workers;
-  let votingContract;
-  let timeframes;
-  let setupVotingContract;
-  let faucet;
+  const { initFixture, loadFixture } = this.parent;
 
-  beforeEach(function () {
-    ({ workers, timeframes, setupVotingContract, faucet } = this);
+  beforeEach(async function () {
+    ({ workers, timeframes, setupVotingContract, faucet } =  await loadFixture(initFixture));
   });
 
   itEach(

@@ -6,10 +6,12 @@ const {
 } = require("../scripts/deploy");
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
-const { assert, expect, util } = require("chai");
+const { assert, expect } = require("chai");
 const chai = require("chai");
 
 const { roles } = require("./utils/roles.utils");
+const { getTimeStamp } = require("./utils/time.utils");
+
 const { deployGreenproof } = require("../scripts/deploy/deployContracts");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
@@ -309,6 +311,66 @@ describe("GreenproofTest", async function () {
   })
 
   describe("\n****** Proxy setting tests ******", () => {
+
+    it("should revert when non owner tries to pause contract", async () => {
+      await expect(
+        greenproof.connect(nonOwner).pause()
+      ).to.be.revertedWith(`NotAuthorized("Owner")`);
+    });
+
+    it("should correctly pause contract", async () => {
+      tx = await greenproof.pause();
+
+      const timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(greenproof, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+    });
+
+    it("should revert when pausing an already paused contract", async () => {
+
+      await expect(
+        greenproof.pause()
+      ).to.be.revertedWith(`AlreadyPausedContract()`);
+    });
+
+    it("should revert when non owner tries to unpause contract", async () => {
+      await expect(
+        greenproof.connect(nonOwner).unPause()
+      ).to.be.revertedWith(`NotAuthorized("Owner")`);
+    });
+
+    it("should correctly unpause contract", async () => {
+      tx = await greenproof.unPause();
+
+      const timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(greenproof, "ContractUnPaused")
+        .withArgs(timestamp, owner.address);
+    })
+
+    it("should revert when unpausing an already unpaused contract", async () => {
+      
+      await expect(
+        greenproof.unPause()
+      ).to.be.revertedWith(`AlreadyUnpausedContract()`);
+    });
+
+    it("should revert if implementation logic address is not a contract", async () => {
+      const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+
+      //setting fallback address to be a wallet
+      await greenproof.setFallbackAddress(owner.address);
+
+      const dummyFallbackData = "0x463b9c9971d1a144507d2e905f4e98becd159139421a4bb8d3c9c2ed04eb401057dd0698d504fd6ca48829a3c8a7a98c1c961eae617096cb54264bbdd082e13d1c";
+     
+      const fallbackTx = owner.sendTransaction({
+        to: greenproofAddress,
+        data: dummyFallbackData
+      })
+      await expect(fallbackTx).to.be.revertedWith(`ProxyError("implementation must be contract")`);
+    });
+
     it("should have four facets -- call to facetAddresses function", async () => {
       for (const address of await greenproof.facetAddresses()) {
         addresses.push(address);
@@ -400,12 +462,22 @@ describe("GreenproofTest", async function () {
       await test1Facet.isInterfaceSupported("0x43a7aEeb");
     });
 
-    it("should add test2 functions", async () => {
+    it("should add test2 functions even when contract is paused", async () => {
       const Test2Facet = await ethers.getContractFactory("Test2Facet");
       const test2Facet = await Test2Facet.deploy();
       await test2Facet.deployed();
       addresses.push(test2Facet.address);
       const selectors = getSelectors(test2Facet);
+
+      // Pausing the system
+      tx = await greenproof.pause();
+
+      let timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(greenproof, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+      
+      // Upgrading the contract
       tx = await greenproof.diamondCut(
         [
           {
@@ -419,6 +491,14 @@ describe("GreenproofTest", async function () {
         { gasLimit: 800000 }
       );
       receipt = await tx.wait();
+
+      // Unpausing the system
+      tx = await greenproof.unPause();
+
+      timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(greenproof, "ContractUnPaused")
+        .withArgs(timestamp, owner.address);
       if (!receipt.status) {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }

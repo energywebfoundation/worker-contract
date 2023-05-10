@@ -12,6 +12,8 @@ const { resultsTests } = require("./results");
 const { replayingTests } = require("./replaying");
 const { expirationTests } = require("./expiration");
 const { consensusTests } = require("./consensus");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+
 
 const { workerRole } = roles;
 chai.use(solidity);
@@ -24,6 +26,7 @@ describe("Voting", function () {
   let faucet;
   let mockClaimManager;
   let mockClaimRevoker;
+  let initFixture;
 
   const timeframes = [
     {
@@ -52,7 +55,7 @@ describe("Voting", function () {
     },
   ];
 
-  beforeEach(async function () {
+  initFixture = async () => {
     const [ownerWallet, faucetWallet, ...workerWallets] =
       await ethers.getSigners();
 
@@ -65,7 +68,8 @@ describe("Voting", function () {
     for (let worker of workers) {
       await mockClaimRevoker.isRevoked(workerRole, worker.address, false);
     }
-    Object.assign(this, {
+
+    return {
       owner,
       workers,
       faucet,
@@ -77,8 +81,10 @@ describe("Voting", function () {
       removeWorkers,
       expectVotingResults,
       setupVotingContract,
-    });
-  });
+    }
+  };
+
+  Object.assign(this, { initFixture, loadFixture });
 
   describe("Permissions", permissionsTests);
   describe("Results", resultsTests);

@@ -5,13 +5,10 @@ const {
 } = require("../../scripts/deploy/deployContracts");
 
 module.exports.expirationTests = function () {
-  let workers;
-  let votingContract;
-  let timeframes;
-  let setupVotingContract;
+  const { initFixture, loadFixture } = this.parent;
 
-  beforeEach(function () {
-    ({ workers, timeframes, setupVotingContract } = this);
+  beforeEach(async function () {
+    ({ workers, timeframes, setupVotingContract } = await loadFixture(initFixture));
   });
 
   it("voting which exceeded time limit can be canceled", async () => {
