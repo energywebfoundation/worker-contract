@@ -41,6 +41,15 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
         symbol = _symbol;
     }
 
+    /**
+     * @notice issueMeToken - Issues a meta token
+     * @dev This function can only be called by the contract admin
+     * @dev This function reverts if the receiver address is the zero address
+     * @param tokenID - ID of the meta token to be issued
+     * @param amount - Amount of the meta token to be issued
+     * @param receiver - Address of the receiver of the meta token
+     * @param tokenUri - URI of the meta token
+     */
     function issueMetaToken(
         uint256 tokenID,
         uint256 amount,
