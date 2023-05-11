@@ -2951,11 +2951,6 @@
   dependencies:
     "@octokit/openapi-types" "^14.0.0"
 
-"@openzeppelin/contracts@^4.8.3":
-  version "4.8.3"
-  resolved "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-4.8.3.tgz"
-  integrity sha512-bQHV8R9Me8IaJoJ2vPG4rXcL7seB7YVuskr4f+f5RyOStSZetwzkWtoqDMl5erkBJy0lDRUnIR2WIkPiC0GJlg==
-
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.npmjs.org/@resolver-engine/core/-/core-0.3.3.tgz"
