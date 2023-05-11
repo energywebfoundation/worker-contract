@@ -68,7 +68,9 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
     revokerRole = ethers.utils.namehash(process.env.REVOKER_ROLE ?? "revoker"),
     workerRole = ethers.utils.namehash(process.env.WORKER_ROLE ?? "worker"),
     claimerRole = ethers.utils.namehash(process.env.CLAIMER_ROLE ?? "claimer"),
-    approverRole = ethers.utils.namehash(process.env.APPROVER_ROLE ?? "approver"),
+    approverRole = ethers.utils.namehash(
+      process.env.APPROVER_ROLE ?? "approver"
+    ),
   } = roles;
 
   // deploy GreenproofInit
@@ -115,7 +117,11 @@ export const deployGreenproof = async (options: DeployGreeproofOptions) => {
   const metaCertificateInfos = ["SER Certificate", "SERC"];
 
   // call to init function
-  const functionCall = greeproofInit.interface.encodeFunctionData("init", [greenproof.address, certificateInfos, metaCertificateInfos]);
+  const functionCall = greeproofInit.interface.encodeFunctionData("init", [
+    greenproof.address,
+    certificateInfos,
+    metaCertificateInfos,
+  ]);
   const tx = await greenproof.diamondCut(
     cuts,
     greeproofInit.address,
