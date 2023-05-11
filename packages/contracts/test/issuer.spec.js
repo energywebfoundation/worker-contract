@@ -31,7 +31,6 @@ describe("IssuerFacet", function () {
   let revoker;
   let claimer;
   let approver;
-  let transferer;
   let wallets;
 
   let greenproofAddress;
@@ -128,9 +127,11 @@ describe("IssuerFacet", function () {
       claimer,
       receiver,
       approver,
+      wallets,
       proofData,
       issuerContract,
       votingContract,
+      metatokenContract,
       proofManagerContract,
       greenproofContract,
       greenproofAddress,
@@ -141,6 +142,8 @@ describe("IssuerFacet", function () {
 
   describe("Proof issuance tests", () => {
     it("should correctly read the main token name", async () => { 
+      const { issuerContract } = await loadFixture(initFixture);
+      
       const tokenName = await issuerContract.name();
       const tokenSymbol = await issuerContract.symbol();
 
@@ -439,16 +442,13 @@ describe("IssuerFacet", function () {
     });
 
     it("should get all certificates of one owner", async () => {
-      const { proofManagerContract, proofData } = await loadFixture(initFixture);    
+      const { proofManagerContract, proofData, votingContract, worker } = await loadFixture(initFixture);    
 
-      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
       await mintProof(1, proofData, wallets[0]);
 
       const secondProofData = generateProofData();
-      await reachConsensus(
-        secondProofData.inputHash,
-        secondProofData.matchResult
-      );
+      await votingContract.connect(worker).vote(secondProofData.inputHash, secondProofData.matchResult);
       await mintProof(2, secondProofData, wallets[0]);
 
       const certs = await proofManagerContract.getProofsOf(wallets[0].address);
@@ -617,15 +617,15 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert Batch certificates transfers to a non generator wallet containing revoked certificate", async () => {
-      const { issuerContract, proofManagerContract, minter } = await loadFixture(initFixture);
+      const { issuerContract, proofManagerContract, votingContract, minter, worker } = await loadFixture(initFixture);
       
       const transferVolume = parseEther("2");
       const mintedVolume1 = 21;
       const mintedVolume2 = 42;
       const proofData1 = generateProofData({ id: 1, volume: mintedVolume1 });
       const proofData2 = generateProofData({ id: 2, volume: mintedVolume2 });
-      await reachConsensus(proofData1.inputHash, proofData1.matchResult);
-      await reachConsensus(proofData2.inputHash, proofData2.matchResult);
+      await votingContract.connect(worker).vote(proofData1.inputHash, proofData1.matchResult);
+      await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
       await mintProof(1, proofData1, minter);
       await mintProof(2, proofData2, minter);
 
@@ -651,8 +651,10 @@ describe("IssuerFacet", function () {
     it("should allow Batch certificates transfers of revoked certificate to the generator wallet", async () => {
       const {
         minter,
+        worker,
         revoker,
         issuerContract,
+        votingContract,
         proofManagerContract,
       } = await loadFixture(initFixture);
       
@@ -661,8 +663,8 @@ describe("IssuerFacet", function () {
       const mintedVolume2 = 42;
       const proofData1 = generateProofData({ id: 1, volume: mintedVolume1 });
       const proofData2 = generateProofData({ id: 2, volume: mintedVolume2 });
-      await reachConsensus(proofData1.inputHash, proofData1.matchResult);
-      await reachConsensus(proofData2.inputHash, proofData2.matchResult);
+       await votingContract.connect(worker).vote(proofData1.inputHash, proofData1.matchResult);
+      await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
       await mintProof(1, proofData1, minter);
       await mintProof(2, proofData2, minter);
 
@@ -1424,11 +1426,13 @@ describe("IssuerFacet", function () {
     const metaTokenURI = "";
 
     it("should correctly retrieve the token address", async () => {
+      const { metatokenContract } = await loadFixture(initFixture);
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
       expect(tokenAddress).to.be.properAddress;
     });
 
     it("should correctly read the metoken name", async () => {
+      const { metatokenContract } = await loadFixture(initFixture);
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
       const metaTokenName = await metaToken.name();
@@ -1438,7 +1442,8 @@ describe("IssuerFacet", function () {
       expect(metaTokenSymbol).to.equal("SERC");
     });
     
-    it("should revert when non admin tries to issue meta-certificate on token contract", async () => { 
+    it("should revert when non admin tries to issue meta-certificate on token contract", async () => {
+      const { wallets, metatokenContract } = await loadFixture(initFixture); 
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
       const nonAdmin = wallets[1];
@@ -1450,14 +1455,13 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when non Issuer tries to issue meta-certificate", async () => {
+      const { wallets, receiver, proofData, metatokenContract } = await loadFixture(initFixture);
       const unauthorizedOperator = wallets[0];
       await revokeRole(unauthorizedOperator, roles.issuerRole);
       const safcParentID = 1;
       const tokenAmount = 42;
-      const receiver = wallets[ 1 ];
 
       // issue SAFC
-      const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(safcParentID, proofData);
@@ -1475,12 +1479,12 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when one tries to issue meta-certificate to zeroAddress", async () => {
+      const { wallets, issuer, proofData, metatokenContract } = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = 42;
       const zeroAddress = ethers.constants.AddressZero;
 
       // issue SAFC
-      const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
       await mintProof(safcParentID, proofData);
@@ -1518,9 +1522,9 @@ describe("IssuerFacet", function () {
     });
 
     it("Should revert when issuing meta-certitificate for not owned parent certificate", async () => {
+      const {issuer, metatokenContract, receiver} = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = ethers.utils.parseEther("42");
-      const receiver = wallets[ 1 ];
 
       await expect(
         metatokenContract.connect(issuer)
@@ -1533,15 +1537,16 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when one tries to issue meta-certificate from revoked certificate", async () => {
+      const {issuer, receiver, proofManagerContract, metatokenContract} = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = ethers.utils.parseEther("21");
-      const receiver = wallets[ 1 ];
+
 
       // issue SAFC
       const proofData = generateProofData({ volume: 42});
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
-      await mintProof(safcParentID, proofData);
+      await mintProof(safcParentID, proofData, receiver);
 
       const availableVolume = ethers.utils.parseEther("42")
 
@@ -1561,9 +1566,9 @@ describe("IssuerFacet", function () {
     });
 
     it("Should revert when issuing more meta-certitificate than owned parent certificate volume", async () => {
+      const { wallets, issuer, receiver, metatokenContract  } = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = ethers.utils.parseEther("42");
-      const receiver = wallets[ 1 ];
 
       // issue SAFC
       const proofData = generateProofData({ volume: 21 });
@@ -1583,9 +1588,9 @@ describe("IssuerFacet", function () {
     });
 
     it("Should revert when issuing more meta-certitificate than allowed", async () => {
+      const { wallets, issuer, receiver, metatokenContract  } = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = ethers.utils.parseEther("42");
-      const receiver = wallets[ 1 ];
 
       // issue SAFC
       const proofData = generateProofData({ volume: 42 });
@@ -1620,15 +1625,15 @@ describe("IssuerFacet", function () {
     });
 
     it("Authorized issuer should be able to issue meta-certificate", async () => {
+      const { receiver, issuer, metatokenContract  } = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = 42;
-      const receiver = wallets[ 1 ];
 
       // issue SAFC
       const proofData = generateProofData();
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
-      await mintProof(safcParentID, proofData);
+      await mintProof(safcParentID, proofData, receiver);
 
       const tx = await metatokenContract.connect(issuer)
         .issueMetaToken(
@@ -1645,15 +1650,15 @@ describe("IssuerFacet", function () {
     });
 
     it("should correctly retrieve the totalSupply of meta-certificates", async () => {
+      const { issuer, receiver, metatokenContract  } = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = 42;
-      const receiver = wallets[ 1 ];
 
       // issue SAFC
       const proofData = generateProofData({volume: tokenAmount});
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
-      await mintProof(safcParentID, proofData);
+      await mintProof(safcParentID, proofData, receiver);
 
       // totalSupply of meta certificate should be null before issuance
       let totalSupply = await metatokenContract.tokenSupply(safcParentID);
@@ -1688,15 +1693,15 @@ describe("IssuerFacet", function () {
     });
 
     it("Authorized revoker should be able to revoke meta-certificate", async () => {
+      const { issuer, receiver, metatokenContract  } = await loadFixture(initFixture);
       const safcParentID = 1;
       const tokenAmount = 42;
-      const receiver = wallets[ 1 ];
 
       // issue SAFC
       const proofData = generateProofData({volume: tokenAmount});
       await reachConsensus(proofData.inputHash, proofData.matchResult);
 
-      await mintProof(safcParentID, proofData);
+      await mintProof(safcParentID, proofData, receiver);
 
       // issue meta-certificate
       tx = await metatokenContract.connect(issuer)
@@ -1989,6 +1994,8 @@ describe("IssuerFacet", function () {
   };
 
   const reachConsensus = async (inputHash, matchResult) => {
+    const { votingContract } = await loadFixture(initFixture);
+    
     await votingContract.connect(worker).vote(inputHash, matchResult);
   };
 
