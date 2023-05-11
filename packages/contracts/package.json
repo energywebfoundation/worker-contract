@@ -52,7 +52,6 @@
     "typechain": "8.1.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.3",
     "@solidstate/contracts": "^0.0.40",
     "hardhat-diamond-abi": "^3.0.1"
   }
