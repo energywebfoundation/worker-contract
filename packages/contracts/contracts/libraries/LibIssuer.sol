@@ -5,9 +5,7 @@ import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-
 import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
-
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
 /**
@@ -21,6 +19,8 @@ library LibIssuer {
     /**
      * @notice Certificate registry tracking issued certificates
      * @dev The certificate registry is represented by this storage structure
+     * @custom:field name - name of the certificate
+     * @custom:field symbol - symbol of the certificate
      * @custom:field latestCertificateId - latest issued certificate ID
      * @custom:field revocablePeriod - revocable period for certificates
      * @custom:field dataToCertificateID - mapping of data hash to certificate ID
@@ -31,6 +31,8 @@ library LibIssuer {
      * @custom:field voteToCertificates - mapping of vote ID to mapping of data hash to certificate ID
      */
     struct IssuerStorage {
+        string name;
+        string symbol;
         uint256 latestCertificateId;
         uint256 revocablePeriod;
         mapping(bytes32 => uint256) dataToCertificateID;
@@ -122,16 +124,14 @@ library LibIssuer {
      * @param revocablePeriod period in which the certificates can be revoked
      */
     function init(uint256 revocablePeriod) internal {
-        IssuerStorage storage issuer = getStorage();
-        issuer.revocablePeriod = revocablePeriod;
+        getStorage().revocablePeriod = revocablePeriod;
     }
 
     /**
      * @dev Increment the latest certificate ID
      */
     function incrementAndGetProofIndex() internal returns (uint256) {
-        IssuerStorage storage issuer = getStorage();
-        issuer.latestCertificateId++;
+        getStorage().latestCertificateId++;
         return getLatestCertificateId();
     }
 
@@ -175,8 +175,7 @@ library LibIssuer {
         address user,
         uint256 claimedAmount
     ) internal {
-        IssuerStorage storage issuer = getStorage();
-        issuer.claimedBalances[certificateID][user] += claimedAmount;
+        getStorage().claimedBalances[certificateID][user] += claimedAmount;
     }
 
     /**
@@ -212,6 +211,14 @@ library LibIssuer {
             revert ForbiddenSelfApproval(msg.sender, certificateOwner);
         }
         ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator] = shouldBeApproved;
+    }
+
+    /**
+     * @notice revokeProof - Revokes a certificate
+     * @param certificateID ID of the certificate to revoke
+     */
+    function revokeProof(uint256 certificateID) internal {
+        getStorage().certificates[certificateID].isRevoked = true;
     }
 
     /**
@@ -251,7 +258,7 @@ library LibIssuer {
         IssuerStorage storage issuer = getStorage();
         uint256 certificateId = issuer.dataToCertificateID[data];
 
-        if (certificateId != 0 && !issuer.certificates[certificateId].isRevoked) {
+        if (certificateId != 0 && !isCertificateRevoked(certificateId)) {
             revert AlreadyCertifiedData(data);
         }
     }
@@ -284,10 +291,17 @@ library LibIssuer {
         volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }
 
-    function checkNotDisclosed(bytes32 dataHash, string memory key) internal view {
-        IssuerStorage storage issuer = getStorage();
+    /**
+     * @notice Checks if a certificate has been revoked
+     * @param certificateID ID of the certificate
+     * @return true if the certificate has been revoked, false otherwise
+     */
+    function isCertificateRevoked(uint256 certificateID) internal view returns (bool) {
+        return getStorage().certificates[certificateID].isRevoked;
+    }
 
-        if (issuer.isDataDisclosed[dataHash][key]) {
+    function checkNotDisclosed(bytes32 dataHash, string memory key) internal view {
+        if (getStorage().isDataDisclosed[dataHash][key]) {
             revert AlreadyDisclosedData(dataHash, key);
         }
     }
@@ -316,9 +330,7 @@ library LibIssuer {
      * @param receiver address of the receiver of the certificate
      */
     function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
-        IssuerStorage storage issuer = getStorage();
-
-        if (issuer.certificates[certificateID].isRevoked && receiver != issuer.certificates[certificateID].generator) {
+        if (isCertificateRevoked(certificateID) && receiver != getStorage().certificates[certificateID].generator) {
             revert NotAllowedTransfer(certificateID, msg.sender, receiver);
         }
     }
@@ -340,19 +352,7 @@ library LibIssuer {
      * @param certificateID - ID of the greenproof certificate
      */
     function claimedBalanceOf(address user, uint256 certificateID) internal view returns (uint256) {
-        IssuerStorage storage issuer = getStorage();
-
-        return issuer.claimedBalances[certificateID][user];
-    }
-
-    /**
-     * @notice revokeProof - Revokes a certificate
-     * @dev This function emits the `ProofRevoked` event
-     * @param certificateID ID of the certificate to revoke
-     */
-    function revokeProof(uint256 certificateID) internal {
-        IssuerStorage storage issuer = getStorage();
-        issuer.certificates[certificateID].isRevoked = true;
+        return getStorage().claimedBalances[certificateID][user];
     }
 
     /**
@@ -361,8 +361,7 @@ library LibIssuer {
      * @return proof - The greenproof certificate of id `certificateID`
      */
     function getProof(uint256 certificateID) internal view returns (IGreenProof.Certificate memory proof) {
-        IssuerStorage storage issuer = getStorage();
-        proof = issuer.certificates[certificateID];
+        proof = getStorage().certificates[certificateID];
     }
 
     /**
@@ -371,9 +370,7 @@ library LibIssuer {
      * @return proofId - The certificate ID
      */
     function getProofIdByDataHash(bytes32 dataHash) internal view returns (uint256 proofId) {
-        IssuerStorage storage issuer = getStorage();
-
-        return issuer.dataToCertificateID[dataHash];
+        return getStorage().dataToCertificateID[dataHash];
     }
 
     /**
@@ -381,9 +378,7 @@ library LibIssuer {
      * @return proofId - The ID of the latest issued certificate
      */
     function getLatestCertificateId() internal view returns (uint256 proofId) {
-        IssuerStorage storage issuer = getStorage();
-
-        return issuer.latestCertificateId;
+        return getStorage().latestCertificateId;
     }
 
     /**
@@ -391,9 +386,23 @@ library LibIssuer {
      * @return revocablePeriod - the duration during which issued proofs can be revoked
      */
     function getRevocablePeriod() internal view returns (uint256 revocablePeriod) {
-        IssuerStorage storage issuer = getStorage();
+        return getStorage().revocablePeriod;
+    }
 
-        return issuer.revocablePeriod;
+    /**
+     * @notice getTokeName - Retrieves the name of the token
+     * @return name - The name of the certificate token
+     */
+    function getTokenName() internal view returns (string memory) {
+        return getStorage().name;
+    }
+
+    /**
+     * @notice getTokenSymbol - Retrieves the symbol of the token
+     * @return symbol - The symbol of the certificate token
+     */
+    function getTokenSymbol() internal view returns (string memory) {
+        return getStorage().symbol;
     }
 
     /**

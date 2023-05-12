@@ -12,7 +12,7 @@ module.exports.expirationTests = function () {
   });
 
   it("voting which exceeded time limit can be canceled", async () => {
-    votingContract = await setupVotingContract({
+    const votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
 
@@ -47,7 +47,7 @@ module.exports.expirationTests = function () {
   });
 
   it("voting which exceeded time limit can be canceled by index", async () => {
-    votingContract = await setupVotingContract({
+    const votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2], workers[3], workers[4], workers[5], workers[6]],
     });
 
@@ -130,7 +130,7 @@ module.exports.expirationTests = function () {
   });
 
   it("voting which don't exceeded time limit are not cancelled", async () => {
-    votingContract = await setupVotingContract({
+    const votingContract = await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
 
@@ -146,7 +146,7 @@ module.exports.expirationTests = function () {
   });
 
   it("voting which exceeded time limit must not be completed", async () => {
-    votingContract = await setupVotingContract({
+    await setupVotingContract({
       participatingWorkers: [workers[0], workers[1], workers[2]],
     });
 

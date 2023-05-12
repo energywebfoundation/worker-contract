@@ -1,0 +1,132 @@
+//SPDX-License-Identifier: MIT
+pragma solidity 0.8.16;
+import {LibIssuer} from "../libraries/LibIssuer.sol";
+import {IMetaToken} from "../interfaces/IMetaToken.sol";
+import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+
+library LibMetaToken {
+    struct MetaTokenStorage {
+        // address of the deployed ERC1155 meta token contract
+        address metaTokenAddress;
+        // Mapping from parent certificate ID to the amount of meta tokens issued
+        mapping(address => mapping(uint256 => uint256)) metaTokenIssued;
+    }
+
+    /**
+     * @notice event emitted when meta tokens are issued
+     * @param parentCertificateID - ID of the meta token to be issued
+     * @param receiver - address of the receiver of the issued tokens
+     * @param issuanceDate - date of the issuance
+     * @param amount - amount of meta tokens to be issued
+     */
+    event MetaTokenIssued(uint256 indexed parentCertificateID, address indexed receiver, uint256 issuanceDate, uint256 amount);
+
+    /**
+     * @notice event emitted when meta tokens are revoked
+     * @param tokenID - ID of the meta token to be revoked
+     * @param revocationDate - date of the revocation
+     */
+    event MetaTokenRevoked(uint256 indexed tokenID, uint256 indexed revocationDate);
+    /**
+     * @notice NotAllowedIssuance - error raised when a user tries to issue more meta certificates than owned balance of parent certificate
+     * @dev Error: Issuance of the meta-certificate is not allowed
+     * @param certificateID ID of the parent certificate
+     * @param receiver address of the receiver of the certificate
+     * @param toIssueVolume volume of the certificate
+     * @param availableVolume available volume of the parent certificate
+     */
+    error NotAllowedIssuance(uint256 certificateID, address receiver, uint256 toIssueVolume, uint256 availableVolume);
+
+    /**
+     * @dev Tracking the storage position of the issuerStorage
+     */
+    bytes32 private constant _META_TOKEN_STORAGE_POSITION = keccak256("ewc.greenproof.metaToken.diamond.storage");
+
+    /**
+     * @notice checkAllowedIssuance - checks if the receiver is allowed to issue this amount of meta tokens
+     * @param receiver address of the receiver of the meta tokens
+     * @param parentCertificateID ID of the parent certificate
+     * @param toIssueVolume volume of the meta tokens to be issued
+     * @dev Error: Issuance of the meta-certificate is not allowed
+     * @dev reverts if the receiver is not allowed to issue this amount of meta tokens
+     */
+    function checkAllowedIssuance(
+        address receiver,
+        uint256 parentCertificateID,
+        uint256 toIssueVolume
+    ) internal view {
+        uint256 availableParentVolume = IERC1155(address(this)).balanceOf(receiver, parentCertificateID);
+        uint256 alreadyIssuedVolume = getStorage().metaTokenIssued[receiver][parentCertificateID];
+        uint256 allowedIssuanceVolume = availableParentVolume - alreadyIssuedVolume;
+        bool isParentCertificateRevoked = LibIssuer.isCertificateRevoked(parentCertificateID);
+        if (availableParentVolume == 0 || allowedIssuanceVolume < toIssueVolume || isParentCertificateRevoked) {
+            revert NotAllowedIssuance(parentCertificateID, receiver, toIssueVolume, allowedIssuanceVolume);
+        }
+    }
+
+    /**
+     * @notice issueSerc - Issues SERC tokens
+     * @param safcParentID - ID of the parent SAFC certificate
+     * @param amount - Amount of SERC to issue
+     * @param receiver - Address of the receiver of the SERC
+     */
+    function issueMetaToken(
+        uint256 safcParentID,
+        uint256 amount,
+        address receiver,
+        string memory tokenUri
+    ) internal {
+        LibIssuer.preventZeroAddressReceiver(receiver); //verify that the receiver is not a zero address
+        checkAllowedIssuance(receiver, safcParentID, amount); // verify that the receiver is allowed to issue this amount meta tokens
+        address metaTokenAddress = getMetaTokenAddress();
+
+        IMetaToken(metaTokenAddress).issueMetaToken(safcParentID, amount, receiver, tokenUri);
+        getStorage().metaTokenIssued[receiver][safcParentID] += amount;
+    }
+
+    function revokeMetaToken(uint256 tokenID) internal {
+        address metaTokenAddress = getMetaTokenAddress();
+        IMetaToken(metaTokenAddress).revokeMetaToken(tokenID);
+        // solhint-disable-next-line not-rely-on-time
+        emit MetaTokenRevoked(tokenID, block.timestamp);
+    }
+
+    /**
+     * @notice getMetaTokenAddress - Gets the address of the deployed ERC1155 meta token contract
+     * @return metaTokenManager - The address of the deployed ERC1155 meta token contract
+     */
+    function getMetaTokenAddress() internal view returns (address) {
+        return getStorage().metaTokenAddress;
+    }
+
+    /**
+     * @notice totalSupply - Returns the total supply of a meta token
+     * @param tokenID - ID of the meta token
+     * @return uint256 - The total supply of the meta token
+     */
+    function totalSupply(uint256 tokenID) internal view returns (uint256) {
+        return IMetaToken(getMetaTokenAddress()).tokenSupply(tokenID);
+    }
+
+    /**
+     * @notice isMetaTokenRevoked - Checks if a meta token is revoked
+     * @param tokenID - ID of the meta token
+     * @return bool - True if the meta token is revoked
+     */
+    function isMetaTokenRevoked(uint256 tokenID) internal view returns (bool) {
+        return IMetaToken(getMetaTokenAddress()).isMetaTokenRevoked(tokenID);
+    }
+
+    /**
+     * @dev Get the storage slot for MetaTokenStorage struct
+     * @return metaTokenStorage - The pointer to the MetaToken storage
+     */
+    function getStorage() internal pure returns (MetaTokenStorage storage metaTokenStorage) {
+        bytes32 position = _META_TOKEN_STORAGE_POSITION;
+
+        /* solhint-disable-next-line no-inline-assembly */
+        assembly {
+            metaTokenStorage.slot := position
+        }
+    }
+}

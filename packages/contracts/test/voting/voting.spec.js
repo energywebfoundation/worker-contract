@@ -19,7 +19,6 @@ const { workerRole } = roles;
 chai.use(solidity);
 
 let greenproofAddress;
-let votingContract;
 describe("Voting", function () {
   let owner;
   let workers;
@@ -75,7 +74,6 @@ describe("Voting", function () {
       faucet,
       mockClaimManager,
       mockClaimRevoker,
-      votingContract,
       timeframes,
       addWorkers,
       removeWorkers,
