@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {LibMetaToken} from "../libraries/LibMetaToken.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
@@ -60,6 +61,10 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         LibProofManager.checkProofRevocability(certificateID);
         LibIssuer.revokeProof(certificateID);
         emit ProofRevoked(certificateID);
+
+        if (LibMetaToken.totalSupply(certificateID) > 0) {
+            LibMetaToken.revokeMetaToken(certificateID);
+        }
     }
 
     /**

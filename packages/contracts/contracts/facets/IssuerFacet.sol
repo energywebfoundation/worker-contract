@@ -122,6 +122,22 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     }
 
     /**
+     * @notice name - Returns the name of the certificate token
+     * @return name - The name of the certificate token
+     */
+    function name() external view returns (string memory) {
+        return LibIssuer.getTokenName();
+    }
+
+    /**
+     * @notice symbol - Returns the symbol of the certificate token
+     * @return symbol - The symbol of the certificate token
+     */
+    function symbol() external view returns (string memory) {
+        return LibIssuer.getTokenSymbol();
+    }
+
+    /**
      * @notice transfer certificate between given addresses, checking for ERC1155Receiver implementation if applicable
      * @param from owner of certificate
      * @param to receiver of certificate
