@@ -6,10 +6,10 @@ import { Greenproof__factory } from "../src";
 import { Contract, ContractFactory } from "ethers";
 import { FacetCutAction, getSelectors } from "./libraries/greenproof";
 import {
-  DeployGreeproofOptions,
+  InitContractOptions,
   GreenproofFacet,
   Logger,
-} from "./libraries/utils/types/config-types";
+} from "./utils/types/config.types";
 
 config();
 
@@ -36,7 +36,7 @@ export const DEFAULT_REWARD_AMOUNT = ethers.utils.parseEther(
 const IS_RUNNING_FROM_CLI = require.main === module;
 let deployedFacets: { facetName: string; facetAddress: string }[] = [];
 
-export const deployGreenproof = async (options: DeployGreeproofOptions) => {
+export const deployGreenproof = async (options: InitContractOptions) => {
   const contractOwner =
     options.contractOwner ?? (await ethers.getSigners())[0].address;
   const {
