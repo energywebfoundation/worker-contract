@@ -58,7 +58,6 @@ export const deployGreenproof = async (options: InitContractOptions) => {
     ),
   } = roles;
 
-  console.log("All greenproof facets --> ", facets);
   // deploy GreenproofInit
   // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
@@ -88,6 +87,7 @@ export const deployGreenproof = async (options: InitContractOptions) => {
 
   logger("Deploying facets...");
   console.log("Deploying facets...");
+  console.log("All greenproof facets --> ", facets);
 
   const cuts = [];
   for (const facetName of facets) {
@@ -169,13 +169,14 @@ const createDeployer =
 
     const contract = await deployFn(factory);
     await contract.deployed();
-    logger(`Contract: ${contractName} deployed to `, contract.address);
-    console.log(`${contractName} deployed to`, contract.address);
     if (facetsList.includes(contractName)) {
       deployedFacets.push({
         facetName: contractName,
         facetAddress: contract.address,
       });
+    } else {
+      logger(`\tContract: ${contractName} deployed to `, contract.address);
+      console.log(`\t${contractName} deployed to`, contract.address);
     }
 
     return contract;
