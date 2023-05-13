@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { timeTravel } = require("../utils/time.utils");
 const {
   DEFAULT_VOTING_TIME_LIMIT,
-} = require("../../scripts/deploy/deployContracts");
+} = require("../../scripts/deploy/utils/constants");
 
 module.exports.expirationTests = function () {
   const { initFixture, loadFixture } = this.parent;

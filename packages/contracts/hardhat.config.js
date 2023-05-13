@@ -38,14 +38,14 @@ module.exports = {
       url: "http://localhost:8545",
     },
     volta: {
-      url: process.env.VOLTA_RPC_URL,
+      url: process.env.VOLTA_RPC_URL ? process.env.VOLTA_RPC_URL : "https://volta-rpc.energyweb.org",
       chainId: 73799,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     ewc: {
-      url: process.env.EWC_RPC_URL,
+      url: process.env.EWC_RPC_URL ? process.env.EWC_RPC_URL : "https://rpc.energyweb.org",
       chainId: 246,
-      accounts: [process.env.PRIVATE_KEY],
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       gasPrice: 1000000000,
     },
     goerli: {
