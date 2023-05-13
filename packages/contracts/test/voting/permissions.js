@@ -3,7 +3,7 @@ const { roles } = require("../utils/roles.utils");
 const { timeTravel } = require("../utils/time.utils");
 const {
   DEFAULT_VOTING_TIME_LIMIT,
-} = require("../../scripts/deploy/deployContracts");
+} = require("../../scripts/deploy/utils/constants");
 
 const { workerRole } = roles;
 
