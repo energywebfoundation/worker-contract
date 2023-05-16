@@ -25,6 +25,8 @@
     "prettier:format": "prettier --write contracts/**/*.sol",
     "prettier:check": "prettier --list-different contracts/**/*.sol",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
+    "deploy:volta": "npx hardhat run scripts/deploy/deployContracts.js --network volta",
+    "deploy:ewc": "npx hardhat run scripts/deploy/deployContracts.js --network ewc",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
     "proxy:test": "yarn build && npx hardhat test test/proxy.spec.js",
     "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
@@ -53,6 +55,12 @@
   },
   "dependencies": {
     "@solidstate/contracts": "^0.0.40",
-    "hardhat-diamond-abi": "^3.0.1"
-  }
+    "hardhat-diamond-abi": "^3.0.1",
+    "iam-client-lib": "^7.1.0"
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "keywords": []
 }
