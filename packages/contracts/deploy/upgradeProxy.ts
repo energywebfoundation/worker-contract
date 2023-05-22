@@ -111,7 +111,10 @@ export const defaultInit = async (greenproofAddress: string) => {
   const deployedFacets = getDeployedFacets();
   for (const currentFacet of deployedFacets) {
     console.log(`\n\tFetching ${currentFacet.name} facet ...`);
-    const targetContract = await ethers.getContractFactory(currentFacet.name);
+    const targetContract = await ethers.getContractAt(
+      currentFacet.name,
+      greenproofAddress
+    );
     const target = getFacetAddress(currentFacet.name, "volta");
     upgradeOperations.push({
       target,
