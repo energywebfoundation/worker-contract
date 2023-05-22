@@ -90,6 +90,11 @@ export const defaultInit = async (greenproofAddress: string) => {
   const certificateInfos = ["SAF Certificate", "SAFC"];
   const metaCertificateInfos = ["SER Certificate", "SERC"];
   const initializerContract = process.env.GREENPROOF_INITIALIZER;
+  if (!initializerContract) {
+    throw Error(
+      "Greenproof initializer contract not found .. Make sure you correctly set it in your .env file"
+    );
+  }
 
   const greenProofInit = await ethers.getContractAt(
     "GreenproofInit",
