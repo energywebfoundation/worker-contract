@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import {LibIssuer} from "../libraries/LibIssuer.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {LibMetaToken} from "../libraries/LibMetaToken.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
@@ -70,9 +70,9 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     /**
      * @notice getProof - Retrieves a certificate
      * @param certificateID - ID of the certificate to retrieve
-     * @return proof - IGreenProof.Certificate memory proof
+     * @return proof - IProofIssuer.Certificate memory proof
      */
-    function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof) {
+    function getProof(uint256 certificateID) external view returns (IProofIssuer.Certificate memory proof) {
         LibProofManager.checkProofExistence(certificateID);
         proof = LibIssuer.getProof(certificateID);
     }
@@ -92,13 +92,13 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param userAddress - Address of the user
      * @return The list of all certificates owned by the userAddress
      */
-    function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory) {
+    function getProofsOf(address userAddress) external view returns (IProofIssuer.Certificate[] memory) {
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         uint256 numberOfCertificates = userTokenList.length;
 
         LibProofManager.checkOwnedCertificates(numberOfCertificates, userAddress);
 
-        IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](numberOfCertificates);
+        IProofIssuer.Certificate[] memory userProofs = new IProofIssuer.Certificate[](numberOfCertificates);
         for (uint256 i; i < numberOfCertificates; i++) {
             uint256 currentTokenID = userTokenList[i];
             uint256 volume = _balanceOf(userAddress, currentTokenID);

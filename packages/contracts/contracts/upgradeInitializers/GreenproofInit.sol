@@ -5,7 +5,7 @@ import {ERC165Storage} from "@solidstate/contracts/introspection/ERC165.sol";
 import {IVoting} from "../interfaces/IVoting.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {MetaToken} from "../dependencies/MetaToken.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {LibMetaToken} from "../libraries/LibMetaToken.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
@@ -45,7 +45,7 @@ contract GreenproofInit {
          */
         ERC165Storage.Layout storage erc165 = ERC165Storage.layout();
         erc165.setSupportedInterface(type(IClaimManager).interfaceId, true);
-        erc165.setSupportedInterface(type(IGreenProof).interfaceId, true);
+        erc165.setSupportedInterface(type(IProofIssuer).interfaceId, true);
         erc165.setSupportedInterface(type(IProofManager).interfaceId, true);
         erc165.setSupportedInterface(type(IVoting).interfaceId, true);
 

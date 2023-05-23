@@ -302,7 +302,7 @@ Second purpose of contract is token trasferring.
     - uint256 latestCertificateId - identifier of the last issued certificate.
     - uint256 revocablePeriod - time during which revoker can revoke certificate.
     - mapping(bytes32 => uint256) dataToCertificateID - (`matchResult` -> `certificateID`). Returns identifier of certificate corresponding to `matchResult`.
-    - mapping(uint256 => IGreenProof.Certificate) certificates - (`certificateID` -> Certificate). Returns certificate by id.
+    - mapping(uint256 => IProofIssuer.Certificate) certificates - (`certificateID` -> Certificate). Returns certificate by id.
       mapping(uint256 => mapping(address => uint256)) claimedBalances - (`certificateID` -> owner -> balance). Balances of claimed certificates.
     - mapping(bytes32 => mapping(string => string)) disclosedData - (`dataHash` -> `key` -> `value`). Disclosed (`key`, `value`) part of data with Merkle root tree `dataHash`.
     - mapping(bytes32 => mapping(string => bool)) isDataDisclosed - (`dataHash` -> `key` -> isDisclosed). Checks that data with key `key` is disclosed in data with Merkle root tree `dataHash`.

@@ -34,6 +34,22 @@ library LibVoting {
     }
 
     /**
+     * @dev Structure storing the configuration of the greenproof's voting system
+     * @custom:field votingTimeLimit - duration of a voting session
+     * @custom:field rewardAmount - value of the reward sent to each winning voter
+     * @custom:field majorityPercentage - Percentage of the number of workers vote required to reach a consensus
+     * @custom:field revocablePeriod - Duration under which a certificate can be revoked
+     * @custom:field rewardsEnabled - Flag defining wether or not workers should be rewarded on winning vote
+     */
+    struct VotingConfig {
+        uint256 votingTimeLimit;
+        uint256 rewardAmount;
+        uint256 majorityPercentage;
+        uint256 revocablePeriod;
+        bool rewardsEnabled;
+    }
+
+    /**
      * @title `VotingStorage` is the structured storage workspace of all storage variables related to voting component
      * @notice Whenever you wish to update your app and add more variable to the storage, make sure to add them at the end of te struct
      */

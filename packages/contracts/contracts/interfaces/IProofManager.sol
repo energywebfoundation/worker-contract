@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {IGreenProof} from "./IGreenProof.sol";
+import {IProofIssuer} from "./IProofIssuer.sol";
 
 /**
  * @title IProofManager
@@ -56,9 +56,9 @@ interface IProofManager {
     /**
      * @notice getProof - Retrieves a certificate
      * @param certificateID - ID of the certificate to retrieve
-     * @return proof - IGreenProof.Certificate memory proof
+     * @return proof - IProofIssuer.Certificate memory proof
      */
-    function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof);
+    function getProof(uint256 certificateID) external view returns (IProofIssuer.Certificate memory proof);
 
     /**
      * @notice getProofIdByDataHash - Retrieves the ID of a green certificate by its data hash
@@ -73,7 +73,7 @@ interface IProofManager {
      * @param userAddress -  Address of the user
      * @return The list of all certificates owned by the userAddress
      */
-    function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory);
+    function getProofsOf(address userAddress) external view returns (IProofIssuer.Certificate[] memory);
 
     /**
      * @notice claimedBalanceOf - Retrieves the volume of certificate ID claimed by a user

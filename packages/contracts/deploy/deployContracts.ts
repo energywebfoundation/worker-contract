@@ -31,6 +31,8 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   const contractOwner =
     options.contractOwner ?? (await ethers.getSigners())[0].address;
 
+  const batchQueueSize = options.batchQueueSize ?? 20;
+
   const {
     votingTimeLimit = DEFAULT_VOTING_TIME_LIMIT,
     revocablePeriod = DEFAULT_REVOCABLE_PERIOD,
@@ -64,7 +66,7 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   const greeproofInit = await deploy("GreenproofInit");
   const greenproof = await deploy("Greenproof", (factory) => {
     const args: Parameters<Greenproof__factory["deploy"]> = [
-      { contractOwner },
+      { contractOwner, batchQueueSize },
       {
         votingTimeLimit,
         rewardAmount,

@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
@@ -15,7 +15,7 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
  * @notice This facet handles certificates Issuance as Green proofs. Certificates consists of ERC-1155 tokens anchored to merkleRoot hashes of data.
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
-contract IssuerFacet is SolidStateERC1155, IGreenProof {
+contract IssuerFacet is SolidStateERC1155, IProofIssuer {
     /**
      * @notice modifier that restricts the execution of functions only to users enrolled as Issuers
      * @dev this modifer reverts the transaction if the msg.sender is not an enrolled issuer

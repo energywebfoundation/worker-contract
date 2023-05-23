@@ -2,11 +2,11 @@
 pragma solidity 0.8.16;
 
 /**
- * @title IGreenProof
+ * @title IProofIssuer
  * @dev Interface for a green certificate issuance and validation system
  * @author EnergyWeb Foundation
  */
-interface IGreenProof {
+interface IProofIssuer {
     /**
      * @notice Certificate - Struct representing a green certificate
      * @custom:field isRevoked - flag indicating if the certificate has been revoked

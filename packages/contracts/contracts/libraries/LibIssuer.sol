@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
 import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
@@ -17,10 +17,19 @@ import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC11
 
 library LibIssuer {
     /**
+     * @dev Structure storing the configuration of the contract's owner
+     */
+    struct GreenproofConfig {
+        uint256 batchQueueSize;
+        address contractOwner;
+    }
+
+    /**
      * @notice Certificate registry tracking issued certificates
      * @dev The certificate registry is represented by this storage structure
      * @custom:field name - name of the certificate
      * @custom:field symbol - symbol of the certificate
+     * @custom:field batchQueueSize - size of the batch queue
      * @custom:field latestCertificateId - latest issued certificate ID
      * @custom:field revocablePeriod - revocable period for certificates
      * @custom:field dataToCertificateID - mapping of data hash to certificate ID
@@ -33,10 +42,11 @@ library LibIssuer {
     struct IssuerStorage {
         string name;
         string symbol;
-        uint256 latestCertificateId;
+        uint256 batchQueueSize;
         uint256 revocablePeriod;
+        uint256 latestCertificateId;
         mapping(bytes32 => uint256) dataToCertificateID;
-        mapping(uint256 => IGreenProof.Certificate) certificates;
+        mapping(uint256 => IProofIssuer.Certificate) certificates;
         // Mapping from token ID to account balances, to track how much of certificate ID a wallet has claimed
         mapping(uint256 => mapping(address => uint256)) claimedBalances;
         mapping(bytes32 => mapping(string => string)) disclosedData;
@@ -152,7 +162,7 @@ library LibIssuer {
     ) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
-        issuer.certificates[certificateID] = IGreenProof.Certificate({
+        issuer.certificates[certificateID] = IProofIssuer.Certificate({
             isRevoked: false,
             certificateID: certificateID,
             issuanceDate: block.timestamp, // solhint-disable-line not-rely-on-time
@@ -268,11 +278,11 @@ library LibIssuer {
      * @param certificateID ID of the certificate
      * @param volumeInWei volume of the certificate in wei
      */
-    function getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
+    function getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IProofIssuer.Certificate memory) {
         IssuerStorage storage issuer = getStorage();
 
         return
-            IGreenProof.Certificate({
+            IProofIssuer.Certificate({
                 isRevoked: issuer.certificates[certificateID].isRevoked,
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
@@ -360,7 +370,7 @@ library LibIssuer {
      * @param certificateID - ID of the certificate to retrieve
      * @return proof - The greenproof certificate of id `certificateID`
      */
-    function getProof(uint256 certificateID) internal view returns (IGreenProof.Certificate memory proof) {
+    function getProof(uint256 certificateID) internal view returns (IProofIssuer.Certificate memory proof) {
         proof = getStorage().certificates[certificateID];
     }
 
