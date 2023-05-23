@@ -26,6 +26,26 @@ interface IGreenProof {
     }
 
     /**
+     * @notice IssuanceRequest - Struct representing a request for certificate issuance
+     * @custom:field volume - amount of minted tokens for the certificate
+     * @custom:field voteID - ID of the vote
+     * @custom:field dataHash - Merkle root hash of the certified data
+     * @custom:field dataProof - Merkle proof of the certified data
+     * @custom:field amountProof - Merkle proof of the amount
+     * @custom:field generator - Address of the generator
+     * @custom:field tokenUri - URI of the token
+     */
+    struct IssuanceRequest {
+        uint256 volume;
+        bytes32 voteID;
+        bytes32 dataHash;
+        bytes32[] dataProof;
+        bytes32[] amountProof;
+        address generator;
+        string tokenUri;
+    }
+
+    /**
      *  @notice ProofMinted - Event emitted when a proof is minted
      *  @param certificateID - unique identifier for the proof
      *  @param volume - certified volume
@@ -70,6 +90,15 @@ interface IGreenProof {
         bytes32[] memory volumeProof,
         string memory tokenUri
     ) external;
+
+    /**
+     * @notice `requestBatchIssuance` - An authorized issuer requests issuance of a bacth of certificates.
+     * @param requestQueue - An array of IssuanceRequest struct containing the data needed to issue a certificate.
+     * @dev This function is used to issue a batch of certificates after a consensus is reached.
+     * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
+     * @dev The generator address can not be the zero address
+     */
+    function requestBatchIssuance(IssuanceRequest[] memory requestQueue) external;
 
     /**
      * @notice `discloseData` - Publicly exposes specific a information of the certified data.

@@ -495,6 +495,39 @@ describe("IssuerFacet", function () {
     });
   });
 
+  describe("Batch issuance tests", () => {
+    it("should correctly mint a batch of certificates", async () => {
+      const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+      const batchQueue = [];
+      const dataProofs = [];
+      const nbIssuanceRequests = 20;
+
+      for (let i = 0; i < nbIssuanceRequests; i++) {
+        dataProofs.push(generateProofData({ volume: i + 1 }));
+        await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
+        batchQueue.push({
+          volume: dataProofs[i].volume,
+          voteID: dataProofs[i].inputHash,
+          dataHash: dataProofs[i].volumeRootHash,
+          dataProof: dataProofs[i].matchResultProof,
+          amountProof: dataProofs[i].volumeProof,
+          generator: receiver.address,
+          tokenUri: "",
+        });
+      }
+
+      const batchTx = await issuerContract
+        .connect(issuer)
+        .requestBatchIssuance(batchQueue);
+      
+      for (let i = 0; i < nbIssuanceRequests; i++) {
+        await expect(batchTx)
+            .to.emit(issuerContract, "ProofMinted")
+            .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
+      }
+    });
+  });
+
   describe("Proof transfers tests", () => {
     it("should revert when one tries to transfer token ID = 0", async () => {
       const { issuerContract } = await loadFixture(initFixture);
@@ -663,7 +696,7 @@ describe("IssuerFacet", function () {
       const mintedVolume2 = 42;
       const proofData1 = generateProofData({ id: 1, volume: mintedVolume1 });
       const proofData2 = generateProofData({ id: 2, volume: mintedVolume2 });
-       await votingContract.connect(worker).vote(proofData1.inputHash, proofData1.matchResult);
+      await votingContract.connect(worker).vote(proofData1.inputHash, proofData1.matchResult);
       await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
       await mintProof(1, proofData1, minter);
       await mintProof(2, proofData2, minter);

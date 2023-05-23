@@ -51,17 +51,29 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
         bytes32[] memory amountProof,
         string memory tokenUri
     ) external onlyIssuer {
-        LibIssuer.preventZeroAddressReceiver(generator);
-        LibIssuer.preventAlreadyCertified(dataHash);
-        LibVoting.checkVoteInConsensus(voteID, dataHash, dataProof);
-        LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
-        uint256 nextCertificateId = LibIssuer.incrementAndGetProofIndex();
-        uint256 volumeInWei = volume * 1 ether;
-        LibIssuer.registerProof(dataHash, generator, volumeInWei, nextCertificateId, voteID);
+        _issueCertificate(voteID, generator, dataHash, dataProof, volume, amountProof, tokenUri);
+    }
 
-        _safeMint(generator, nextCertificateId, volumeInWei, "");
-        _setTokenURI(nextCertificateId, tokenUri);
-        emit ProofMinted(nextCertificateId, volumeInWei, generator);
+    /**
+     * @notice `requestBatchIssuance` - An authorized issuer requests issuance of a bacth of certificates.
+     * @param requestQueue - An array of IssuanceRequest struct containing the data needed to issue a certificate.
+     * @dev This function is used to issue a batch of certificates after a consensus is reached.
+     * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
+     * @dev The generator address can not be the zero address
+     */
+    function requestBatchIssuance(IssuanceRequest[] memory requestQueue) external onlyIssuer {
+        uint256 queueLength = requestQueue.length;
+        for (uint256 i; i < queueLength; i++) {
+            _issueCertificate(
+                requestQueue[i].voteID,
+                requestQueue[i].generator,
+                requestQueue[i].dataHash,
+                requestQueue[i].dataProof,
+                requestQueue[i].volume,
+                requestQueue[i].amountProof,
+                requestQueue[i].tokenUri
+            );
+        }
     }
 
     /**
@@ -178,5 +190,38 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
             LibIssuer.checkAllowedTransfer(ids[i], to);
         }
         _safeTransferBatch(msg.sender, from, to, ids, amounts, data);
+    }
+
+    /**
+     * @notice _issueCertificate - Internal function to mint a new certificate
+     * @param voteID - The voteID of the certified data set
+     * @param generator - The address of the generator of the certified data set
+     * @param dataHash - The merkleRoot hash of the certified data set.
+     * @param dataProof - The proofs path to verify that dataHash is part of the consensus merkleTree
+     * @param volume - The volume of the certified data set
+     * @param amountProof - The proofs path to verify that volume is part of the consensus merkleTree
+     * @param tokenUri - The URI of the certificate metadata
+     * @dev The function will revert if the generator address is the zero address
+     */
+    function _issueCertificate(
+        bytes32 voteID,
+        address generator,
+        bytes32 dataHash,
+        bytes32[] memory dataProof,
+        uint256 volume,
+        bytes32[] memory amountProof,
+        string memory tokenUri
+    ) private {
+        LibIssuer.preventZeroAddressReceiver(generator);
+        LibIssuer.preventAlreadyCertified(dataHash);
+        LibVoting.checkVoteInConsensus(voteID, dataHash, dataProof);
+        LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
+        uint256 nextCertificateId = LibIssuer.incrementAndGetProofIndex();
+        uint256 volumeInWei = volume * 1 ether;
+        LibIssuer.registerProof(dataHash, generator, volumeInWei, nextCertificateId, voteID);
+
+        _safeMint(generator, nextCertificateId, volumeInWei, "");
+        _setTokenURI(nextCertificateId, tokenUri);
+        emit ProofMinted(nextCertificateId, volumeInWei, generator);
     }
 }
