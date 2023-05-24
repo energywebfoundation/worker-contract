@@ -149,7 +149,7 @@ contract Greenproof is SolidStateDiamond {
         }
 
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
-        LibIssuer.init(votingConfig.revocablePeriod);
+        LibIssuer.init(votingConfig.revocablePeriod, diamondConfig.batchQueueSize);
         LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         OwnableStorage.layout().owner = diamondConfig.contractOwner;
 

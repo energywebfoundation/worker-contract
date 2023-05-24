@@ -526,6 +526,60 @@ describe("IssuerFacet", function () {
             .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
       }
     });
+
+    it("should revert certificate batch issuance when non issuer requests batch issuance", async () => {
+      const { issuerContract, receiver, votingContract, worker } = await loadFixture(initFixture);
+      const nonIssuer = wallets[ 0 ];
+      const batchQueue = [];
+      const dataProofs = [];
+      const nbIssuanceRequests = 20;
+
+      for (let i = 0; i < nbIssuanceRequests; i++) {
+        dataProofs.push(generateProofData({ volume: i + 1 }));
+        await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
+        batchQueue.push({
+          volume: dataProofs[i].volume,
+          voteID: dataProofs[i].inputHash,
+          dataHash: dataProofs[i].volumeRootHash,
+          dataProof: dataProofs[i].matchResultProof,
+          amountProof: dataProofs[i].volumeProof,
+          generator: receiver.address,
+          tokenUri: "",
+        });
+      }
+
+      await expect(
+        issuerContract
+          .connect(nonIssuer).requestBatchIssuance(batchQueue)
+      ).to.be.revertedWith(`NotEnrolledIssuer("${nonIssuer.address}")`);
+    });
+    
+    it("should revert certificate batch issuance when batch queue size exceeds the limit", async () => {
+      const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+      const batchQueue = [];
+      const dataProofs = [];
+      const maxQueueSize = 20;
+      const nbIssuanceRequests = 21;
+
+      for (let i = 0; i < nbIssuanceRequests; i++) {
+        dataProofs.push(generateProofData({ volume: i + 1 }));
+        await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
+        batchQueue.push({
+          volume: dataProofs[i].volume,
+          voteID: dataProofs[i].inputHash,
+          dataHash: dataProofs[i].volumeRootHash,
+          dataProof: dataProofs[i].matchResultProof,
+          amountProof: dataProofs[i].volumeProof,
+          generator: receiver.address,
+          tokenUri: "",
+        });
+      }
+
+      await expect(
+        issuerContract
+          .connect(issuer).requestBatchIssuance(batchQueue)
+      ).to.be.revertedWith(`BatchQueueSizeExceeded(${nbIssuanceRequests}, ${maxQueueSize})`);
+    });
   });
 
   describe("Proof transfers tests", () => {

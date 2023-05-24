@@ -124,6 +124,8 @@ library LibIssuer {
      */
     error NotOwnerOrApproved(address operator, address owner);
 
+    error BatchQueueSizeExceeded(uint256 batchQueueSize, uint256 batchQueueSizeLimit);
+
     /**
      * @dev Tracking the storage position of the issuerStorage
      */
@@ -133,8 +135,9 @@ library LibIssuer {
      * @dev Initialize the contract with a revocable period for certificates
      * @param revocablePeriod period in which the certificates can be revoked
      */
-    function init(uint256 revocablePeriod) internal {
+    function init(uint256 revocablePeriod, uint256 batchQueueSize) internal {
         getStorage().revocablePeriod = revocablePeriod;
+        getStorage().batchQueueSize = batchQueueSize;
     }
 
     /**
@@ -342,6 +345,18 @@ library LibIssuer {
     function checkAllowedTransfer(uint256 certificateID, address receiver) internal view {
         if (isCertificateRevoked(certificateID) && receiver != getStorage().certificates[certificateID].generator) {
             revert NotAllowedTransfer(certificateID, msg.sender, receiver);
+        }
+    }
+
+    /**
+     * @notice checkBatchQueueSize - Checks if the batch queue size is not exceeded
+     * @dev reverts if the batch queue size is exceeded
+     * @param queueSize size of the batch queue to check
+     */
+    function checkBatchQueueSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchQueueSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
         }
     }
 

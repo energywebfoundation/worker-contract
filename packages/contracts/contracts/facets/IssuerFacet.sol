@@ -63,6 +63,7 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
      */
     function requestBatchIssuance(IssuanceRequest[] memory requestQueue) external onlyIssuer {
         uint256 queueLength = requestQueue.length;
+        LibIssuer.checkBatchQueueSize(queueLength);
         for (uint256 i; i < queueLength; i++) {
             _issueCertificate(
                 requestQueue[i].voteID,
