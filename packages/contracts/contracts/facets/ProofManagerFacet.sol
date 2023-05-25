@@ -43,6 +43,14 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         _claimProofFor(certificateID, owner, amount);
     }
 
+    function claimBatchProofsFor(DelegetatedClaimRequest[] memory claimRequests) external onlyClaimer {
+        uint256 nbRequests = claimRequests.length;
+        LibIssuer.checkBatchQueueSize(nbRequests);
+        for (uint256 i; i < nbRequests; i++) {
+            _claimProofFor(claimRequests[i].certificateID, claimRequests[i].certificateOwner, claimRequests[i].amount);
+        }
+    }
+
     /**
      * @notice claimProof - Claims a precise amount of certificate
      * @param certificateID - ID of the certificate to claim
@@ -50,6 +58,20 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      */
     function claimProof(uint256 certificateID, uint256 amount) external {
         _claimProofFor(certificateID, msg.sender, amount);
+    }
+
+    /**
+     * @notice claimBatchProofs - Claims a batch of certificates
+     * @dev This function reverts if any claimedProof is already revoked
+     * @dev This function reverts if any claimed amount is superior than the claimer balance
+     * @param claimRequests - list of certificateIDs and amounts to claim
+     */
+    function claimBatchProofs(ClaimRequest[] memory claimRequests) external {
+        uint256 nbRequests = claimRequests.length;
+        LibIssuer.checkBatchQueueSize(nbRequests);
+        for (uint256 i; i < nbRequests; i++) {
+            _claimProofFor(claimRequests[i].certificateID, msg.sender, claimRequests[i].amount);
+        }
     }
 
     /**

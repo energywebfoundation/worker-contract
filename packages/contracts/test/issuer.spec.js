@@ -495,210 +495,6 @@ describe("IssuerFacet", function () {
     });
   });
 
-  describe("Batch operation tests", () => {
-    describe("\t- Issuance", () => {
-      it("should correctly mint a batch of certificates", async () => {
-        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
-        const batchQueue = [];
-        const dataProofs = [];
-        const nbIssuanceRequests = 20;
-  
-        for (let i = 0; i < nbIssuanceRequests; i++) {
-          dataProofs.push(generateProofData({ volume: i + 1 }));
-          await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
-          batchQueue.push({
-            volume: dataProofs[i].volume,
-            voteID: dataProofs[i].inputHash,
-            dataHash: dataProofs[i].volumeRootHash,
-            dataProof: dataProofs[i].matchResultProof,
-            amountProof: dataProofs[i].volumeProof,
-            generator: receiver.address,
-            tokenUri: "",
-          });
-        }
-  
-        const batchTx = await issuerContract
-          .connect(issuer)
-          .requestBatchIssuance(batchQueue);
-        
-        for (let i = 0; i < nbIssuanceRequests; i++) {
-          await expect(batchTx)
-              .to.emit(issuerContract, "ProofMinted")
-              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
-        }
-      });
-  
-      it("should revert certificate batch issuance when non issuer requests batch issuance", async () => {
-        const { issuerContract, receiver, votingContract, worker } = await loadFixture(initFixture);
-        const nonIssuer = wallets[ 0 ];
-        const batchQueue = [];
-        const dataProofs = [];
-        const nbIssuanceRequests = 20;
-  
-        for (let i = 0; i < nbIssuanceRequests; i++) {
-          dataProofs.push(generateProofData({ volume: i + 1 }));
-          await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
-          batchQueue.push({
-            volume: dataProofs[i].volume,
-            voteID: dataProofs[i].inputHash,
-            dataHash: dataProofs[i].volumeRootHash,
-            dataProof: dataProofs[i].matchResultProof,
-            amountProof: dataProofs[i].volumeProof,
-            generator: receiver.address,
-            tokenUri: "",
-          });
-        }
-  
-        await expect(
-          issuerContract
-            .connect(nonIssuer).requestBatchIssuance(batchQueue)
-        ).to.be.revertedWith(`NotEnrolledIssuer("${nonIssuer.address}")`);
-      });
-      
-      it("should revert certificate batch issuance when batch queue size exceeds the limit", async () => {
-        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
-        const batchQueue = [];
-        const dataProofs = [];
-        const maxQueueSize = 20;
-        const nbIssuanceRequests = 21;
-  
-        for (let i = 0; i < nbIssuanceRequests; i++) {
-          dataProofs.push(generateProofData({ volume: i + 1 }));
-          await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
-          batchQueue.push({
-            volume: dataProofs[i].volume,
-            voteID: dataProofs[i].inputHash,
-            dataHash: dataProofs[i].volumeRootHash,
-            dataProof: dataProofs[i].matchResultProof,
-            amountProof: dataProofs[i].volumeProof,
-            generator: receiver.address,
-            tokenUri: "",
-          });
-        }
-  
-        await expect(
-          issuerContract
-            .connect(issuer).requestBatchIssuance(batchQueue)
-        ).to.be.revertedWith(`BatchQueueSizeExceeded(${nbIssuanceRequests}, ${maxQueueSize})`);
-      });
-    });
-
-    describe("\t- Transfer", () => {
-      it("should correctly transfer a simple batch of certificates", async () => {
-        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
-        const nbIssuanceRequests = 20;
-
-        const { batchQueue, dataProofs } = await prepareBatchIssuance(nbIssuanceRequests, votingContract, worker);
-  
-        const batchTx = await issuerContract
-          .connect(issuer)
-          .requestBatchIssuance(batchQueue);
-        
-        for (let i = 0; i < nbIssuanceRequests; i++) {
-          await expect(batchTx)
-              .to.emit(issuerContract, "ProofMinted")
-              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
-        }
-
-        const { batchTransfers } = await prepareSimpleBatchTransfer(nbIssuanceRequests, receiver, dataProofs);
-        
-        const batchTransferTx = await issuerContract
-          .connect(receiver)
-          .simpleBatchTransfer(batchTransfers);
-        
-        for(let i = 0; i < nbIssuanceRequests; i++) {
-          await expect(batchTransferTx)
-            .to.emit(issuerContract, "TransferSingle")
-            .withArgs(receiver.address, receiver.address, wallets[i % 5].address, i + 1, parseEther(dataProofs[i].volume.toString()));
-        }
-      });
-
-      it("should revert simple batch transfer of certificates hen batch queue size exceeds the limit", async () => {
-        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
-        const maxQueueSize = 20;
-
-        const { batchQueue, dataProofs } = await prepareBatchIssuance(maxQueueSize, votingContract, worker);
-  
-        const batchTx = await issuerContract
-          .connect(issuer)
-          .requestBatchIssuance(batchQueue);
-        
-        for (let i = 0; i < maxQueueSize; i++) {
-          await expect(batchTx)
-              .to.emit(issuerContract, "ProofMinted")
-              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
-        }
-
-        const { batchTransfers } = await prepareSimpleBatchTransfer(maxQueueSize, receiver, dataProofs);
-        
-        const oversizedBatchTransfers = [...batchTransfers, batchTransfers[0]]
-        await expect(
-          issuerContract
-          .connect(receiver)
-            .simpleBatchTransfer(oversizedBatchTransfers)
-        ).to.be.revertedWith(`BatchQueueSizeExceeded(${maxQueueSize + 1}, ${maxQueueSize})`);
-        
-      });
-
-      it("should correctly transfer a multiple batch of certificates", async () => {
-        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
-        const nbIssuanceRequests = 20;
-
-        const { batchQueue, dataProofs } = await prepareBatchIssuance(nbIssuanceRequests, votingContract, worker);
-  
-        const batchTx = await issuerContract
-          .connect(issuer)
-          .requestBatchIssuance(batchQueue);
-        
-        for (let i = 0; i < nbIssuanceRequests; i++) {
-          await expect(batchTx)
-              .to.emit(issuerContract, "ProofMinted")
-              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
-        }
-
-        const { batchTransfers } = await prepareMultipleBatchTransfer(nbIssuanceRequests, receiver, dataProofs);
-        
-        const batchTransferTx = await issuerContract
-          .connect(receiver)
-          .multipleBatchTransfer(batchTransfers);
-        
-        for (let i = 0; i < nbIssuanceRequests; i++) {
-          const halfOfAmount = parseEther(dataProofs[ i ].volume.toString()).div(2);
-          await expect(batchTransferTx)
-            .to.emit(issuerContract, "TransferBatch")
-            .withArgs(receiver.address, receiver.address, wallets[i % 5].address, [i + 1, i + 1], [halfOfAmount, halfOfAmount]);
-        }
-      });
-
-      it("should revert simple batch transfer of certificates hen batch queue size exceeds the limit", async () => {
-        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
-        const maxQueueSize = 20;
-
-        const { batchQueue, dataProofs } = await prepareBatchIssuance(maxQueueSize, votingContract, worker);
-  
-        const batchTx = await issuerContract
-          .connect(issuer)
-          .requestBatchIssuance(batchQueue);
-        
-        for (let i = 0; i < maxQueueSize; i++) {
-          await expect(batchTx)
-              .to.emit(issuerContract, "ProofMinted")
-              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
-        }
-
-        const { batchTransfers } = await prepareMultipleBatchTransfer(maxQueueSize, receiver, dataProofs);
-        
-        const oversizedBatchTransfers = [...batchTransfers, batchTransfers[0]]
-        await expect(
-          issuerContract
-          .connect(receiver)
-            .multipleBatchTransfer(oversizedBatchTransfers)
-        ).to.be.revertedWith(`BatchQueueSizeExceeded(${maxQueueSize + 1}, ${maxQueueSize})`);
-        
-      });
-    });
-  });
-
   describe("Proof transfers tests", () => {
     it("should revert when one tries to transfer token ID = 0", async () => {
       const { issuerContract } = await loadFixture(initFixture);
@@ -2168,6 +1964,359 @@ describe("IssuerFacet", function () {
       tx = await proofManagerContract.connect(revoker).revokeProof(safcParentID);
       await expect(tx).to.emit(proofManagerContract, "ProofRevoked");
       await expect(tx).to.not.emit(metatokenContract, "MetaTokenRevoked");
+    });
+  });
+
+  describe("Batch operation tests", () => {
+    describe("\t- Issuance", () => {
+      it("should correctly mint a batch of certificates", async () => {
+        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+        const batchQueue = [];
+        const dataProofs = [];
+        const nbIssuanceRequests = 20;
+  
+        for (let i = 0; i < nbIssuanceRequests; i++) {
+          dataProofs.push(generateProofData({ volume: i + 1 }));
+          await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
+          batchQueue.push({
+            volume: dataProofs[i].volume,
+            voteID: dataProofs[i].inputHash,
+            dataHash: dataProofs[i].volumeRootHash,
+            dataProof: dataProofs[i].matchResultProof,
+            amountProof: dataProofs[i].volumeProof,
+            generator: receiver.address,
+            tokenUri: "",
+          });
+        }
+  
+        const batchTx = await issuerContract
+          .connect(issuer)
+          .requestBatchIssuance(batchQueue);
+        
+        for (let i = 0; i < nbIssuanceRequests; i++) {
+          await expect(batchTx)
+              .to.emit(issuerContract, "ProofMinted")
+              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
+        }
+      });
+  
+      it("should revert certificate batch issuance when non issuer requests batch issuance", async () => {
+        const { issuerContract, receiver, votingContract, worker } = await loadFixture(initFixture);
+        const nonIssuer = wallets[ 0 ];
+        const batchQueue = [];
+        const dataProofs = [];
+        const nbIssuanceRequests = 20;
+  
+        for (let i = 0; i < nbIssuanceRequests; i++) {
+          dataProofs.push(generateProofData({ volume: i + 1 }));
+          await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
+          batchQueue.push({
+            volume: dataProofs[i].volume,
+            voteID: dataProofs[i].inputHash,
+            dataHash: dataProofs[i].volumeRootHash,
+            dataProof: dataProofs[i].matchResultProof,
+            amountProof: dataProofs[i].volumeProof,
+            generator: receiver.address,
+            tokenUri: "",
+          });
+        }
+  
+        await expect(
+          issuerContract
+            .connect(nonIssuer).requestBatchIssuance(batchQueue)
+        ).to.be.revertedWith(`NotEnrolledIssuer("${nonIssuer.address}")`);
+      });
+      
+      it("should revert certificate batch issuance when batch queue size exceeds the limit", async () => {
+        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+        const batchQueue = [];
+        const dataProofs = [];
+        const maxQueueSize = 20;
+        const nbIssuanceRequests = 21;
+  
+        for (let i = 0; i < nbIssuanceRequests; i++) {
+          dataProofs.push(generateProofData({ volume: i + 1 }));
+          await votingContract.connect(worker).vote(dataProofs[ i ].inputHash, dataProofs[ i ].matchResult);
+          batchQueue.push({
+            volume: dataProofs[i].volume,
+            voteID: dataProofs[i].inputHash,
+            dataHash: dataProofs[i].volumeRootHash,
+            dataProof: dataProofs[i].matchResultProof,
+            amountProof: dataProofs[i].volumeProof,
+            generator: receiver.address,
+            tokenUri: "",
+          });
+        }
+  
+        await expect(
+          issuerContract
+            .connect(issuer).requestBatchIssuance(batchQueue)
+        ).to.be.revertedWith(`BatchQueueSizeExceeded(${nbIssuanceRequests}, ${maxQueueSize})`);
+      });
+    });
+
+    describe("\t- Transfer", () => {
+      it("should correctly transfer a simple batch of certificates", async () => {
+        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+        const nbIssuanceRequests = 20;
+
+        const { batchQueue, dataProofs } = await prepareBatchIssuance(nbIssuanceRequests, votingContract, worker);
+  
+        const batchTx = await issuerContract
+          .connect(issuer)
+          .requestBatchIssuance(batchQueue);
+        
+        for (let i = 0; i < nbIssuanceRequests; i++) {
+          await expect(batchTx)
+              .to.emit(issuerContract, "ProofMinted")
+              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
+        }
+
+        const { batchTransfers } = await prepareSimpleBatchTransfer(nbIssuanceRequests, receiver, dataProofs);
+        
+        const batchTransferTx = await issuerContract
+          .connect(receiver)
+          .simpleBatchTransfer(batchTransfers);
+        
+        for(let i = 0; i < nbIssuanceRequests; i++) {
+          await expect(batchTransferTx)
+            .to.emit(issuerContract, "TransferSingle")
+            .withArgs(receiver.address, receiver.address, wallets[i % 5].address, i + 1, parseEther(dataProofs[i].volume.toString()));
+        }
+      });
+
+      it("should revert simple batch transfer of certificates hen batch queue size exceeds the limit", async () => {
+        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+        const maxQueueSize = 20;
+
+        const { batchQueue, dataProofs } = await prepareBatchIssuance(maxQueueSize, votingContract, worker);
+  
+        const batchTx = await issuerContract
+          .connect(issuer)
+          .requestBatchIssuance(batchQueue);
+        
+        for (let i = 0; i < maxQueueSize; i++) {
+          await expect(batchTx)
+              .to.emit(issuerContract, "ProofMinted")
+              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
+        }
+
+        const { batchTransfers } = await prepareSimpleBatchTransfer(maxQueueSize, receiver, dataProofs);
+        
+        const oversizedBatchTransfers = [...batchTransfers, batchTransfers[0]]
+        await expect(
+          issuerContract
+          .connect(receiver)
+            .simpleBatchTransfer(oversizedBatchTransfers)
+        ).to.be.revertedWith(`BatchQueueSizeExceeded(${maxQueueSize + 1}, ${maxQueueSize})`);
+        
+      });
+
+      it("should correctly transfer a multiple batch of certificates", async () => {
+        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+        const nbIssuanceRequests = 20;
+
+        const { batchQueue, dataProofs } = await prepareBatchIssuance(nbIssuanceRequests, votingContract, worker);
+  
+        const batchTx = await issuerContract
+          .connect(issuer)
+          .requestBatchIssuance(batchQueue);
+        
+        for (let i = 0; i < nbIssuanceRequests; i++) {
+          await expect(batchTx)
+              .to.emit(issuerContract, "ProofMinted")
+              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
+        }
+
+        const { batchTransfers } = await prepareMultipleBatchTransfer(nbIssuanceRequests, receiver, dataProofs);
+        
+        const batchTransferTx = await issuerContract
+          .connect(receiver)
+          .multipleBatchTransfer(batchTransfers);
+        
+        for (let i = 0; i < nbIssuanceRequests; i++) {
+          const halfOfAmount = parseEther(dataProofs[ i ].volume.toString()).div(2);
+          await expect(batchTransferTx)
+            .to.emit(issuerContract, "TransferBatch")
+            .withArgs(receiver.address, receiver.address, wallets[i % 5].address, [i + 1, i + 1], [halfOfAmount, halfOfAmount]);
+        }
+      });
+
+      it("should revert simple batch transfer of certificates when batch queue size exceeds the limit", async () => {
+        const { issuerContract, receiver, votingContract, worker, issuer } = await loadFixture(initFixture);
+        const maxQueueSize = 20;
+
+        const { batchQueue, dataProofs } = await prepareBatchIssuance(maxQueueSize, votingContract, worker);
+  
+        const batchTx = await issuerContract
+          .connect(issuer)
+          .requestBatchIssuance(batchQueue);
+        
+        for (let i = 0; i < maxQueueSize; i++) {
+          await expect(batchTx)
+              .to.emit(issuerContract, "ProofMinted")
+              .withArgs(i + 1,  parseEther(dataProofs[i].volume.toString()), receiver.address);
+        }
+
+        const { batchTransfers } = await prepareMultipleBatchTransfer(maxQueueSize, receiver, dataProofs);
+        
+        const oversizedBatchTransfers = [...batchTransfers, batchTransfers[0]]
+        await expect(
+          issuerContract
+          .connect(receiver)
+            .multipleBatchTransfer(oversizedBatchTransfers)
+        ).to.be.revertedWith(`BatchQueueSizeExceeded(${maxQueueSize + 1}, ${maxQueueSize})`);
+        
+      });
+    });
+
+    describe("\t- Claiming", () => {
+      it("should revert if a user tries to claim a batch of non owned certificates", async () => {
+        const { proofData, worker, receiver, proofManagerContract, votingContract } = await loadFixture(initFixture);
+         const proofData2 = generateProofData({ volume: 2 });
+         
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+         
+         const claimRequests = [
+           { amount: parseEther("1"), certificateID: 1},
+           { amount: parseEther("1"), certificateID: 2},
+         ]
+
+        await expect(
+          proofManagerContract
+            .connect(receiver)
+            .claimBatchProofs(claimRequests)
+        ).to.be.revertedWith(`InsufficientBalance("${receiver.address}", 1, ${parseEther("1")})`);
+      });
+
+      it("should revert if batch of claims exceeds the size limit ", async () => {
+        const { worker, receiver, claimer, proofManagerContract, votingContract } = await loadFixture(initFixture);
+        const maxbatchSize = 20;
+        const oversizedBatch = [];
+         
+        for (let i = 0; i < maxbatchSize + 1; i++) {
+          const volume = i + 1;
+          const certificateID = i + 1;
+
+          const proofData = generateProofData({volume});
+          await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+          await mintProof(certificateID, proofData, receiver);
+          oversizedBatch.push(
+            {
+              amount: parseEther((volume).toString()),
+              certificateID
+            })
+        }
+
+        await expect(
+          proofManagerContract
+          .connect(claimer)
+            .claimBatchProofs(oversizedBatch)
+          ).to.be.revertedWith(`BatchQueueSizeExceeded(${oversizedBatch.length}, ${maxbatchSize})`);
+        
+      });
+
+      it("should claim a batch of proofs", async () => {
+        const { proofData, worker, receiver, proofManagerContract, votingContract } = await loadFixture(initFixture);
+         const proofData2 = generateProofData({ volume: 2 });
+         
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+
+       
+        await mintProof(1, proofData, receiver);
+        await mintProof(2, proofData2, receiver);
+         
+         const claimRequests = [
+           { amount: parseEther("1"), certificateID: 1 },
+           { amount: parseEther("2"), certificateID: 2 },
+         ]
+
+        const batchClaimTx = await proofManagerContract
+          .connect(receiver)
+          .claimBatchProofs(claimRequests);
+        
+        const timestamp = await getTimeStamp(batchClaimTx);
+        
+        await expect(batchClaimTx).to.emit(proofManagerContract, "ProofClaimed").withArgs(1, receiver.address, timestamp, claimRequests[0].amount);
+        await expect(batchClaimTx).to.emit(proofManagerContract, "ProofClaimed").withArgs(2, receiver.address, timestamp, claimRequests[1].amount);
+      });
+
+      it("should revert if non claimer tries to delegately claim a batch of proofs", async () => {
+        const { proofData, worker, receiver, proofManagerContract, votingContract } = await loadFixture(initFixture);
+         const proofData2 = generateProofData({ volume: 2 });
+         
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+
+        const notClaimer = worker;
+       
+        await mintProof(1, proofData, receiver);
+        await mintProof(2, proofData2, receiver);
+         
+         const claimRequests = [
+           { amount: parseEther("1"), certificateID: 1, certificateOwner: receiver.address },
+           { amount: parseEther("1"), certificateID: 2, certificateOwner: receiver.address },
+         ]
+
+        await expect(
+          proofManagerContract
+            .connect(notClaimer)
+            .claimBatchProofsFor(claimRequests)
+        ).to.be.revertedWith(`NotEnrolledClaimer("${notClaimer.address}")`);
+      });
+
+      it("should revert if the delegated claim queue size exceeds the limit ", async () => {
+        const { proofData, worker, receiver, claimer, proofManagerContract, votingContract } = await loadFixture(initFixture);
+        const proofData2 = generateProofData({ volume: 2 });
+        const maxbatchSize = 20;
+        const oversizedBatch = [];
+         
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+
+       
+        await mintProof(1, proofData, receiver);
+        await mintProof(2, proofData2, receiver);
+         
+        for (let i = 0; i < maxbatchSize + 1; i++) {
+          oversizedBatch.push({ amount: parseEther("1"), certificateID: i + 1, certificateOwner: receiver.address })
+        }
+
+        await expect(
+          proofManagerContract
+          .connect(claimer)
+            .claimBatchProofsFor(oversizedBatch)
+          ).to.be.revertedWith(`BatchQueueSizeExceeded(${oversizedBatch.length}, ${maxbatchSize})`);
+        
+      });
+
+      it("should delegately claim a batch of proofs", async () => {
+        const { proofData, worker, receiver, claimer, proofManagerContract, votingContract } = await loadFixture(initFixture);
+         const proofData2 = generateProofData({ volume: 2 });
+         
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+
+       
+        await mintProof(1, proofData, receiver);
+        await mintProof(2, proofData2, receiver);
+         
+         const claimRequests = [
+           { amount: parseEther("1"), certificateID: 1, certificateOwner: receiver.address },
+           { amount: parseEther("2"), certificateID: 2, certificateOwner: receiver.address },
+         ]
+
+        const batchClaimTx = await proofManagerContract
+          .connect(claimer)
+          .claimBatchProofsFor(claimRequests);
+        
+        const timestamp = await getTimeStamp(batchClaimTx);
+        
+        await expect(batchClaimTx).to.emit(proofManagerContract, "ProofClaimed").withArgs(1, receiver.address, timestamp, claimRequests[0].amount);
+        await expect(batchClaimTx).to.emit(proofManagerContract, "ProofClaimed").withArgs(2, receiver.address, timestamp, claimRequests[1].amount);
+      });
     });
   });
 

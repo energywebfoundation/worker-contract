@@ -10,6 +10,28 @@ import {IProofIssuer} from "./IProofIssuer.sol";
  */
 interface IProofManager {
     /**
+     * @notice ClaimRequest - Struct representing a request for certificate claim
+     * @custom:field amount - Amount of tokens to be claimed
+     * @custom:field certificateID - ID of the certificate
+     */
+    struct ClaimRequest {
+        uint256 amount;
+        uint256 certificateID;
+    }
+
+    /**
+     * @notice DelegetatedClaimRequest - Struct representing a request for certificate claim on behalf of an owner
+     * @custom:field amount - Amount of tokens to be claimed
+     * @custom:field certificateID - ID of the certificate
+     * @custom:field certificateOwner - Address of the certificate owner
+     */
+    struct DelegetatedClaimRequest {
+        uint256 amount;
+        uint256 certificateID;
+        address certificateOwner;
+    }
+
+    /**
      * @notice ProofRevoked - Event emitted when a certificate is revoked
      * @param certificateID - ID of the revoked certificate
      */
@@ -40,6 +62,14 @@ interface IProofManager {
      * @param amount - Amount of energy to claim
      */
     function claimProof(uint256 certificateID, uint256 amount) external;
+
+    /**
+     * @notice claimBatchProofs - Claims a batch of certificates
+     * @dev This function reverts if any claimedProof is already revoked
+     * @dev This function reverts if any claimed amount is superior than the claimer balance
+     * @param claimRequests - list of certificateIDs and amounts to claim
+     */
+    function claimBatchProofs(ClaimRequest[] memory claimRequests) external;
 
     /**
      * @notice claimProofFor - Claims a green certificate on behalf of an owner
