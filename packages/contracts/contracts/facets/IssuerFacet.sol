@@ -56,23 +56,59 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
 
     /**
      * @notice `requestBatchIssuance` - An authorized issuer requests issuance of a bacth of certificates.
-     * @param requestQueue - An array of IssuanceRequest struct containing the data needed to issue a certificate.
+     * @param issuanceRequestsList - An array of IssuanceRequest struct containing the data needed to issue a certificate.
      * @dev This function is used to issue a batch of certificates after a consensus is reached.
      * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
      * @dev The generator address can not be the zero address
      */
-    function requestBatchIssuance(IssuanceRequest[] memory requestQueue) external onlyIssuer {
-        uint256 queueLength = requestQueue.length;
-        LibIssuer.checkBatchQueueSize(queueLength);
-        for (uint256 i; i < queueLength; i++) {
+    function requestBatchIssuance(IssuanceRequest[] memory issuanceRequestsList) external onlyIssuer {
+        uint256 listSize = issuanceRequestsList.length;
+        LibIssuer.checkBatchQueueSize(listSize);
+        for (uint256 i; i < listSize; i++) {
             _issueCertificate(
-                requestQueue[i].voteID,
-                requestQueue[i].generator,
-                requestQueue[i].dataHash,
-                requestQueue[i].dataProof,
-                requestQueue[i].volume,
-                requestQueue[i].amountProof,
-                requestQueue[i].tokenUri
+                issuanceRequestsList[i].voteID,
+                issuanceRequestsList[i].generator,
+                issuanceRequestsList[i].dataHash,
+                issuanceRequestsList[i].dataProof,
+                issuanceRequestsList[i].volume,
+                issuanceRequestsList[i].amountProof,
+                issuanceRequestsList[i].tokenUri
+            );
+        }
+    }
+
+    /**
+     * @notice `simpleBatchTransfer` - An authorized operator requests transfer of a bacth of certificates.
+     * @param transferRequestsList - An array of TransferRequest struct containing the data needed to transfer one certificate for each request.
+     */
+    function simpleBatchTransfer(TransferRequest[] memory transferRequestsList) external {
+        uint256 listSize = transferRequestsList.length;
+        LibIssuer.checkBatchQueueSize(listSize);
+        for (uint256 i; i < listSize; i++) {
+            safeTransferFrom(
+                transferRequestsList[i].sender,
+                transferRequestsList[i].recipient,
+                transferRequestsList[i].certificateID,
+                transferRequestsList[i].amount,
+                transferRequestsList[i].data
+            );
+        }
+    }
+
+    /**
+     * @notice `multipleBatchTransfer` - An authorized operator requests transfer of multiple batches of certificates.
+     * @param transferBatchRequests - An array of TransferBatchRequest struct containing the data needed to transfer multiple certificates for each request.
+     */
+    function multipleBatchTransfer(TransferBatchRequest[] memory transferBatchRequests) external {
+        uint256 listSize = transferBatchRequests.length;
+        LibIssuer.checkBatchQueueSize(listSize);
+        for (uint256 i; i < listSize; i++) {
+            safeBatchTransferFrom(
+                transferBatchRequests[i].sender,
+                transferBatchRequests[i].recipient,
+                transferBatchRequests[i].certificateIDs,
+                transferBatchRequests[i].amounts,
+                transferBatchRequests[i].data
             );
         }
     }

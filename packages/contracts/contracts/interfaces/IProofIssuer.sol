@@ -46,6 +46,38 @@ interface IProofIssuer {
     }
 
     /**
+     * @notice TransferRequest - Struct representing a request for certificate transfer
+     * @custom:field sender - Address of the sender of the certificate
+     * @custom:field recipient - Address of the recipient of the certificate
+     * @custom:field certificateID - ID of the certificate
+     * @custom:field amount - Amount of tokens to be transferred
+     * @custom:field data - Data payload to be passed to the transaction
+     */
+    struct TransferRequest {
+        address sender;
+        address recipient;
+        uint256 certificateID;
+        uint256 amount;
+        bytes data;
+    }
+
+    /**
+     * @notice TransferBatchRequest - Struct representing a request for certificate batch transfer
+     * @custom:field sender - Address of the sender of the certificate
+     * @custom:field recipient - Address of the recipient of the certificate
+     * @custom:field certificateIDs - IDs of all certificates to transfer
+     * @custom:field amounts - Amounts of certificate tokens to be transferred
+     * @custom:field data - Data payload to be passed to the transaction
+     */
+    struct TransferBatchRequest {
+        address sender;
+        address recipient;
+        uint256[] certificateIDs;
+        uint256[] amounts;
+        bytes data;
+    }
+
+    /**
      *  @notice ProofMinted - Event emitted when a proof is minted
      *  @param certificateID - unique identifier for the proof
      *  @param volume - certified volume
@@ -99,6 +131,18 @@ interface IProofIssuer {
      * @dev The generator address can not be the zero address
      */
     function requestBatchIssuance(IssuanceRequest[] memory requestQueue) external;
+
+    /**
+     * @notice `simpleBatchTransfer` - An authorized operator requests transfer of a single batch of certificates.
+     * @param transferRequestsList - An array of TransferRequest struct containing the data needed to transfer one certificate for each request.
+     */
+    function simpleBatchTransfer(TransferRequest[] memory transferRequestsList) external;
+
+    /**
+     * @notice `multipleBatchTransfer` - An authorized operator requests transfer of multiple batches of certificates.
+     * @param transferBatchRequests - An array of TransferBatchRequest struct containing the data needed to transfer multiple certificates for each request.
+     */
+    function multipleBatchTransfer(TransferBatchRequest[] memory transferBatchRequests) external;
 
     /**
      * @notice `discloseData` - Publicly exposes specific a information of the certified data.
