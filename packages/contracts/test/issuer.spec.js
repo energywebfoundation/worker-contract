@@ -2318,6 +2318,34 @@ describe("IssuerFacet", function () {
         await expect(batchClaimTx).to.emit(proofManagerContract, "ProofClaimed").withArgs(2, receiver.address, timestamp, claimRequests[1].amount);
       });
     });
+
+    describe("\t- Proofs Inspection", () => {
+      it("allows to get the batch of proof IDs by data hashes", async () => {
+        const { proofData, proofManagerContract, receiver, worker, votingContract } = await loadFixture(initFixture);
+        const certificateID1 = 1;
+        const certificateID2 = 2;
+        const proofData2 = generateProofData({ volume: 2 });
+
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await mintProof(certificateID1, proofData, receiver);
+        
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+        await mintProof(certificateID2, proofData2, receiver);
+
+        const dataHashes = [proofData.volumeRootHash, proofData2.volumeRootHash];
+
+        const certificateIDsByHashes = await proofManagerContract
+          .connect(issuer)
+          .getProofIDsByDataHashes(dataHashes);
+
+        console.log("certificateIDsByHashes", certificateIDsByHashes);
+
+        expect(BigNumber.from(certificateIDsByHashes[0]['certificateID']).toNumber()).to.equal(certificateID1);
+        expect(certificateIDsByHashes[0]['dataHash']).to.equal(proofData.volumeRootHash);
+        expect(BigNumber.from(certificateIDsByHashes[1]['certificateID']).toNumber()).to.equal(certificateID2);
+        expect(certificateIDsByHashes[1]['dataHash']).to.equal(proofData2.volumeRootHash);
+      });
+    });
   });
 
   const claimVolumeFor = async (minter, claimedVolume) => {

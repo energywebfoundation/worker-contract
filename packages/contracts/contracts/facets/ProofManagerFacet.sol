@@ -109,6 +109,20 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     /**
+     * @notice getProofIDsByDataHashes - Retrieves the IDs of a batch of green certificates by their data hashes
+     * @param dataHashes - Data hashes of the certificates
+     * @return dataToCertificateIds - The list of hashes-certificate IDs mappings
+     */
+    function getProofIDsByDataHashes(bytes32[] memory dataHashes) external view returns (CertifiedData[] memory dataToCertificateIds) {
+        uint256 nbDataHashes = dataHashes.length;
+        dataToCertificateIds = new CertifiedData[](nbDataHashes);
+
+        for (uint256 i; i < nbDataHashes; i++) {
+            dataToCertificateIds[i] = CertifiedData({dataHash: dataHashes[i], certificateID: LibIssuer.getProofIdByDataHash(dataHashes[i])});
+        }
+    }
+
+    /**
      * @notice getProofsOf - Retrieves all certificates of a user
      * @dev This function reverts if the user has no certificates
      * @param userAddress - Address of the user

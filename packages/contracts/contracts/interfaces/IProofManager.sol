@@ -32,6 +32,16 @@ interface IProofManager {
     }
 
     /**
+     * @notice CertifiedData - Struct representing a certified data
+     * @custom:field dataHash - Hash of the certified data
+     * @custom:field certificateID - ID of the certificate
+     */
+    struct CertifiedData {
+        bytes32 dataHash;
+        uint256 certificateID;
+    }
+
+    /**
      * @notice ProofRevoked - Event emitted when a certificate is revoked
      * @param certificateID - ID of the revoked certificate
      */
@@ -96,6 +106,13 @@ interface IProofManager {
      * @return proofId - The certificate ID
      */
     function getProofIdByDataHash(bytes32 dataHash) external view returns (uint256 proofId);
+
+    /**
+     * @notice getProofIDsByDataHashes - Retrieves the IDs of a batch of green certificates by their data hashes
+     * @param dataHashes - Data hashes of the certificates
+     * @return dataToCertificateIds - The list of hashes-certificate IDs mappings
+     */
+    function getProofIDsByDataHashes(bytes32[] memory dataHashes) external view returns (CertifiedData[] memory dataToCertificateIds);
 
     /**
      * @notice getProofsOf - Retrieves all certificates of a user
