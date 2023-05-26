@@ -389,7 +389,7 @@ describe("GreenproofTest", async function () {
 
     it("selectors should be associated to facets correctly -- multiple calls to facetAddress function", async () => {
       const requestProofIssuanceSelector = issuerFacet.interface.getSighash(
-        "requestProofIssuance(bytes32,address,bytes32,bytes32[],uint256,bytes32[],string)"
+        "requestProofIssuance((uint256,bytes32,bytes32,bytes32[],bytes32[],address,string))"
       );
       assert.equal(
         addresses[1],

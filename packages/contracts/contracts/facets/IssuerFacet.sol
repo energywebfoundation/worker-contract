@@ -33,25 +33,18 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
     /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
-     * @param voteID - The identifier of the vote
-     * @param generator - The address of the wallet which will receive the minted certificate tokens (i.e - generator's wallet)
-     * @param dataHash - The merkleRoot hash of the data we are certifying.
-     * @param dataProof - The proofs path to verify that data is part of the vote consensus merkleTree
-     * @param volume - The amount of generated green resource (electricity / organic gas /..) we want to certify
-     * @param amountProof - the proofs path to verify that the amount we want to certify is part of the `dataHash` merkleTree.
-     * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
-     * @dev The generator address can not be the zero address
+     * @param issuanceRequest - An IssuanceRequest struct containing the data needed to issue a certificate.
      */
-    function requestProofIssuance(
-        bytes32 voteID,
-        address generator,
-        bytes32 dataHash,
-        bytes32[] memory dataProof,
-        uint256 volume,
-        bytes32[] memory amountProof,
-        string memory tokenUri
-    ) external onlyIssuer {
-        _issueCertificate(voteID, generator, dataHash, dataProof, volume, amountProof, tokenUri);
+    function requestProofIssuance(IssuanceRequest memory issuanceRequest) external onlyIssuer {
+        _issueCertificate(
+            issuanceRequest.voteID,
+            issuanceRequest.generator,
+            issuanceRequest.dataHash,
+            issuanceRequest.dataProof,
+            issuanceRequest.volume,
+            issuanceRequest.amountProof,
+            issuanceRequest.tokenUri
+        );
     }
 
     /**

@@ -212,13 +212,15 @@ describe('Gas consumption report', function() {
     issuerContract
       .connect(minter)
       .requestProofIssuance(
-        inputHash,
-        receiver.address,
-        volumeRootHash,
-        matchResultProof,
-        volume,
-        volumeProof,
-        tokenURI,
+        {
+          voteID: inputHash,
+          generator: receiver.address,
+          dataHash: volumeRootHash,
+          dataProof: matchResultProof,
+          volume,
+          amountProof: volumeProof,
+          tokenUri: tokenURI,
+        }
       )
 
   const mintProof = async (id, proofData, receiver = wallets[ 1 ], minter = issuer) => {

@@ -260,15 +260,7 @@ Second purpose of contract is token trasferring.
 
 ### Functions
 
-- **requestProofIssuance(
-  bytes32 voteID,
-  address generator,
-  bytes32 dataHash,
-  bytes32[] memory dataProof,
-  uint256 amount,
-  bytes32[] memory amountProof,
-  string memory tokenUri
-  )**: Issuer issues token certifying `amount` in generation `voteID` and transfers token to `generator`. Voting (`voteID`, `dataHash`) must have reached consensus.
+- **requestProofIssuance(IssuanceRequest memory issuanceRequest)**: Issuer issues token certifying `issuanceRequest.amount` in generation `issuanceRequest.voteID` and transfers token to `issuanceRequest.generator`. Voting (`issuanceRequest.voteID`, `issuanceRequest.dataHash`) must have reached consensus.
 - **discloseData(
   string memory key,
   string memory value,

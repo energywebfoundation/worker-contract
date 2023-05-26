@@ -181,13 +181,15 @@ describe("IssuerFacet", function () {
         issuerContract
           .connect(issuer)
           .requestProofIssuance(
-            inputHash,
-            ethers.constants.AddressZero,
-            volumeRootHash,
-            matchResultProof,
-            volume.toString(10),
-            volumeProof,
-            tokenURI
+            {
+              voteID: inputHash,
+              generator: ethers.constants.AddressZero,
+              dataHash: volumeRootHash,
+              dataProof: matchResultProof,
+              volume: volume.toString(10),
+              amountProof: volumeProof,
+              tokenUri: tokenURI
+            }
           )
       ).to.be.revertedWith("ForbiddenZeroAddressReceiver()");
     });
@@ -209,13 +211,15 @@ describe("IssuerFacet", function () {
         issuerContract
           .connect(issuer)
           .requestProofIssuance(
-            inputHash,
-            wallets[1].address,
-            wrongVolumeRootHash,
-            matchResultProof,
-            volume.toString(10),
-            volumeProof,
-            tokenURI
+            {
+              voteID: inputHash,
+              generator: wallets[ 1 ].address,
+              dataHash: wrongVolumeRootHash,
+              dataProof: matchResultProof,
+              volume: volume.toString(10),
+              amountProof: volumeProof,
+              tokenUri: tokenURI
+            }
           )
       ).to.be.revertedWith(`NotInConsensus("${inputHash}")`);
     });
@@ -241,13 +245,15 @@ describe("IssuerFacet", function () {
         issuerContract
           .connect(issuer)
           .requestProofIssuance(
-            inputHash,
-            wallets[1].address,
-            volumeRootHash,
-            matchResultProof,
-            wrongVolume,
-            volumeProof,
-            tokenURI
+            {
+              voteID: inputHash,
+              generator: wallets[ 1 ].address,
+              dataHash: volumeRootHash,
+              dataProof: matchResultProof,
+              volume: wrongVolume,
+              amountProof: volumeProof,
+              tokenUri: tokenURI
+            }
           )
       ).to.be.revertedWith(`VolumeNotInConsensus(${wrongVolume}, "${volumeRootHash}"`);
     });
@@ -282,22 +288,23 @@ describe("IssuerFacet", function () {
 
       await expect(
         issuerContract.requestProofIssuance(
-          inputHash,
-          wallets[1].address,
-          volumeRootHash,
-          matchResultProof,
-          10,
-          volumeProof,
-          tokenURI
+          {
+            voteID: inputHash,
+            generator: wallets[ 1 ].address,
+            dataHash: volumeRootHash,
+            dataProof: matchResultProof,
+            volume: 10,
+            amountProof: volumeProof,
+            tokenUri: tokenURI
+          }
         )
       ).to.be.revertedWith(`NotEnrolledIssuer("${owner.address}")`);
     });
 
     it("Authorized issuers can send proof issuance requests", async () => {
-      await loadFixture(initFixture);
+      const { worker, votingContract, proofData} = await loadFixture(initFixture);
       
-      const proofData = generateProofData();
-      await reachConsensus(proofData.inputHash, proofData.matchResult);
+      await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
 
       await mintProof(1, proofData);
     });
@@ -315,13 +322,15 @@ describe("IssuerFacet", function () {
         issuerContract
           .connect(issuer)
           .requestProofIssuance(
-            proofData.simpleMatchResult,
-            receiver.address,
-            proofData.simpleMatchResult,
-            proofData.matchResultProof,
-            proofData.volume,
-            proofData.volumeProof,
-            tokenURI
+            {
+              voteID: proofData.simpleMatchResult,
+              generator: receiver.address,
+              dataHash: proofData.simpleMatchResult,
+              dataProof: proofData.matchResultProof,
+              volume: proofData.volume,
+              amountProof: proofData.volumeProof,
+              tokenUri: tokenURI
+            }
           )
       ).to.emit(issuerContract, "ProofMinted")
       .withArgs(
@@ -2388,13 +2397,15 @@ describe("IssuerFacet", function () {
     issuerContract
       .connect(minter)
       .requestProofIssuance(
-        inputHash,
-        receiver.address,
-        volumeRootHash,
-        matchResultProof,
-        volume,
-        volumeProof,
-        tokenURI
+        {
+          voteID: inputHash,
+          generator: receiver.address,
+          dataHash: volumeRootHash,
+          dataProof: matchResultProof,
+          volume,
+          amountProof: volumeProof,
+          tokenUri: tokenURI
+        }
       );
 
   const mintProof = async (
