@@ -31,14 +31,18 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   const contractOwner =
     options.contractOwner ?? (await ethers.getSigners())[0].address;
 
-  const batchQueueSize = options.batchQueueSize ?? 20;
-
   const {
     votingTimeLimit = DEFAULT_VOTING_TIME_LIMIT,
     revocablePeriod = DEFAULT_REVOCABLE_PERIOD,
     claimManagerAddress = VOLTA_CLAIM_MANAGER,
     claimRevokerAddress = VOLTA_CLAIM_REVOKER,
     roles = {},
+    batchConfig = {
+      batchIssuanceSize: 20,
+      batchTransferSize: 20,
+      batchClaimingSize: 20,
+      batchRevocationSize: 20,
+    },
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
     rewardsEnabled = true,
@@ -66,7 +70,8 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   const greeproofInit = await deploy("GreenproofInit");
   const greenproof = await deploy("Greenproof", (factory) => {
     const args: Parameters<Greenproof__factory["deploy"]> = [
-      { contractOwner, batchQueueSize },
+      contractOwner,
+      batchConfig,
       {
         votingTimeLimit,
         rewardAmount,

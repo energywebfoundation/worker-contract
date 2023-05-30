@@ -115,12 +115,13 @@ contract Greenproof is SolidStateDiamond {
 
     /**
      * @dev Constructor setting the contract's initial parameters
-     * @param diamondConfig Configuration of the contract's owner
+     * @param batchCfg Configuration of the greenproof's batch sizes
      * @param votingConfig Configuration of the greenproof's voting system
      * @param rolesConfig Configuration of greenproof's roles credentials
      */
     constructor(
-        LibIssuer.GreenproofConfig memory diamondConfig,
+        address contractOwner,
+        LibIssuer.BatchConfig memory batchCfg,
         LibVoting.VotingConfig memory votingConfig,
         LibClaimManager.RolesConfig memory rolesConfig
     ) payable {
@@ -140,7 +141,7 @@ contract Greenproof is SolidStateDiamond {
             revert ProxyError("init: Invalid revocable period");
         }
 
-        if (diamondConfig.contractOwner == address(0)) {
+        if (contractOwner == address(0)) {
             revert ProxyError("init: Invalid contract Owner");
         }
 
@@ -149,9 +150,9 @@ contract Greenproof is SolidStateDiamond {
         }
 
         LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
-        LibIssuer.init(votingConfig.revocablePeriod, diamondConfig.batchQueueSize);
+        LibIssuer.init(votingConfig.revocablePeriod, batchCfg);
         LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
-        OwnableStorage.layout().owner = diamondConfig.contractOwner;
+        OwnableStorage.layout().owner = contractOwner;
 
         LibClaimManager.init(
             rolesConfig.claimManagerAddress,

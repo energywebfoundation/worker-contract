@@ -19,9 +19,11 @@ library LibIssuer {
     /**
      * @dev Structure storing the configuration of the contract's owner
      */
-    struct GreenproofConfig {
-        uint256 batchQueueSize;
-        address contractOwner;
+    struct BatchConfig {
+        uint256 batchIssuanceSize;
+        uint256 batchTransferSize;
+        uint256 batchClaimingSize;
+        uint256 batchRevocationSize;
     }
 
     /**
@@ -42,7 +44,10 @@ library LibIssuer {
     struct IssuerStorage {
         string name;
         string symbol;
-        uint256 batchQueueSize;
+        uint256 batchIssuanceSize;
+        uint256 batchTransferSize;
+        uint256 batchClaimingSize;
+        uint256 batchRevocationSize;
         uint256 revocablePeriod;
         uint256 latestCertificateId;
         mapping(bytes32 => uint256) dataToCertificateID;
@@ -135,9 +140,12 @@ library LibIssuer {
      * @dev Initialize the contract with a revocable period for certificates
      * @param revocablePeriod period in which the certificates can be revoked
      */
-    function init(uint256 revocablePeriod, uint256 batchQueueSize) internal {
+    function init(uint256 revocablePeriod, BatchConfig memory batchCfg) internal {
         getStorage().revocablePeriod = revocablePeriod;
-        getStorage().batchQueueSize = batchQueueSize;
+        getStorage().batchIssuanceSize = batchCfg.batchIssuanceSize;
+        getStorage().batchTransferSize = batchCfg.batchTransferSize;
+        getStorage().batchClaimingSize = batchCfg.batchClaimingSize;
+        getStorage().batchRevocationSize = batchCfg.batchRevocationSize;
     }
 
     /**
@@ -349,12 +357,48 @@ library LibIssuer {
     }
 
     /**
-     * @notice checkBatchQueueSize - Checks if the batch queue size is not exceeded
-     * @dev reverts if the batch queue size is exceeded
+     * @notice checkBatchIssuanceSize - Checks if the issuance batch queue size is not exceeded
+     * @dev reverts if the issuance batch queue size is exceeded
+     * @param queueSize size of the issuance batch queue to check
+     */
+    function checkBatchIssuanceSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchIssuanceSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
+        }
+    }
+
+    /**
+     * checkBatchTransferSize - Checks if the transfer batch queue size is not exceeded
+     * @dev reverts if the transfer batch queue size is exceeded
      * @param queueSize size of the batch queue to check
      */
-    function checkBatchQueueSize(uint256 queueSize) internal view {
-        uint256 allowedBatchSize = getStorage().batchQueueSize;
+    function checkBatchTransferSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchTransferSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
+        }
+    }
+
+    /**
+     * @notice checkBatchClaimSize - Checks if the claim batch queue size is not exceeded
+     * @dev reverts if the claim batch queue size is exceeded
+     * @param queueSize size of the batch queue to check
+     */
+    function checkBatchClaimSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchClaimingSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
+        }
+    }
+
+    /**
+     * @notice checkBatchRevocationSize - Checks if the revocation batch queue size is not exceeded
+     * @dev reverts if the revocation batch queue size is exceeded
+     * @param queueSize size of the batch queue to check
+     */
+    function checkBatchRevocationSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchRevocationSize;
         if (queueSize > allowedBatchSize) {
             revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
         }

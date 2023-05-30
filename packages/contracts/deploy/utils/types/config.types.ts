@@ -15,7 +15,12 @@ export type InitContractOptions = {
     approverRole?: string;
   };
   contractOwner?: string;
-  batchQueueSize?: number;
+  batchConfig?: {
+    batchIssuanceSize: number;
+    batchTransferSize: number;
+    batchClaimingSize: number;
+    batchRevocationSize: number;
+  };
   revocablePeriod?: number;
   majorityPercentage?: number;
   rewardsEnabled?: boolean;

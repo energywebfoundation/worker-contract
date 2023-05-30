@@ -56,7 +56,7 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
      */
     function requestBatchIssuance(IssuanceRequest[] memory issuanceRequestsList) external onlyIssuer {
         uint256 listSize = issuanceRequestsList.length;
-        LibIssuer.checkBatchQueueSize(listSize);
+        LibIssuer.checkBatchIssuanceSize(listSize);
         for (uint256 i; i < listSize; i++) {
             _issueCertificate(
                 issuanceRequestsList[i].voteID,
@@ -76,7 +76,7 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
      */
     function simpleBatchTransfer(TransferRequest[] memory transferRequestsList) external {
         uint256 listSize = transferRequestsList.length;
-        LibIssuer.checkBatchQueueSize(listSize);
+        LibIssuer.checkBatchTransferSize(listSize);
         for (uint256 i; i < listSize; i++) {
             safeTransferFrom(
                 transferRequestsList[i].sender,
@@ -94,7 +94,7 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
      */
     function multipleBatchTransfer(TransferBatchRequest[] memory transferBatchRequests) external {
         uint256 listSize = transferBatchRequests.length;
-        LibIssuer.checkBatchQueueSize(listSize);
+        LibIssuer.checkBatchTransferSize(listSize);
         for (uint256 i; i < listSize; i++) {
             safeBatchTransferFrom(
                 transferBatchRequests[i].sender,
