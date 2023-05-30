@@ -61,10 +61,10 @@ npm run issuer:test
 ```
 npm run voting:test
 ```
-- `greenproof.spec.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
+- `proxy.spec.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
 
 ```
-npm run greenproof:test
+npm run proxy:test
 
 ```
 To run `coverage` test :
@@ -72,6 +72,44 @@ To run `coverage` test :
 ```
 npm run coverage:test
 ```
+
+## Deployment
+
+### 1. Deploying facets
+
+```
+npm run deployFacets:volta
+```
+or
+
+```
+npm run deployFacets:ewc
+```
+
+### 2. Deploying a new greenproof instance
+
+When you want to deploy a new greenproof instance, make sure you provided a `.env` file exposing the different variables needed to set the DID-based roles needed for your project:
+- ISSUER_ROLE
+- REVOKER_ROLE
+- WORKER_ROLE
+- CLAIMER_ROLE
+- APPROVER_ROLE
+
+In order to adjust each greenproof parameter, make sure to have them adjusted in the `.env` file (please refer to the provided [.env.example](https://github.com/energywebfoundation/worker-contract/blob/master/packages/contracts/.env.example)). Otherwise, default parameters defined into the [constant file](https://github.com/energywebfoundation/worker-contract/blob/master/packages/contracts/deploy/utils/constants.ts) will be used.
+
+Depending on the network you want to deploy your project on, run the following scripts command in your terminal :
+
+- Deploying on volta:
+```
+npm run deployProxy:volta
+```
+
+- Deploying on mainnet (Energy Web Chain)
+
+```
+npm run deployProxy:ewc
+```
+
 
 ## Questions and Support
 
