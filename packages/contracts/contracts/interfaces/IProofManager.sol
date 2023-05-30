@@ -59,9 +59,18 @@ interface IProofManager {
     /**
      * @notice revokeProof - Revokes a certificate
      * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if the certificate is already revoked or if the msg.sender is not an enrolled revoker
      * @param certificateID ID of the certificate to revoke
      */
     function revokeProof(uint256 certificateID) external;
+
+    /**
+     * @notice revokeBatchProofs - Revokes a batch of certificates
+     * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if any certificate is already revoked or if the msg.sender is not an enrolled revoker
+     * @param certificateIDs - IDs of the certificates to revoke
+     */
+    function revokeBatchProofs(uint256[] memory certificateIDs) external;
 
     /**
      * @notice claimProof - Claims a precise amount of certificate

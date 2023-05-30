@@ -77,15 +77,25 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     /**
      * @notice revokeProof - Revokes a certificate
      * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if the certificate is already revoked or if the msg.sender is not an enrolled revoker
      * @param certificateID ID of the certificate to revoke
      */
-    function revokeProof(uint256 certificateID) external onlyRevoker {
-        LibProofManager.checkProofRevocability(certificateID);
-        LibIssuer.revokeProof(certificateID);
-        emit ProofRevoked(certificateID);
+    function revokeProof(uint256 certificateID) external {
+        _revokeProof(certificateID);
+    }
 
-        if (LibMetaToken.totalSupply(certificateID) > 0) {
-            LibMetaToken.revokeMetaToken(certificateID);
+    /**
+     * @notice revokeBatchProofs - Revokes a batch of certificates
+     * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if any certificate is already revoked or if the msg.sender is not an enrolled revoker
+     * @param certificateIDs - IDs of the certificates to revoke
+     */
+    function revokeBatchProofs(uint256[] memory certificateIDs) external {
+        uint256 nbCertificates = certificateIDs.length;
+        LibIssuer.checkBatchQueueSize(nbCertificates);
+
+        for (uint256 i; i < nbCertificates; i++) {
+            _revokeProof(certificateIDs[i]);
         }
     }
 
@@ -193,5 +203,21 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
         /* solhint-disable-next-line not-rely-on-time */
         emit ProofClaimed(certificateID, owner, block.timestamp, amount);
+    }
+
+    /**
+     * @notice _revokeProof - Revokes a certificate
+     * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if the certificate is already revoked or if the msg.sender is not an enrolled revoker
+     * @param certificateID ID of the certificate to revoke
+     */
+    function _revokeProof(uint256 certificateID) private onlyRevoker {
+        LibProofManager.checkProofRevocability(certificateID);
+        LibIssuer.revokeProof(certificateID);
+        emit ProofRevoked(certificateID);
+
+        if (LibMetaToken.totalSupply(certificateID) > 0) {
+            LibMetaToken.revokeMetaToken(certificateID);
+        }
     }
 }

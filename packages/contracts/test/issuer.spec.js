@@ -2328,6 +2328,62 @@ describe("IssuerFacet", function () {
       });
     });
 
+    describe("\t- Proof Revocation", () => {
+      it("should prevent a non authorized entity from revoking batch of non retired proof", async () => {
+        const { proofManagerContract, receiver, proofData, minter, votingContract, worker } = await loadFixture(initFixture);
+        const proofData2 = generateProofData({ volume: 2 });
+        const certificateID1 = 1;
+        const certificateID2 = 2;
+        
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+        const unauthorizedOperator = minter;
+        await mintProof(certificateID1, proofData, receiver);
+        await mintProof(certificateID2, proofData2, receiver);
+        await revokeRole(unauthorizedOperator, roles.revokerRole);
+
+        await expect(
+          proofManagerContract.connect(unauthorizedOperator).revokeBatchProofs([certificateID1, certificateID2])
+        ).to.be.revertedWith(`NotEnrolledRevoker("${unauthorizedOperator.address}")`);
+      });
+
+      it("should allow an authorized entity to revoke batch of non retired proof", async () => {
+        const { proofManagerContract, receiver, proofData, revoker, votingContract, worker } = await loadFixture(initFixture);
+        const proofData2 = generateProofData({ volume: 2 });
+        const certificateID1 = 1;
+        const certificateID2 = 2;
+        
+        await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+        await votingContract.connect(worker).vote(proofData2.inputHash, proofData2.matchResult);
+        await mintProof(certificateID1, proofData, receiver);
+        await mintProof(certificateID2, proofData2, receiver);
+
+        const revokeTx = await proofManagerContract.connect(revoker).revokeBatchProofs([certificateID1, certificateID2]);
+        await expect(revokeTx).to.emit(proofManagerContract, "ProofRevoked").withArgs(certificateID1);
+        await expect(revokeTx).to.emit(proofManagerContract, "ProofRevoked").withArgs(certificateID2);
+      });
+
+      it("should revert if the delegated revoke queue size exceeds the limit ", async () => {
+        const { worker, receiver, revoker, proofManagerContract, votingContract } = await loadFixture(initFixture);
+        const maxbatchSize = 20;
+        const oversizedBatch = [];
+         
+        for (let i = 0; i < maxbatchSize + 1; i++) {
+          const proofData = generateProofData({ volume: i + 1 });
+          await votingContract.connect(worker).vote(proofData.inputHash, proofData.matchResult);
+          await mintProof(i + 1, proofData, receiver);
+          oversizedBatch.push(i + 1);
+        }
+
+        await expect(
+          proofManagerContract
+          .connect(revoker)
+            .revokeBatchProofs(oversizedBatch)
+          ).to.be.revertedWith(`BatchQueueSizeExceeded(${oversizedBatch.length}, ${maxbatchSize})`);
+        
+      });
+    });
+
     describe("\t- Proofs Inspection", () => {
       it("allows to get the batch of proof IDs by data hashes", async () => {
         const { proofData, proofManagerContract, receiver, worker, votingContract } = await loadFixture(initFixture);
