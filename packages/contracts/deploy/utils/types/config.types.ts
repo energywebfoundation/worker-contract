@@ -22,16 +22,17 @@ export type InitContractOptions = {
   logger?: Logger;
 };
 
+export type DeployInfos =
+  // a facet can be deployed on multiple networks
+  {
+    networkID: number; // network id
+    address: string; // address of the deployed facet
+    usedBy?: string[]; // diamonds or contracts that use this facet
+  };
+
 export type Facet = {
   name: string; // name of the facet
-  deployInfos: [
-    // a facet can be deployed on multiple networks
-    {
-      networkID: number; // network id
-      address: string; // address of the deployed facet
-      usedBy?: string[]; // diamonds or contracts that use this facet
-    }
-  ];
+  deployInfos: DeployInfos[];
 };
 
 export enum GreenproofFacet {
