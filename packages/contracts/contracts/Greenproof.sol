@@ -94,6 +94,14 @@ contract Greenproof is SolidStateDiamond {
     event ContractUnPaused(uint256 timestamp, address operator);
 
     /**
+     * @notice Swept - emitted when the contract's balance is swept to the owner's address
+     * @param timestamp - unix date and time recording when the contract's balance was swept
+     * @param operator - address of the operator who swept the contract's balance
+     * @param amount - amount of the contract's balance swept
+     */
+    event Swept(uint256 timestamp, address operator, uint256 amount);
+
+    /**
      * @dev Error: Thrown when a transaction occurs while contract is paused
      */
     error PausedContract();
@@ -286,5 +294,29 @@ contract Greenproof is SolidStateDiamond {
 
         // solhint-disable-next-line not-rely-on-time
         emit ContractUnPaused(block.timestamp, msg.sender);
+    }
+
+    /**
+     * @notice sweepFunds - when called, this function transfers all the funds from the contract to the contract owner
+     * @dev only the contract admistrator is allowed to execute this function
+     */
+
+    function sweepFunds() external {
+        // Check if the caller is the owner of the contract
+        LibClaimManager.checkOwnership();
+
+        // Get the current balance of the contract
+        uint256 sweptAmount = address(this).balance;
+
+        // Send the entire balance of the contract to the owner's address using a low-level call
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = owner().call{value: sweptAmount}("");
+        if (!success) {
+            // If the transfer fails, revert with an error message
+            revert ProxyError("Sweep failed");
+        }
+
+        // Emit an event to indicate that the funds have been swept
+        emit Swept(block.timestamp, msg.sender, sweptAmount);
     }
 }
