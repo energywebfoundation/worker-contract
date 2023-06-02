@@ -145,6 +145,14 @@ contract Greenproof is SolidStateDiamond {
     event Swept(uint256 timestamp, address operator, uint256 amount);
 
     /**
+     * @notice OwnerChanged - emitted when the contract's owner is changed
+     * @param previousOwner - address of the previous owner
+     * @param newOwner - address of the new owner
+     * @param timestamp - unix date and time recording when the contract's owner was changed
+     */
+    event OwnerChanged(address indexed previousOwner, address indexed newOwner, uint256 timestamp);
+
+    /**
      * @dev Error: Thrown when a transaction occurs while contract is paused
      */
     error PausedContract();
@@ -434,7 +442,8 @@ contract Greenproof is SolidStateDiamond {
      */
     function setOwner(address newOwner) external {
         LibClaimManager.checkOwnership();
-        emit OwnershipTransferred(owner(), newOwner);
+        LibIssuer.preventZeroAddressReceiver(newOwner);
+        emit OwnerChanged(owner(), newOwner, block.timestamp); // solhint-disable-line not-rely-on-time
         OwnableStorage.layout().owner = newOwner;
     }
 }
