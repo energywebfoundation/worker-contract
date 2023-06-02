@@ -417,14 +417,24 @@ contract Greenproof is SolidStateDiamond {
         uint256 sweptAmount = address(this).balance;
 
         // Send the entire balance of the contract to the owner's address using a low-level call
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = owner().call{value: sweptAmount}("");
+        (bool success, ) = owner().call{value: sweptAmount}(""); // solhint-disable-line avoid-low-level-calls
         if (!success) {
             // If the transfer fails, revert with an error message
             revert ProxyError("Sweep failed");
         }
 
         // Emit an event to indicate that the funds have been swept
-        emit Swept(block.timestamp, msg.sender, sweptAmount);
+        emit Swept(block.timestamp, msg.sender, sweptAmount); // solhint-disable-line not-rely-on-time
+    }
+
+    /**
+     * @notice setOwner - when called, this function updates the owner of the contract
+     * @dev only the contract admistrator is allowed to execute this function
+     * @param newOwner the address of the new owner
+     */
+    function setOwner(address newOwner) external {
+        LibClaimManager.checkOwnership();
+        emit OwnershipTransferred(owner(), newOwner);
+        OwnableStorage.layout().owner = newOwner;
     }
 }
