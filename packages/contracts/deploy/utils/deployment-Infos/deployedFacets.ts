@@ -8,6 +8,10 @@ let DeployedFacets: Facet[] = [
         networkID: 73799,
         address: "0xda83c0a8654460886c4b1Fe9114f0dA698EAc418",
       },
+      {
+        networkID: 246,
+        address: "",
+      },
     ],
   },
   {
@@ -16,6 +20,10 @@ let DeployedFacets: Facet[] = [
       {
         networkID: 73799,
         address: "0xbf02aF5Ff9044804298a406b9818A8a28cc8cA30",
+      },
+      {
+        networkID: 246,
+        address: "",
       },
     ],
   },
@@ -26,6 +34,10 @@ let DeployedFacets: Facet[] = [
         networkID: 73799,
         address: "0xB1988065817F813D3171a45281BE499a224f104E",
       },
+      {
+        networkID: 246,
+        address: "",
+      },
     ],
   },
   {
@@ -34,6 +46,10 @@ let DeployedFacets: Facet[] = [
       {
         networkID: 73799,
         address: "0xD3F0Cf7bF504964DF2a80720Ca3C204a32E2CDA9",
+      },
+      {
+        networkID: 246,
+        address: "",
       },
     ],
   },
