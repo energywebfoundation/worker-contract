@@ -63,32 +63,14 @@ export const deployGreenproof = async (options: InitContractOptions) => {
       process.env.APPROVER_ROLE ?? "approver"
     ),
   } = roles;
+  const isMetaCertificateEnabled = true;
 
   // deploy GreenproofInit
   // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
   const greeproofInit = await deploy("GreenproofInit");
   const greenproof = await deploy("Greenproof", (factory) => {
-    const args: Parameters<Greenproof__factory["deploy"]> = [
-      contractOwner,
-      batchConfig,
-      {
-        votingTimeLimit,
-        rewardAmount,
-        majorityPercentage,
-        revocablePeriod,
-        rewardsEnabled,
-      },
-      {
-        claimManagerAddress,
-        issuerRole,
-        revokerRole,
-        workerRole,
-        claimerRole,
-        approverRole,
-        claimsRevocationRegistry: claimRevokerAddress,
-      },
-    ];
+    const args: Parameters<Greenproof__factory["deploy"]> = [contractOwner];
     return factory.deploy(...args);
   });
 
@@ -108,14 +90,44 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   }
 
   logger("List of Cuts to execute", cuts);
-  const certificateInfos = ["SAF Certificate", "SAFC"];
-  const metaCertificateInfos = ["SER Certificate", "SERC"];
+
+  const certificateName = "SAF Certificate";
+  const certificateSymbol = "SAFC";
+  const metaCertificateName = "SER Certificate";
+  const metaCertificateSymbol = "SERC";
+
+  const votingConfig = {
+    votingTimeLimit,
+    rewardAmount,
+    majorityPercentage,
+    revocablePeriod,
+    rewardsEnabled,
+  };
+
+  const rolesConfig = {
+    claimManagerAddress,
+    issuerRole,
+    revokerRole,
+    workerRole,
+    claimerRole,
+    approverRole,
+    claimsRevocationRegistry: claimRevokerAddress,
+  };
+
+  const proxyConfig = {
+    isMetaCertificateEnabled,
+    certificateName,
+    certificateSymbol,
+    metaCertificateName,
+    metaCertificateSymbol,
+    votingConfig,
+    batchConfig,
+    rolesConfig,
+  };
 
   // call to init function
   const functionCall = greeproofInit.interface.encodeFunctionData("init", [
-    greenproof.address,
-    certificateInfos,
-    metaCertificateInfos,
+    proxyConfig,
   ]);
   const tx = await greenproof.diamondCut(
     cuts,

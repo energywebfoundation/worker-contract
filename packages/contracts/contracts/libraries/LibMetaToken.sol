@@ -6,6 +6,7 @@ import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 
 library LibMetaToken {
     struct MetaTokenStorage {
+        bool isMetaCertificateEnabled; // A boolean flag indicating whether the MetaCertificate feature is enabled or not
         // address of the deployed ERC1155 meta token contract
         address metaTokenAddress;
         // Mapping from parent certificate ID to the amount of meta tokens issued

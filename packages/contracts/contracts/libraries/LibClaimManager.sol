@@ -141,24 +141,16 @@ library LibClaimManager {
      * @custom:field approverRole Role name for the approvers.
      * @custom:field claimsRevocationRegistry Address of the claims revocation registry.
      */
-    function init(
-        address claimManagerAddress,
-        bytes32 issuerRole,
-        bytes32 revokerRole,
-        bytes32 workerRole,
-        bytes32 claimerRole,
-        bytes32 approverRole,
-        address claimsRevocationRegistry
-    ) internal {
+    function init(RolesConfig memory rolesConfig) internal {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        claimStore.claimManagerAddress = claimManagerAddress;
-        claimStore.claimsRevocationRegistry = claimsRevocationRegistry;
-        claimStore.issuerRole = Role({name: issuerRole, version: 1});
-        claimStore.revokerRole = Role({name: revokerRole, version: 1});
-        claimStore.workerRole = Role({name: workerRole, version: 1});
-        claimStore.claimerRole = Role({name: claimerRole, version: 1});
-        claimStore.approverRole = Role({name: approverRole, version: 1});
+        claimStore.claimManagerAddress = rolesConfig.claimManagerAddress;
+        claimStore.claimsRevocationRegistry = rolesConfig.claimsRevocationRegistry;
+        claimStore.issuerRole = Role({name: rolesConfig.issuerRole, version: 1});
+        claimStore.revokerRole = Role({name: rolesConfig.revokerRole, version: 1});
+        claimStore.workerRole = Role({name: rolesConfig.workerRole, version: 1});
+        claimStore.claimerRole = Role({name: rolesConfig.claimerRole, version: 1});
+        claimStore.approverRole = Role({name: rolesConfig.approverRole, version: 1});
     }
 
     /**
