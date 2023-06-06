@@ -235,14 +235,6 @@ library LibIssuer {
     }
 
     /**
-     * @notice revokeProof - Revokes a certificate
-     * @param certificateID ID of the certificate to revoke
-     */
-    function revokeProof(uint256 certificateID) internal {
-        getStorage().certificates[certificateID].isRevoked = true;
-    }
-
-    /**
      * @notice preventAlreadyApproved - Prevents an operator from being approved twice for the given certificate owner.
      * @param operator The address of the operator to check.
      * @param certificateOwner The address of the certificate owner to check.

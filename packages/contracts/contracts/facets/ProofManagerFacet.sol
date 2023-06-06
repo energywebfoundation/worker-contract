@@ -213,7 +213,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      */
     function _revokeProof(uint256 certificateID) private onlyRevoker {
         LibProofManager.checkProofRevocability(certificateID);
-        LibIssuer.revokeProof(certificateID);
+        LibProofManager.revokeProof(certificateID);
         emit ProofRevoked(certificateID);
 
         if (LibMetaToken.totalSupply(certificateID) > 0) {
