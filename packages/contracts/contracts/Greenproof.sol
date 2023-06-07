@@ -109,17 +109,12 @@ contract Greenproof is SolidStateDiamond {
     error AlreadyUnpausedContract();
 
     /**
-     * @dev Error: Thrown when an error occurs at proxy level
-     */
-    error ProxyError(string errorMsg);
-
-    /**
      * @notice constructor
      * @param contractOwner - address of the contract owner
      */
     constructor(address contractOwner) payable {
         if (contractOwner == address(0)) {
-            revert ProxyError("init: Invalid contract Owner");
+            revert LibDiamond.ProxyError("init: Invalid contract Owner");
         }
         OwnableStorage.layout().owner = contractOwner;
     }
