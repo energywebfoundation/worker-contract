@@ -70,7 +70,7 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
      * @param tokenID - ID of the meta token to be revoked
      */
     function revokeMetaToken(uint256 tokenID) external onlyAdmin {
-        if (tokenRevocationDate[tokenID] != 0) {
+        if (isMetaTokenRevoked(tokenID)) {
             revert RevokedToken(tokenID, tokenRevocationDate[tokenID]);
         }
         //solhint-disable-next-line not-rely-on-time
