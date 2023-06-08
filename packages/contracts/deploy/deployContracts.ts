@@ -46,6 +46,7 @@ export const deployGreenproof = async (options: InitContractOptions) => {
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
     rewardsEnabled = true,
+    isMetaCertificateEnabled = true,
     facets = Object.values(GreenproofFacet),
     logger = () => {},
   } = options;
@@ -63,7 +64,6 @@ export const deployGreenproof = async (options: InitContractOptions) => {
       process.env.APPROVER_ROLE ?? "approver"
     ),
   } = roles;
-  const isMetaCertificateEnabled = true;
 
   // deploy GreenproofInit
   // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables

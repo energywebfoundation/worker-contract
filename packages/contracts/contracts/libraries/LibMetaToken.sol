@@ -119,6 +119,14 @@ library LibMetaToken {
     }
 
     /**
+     * @notice isMetaCertificateEnabled - Checks if the MetaCertificate feature is enabled
+     * @return bool - True if the MetaCertificate feature is enabled
+     */
+    function isEnabled() internal view returns (bool) {
+        return getStorage().isMetaCertificateEnabled;
+    }
+
+    /**
      * @dev Get the storage slot for MetaTokenStorage struct
      * @return metaTokenStorage - The pointer to the MetaToken storage
      */

@@ -44,6 +44,11 @@ interface IMetaToken {
     error RevokedToken(uint256 tokenID, uint256 revocationDate);
 
     /**
+     * @notice error emitted on issuance request when meta token issuance is disabled
+     */
+    error MetaTokenIssuanceDisabled();
+
+    /**
      * @notice issueMetaToken - Issues a child token from a parent certificate
      * @param tokenID - ID of the parent certificate
      * @param amount - amount of meta tokens to be issued

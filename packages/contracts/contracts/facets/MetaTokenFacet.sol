@@ -6,6 +6,13 @@ import {LibMetaToken} from "../libraries/LibMetaToken.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 
 contract MetaTokenFacet is IMetaToken {
+    modifier onlyWhenEnabled() {
+        if (!LibMetaToken.isEnabled()) {
+            revert MetaTokenIssuanceDisabled();
+        }
+        _;
+    }
+
     /**
      * @notice `issueMetaToken` - Issues a child token from a parent certificate
      * @param parentCertificateID - The ID of the parent certificate
@@ -17,7 +24,7 @@ contract MetaTokenFacet is IMetaToken {
         uint256 amount,
         address receiver,
         string memory tokenUri
-    ) external {
+    ) external onlyWhenEnabled {
         LibClaimManager.checkEnrolledIssuer(msg.sender); //verify that the sender is an authorized issuer
         LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
         // solhint-disable-next-line not-rely-on-time

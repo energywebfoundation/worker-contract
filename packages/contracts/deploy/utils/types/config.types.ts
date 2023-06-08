@@ -24,6 +24,7 @@ export type InitContractOptions = {
   revocablePeriod?: number;
   majorityPercentage?: number;
   rewardsEnabled?: boolean;
+  isMetaCertificateEnabled?: boolean;
   logger?: Logger;
 };
 

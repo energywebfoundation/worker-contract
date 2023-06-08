@@ -215,8 +215,9 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
         LibProofManager.checkProofRevocability(certificateID);
         LibProofManager.revokeProof(certificateID);
         emit ProofRevoked(certificateID);
+        bool isMetacertificateEnabled = LibMetaToken.getStorage().isMetaCertificateEnabled;
 
-        if (LibMetaToken.totalSupply(certificateID) > 0) {
+        if (isMetacertificateEnabled && LibMetaToken.totalSupply(certificateID) > 0) {
             LibMetaToken.revokeMetaToken(certificateID);
         }
     }
