@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 /**
  * @title IMetaToken
  * @author EnergyWeb Foundation
- * @notice interface provding functions to handle SERC issuance.
+ * @notice interface provding functions to handle meta certificate issuance.
  */
 interface IMetaToken {
     /**

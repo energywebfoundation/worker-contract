@@ -6,7 +6,8 @@ import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 
 library LibMetaToken {
     struct MetaTokenStorage {
-        bool isMetaCertificateEnabled; // A boolean flag indicating whether the MetaCertificate feature is enabled or not
+        // A boolean flag indicating whether the MetaCertificate feature is enabled or not
+        bool isMetaCertificateEnabled;
         // address of the deployed ERC1155 meta token contract
         address metaTokenAddress;
         // Mapping from parent certificate ID to the amount of meta tokens issued
@@ -66,25 +67,29 @@ library LibMetaToken {
     }
 
     /**
-     * @notice issueSerc - Issues SERC tokens
-     * @param safcParentID - ID of the parent SAFC certificate
-     * @param amount - Amount of SERC to issue
-     * @param receiver - Address of the receiver of the SERC
+     * @notice issueMetaToken - Issues new token units of metaceritificate
+     * @param parentCertificateID - ID of the parent certificate
+     * @param amount - Amount of meta tokens to be issued
+     * @param receiver - Address of the receiver of the issued tokens
      */
     function issueMetaToken(
-        uint256 safcParentID,
+        uint256 parentCertificateID,
         uint256 amount,
         address receiver,
         string memory tokenUri
     ) internal {
         LibIssuer.preventZeroAddressReceiver(receiver); //verify that the receiver is not a zero address
-        checkAllowedIssuance(receiver, safcParentID, amount); // verify that the receiver is allowed to issue this amount meta tokens
+        checkAllowedIssuance(receiver, parentCertificateID, amount); // verify that the receiver is allowed to issue this amount meta tokens
         address metaTokenAddress = getMetaTokenAddress();
 
-        IMetaToken(metaTokenAddress).issueMetaToken(safcParentID, amount, receiver, tokenUri);
-        getStorage().metaTokenIssued[receiver][safcParentID] += amount;
+        IMetaToken(metaTokenAddress).issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
+        getStorage().metaTokenIssued[receiver][parentCertificateID] += amount;
     }
 
+    /**
+     * @notice revokeMetaToken - Revokes a meta token
+     * @param tokenID - ID of the meta token to be revoked
+     */
     function revokeMetaToken(uint256 tokenID) internal {
         address metaTokenAddress = getMetaTokenAddress();
         IMetaToken(metaTokenAddress).revokeMetaToken(tokenID);
@@ -119,7 +124,7 @@ library LibMetaToken {
     }
 
     /**
-     * @notice isMetaCertificateEnabled - Checks if the MetaCertificate feature is enabled
+     * @notice isEnabled - Checks if the MetaCertificate feature is enabled
      * @return bool - True if the MetaCertificate feature is enabled
      */
     function isEnabled() internal view returns (bool) {
@@ -127,7 +132,7 @@ library LibMetaToken {
     }
 
     /**
-     * @dev Get the storage slot for MetaTokenStorage struct
+     * @notice getStorage - Get the storage slot for MetaTokenStorage struct
      * @return metaTokenStorage - The pointer to the MetaToken storage
      */
     function getStorage() internal pure returns (MetaTokenStorage storage metaTokenStorage) {

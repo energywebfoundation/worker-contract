@@ -14,10 +14,10 @@ contract MetaTokenFacet is IMetaToken {
     }
 
     /**
-     * @notice `issueMetaToken` - Issues a child token from a parent certificate
-     * @param parentCertificateID - The ID of the parent certificate
-     * @param amount - The amount of SERC to be issued
-     * @param receiver - The address of the receiver of the issued SERC tokens
+     * @notice issueMetaToken - Issues new token units of metaceritificate
+     * @param parentCertificateID - ID of the parent certificate
+     * @param amount - Amount of meta tokens to be issued
+     * @param receiver - Address of the receiver of the issued tokens
      */
     function issueMetaToken(
         uint256 parentCertificateID,
