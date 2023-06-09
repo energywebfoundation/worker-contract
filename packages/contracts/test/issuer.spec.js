@@ -3177,6 +3177,43 @@ describe("IssuerFacet", function () {
       await expect(revokeTx).to.emit(proofManagerContract, "ProofRevoked");
       await expect(revokeTx).to.not.emit(metatokenContract, "MetaTokenRevoked");
     });
+
+    it("Should not revoke a non existing meta-certificate", async () => {
+      const {
+        issuer,
+        worker,
+        receiver,
+        votingContract,
+        issuerContract,
+        metatokenContract,
+        proofManagerContract,
+      } = await loadFixture(initFixture);
+
+      const safcParentID = 1;
+      const tokenAmount = 42;
+
+      const proofData = generateProofData({ volume: tokenAmount });
+
+      await reachConsensus(
+        proofData.inputHash,
+        proofData.matchResult,
+        votingContract,
+        worker
+      );
+
+      await mintProof(
+        issuerContract,
+        safcParentID,
+        proofData,
+        receiver,
+        issuer
+      );
+
+      // revoking a non existing meta-certificate should revert
+      await expect(
+        metatokenContract.connect(revoker).revokeMetaToken(safcParentID)
+      ).to.be.revertedWith(`MetaTokenNotFound(${safcParentID})`);
+    });
   });
 
   describe("Batch operation tests", () => {

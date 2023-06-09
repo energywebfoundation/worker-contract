@@ -38,6 +38,7 @@ contract MetaTokenFacet is IMetaToken {
      */
     function revokeMetaToken(uint256 tokenID) external {
         LibClaimManager.checkEnrolledRevoker(msg.sender); //verify that the sender is an authorized revoker
+        LibMetaToken.checkExistance(tokenID);
         LibMetaToken.revokeMetaToken(tokenID);
         // solhint-disable-next-line not-rely-on-time
         emit MetaTokenRevoked(tokenID, block.timestamp);

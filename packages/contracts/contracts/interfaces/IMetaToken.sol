@@ -49,6 +49,12 @@ interface IMetaToken {
     error MetaTokenIssuanceDisabled();
 
     /**
+     * @notice error emitted when meta token is not found
+     * @param tokenID - ID of the token
+     */
+    error MetaTokenNotFound(uint256 tokenID);
+
+    /**
      * @notice issueMetaToken - Issues a child token from a parent certificate
      * @param tokenID - ID of the parent certificate
      * @param amount - amount of meta tokens to be issued

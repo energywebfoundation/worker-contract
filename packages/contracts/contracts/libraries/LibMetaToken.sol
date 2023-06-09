@@ -67,6 +67,17 @@ library LibMetaToken {
     }
 
     /**
+     * @notice checkExistance - checks if a meta token exists
+     * @param tokenID - ID of the meta token
+     * @dev reverts if the meta token does not exist
+     */
+    function checkExistance(uint256 tokenID) internal view {
+        if (totalSupply(tokenID) == 0) {
+            revert IMetaToken.MetaTokenNotFound(tokenID);
+        }
+    }
+
+    /**
      * @notice issueMetaToken - Issues new token units of metaceritificate
      * @param parentCertificateID - ID of the parent certificate
      * @param amount - Amount of meta tokens to be issued
