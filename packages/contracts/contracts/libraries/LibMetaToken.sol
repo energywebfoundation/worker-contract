@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
+import {MetaToken} from "../dependencies/MetaToken.sol";
 import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
 
 library LibMetaToken {
@@ -109,6 +110,15 @@ library LibMetaToken {
     }
 
     /**
+     * @notice claimMetaToken - Claims a meta token
+     * @param tokenID - ID of the meta token to be claimed
+     * @param amount - Amount of meta tokens to be claimed
+     */
+    function claimMetaToken(uint256 tokenID, uint256 amount) internal {
+        MetaToken(getMetaTokenAddress()).claimMetaTokenFor(tokenID, amount, msg.sender);
+    }
+
+    /**
      * @notice getMetaTokenAddress - Gets the address of the deployed ERC1155 meta token contract
      * @return metaTokenManager - The address of the deployed ERC1155 meta token contract
      */
@@ -123,6 +133,16 @@ library LibMetaToken {
      */
     function totalSupply(uint256 tokenID) internal view returns (uint256) {
         return IMetaToken(getMetaTokenAddress()).tokenSupply(tokenID);
+    }
+
+    /**
+     * @notice getBalanceOf - Returns the balance of a meta token
+     * @param account - Address of the account
+     * @param tokenID - ID of the meta token
+     * @return uint256 - The balance of the meta token
+     */
+    function getBalanceOf(address account, uint256 tokenID) internal view returns (uint256) {
+        return MetaToken(getMetaTokenAddress()).balanceOf(account, tokenID);
     }
 
     /**

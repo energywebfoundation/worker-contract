@@ -45,6 +45,25 @@ contract MetaTokenFacet is IMetaToken {
     }
 
     /**
+     * @notice `claimMetaToken` - Claims a meta token
+     * @param certiticateID - ID of the meta token to be claimed
+     * @param amount - Amount of meta tokens to be claimed
+     */
+    function claimMetaToken(uint256 certiticateID, uint256 amount) external onlyWhenEnabled {
+        LibMetaToken.claimMetaToken(certiticateID, amount);
+        // solhint-disable-next-line not-rely-on-time
+        emit MetaTokenClaimed(certiticateID, msg.sender, block.timestamp, amount);
+    }
+
+    function claimMetaTokenFor(
+        uint256 certiticateID,
+        uint256 amount,
+        address owner
+    ) external onlyWhenEnabled {
+        //TODO - Implement this function
+    }
+
+    /**
      * @notice `getTokenAddress` - Returns the address of the ERC1155 tokenn contract
      * @return address - The address of the ERC1155 token contract
      */
@@ -59,6 +78,16 @@ contract MetaTokenFacet is IMetaToken {
      */
     function tokenSupply(uint256 id) external view returns (uint256) {
         return LibMetaToken.totalSupply(id);
+    }
+
+    /**
+     * @notice getBalanceOf - Returns the balance of a meta token
+     * @param account - Address of the account
+     * @param id - ID of the meta token
+     * @return uint256 - The balance of the meta token
+     */
+    function getBalanceOf(address account, uint256 id) external view returns (uint256) {
+        return LibMetaToken.getBalanceOf(account, id);
     }
 
     /**

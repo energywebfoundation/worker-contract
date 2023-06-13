@@ -1,5 +1,5 @@
 const chai = require("chai");
-const { utils } = require("ethers");
+const { utils, Wallet, BigNumber } = require("ethers");
 const { expect } = require("chai");
 const { deployGreenproof } = require("../scripts/deploy/deployContracts");
 const { solidity } = require("ethereum-waffle");
@@ -7,15 +7,15 @@ const { roles } = require("./utils/roles.utils");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 const { generateProofData } = require("./utils/issuer.utils");
-const { BigNumber } = require("ethers");
 const { timeTravel, getTimeStamp } = require("./utils/time.utils");
-const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { loadFixture, setBalance } = require("@nomicfoundation/hardhat-network-helpers");
 const {
   createPreciseProof,
   createMerkleTree,
   hash,
 } = require("@energyweb/merkle-tree");
 const { getMerkleProof } = require("./utils/merkleProof.utils");
+const { parse } = require("dotenv");
 
 chai.use(solidity);
 const { parseEther, formatEther } = utils;
@@ -36,7 +36,62 @@ describe("IssuerFacet", function () {
   let grantRole;
   let revokeRole;
 
-  const initFixture = async () => {
+  const initMetatTokenFixture = async () => {
+    const {
+      worker,
+      issuer,
+      receiver,
+      votingContract,
+      issuerContract,
+      metatokenContract,
+    } = await loadFixture(initFixture);
+
+    const safcParentID = 1;
+    const tokenAmount = 42;
+    const metaTokenURI = "";
+    const proofData = generateProofData({ volume: tokenAmount });  
+
+    await reachConsensus(
+      proofData.inputHash,
+      proofData.matchResult,
+      votingContract,
+      worker
+    );
+
+      await mintProof(
+        issuerContract,
+        safcParentID,
+        proofData,
+        receiver,
+        issuer
+      );
+
+      const tx = await metatokenContract
+        .connect(issuer)
+        .issueMetaToken(
+          safcParentID,
+          tokenAmount,
+          receiver.address,
+          metaTokenURI
+        );
+
+      const timestamp = (await ethers.provider.getBlock(tx.blockNumber))
+        .timestamp;
+
+      await expect(tx)
+        .to.emit(metatokenContract, "MetaTokenIssued")
+        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+    
+    return {
+      receiver,
+      volume: tokenAmount,
+      metatokenContract,
+      certificateID: safcParentID,
+      issuerContract
+    }
+  };
+
+    const initFixture = async () => {
     [
       owner,
       issuer,
@@ -3213,6 +3268,24 @@ describe("IssuerFacet", function () {
       await expect(
         metatokenContract.connect(revoker).revokeMetaToken(safcParentID)
       ).to.be.revertedWith(`MetaTokenNotFound(${safcParentID})`);
+    });
+  });
+
+  describe("Meta-Certificate Retirements", () => {
+    it("Should correctly retire a meta-certificate", async () => {
+      const { receiver, volume, metatokenContract, certificateID } = await loadFixture(initMetatTokenFixture);
+
+      const beforeClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
+      expect(beforeClaimBalance).to.equal(volume);
+
+      const claimTx = await metatokenContract.connect(receiver).claimMetaToken(certificateID, volume)
+      const timestamp = await getTimeStamp(claimTx);
+
+      await expect(claimTx).to.emit(metatokenContract, "MetaTokenClaimed")
+        .withArgs(certificateID, receiver.address, timestamp, volume);
+
+      const afterClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
+      expect(afterClaimBalance).to.equal(0);
     });
   });
 
