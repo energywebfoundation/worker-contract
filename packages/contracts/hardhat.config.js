@@ -3,6 +3,7 @@
 require('solidity-coverage');
 require("@typechain/hardhat");
 require("hardhat-gas-reporter");
+require("hardhat-contract-sizer");
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-solhint");
 const dotenv = require("dotenv");
@@ -30,6 +31,12 @@ module.exports = {
     compilers: [
       {
         version: "0.8.16",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000,
+          },
+        },
       },
     ],
   },
@@ -53,12 +60,6 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     }
   },
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 200,
-    },
-  },
   gasReporter: {
     currency: 'USD',
     gasPrice: 21,
@@ -68,6 +69,11 @@ module.exports = {
     enabled: process.env.ENABLE_GAS_REPORTING == "true",
     outputFile: process.env.GAS_REPORT_OUTPUT_FILE,
     noColors: process.env.GAS_REPORT_OUTPUT_FILE ? true : false,
+  },
+  contractSizer: {
+    alphaSort: false,
+    runOnCompile: true,
+    disambiguatePaths: true,
   },
   typechain: {
     outDir: path.join(__dirname, "src"),
