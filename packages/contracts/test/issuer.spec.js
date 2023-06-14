@@ -3287,6 +3287,20 @@ describe("IssuerFacet", function () {
       const afterClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
       expect(afterClaimBalance).to.equal(0);
     });
+
+    it("should revert when trying to retire a meta-certificate when the feature is disabled", async () => {
+      const {
+        metatokenContract
+      } = await loadFixture(initWithoutMetaTokenFixture);
+
+      const certificateID = 1;
+      const tokenAmount = 42;
+
+      await expect(
+        metatokenContract
+          .claimMetaToken(certificateID, tokenAmount)
+      ).to.be.revertedWith("MetaTokenIssuanceDisabled()");
+    });
   });
 
   describe("Batch operation tests", () => {
