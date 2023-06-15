@@ -1,5 +1,5 @@
 const chai = require("chai");
-const { utils, Wallet, BigNumber } = require("ethers");
+const { utils, BigNumber } = require("ethers");
 const { expect } = require("chai");
 const { deployGreenproof } = require("../scripts/deploy/deployContracts");
 const { solidity } = require("ethereum-waffle");
@@ -15,7 +15,6 @@ const {
   hash,
 } = require("@energyweb/merkle-tree");
 const { getMerkleProof } = require("./utils/merkleProof.utils");
-const { parse } = require("dotenv");
 
 chai.use(solidity);
 const { parseEther, formatEther } = utils;
@@ -427,12 +426,12 @@ describe("IssuerFacet", function () {
 
     it("Authorized issuers can send proof issuance requests", async () => {
       const {
-        worker,
-        votingContract,
-        proofData,
-        issuerContract,
-        receiver,
         issuer,
+        worker,
+        proofData,
+        receiver,
+        issuerContract,
+        votingContract,
       } = await loadFixture(initFixture);
 
       const certificateID = 1;
@@ -604,10 +603,10 @@ describe("IssuerFacet", function () {
 
     it("should get the list of all certificate owners", async () => {
       const {
+        owner,
         worker,
         issuer,
         receiver,
-        owner,
         issuerContract,
         votingContract,
       } = await loadFixture(initFixture);
@@ -707,15 +706,18 @@ describe("IssuerFacet", function () {
       await votingContract
         .connect(worker)
         .vote(proofData.inputHash, proofData.matchResult);
+      
+      const certificateID1 = 1;
+      const certificateID2 = 2;
 
-      await mintProof(issuerContract, 1, proofData, wallets[0], issuer);
+      await mintProof(issuerContract, certificateID1, proofData, wallets[0], issuer);
 
       const secondProofData = generateProofData();
       await votingContract
         .connect(worker)
         .vote(secondProofData.inputHash, secondProofData.matchResult);
 
-      await mintProof(issuerContract, 2, secondProofData, wallets[0], issuer);
+      await mintProof(issuerContract, certificateID2, secondProofData, wallets[0], issuer);
 
       const certs = await proofManagerContract.getProofsOf(wallets[0].address);
 
@@ -771,7 +773,10 @@ describe("IssuerFacet", function () {
     it("should revert when one tries to transfer token ID = 0", async () => {
       const { issuerContract } = await loadFixture(initFixture);
 
+      const certificateID = 0;
+      const toTransferAmount = parseEther("2");
       const transferBytesData = ethers.utils.formatBytes32String("");
+
 
       await expect(
         issuerContract
@@ -779,8 +784,8 @@ describe("IssuerFacet", function () {
           .safeTransferFrom(
             wallets[0].address,
             owner.address,
-            0,
-            parseEther("2"),
+            certificateID,
+            toTransferAmount,
             transferBytesData
           )
       ).to.be.revertedWith("insufficient balance");
@@ -814,6 +819,7 @@ describe("IssuerFacet", function () {
         issuer
       );
 
+      const nonExistingCertificateID = 0;
       const transferBytesData = ethers.utils.formatBytes32String("");
 
       await expect(
@@ -822,7 +828,7 @@ describe("IssuerFacet", function () {
           .safeBatchTransferFrom(
             wallets[0].address,
             owner.address,
-            [1, 0],
+            [certificateID, nonExistingCertificateID],
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
@@ -873,7 +879,7 @@ describe("IssuerFacet", function () {
       const { issuer, worker, issuerContract, receiver, votingContract } =
         await loadFixture(initFixture);
 
-      const transferVolume = parseEther("2");
+      const toTransferVolume = parseEther("2");
       const certificateID = 1;
       const proofData = generateProofData({ volume: 5 });
 
@@ -902,8 +908,8 @@ describe("IssuerFacet", function () {
           .safeBatchTransferFrom(
             receiver.address,
             owner.address,
-            [1, 1],
-            [transferVolume, transferVolume.sub(1)],
+            [certificateID, certificateID],
+            [toTransferVolume, toTransferVolume.sub(1)],
             transferBytesData
           )
       ).to.not.be.reverted;
@@ -914,6 +920,7 @@ describe("IssuerFacet", function () {
         await loadFixture(initFixture);
 
       const certificateID = 1;
+      const nonExistingCertificateID = 42;
       const proofData = generateProofData({ volume: 5 });
 
       await reachConsensus(
@@ -939,7 +946,7 @@ describe("IssuerFacet", function () {
           .safeBatchTransferFrom(
             wallets[0].address,
             owner.address,
-            [1, 42],
+            [certificateID, nonExistingCertificateID],
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
@@ -1003,7 +1010,7 @@ describe("IssuerFacet", function () {
       );
 
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(2)
+        proofManagerContract.connect(revoker).revokeProof(certificateID2)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       const transferBytesData = ethers.utils.formatBytes32String("");
@@ -1015,7 +1022,7 @@ describe("IssuerFacet", function () {
           .safeBatchTransferFrom(
             minter.address,
             owner.address,
-            [1, 2],
+            [certificateID1, certificateID2],
             [transferVolume, transferVolume],
             transferBytesData
           )
@@ -1449,7 +1456,7 @@ describe("IssuerFacet", function () {
       await revokeRole(unauthorizedOperator, roles.revokerRole);
 
       await expect(
-        proofManagerContract.connect(unauthorizedOperator).revokeProof(1)
+        proofManagerContract.connect(unauthorizedOperator).revokeProof(certificateID)
       ).to.be.revertedWith(
         `NotEnrolledRevoker("${unauthorizedOperator.address}")`
       );
@@ -1664,6 +1671,7 @@ describe("IssuerFacet", function () {
       } = await loadFixture(initFixture);
 
       const certificateID = 1;
+      const amountToClaim = 42;
 
       await reachConsensus(
         proofData.inputHash,
@@ -1687,7 +1695,7 @@ describe("IssuerFacet", function () {
       await expect(
         proofManagerContract
           .connect(claimer)
-          .claimProofFor(certificateID, owner.address, 1)
+          .claimProofFor(certificateID, owner.address, amountToClaim)
       ).to.be.revertedWith(`ProofRevoked(${certificateID})`);
     });
 
@@ -1703,7 +1711,8 @@ describe("IssuerFacet", function () {
       } = await loadFixture(initFixture);
 
       const certificateID = 1;
-      const notClaimer = wallets[6];
+      const amountToClaim = 42;
+      const notClaimer = wallets[ 6 ];
 
       await reachConsensus(
         proofData.inputHash,
@@ -1723,7 +1732,7 @@ describe("IssuerFacet", function () {
       await expect(
         proofManagerContract
           .connect(notClaimer)
-          .claimProofFor(certificateID, receiver.address, 1)
+          .claimProofFor(certificateID, receiver.address, amountToClaim)
       ).to.be.revertedWith(`NotEnrolledClaimer("${notClaimer.address}")`);
     });
 
@@ -1992,7 +2001,7 @@ describe("IssuerFacet", function () {
       const claimedVolume = parseEther("5");
       await claimVolumeFor(proofManagerContract, receiver, claimedVolume);
 
-      const tx = proofManagerContract.connect(revoker).revokeProof(1);
+      const tx = proofManagerContract.connect(revoker).revokeProof(certificateID);
 
       await expect(tx).to.emit(proofManagerContract, "ProofRevoked");
     });
@@ -2317,13 +2326,15 @@ describe("IssuerFacet", function () {
 
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
-      const nonAdmin = wallets[1];
+      const nonAdmin = wallets[ 1 ];
+      const certificateID = 1;
+      const amountToIssue = 42;
 
       // Trying to direclty call the issuance function on the token contract without being admin
       await expect(
         metaToken
           .connect(nonAdmin)
-          .issueMetaToken(1, 1, wallets[0].address, metaTokenURI)
+          .issueMetaToken(certificateID, amountToIssue, wallets[0].address, metaTokenURI)
       ).to.be.revertedWith(`NotAdmin("${nonAdmin.address}")`);
     });
 
