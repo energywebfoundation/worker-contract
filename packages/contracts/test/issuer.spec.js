@@ -81,12 +81,12 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
     
     return {
       claimer,
       receiver,
-      volume: tokenAmount,
+      volume: parseEther(tokenAmount.toString()),
       metatokenContract,
       certificateID: safcParentID,
       issuerContract
@@ -2439,7 +2439,7 @@ describe("IssuerFacet", function () {
         initFixture
       );
       const safcParentID = 1;
-      const tokenAmount = ethers.utils.parseEther("42");
+      const tokenAmount = 42;
 
       await expect(
         metatokenContract
@@ -2451,7 +2451,7 @@ describe("IssuerFacet", function () {
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, 0)`
+        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, 0)`
       );
     });
 
@@ -2467,7 +2467,7 @@ describe("IssuerFacet", function () {
       } = await loadFixture(initFixture);
 
       const safcParentID = 1;
-      const tokenAmount = ethers.utils.parseEther("21");
+      const tokenAmount = 21;
 
       // issue SAFC
       const proofData = generateProofData({ volume: 42 });
@@ -2504,7 +2504,7 @@ describe("IssuerFacet", function () {
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${availableVolume})`
+        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${availableVolume})`
       );
     });
 
@@ -2519,7 +2519,7 @@ describe("IssuerFacet", function () {
       } = await loadFixture(initFixture);
 
       const safcParentID = 1;
-      const tokenAmount = ethers.utils.parseEther("42");
+      const tokenAmount = 42;
 
       // issue SAFC
       const proofData = generateProofData({ volume: 21 });
@@ -2551,7 +2551,7 @@ describe("IssuerFacet", function () {
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${availableVolume})`
+        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${availableVolume})`
       );
     });
 
@@ -2566,7 +2566,7 @@ describe("IssuerFacet", function () {
       } = await loadFixture(initFixture);
 
       const safcParentID = 1;
-      const tokenAmount = ethers.utils.parseEther("42");
+      const tokenAmount = 42;
 
       // issue SAFC
       const proofData = generateProofData({ volume: 42 });
@@ -2590,7 +2590,7 @@ describe("IssuerFacet", function () {
         .connect(issuer)
         .issueMetaToken(
           safcParentID,
-          tokenAmount.div(2),
+          tokenAmount / 2,
           receiver.address,
           metaTokenURI
         );
@@ -2604,7 +2604,7 @@ describe("IssuerFacet", function () {
           safcParentID,
           receiver.address,
           timestamp,
-          tokenAmount.div(2)
+          parseEther(tokenAmount.toString()).div(2)
         );
 
       const remainingIssuableVolume = ethers.utils.parseEther("21");
@@ -2619,7 +2619,7 @@ describe("IssuerFacet", function () {
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${tokenAmount}, ${remainingIssuableVolume})`
+        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${remainingIssuableVolume})`
       );
     });
 
@@ -2709,7 +2709,7 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
     });
 
     it("should correctly retrieve the totalSupply of meta-certificates", async () => {
@@ -2769,13 +2769,13 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // totalSupply of meta certificate should be updated to ${tokenAmount}
       totalSupply = await metatokenContract.tokenSupply(safcParentID);
 
-      expect(totalSupply).to.equals(tokenAmount);
-      expect(await metaToken.tokenSupply(safcParentID)).to.equals(tokenAmount);
+      expect(totalSupply).to.equals(parseEther(tokenAmount.toString()));
+      expect(await metaToken.tokenSupply(safcParentID)).to.equals(parseEther(tokenAmount.toString()));
     });
 
     it("Authorized revoker should be able to revoke meta-certificate", async () => {
@@ -2824,7 +2824,7 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // check that meta-certificate is not revoked
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
@@ -2904,7 +2904,7 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // revoke meta-certificate
       tx = await metatokenContract
@@ -2985,7 +2985,7 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // check that meta-certificate is not revoked
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
@@ -3062,7 +3062,7 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // direct revocation of meta-certificate on metaToken contract should revert
       const metaToken = await ethers.getContractAt(
@@ -3087,7 +3087,6 @@ describe("IssuerFacet", function () {
 
       const safcParentID = 1;
       const tokenAmount = 42;
-      // const receiver = wallets[1];
 
       // issue SAFC
       const proofData = generateProofData({ volume: tokenAmount });
@@ -3117,11 +3116,11 @@ describe("IssuerFacet", function () {
           metaTokenURI
         );
 
-      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // revocation of meta-certificate should revert
       const nonRevoker = wallets[2];
@@ -3178,7 +3177,7 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
+        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // revoking parent certificate should revoke associated meta-certificate
       tx = await proofManagerContract
@@ -3243,13 +3242,10 @@ describe("IssuerFacet", function () {
         votingContract,
         issuerContract,
         metatokenContract,
-        proofManagerContract,
       } = await loadFixture(initFixture);
 
       const safcParentID = 1;
-      const tokenAmount = 42;
-
-      const proofData = generateProofData({ volume: tokenAmount });
+      const proofData = generateProofData({ volume: 42 });
 
       await reachConsensus(
         proofData.inputHash,

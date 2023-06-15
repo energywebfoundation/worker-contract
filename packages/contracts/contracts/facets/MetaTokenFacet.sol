@@ -17,16 +17,17 @@ contract MetaTokenFacet is IMetaToken {
      * @notice issueMetaToken - Issues new token units of metaceritificate
      * @dev This function reverts when the metatoken feature is not enabled
      * @param parentCertificateID - ID of the parent certificate
-     * @param amount - Amount of meta tokens to be issued
+     * @param volume - Amount of meta tokens to be issued
      * @param receiver - Address of the receiver of the issued tokens
      */
     function issueMetaToken(
         uint256 parentCertificateID,
-        uint256 amount,
+        uint256 volume,
         address receiver,
         string memory tokenUri
     ) external onlyWhenEnabled {
         LibClaimManager.checkEnrolledIssuer(msg.sender); //verify that the sender is an authorized issuer
+        uint256 amount = volume * 1 ether;
         LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
         // solhint-disable-next-line not-rely-on-time
         emit MetaTokenIssued(parentCertificateID, receiver, block.timestamp, amount);
