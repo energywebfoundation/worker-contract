@@ -114,8 +114,12 @@ library LibMetaToken {
      * @param tokenID - ID of the meta token to be claimed
      * @param amount - Amount of meta tokens to be claimed
      */
-    function claimMetaToken(uint256 tokenID, uint256 amount) internal {
-        MetaToken(getMetaTokenAddress()).claimMetaTokenFor(tokenID, amount, msg.sender);
+    function claimMetaTokenFor(
+        uint256 tokenID,
+        uint256 amount,
+        address owner
+    ) internal {
+        MetaToken(getMetaTokenAddress()).claimMetaTokenFor(tokenID, amount, owner);
     }
 
     /**

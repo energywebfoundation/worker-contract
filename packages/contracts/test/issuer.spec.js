@@ -36,10 +36,11 @@ describe("IssuerFacet", function () {
   let grantRole;
   let revokeRole;
 
-  const initMetatTokenFixture = async () => {
+  const initMetaTokenFixture = async () => {
     const {
       worker,
       issuer,
+      claimer,
       receiver,
       votingContract,
       issuerContract,
@@ -83,6 +84,7 @@ describe("IssuerFacet", function () {
         .withArgs(safcParentID, receiver.address, timestamp, tokenAmount);
     
     return {
+      claimer,
       receiver,
       volume: tokenAmount,
       metatokenContract,
@@ -3056,7 +3058,7 @@ describe("IssuerFacet", function () {
           metaTokenURI
         );
 
-      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      const timestamp = await getTimeStamp(tx);
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
@@ -3273,7 +3275,7 @@ describe("IssuerFacet", function () {
 
   describe("Meta-Certificate Retirements", () => {
     it("Should correctly retire a meta-certificate", async () => {
-      const { receiver, volume, metatokenContract, certificateID } = await loadFixture(initMetatTokenFixture);
+      const { receiver, volume, metatokenContract, certificateID } = await loadFixture(initMetaTokenFixture);
 
       const beforeClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
       expect(beforeClaimBalance).to.equal(volume);
@@ -3300,6 +3302,131 @@ describe("IssuerFacet", function () {
         metatokenContract
           .claimMetaToken(certificateID, tokenAmount)
       ).to.be.revertedWith("MetaTokenIssuanceDisabled()");
+    });
+
+    it("should revert when trying to delegately retire a meta-certificate when the feature is disabled", async () => {
+      const {
+        receiver,
+        metatokenContract
+      } = await loadFixture(initWithoutMetaTokenFixture);
+
+      const certificateID = 1;
+      const tokenAmount = 42;
+
+      await expect(
+        metatokenContract
+          .claimMetaTokenFor(certificateID, tokenAmount, receiver.address)
+      ).to.be.revertedWith("MetaTokenIssuanceDisabled()");
+    });
+
+    it("should revert when non enrolled claimer tries to delegately retire meta-certificate", async () => {
+      const {
+        volume,
+        receiver,
+        certificateID,
+        metatokenContract
+      } = await loadFixture(initMetaTokenFixture);
+
+      const claimTx = metatokenContract.connect(receiver).claimMetaTokenFor(
+        certificateID,
+        parseEther(volume.toString()),
+        receiver.address
+      );
+
+      await expect(claimTx).to.be.revertedWith(`NotEnrolledClaimer("${receiver.address}")`);
+    });
+
+    it("should allow an athorized claimer to delegately retire meta-certifificate", async () => {
+      const {
+        volume,
+        claimer,
+        receiver,
+        certificateID,
+        metatokenContract,
+      } = await loadFixture(initMetaTokenFixture);
+
+      const claimTx = await metatokenContract
+        .connect(claimer)
+        .claimMetaTokenFor(
+          certificateID,
+          volume,
+          receiver.address
+      );
+
+      await claimTx.wait()
+      
+      const timestamp = await getTimeStamp(claimTx);
+
+      await expect(claimTx)
+        .to.emit(metatokenContract, `MetaTokenClaimed`)
+      .withArgs(certificateID, claimer.address, timestamp, volume)
+    });
+
+    it("should revert when trying to delegately retire without balance", async () => {
+      const {
+        volume,
+        claimer,
+        certificateID,
+        metatokenContract
+      } = await loadFixture(initMetaTokenFixture);
+
+      const notOwner = claimer.address;
+
+      const expectedErrorMessage = `InsufficientBalance("${claimer.address}", ${certificateID}, ${volume})`
+
+      await expect(
+        metatokenContract.connect(claimer).claimMetaTokenFor(certificateID, volume, notOwner)
+      ).to.be.revertedWith(expectedErrorMessage)
+    });
+
+    it("should allow a user to directly retire meta-certificate", async () => {
+      const {
+        volume,
+        receiver,
+        certificateID,
+        metatokenContract
+      } = await loadFixture(initMetaTokenFixture);
+
+      const metaToken = await ethers.getContractAt(
+        "MetaToken",
+        await metatokenContract.getMetaTokenAddress()
+      );
+
+      let receiverBalance = await metaToken.getBalanceOf(receiver.address, certificateID);
+
+      expect(receiverBalance).to.equal(volume);
+
+      const claimTx = await metaToken.connect(receiver).claimMetaToken(certificateID, volume)
+      const timestamp = await getTimeStamp(claimTx);
+
+      await expect(claimTx)
+        .to.emit(metaToken, 'MetaTokenClaimed')
+        .withArgs(certificateID, receiver.address, timestamp, volume);
+      
+      receiverBalance = await metaToken.getBalanceOf(receiver.address, certificateID);
+
+      expect(receiverBalance).to.equal(0);
+    });
+
+    it("should revert non admin tries to delegately retire meta-certificate", async () => {
+      const {
+        volume,
+        claimer,
+        receiver,
+        certificateID,
+        metatokenContract,
+      } = await loadFixture(initMetaTokenFixture);
+
+      const metaToken = await ethers.getContractAt(
+        "MetaToken",
+        await metatokenContract.getMetaTokenAddress()
+      );
+
+      await expect(
+        metaToken
+          .connect(claimer)
+          .claimMetaTokenFor(certificateID, volume, receiver.address)
+      ).to.be.revertedWith(`NotAdmin("${claimer.address}")`)
     });
   });
 

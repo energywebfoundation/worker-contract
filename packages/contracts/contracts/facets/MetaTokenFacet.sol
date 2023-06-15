@@ -15,6 +15,7 @@ contract MetaTokenFacet is IMetaToken {
 
     /**
      * @notice issueMetaToken - Issues new token units of metaceritificate
+     * @dev This function reverts when the metatoken feature is not enabled
      * @param parentCertificateID - ID of the parent certificate
      * @param amount - Amount of meta tokens to be issued
      * @param receiver - Address of the receiver of the issued tokens
@@ -46,21 +47,30 @@ contract MetaTokenFacet is IMetaToken {
 
     /**
      * @notice `claimMetaToken` - Claims a meta token
-     * @param certiticateID - ID of the meta token to be claimed
+     * @dev This function reverts when the metatoken feature is not enabled
+     * @param certificateID - ID of the meta token to be claimed
      * @param amount - Amount of meta tokens to be claimed
      */
-    function claimMetaToken(uint256 certiticateID, uint256 amount) external onlyWhenEnabled {
-        LibMetaToken.claimMetaToken(certiticateID, amount);
-        // solhint-disable-next-line not-rely-on-time
-        emit MetaTokenClaimed(certiticateID, msg.sender, block.timestamp, amount);
+    function claimMetaToken(uint256 certificateID, uint256 amount) external onlyWhenEnabled {
+        _claimMetaTokenFor(certificateID, amount, msg.sender);
     }
 
+    /**
+     * @notice claimMetaTokenFor - Claims a meta token on the behalf of the owner
+     * @dev This function can only be called by an enrolled claimer
+     * @dev This function reverts if the meta token is already retired
+     * @dev This function reverts when the metatoken feature is not enabled
+     * @param certificateID - ID of the meta certificate to be claimed
+     * @param amount - amount of meta tokens to be claimed
+     * @param owner - address of the owner of the meta token
+     */
     function claimMetaTokenFor(
-        uint256 certiticateID,
+        uint256 certificateID,
         uint256 amount,
         address owner
     ) external onlyWhenEnabled {
-        //TODO - Implement this function
+        LibClaimManager.checkEnrolledClaimer(msg.sender);
+        _claimMetaTokenFor(certificateID, amount, owner);
     }
 
     /**
@@ -97,5 +107,23 @@ contract MetaTokenFacet is IMetaToken {
      */
     function isMetaTokenRevoked(uint256 tokenID) external view returns (bool) {
         return LibMetaToken.isMetaTokenRevoked(tokenID);
+    }
+
+    /**
+     * @notice claimMetaTokenFor - Claims a meta token on the behalf of the owner
+     * @dev This function can only be called by an enrolled claimer
+     * @dev This function reverts if the meta token is already retired
+     * @param certificateID - ID of the meta certificate to be claimed
+     * @param amount - amount of meta tokens to be claimed
+     * @param owner - address of the owner of the meta token
+     */
+    function _claimMetaTokenFor(
+        uint256 certificateID,
+        uint256 amount,
+        address owner
+    ) private {
+        LibMetaToken.claimMetaTokenFor(certificateID, amount, owner);
+        // solhint-disable-next-line not-rely-on-time
+        emit MetaTokenClaimed(certificateID, msg.sender, block.timestamp, amount);
     }
 }
