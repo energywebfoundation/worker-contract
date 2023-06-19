@@ -13,6 +13,8 @@ library LibMetaToken {
         address metaTokenAddress;
         // Mapping from parent certificate ID to the amount of meta tokens issued
         mapping(address => mapping(uint256 => uint256)) metaTokenIssued;
+        // Mapping from token ID to account balances, to track how much of certificate ID a wallet has claimed
+        mapping(uint256 => mapping(address => uint256)) claimedBalances;
     }
 
     /**
@@ -123,6 +125,20 @@ library LibMetaToken {
     }
 
     /**
+     * @notice registerClaimedMetaToken - Registers a claimed Meta Token
+     * @param certificateID ID of the claimed certificate
+     * @param owner address of the user claiming the certificate
+     * @param claimedAmount amount of the certificate being claimed
+     */
+    function registerClaimedMetaToken(
+        uint256 certificateID,
+        address owner,
+        uint256 claimedAmount
+    ) internal {
+        getStorage().claimedBalances[certificateID][owner] += claimedAmount;
+    }
+
+    /**
      * @notice getMetaTokenAddress - Gets the address of the deployed ERC1155 meta token contract
      * @return metaTokenManager - The address of the deployed ERC1155 meta token contract
      */
@@ -164,6 +180,15 @@ library LibMetaToken {
      */
     function isEnabled() internal view returns (bool) {
         return getStorage().isMetaCertificateEnabled;
+    }
+
+    /**
+     *@notice claimedBalanceOf  - returns the amount volume of certifcates ID claimed by a owner
+     * @param user - The user for whom we check claimed balance for
+     * @param certificateID - ID of the greenproof certificate
+     */
+    function claimedBalanceOf(address user, uint256 certificateID) internal view returns (uint256) {
+        return getStorage().claimedBalances[certificateID][user];
     }
 
     /**

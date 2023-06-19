@@ -3287,6 +3287,12 @@ describe("IssuerFacet", function () {
       const beforeClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
       expect(beforeClaimBalance).to.equal(volume);
 
+      const initialClaimedAmount = await metatokenContract.balanceClaimed(
+        receiver.address,
+        certificateID
+      );
+      expect(initialClaimedAmount).to.equal(0);
+
       const claimTx = await metatokenContract.connect(receiver).claimMetaToken(certificateID, volume)
       const timestamp = await getTimeStamp(claimTx);
 
@@ -3295,6 +3301,13 @@ describe("IssuerFacet", function () {
 
       const afterClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
       expect(afterClaimBalance).to.equal(0);
+
+      const finalClaimedAmount = await metatokenContract.balanceClaimed(
+        receiver.address,
+        certificateID
+      );
+
+      expect(finalClaimedAmount).to.equal(volume);
     });
 
     it("should revert when trying to retire a meta-certificate when the feature is disabled", async () => {

@@ -102,6 +102,15 @@ contract MetaTokenFacet is IMetaToken {
     }
 
     /**
+     *@notice balanceClaimed  - returns the amount volume of certifcates ID claimed by a owner
+     * @param user - The user for whom we check claimed balance for
+     * @param certificateID - ID of the greenproof certificate
+     */
+    function balanceClaimed(address user, uint256 certificateID) external view returns (uint256) {
+        return LibMetaToken.claimedBalanceOf(user, certificateID);
+    }
+
+    /**
      * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked
      * @param tokenID - ID of the meta token
      * @return bool - True if the meta token is revoked
@@ -124,6 +133,7 @@ contract MetaTokenFacet is IMetaToken {
         address owner
     ) private {
         LibMetaToken.claimMetaTokenFor(certificateID, amount, owner);
+        LibMetaToken.registerClaimedMetaToken(certificateID, owner, amount);
         // solhint-disable-next-line not-rely-on-time
         emit MetaTokenClaimed(certificateID, msg.sender, block.timestamp, amount);
     }
