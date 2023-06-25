@@ -1912,23 +1912,21 @@ describe("IssuerFacet", function () {
     });
 
     it("Should revert when issuing meta-certitificate for not owned parent certificate", async () => {
-      const { issuer, metatokenContract, receiver } = await loadFixture(
-        initFixture
-      );
-      const safcParentID = 1;
+      const { issuer, metatokenContract, receiver } = await loadFixture(initFixture);
+      const certificateID = 1;
       const tokenAmount = 42;
 
       await expect(
         metatokenContract
           .connect(issuer)
           .issueMetaToken(
-            safcParentID,
+            certificateID,
             tokenAmount,
             receiver.address,
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, 0)`
+        `NotAllowedIssuance(${certificateID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, 0)`
       );
     });
 
@@ -2039,37 +2037,18 @@ describe("IssuerFacet", function () {
     it("should not issue meta-certificates when the feature is disabled", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        proofData,
-        votingContract,
-        issuerContract,
         metatokenContract,
       } = await loadFixture(initWithoutMetaTokenFixture);
 
-      const safcParentID = 1;
+      const certificateID = 1;
       const tokenAmount = 42;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       await expect(
         metatokenContract
           .connect(issuer)
           .issueMetaToken(
-            safcParentID,
+            certificateID,
             tokenAmount,
             receiver.address,
             metaTokenURI
