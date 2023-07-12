@@ -5,7 +5,8 @@ import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
 import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
+
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
 /**
@@ -164,13 +165,7 @@ library LibIssuer {
      * @param certificateID ID of the certificate
      * @param voteID ID of the vote associated to the certificate
      */
-    function registerProof(
-        bytes32 dataHash,
-        address generatorAddress,
-        uint256 volumeInWei,
-        uint256 certificateID,
-        bytes32 voteID
-    ) internal {
+    function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.certificates[certificateID] = IProofIssuer.Certificate({
@@ -191,11 +186,7 @@ library LibIssuer {
      * @param user address of the user claiming the certificate
      * @param claimedAmount amount of the certificate being claimed
      */
-    function registerClaimedProof(
-        uint256 certificateID,
-        address user,
-        uint256 claimedAmount
-    ) internal {
+    function registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
         getStorage().claimedBalances[certificateID][user] += claimedAmount;
     }
 
@@ -205,11 +196,7 @@ library LibIssuer {
      * @param key key of the data being disclosed
      * @param value value of the data being disclosed
      */
-    function discloseData(
-        bytes32 dataHash,
-        string memory key,
-        string memory value
-    ) internal {
+    function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.disclosedData[dataHash][key] = value;
@@ -223,11 +210,7 @@ library LibIssuer {
      * @param shouldBeApproved status of the approval to set
      * @dev when the approval is being set to true, `msg.sender` cannot be the same as `operator`
      */
-    function setApprovalFor(
-        address certificateOwner,
-        address operator,
-        bool shouldBeApproved
-    ) internal {
+    function setApprovalFor(address certificateOwner, address operator, bool shouldBeApproved) internal {
         if (shouldBeApproved && msg.sender == operator) {
             revert ForbiddenSelfApproval(msg.sender, certificateOwner);
         }
@@ -473,11 +456,7 @@ library LibIssuer {
      * @param dataHash hash of the data associated to the certificate
      * @param amountProof proof of the volume of the certificate
      */
-    function checkVolumeValidity(
-        uint256 volume,
-        bytes32 dataHash,
-        bytes32[] memory amountProof
-    ) internal pure {
+    function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
         bytes32 volumeHash = getAmountHash(volume);
 
         bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);

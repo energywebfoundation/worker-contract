@@ -20,12 +20,7 @@ contract MetaTokenFacet is IMetaToken {
      * @param volume - Amount of meta tokens to be issued
      * @param receiver - Address of the receiver of the issued tokens
      */
-    function issueMetaToken(
-        uint256 parentCertificateID,
-        uint256 volume,
-        address receiver,
-        string memory tokenUri
-    ) external onlyWhenEnabled {
+    function issueMetaToken(uint256 parentCertificateID, uint256 volume, address receiver, string memory tokenUri) external onlyWhenEnabled {
         LibClaimManager.checkEnrolledIssuer(msg.sender); //verify that the sender is an authorized issuer
         uint256 amount = volume * 1 ether;
         LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
@@ -65,11 +60,7 @@ contract MetaTokenFacet is IMetaToken {
      * @param amount - amount of meta tokens to be claimed
      * @param owner - address of the owner of the meta token
      */
-    function claimMetaTokenFor(
-        uint256 certificateID,
-        uint256 amount,
-        address owner
-    ) external onlyWhenEnabled {
+    function claimMetaTokenFor(uint256 certificateID, uint256 amount, address owner) external onlyWhenEnabled {
         LibClaimManager.checkEnrolledClaimer(msg.sender);
         _claimMetaTokenFor(certificateID, amount, owner);
     }
@@ -127,11 +118,7 @@ contract MetaTokenFacet is IMetaToken {
      * @param amount - amount of meta tokens to be claimed
      * @param owner - address of the owner of the meta token
      */
-    function _claimMetaTokenFor(
-        uint256 certificateID,
-        uint256 amount,
-        address owner
-    ) private {
+    function _claimMetaTokenFor(uint256 certificateID, uint256 amount, address owner) private {
         LibMetaToken.claimMetaTokenFor(certificateID, amount, owner);
         LibMetaToken.registerClaimedMetaToken(certificateID, owner, amount);
         // solhint-disable-next-line not-rely-on-time

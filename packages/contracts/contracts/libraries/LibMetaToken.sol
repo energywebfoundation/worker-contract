@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
 import {MetaToken} from "../dependencies/MetaToken.sol";
-import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
 
 library LibMetaToken {
     struct MetaTokenStorage {
@@ -55,11 +55,7 @@ library LibMetaToken {
      * @dev Error: Issuance of the meta-certificate is not allowed
      * @dev reverts if the receiver is not allowed to issue this amount of meta tokens
      */
-    function checkAllowedIssuance(
-        address receiver,
-        uint256 parentCertificateID,
-        uint256 toIssueVolume
-    ) internal view {
+    function checkAllowedIssuance(address receiver, uint256 parentCertificateID, uint256 toIssueVolume) internal view {
         uint256 availableParentVolume = IERC1155(address(this)).balanceOf(receiver, parentCertificateID);
         uint256 alreadyIssuedVolume = getStorage().metaTokenIssued[receiver][parentCertificateID];
         uint256 allowedIssuanceVolume = availableParentVolume - alreadyIssuedVolume;
@@ -86,12 +82,7 @@ library LibMetaToken {
      * @param amount - Amount of meta tokens to be issued
      * @param receiver - Address of the receiver of the issued tokens
      */
-    function issueMetaToken(
-        uint256 parentCertificateID,
-        uint256 amount,
-        address receiver,
-        string memory tokenUri
-    ) internal {
+    function issueMetaToken(uint256 parentCertificateID, uint256 amount, address receiver, string memory tokenUri) internal {
         LibIssuer.preventZeroAddressReceiver(receiver); //verify that the receiver is not a zero address
         checkAllowedIssuance(receiver, parentCertificateID, amount); // verify that the receiver is allowed to issue this amount meta tokens
         address metaTokenAddress = getMetaTokenAddress();
@@ -116,11 +107,7 @@ library LibMetaToken {
      * @param tokenID - ID of the meta token to be claimed
      * @param amount - Amount of meta tokens to be claimed
      */
-    function claimMetaTokenFor(
-        uint256 tokenID,
-        uint256 amount,
-        address owner
-    ) internal {
+    function claimMetaTokenFor(uint256 tokenID, uint256 amount, address owner) internal {
         MetaToken(getMetaTokenAddress()).claimMetaTokenFor(tokenID, amount, owner);
     }
 
@@ -130,11 +117,7 @@ library LibMetaToken {
      * @param owner address of the user claiming the certificate
      * @param claimedAmount amount of the certificate being claimed
      */
-    function registerClaimedMetaToken(
-        uint256 certificateID,
-        address owner,
-        uint256 claimedAmount
-    ) internal {
+    function registerClaimedMetaToken(uint256 certificateID, address owner, uint256 claimedAmount) internal {
         getStorage().claimedBalances[certificateID][owner] += claimedAmount;
     }
 

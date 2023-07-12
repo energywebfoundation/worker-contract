@@ -54,15 +54,15 @@ library LibVoting {
      * @notice Whenever you wish to update your app and add more variable to the storage, make sure to add them at the end of te struct
      */
     struct VotingStorage {
-        uint256 timeLimit; /* limit of duration of a voting session. The vote is considered expired after `startTimestamp` + `timeLimit` */
-        uint256 majorityPercentage; /* Percentage of workers that have to vote on the same result to reach the majority  */
-        address payable[] whitelistedWorkers; /* List of all whitelisted workers */
-        bytes32[] votingIDs; /* List of all voting identifiers */
-        mapping(bytes32 => Voting) votingIDToVoting; /* Quick access to a specific voting */
-        mapping(address => uint256) workerToIndex; /* Quick access to a specific worker's index inside the `workers` whitelist */
+        uint256 timeLimit /* limit of duration of a voting session. The vote is considered expired after `startTimestamp` + `timeLimit` */;
+        uint256 majorityPercentage /* Percentage of workers that have to vote on the same result to reach the majority  */;
+        address payable[] whitelistedWorkers /* List of all whitelisted workers */;
+        bytes32[] votingIDs /* List of all voting identifiers */;
+        mapping(bytes32 => Voting) votingIDToVoting /* Quick access to a specific voting */;
+        mapping(address => uint256) workerToIndex /* Quick access to a specific worker's index inside the `workers` whitelist */;
         // Next two fields are used to expose result of completed voting session
-        mapping(bytes32 => mapping(bytes32 => bytes32)) matches; /* Records the consensus of a specific votingID/sessionID */
-        mapping(bytes32 => mapping(bytes32 => address payable[])) winners; /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the right workers */
+        mapping(bytes32 => mapping(bytes32 => bytes32)) matches /* Records the consensus of a specific votingID/sessionID */;
+        mapping(bytes32 => mapping(bytes32 => address payable[])) winners /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the right workers */;
     }
 
     /**
@@ -269,11 +269,7 @@ library LibVoting {
         @param dataHash: the hash of the data we want to verify
         @param dataProof: the merkle proof of the data
      */
-    function checkVoteInConsensus(
-        bytes32 voteID,
-        bytes32 dataHash,
-        bytes32[] memory dataProof
-    ) internal view {
+    function checkVoteInConsensus(bytes32 voteID, bytes32 dataHash, bytes32[] memory dataProof) internal view {
         bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(voteID);
         uint256 numberOfMatchResults = matchResults.length;
         bool isVoteInConsensus;
