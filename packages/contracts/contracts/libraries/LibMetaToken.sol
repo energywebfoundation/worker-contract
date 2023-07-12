@@ -18,6 +18,11 @@ library LibMetaToken {
     }
 
     /**
+     * @dev Tracking the storage position of the issuerStorage
+     */
+    bytes32 private constant _META_TOKEN_STORAGE_POSITION = keccak256("ewc.greenproof.metaToken.diamond.storage");
+
+    /**
      * @notice event emitted when meta tokens are issued
      * @param parentCertificateID - ID of the meta token to be issued
      * @param receiver - address of the receiver of the issued tokens
@@ -41,40 +46,6 @@ library LibMetaToken {
      * @param availableVolume available volume of the parent certificate
      */
     error NotAllowedIssuance(uint256 certificateID, address receiver, uint256 toIssueVolume, uint256 availableVolume);
-
-    /**
-     * @dev Tracking the storage position of the issuerStorage
-     */
-    bytes32 private constant _META_TOKEN_STORAGE_POSITION = keccak256("ewc.greenproof.metaToken.diamond.storage");
-
-    /**
-     * @notice checkAllowedIssuance - checks if the receiver is allowed to issue this amount of meta tokens
-     * @param receiver address of the receiver of the meta tokens
-     * @param parentCertificateID ID of the parent certificate
-     * @param toIssueVolume volume of the meta tokens to be issued
-     * @dev Error: Issuance of the meta-certificate is not allowed
-     * @dev reverts if the receiver is not allowed to issue this amount of meta tokens
-     */
-    function checkAllowedIssuance(address receiver, uint256 parentCertificateID, uint256 toIssueVolume) internal view {
-        uint256 availableParentVolume = IERC1155(address(this)).balanceOf(receiver, parentCertificateID);
-        uint256 alreadyIssuedVolume = getStorage().metaTokenIssued[receiver][parentCertificateID];
-        uint256 allowedIssuanceVolume = availableParentVolume - alreadyIssuedVolume;
-        bool isParentCertificateRevoked = LibIssuer.isCertificateRevoked(parentCertificateID);
-        if (availableParentVolume == 0 || allowedIssuanceVolume < toIssueVolume || isParentCertificateRevoked) {
-            revert NotAllowedIssuance(parentCertificateID, receiver, toIssueVolume, allowedIssuanceVolume);
-        }
-    }
-
-    /**
-     * @notice checkExistance - checks if a meta token exists
-     * @param tokenID - ID of the meta token
-     * @dev reverts if the meta token does not exist
-     */
-    function checkExistance(uint256 tokenID) internal view {
-        if (totalSupply(tokenID) == 0) {
-            revert IMetaToken.MetaTokenNotFound(tokenID);
-        }
-    }
 
     /**
      * @notice issueMetaToken - Issues new token units of metaceritificate
@@ -119,6 +90,35 @@ library LibMetaToken {
      */
     function registerClaimedMetaToken(uint256 certificateID, address owner, uint256 claimedAmount) internal {
         getStorage().claimedBalances[certificateID][owner] += claimedAmount;
+    }
+
+    /**
+     * @notice checkAllowedIssuance - checks if the receiver is allowed to issue this amount of meta tokens
+     * @param receiver address of the receiver of the meta tokens
+     * @param parentCertificateID ID of the parent certificate
+     * @param toIssueVolume volume of the meta tokens to be issued
+     * @dev Error: Issuance of the meta-certificate is not allowed
+     * @dev reverts if the receiver is not allowed to issue this amount of meta tokens
+     */
+    function checkAllowedIssuance(address receiver, uint256 parentCertificateID, uint256 toIssueVolume) internal view {
+        uint256 availableParentVolume = IERC1155(address(this)).balanceOf(receiver, parentCertificateID);
+        uint256 alreadyIssuedVolume = getStorage().metaTokenIssued[receiver][parentCertificateID];
+        uint256 allowedIssuanceVolume = availableParentVolume - alreadyIssuedVolume;
+        bool isParentCertificateRevoked = LibIssuer.isCertificateRevoked(parentCertificateID);
+        if (availableParentVolume == 0 || allowedIssuanceVolume < toIssueVolume || isParentCertificateRevoked) {
+            revert NotAllowedIssuance(parentCertificateID, receiver, toIssueVolume, allowedIssuanceVolume);
+        }
+    }
+
+    /**
+     * @notice checkExistance - checks if a meta token exists
+     * @param tokenID - ID of the meta token
+     * @dev reverts if the meta token does not exist
+     */
+    function checkExistance(uint256 tokenID) internal view {
+        if (totalSupply(tokenID) == 0) {
+            revert IMetaToken.MetaTokenNotFound(tokenID);
+        }
     }
 
     /**

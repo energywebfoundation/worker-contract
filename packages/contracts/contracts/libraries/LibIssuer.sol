@@ -63,6 +63,11 @@ library LibIssuer {
     }
 
     /**
+     * @dev Tracking the storage position of the issuerStorage
+     */
+    bytes32 private constant _ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
+
+    /**
      * @notice ProofMinted event emitted when a new green proof certificate is minted
      * @param certificateID ID of the minted certificate
      * @param volume volume of the minted certificate
@@ -131,11 +136,6 @@ library LibIssuer {
     error NotOwnerOrApproved(address operator, address owner);
 
     error BatchQueueSizeExceeded(uint256 batchQueueSize, uint256 batchQueueSizeLimit);
-
-    /**
-     * @dev Tracking the storage position of the issuerStorage
-     */
-    bytes32 private constant _ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
     /**
      * @dev Initialize the contract with a revocable period for certificates
@@ -279,15 +279,6 @@ library LibIssuer {
     }
 
     /**
-     * @dev Get the hash representation of the volume key-value pair inside the data to certify
-     * @return volumeHash
-     */
-    function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
-        string memory volumeString = UintUtils.toString(volume);
-        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
-    }
-
-    /**
      * @notice Checks if a certificate has been revoked
      * @param certificateID ID of the certificate
      * @return true if the certificate has been revoked, false otherwise
@@ -380,17 +371,6 @@ library LibIssuer {
     }
 
     /**
-     * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
-     * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
-     * @param receiver address of the receiver of the certificate
-     */
-    function preventZeroAddressReceiver(address receiver) internal pure {
-        if (receiver == address(0)) {
-            revert ForbiddenZeroAddressReceiver();
-        }
-    }
-
-    /**
      *@notice claimedBalanceOf  - returns the amount volume of certifcates ID claimed by a user
      * @param user - The user for whom we check claimed balance for
      * @param certificateID - ID of the greenproof certificate
@@ -447,6 +427,26 @@ library LibIssuer {
      */
     function getTokenSymbol() internal view returns (string memory) {
         return getStorage().symbol;
+    }
+
+    /**
+     * @dev Get the hash representation of the volume key-value pair inside the data to certify
+     * @return volumeHash
+     */
+    function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
+        string memory volumeString = UintUtils.toString(volume);
+        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+
+    /**
+     * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
+     * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
+     * @param receiver address of the receiver of the certificate
+     */
+    function preventZeroAddressReceiver(address receiver) internal pure {
+        if (receiver == address(0)) {
+            revert ForbiddenZeroAddressReceiver();
+        }
     }
 
     /**
