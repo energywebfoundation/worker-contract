@@ -3,7 +3,7 @@ const {
   FacetCutAction,
   removeSelectors,
   findIndexOfAddressInFacets,
-} = require("../scripts/deploy");
+} = require("../deploy");
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
 const { assert, expect } = require("chai");
@@ -12,7 +12,7 @@ const chai = require("chai");
 const { roles } = require("./utils/roles.utils");
 const { getTimeStamp } = require("./utils/time.utils");
 
-const { deployGreenproof } = require("../scripts/deploy/deployContracts");
+const { deployGreenproof } = require("../deploy/deployContracts");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 

@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { utils } = require("ethers");
 const {
   DEFAULT_REWARD_AMOUNT,
-} = require("../../scripts/deploy/deployContracts");
+} = require("../../deploy/deployContracts");
 
 const { formatEther } = utils;
 

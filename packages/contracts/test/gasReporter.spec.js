@@ -1,7 +1,7 @@
 const chai = require('chai');
 const { expect } = require('chai');
 const { parseEther } = require('ethers').utils;
-const { deployGreenproof } = require('../scripts/deploy/deployContracts');
+const { deployGreenproof } = require('../deploy/deployContracts');
 const { ethers } = require('hardhat');
 const { solidity } = require('ethereum-waffle');
 const { roles } = require('./utils/roles.utils');
