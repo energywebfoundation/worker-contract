@@ -229,9 +229,10 @@ module.exports.permissionsTests = function () {
     const startSessionIndex = 0;
     const maxSessionsPerVoteToCancel = 1;
 
+    const nonOwner = workers[ 1 ].wallet;
     await expect(
-      votingContract.connect(workers[1].wallet).cancelExpiredVotings(startVotingIndex, maxVotesToCancel, startSessionIndex, maxSessionsPerVoteToCancel)
-    ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      votingContract.connect(nonOwner).cancelExpiredVotings(startVotingIndex, maxVotesToCancel, startSessionIndex, maxSessionsPerVoteToCancel)
+    ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
   });
 
   it("reverts when non owner tries to cancel expired votings", async () => {
@@ -254,9 +255,10 @@ module.exports.permissionsTests = function () {
     const startVotingIndex = 0;
     const startSessionIndex = 0;
     const maxSessionsPerVoteToCancel = 1;
+    const nonOwner = workers[ 0 ].wallet;
 
     await expect(
-      votingContract.connect(workers[0].wallet).cancelExpiredVotings(startVotingIndex, maxVotesToCancel, startSessionIndex, maxSessionsPerVoteToCancel)
-    ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      votingContract.connect(nonOwner).cancelExpiredVotings(startVotingIndex, maxVotesToCancel, startSessionIndex, maxSessionsPerVoteToCancel)
+    ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
   });
 };
