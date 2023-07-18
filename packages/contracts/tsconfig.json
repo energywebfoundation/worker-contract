@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "es2018",
+    "target": "ES6",
     "module": "commonjs",
     "esModuleInterop": true,
     "outDir": "scripts",
@@ -10,7 +10,5 @@
     "skipLibCheck": true,
     "noImplicitThis": false
   },
-  "include": [
-    "./deploy"
-  ]
+  "include": ["./hardhat.config.ts", "./scripts", "./deploy", "./test"]
 }

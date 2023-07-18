@@ -1,7 +1,7 @@
 const chai = require("chai");
 const { utils, BigNumber } = require("ethers");
 const { expect } = require("chai");
-const { deployGreenproof } = require("../scripts/deploy/deployContracts");
+const { deployGreenproof } = require("../deploy/deployContracts");
 const { solidity } = require("ethereum-waffle");
 const { roles } = require("./utils/roles.utils");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
@@ -727,7 +727,7 @@ describe("IssuerFacet", function () {
             toTransferAmount,
             transferBytesData
           )
-      ).to.be.revertedWith("insufficient balance");
+      ).to.be.revertedWith("ERC1155Base__TransferExceedsBalance");
     });
 
     it("should revert when one tries to transfer Batch certificates containing token ID = 0", async () => {
@@ -750,7 +750,7 @@ describe("IssuerFacet", function () {
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
-      ).to.be.revertedWith("ERC1155: insufficient balances for transfer");
+      ).to.be.revertedWith("ERC1155Base__TransferExceedsBalance");
     });
 
     it("should revert Batch certificates transfer when caller is not approved", async () => {
@@ -821,7 +821,7 @@ describe("IssuerFacet", function () {
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
-      ).to.be.revertedWith("'ERC1155: insufficient balances for transfer");
+      ).to.be.revertedWith("'ERC1155Base__TransferExceedsBalance");
     });
 
     it("should revert Batch certificates transfers to a non generator wallet containing revoked certificate", async () => {
@@ -981,7 +981,7 @@ describe("IssuerFacet", function () {
             parseEther("2"),
             transferBytesData
           )
-      ).to.be.revertedWith("insufficient balance");
+      ).to.be.revertedWith("ERC1155Base__TransferExceedsBalance");
     });
 
     it("should correctly transfer certificates", async () => {
