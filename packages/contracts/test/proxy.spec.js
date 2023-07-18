@@ -3,7 +3,7 @@ const {
   FacetCutAction,
   removeSelectors,
   findIndexOfAddressInFacets,
-} = require("../scripts/deploy");
+} = require("../deploy");
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
 const { assert, expect } = require("chai");
@@ -12,7 +12,7 @@ const chai = require("chai");
 const { roles } = require("./utils/roles.utils");
 const { getTimeStamp } = require("./utils/time.utils");
 
-const { deployGreenproof } = require("../scripts/deploy/deployContracts");
+const { deployGreenproof } = require("../deploy/deployContracts");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 
@@ -94,7 +94,7 @@ describe("GreenproofTest", async function () {
     });
 
     it("Greenproof should not be initialized with 0 reward amount", async () => {
-      const contractOwner = (await ethers.getSigners())[ 0 ];
+      const contractOwner = (await ethers.getSigners())[0];
 
       await expect(
         deployGreenproof({
@@ -102,7 +102,7 @@ describe("GreenproofTest", async function () {
           claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: contractOwner.address,
-          rewardAmount: ethers.constants.Zero
+          rewardAmount: ethers.constants.Zero,
         })
       ).to.be.revertedWith("init: Null reward amount");
     });
@@ -116,206 +116,227 @@ describe("GreenproofTest", async function () {
           claimRevokerAddress: claimsRevocationRegistryMocked.address,
           roles,
           contractOwner: contractOwner.address,
-          majorityPercentage: 101
+          majorityPercentage: 101,
         })
-      ).to.be.revertedWith("init: Majority percentage must be between 0 and 100");
-    })
+      ).to.be.revertedWith(
+        "init: Majority percentage must be between 0 and 100"
+      );
+    });
   });
 
   describe("Proxy roles updates tests", () => {
-
     describe("- ClaimManagerAddress update tests", () => {
       it("should revert when updating claimManager with Zero address", async () => {
         const zeroAddress = ethers.constants.AddressZero;
-        await expect(greenproof.updateClaimManager(zeroAddress))
-          .to.be.revertedWith("Cannot update to null address");
+        await expect(
+          greenproof.updateClaimManager(zeroAddress)
+        ).to.be.revertedWith("Cannot update to null address");
       });
 
       it("should revert when updating claimManager with same address", async () => {
-        await expect(greenproof.updateClaimManager(claimManagerMocked.address))
-          .to.be.revertedWith("Same address");
+        await expect(
+          greenproof.updateClaimManager(claimManagerMocked.address)
+        ).to.be.revertedWith("Same address");
       });
 
       it("should revert when non owner tries to update claimManager Address", async () => {
-        const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
-        
+        const newClaimManagerAddress =
+          "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+
         await expect(
-          greenproof.connect(nonOwner).updateClaimManager(newClaimManagerAddress)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+          greenproof
+            .connect(nonOwner)
+            .updateClaimManager(newClaimManagerAddress)
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update claimManager Address", async () => {
         const oldClaimManagerAddress = claimManagerMocked.address;
-        const newClaimManagerAddress = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
-        
-        await expect(greenproof.updateClaimManager(newClaimManagerAddress))
-          .to.emit(greenproof, "ClaimManagerUpdated").withArgs(oldClaimManagerAddress, newClaimManagerAddress);
-      });
+        const newClaimManagerAddress =
+          "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
 
+        await expect(greenproof.updateClaimManager(newClaimManagerAddress))
+          .to.emit(greenproof, "ClaimManagerUpdated")
+          .withArgs(oldClaimManagerAddress, newClaimManagerAddress);
+      });
     });
 
     describe("- ClaimRevocationRegistry update tests", () => {
       it("should revert when updating ClaimRevocationRegistry with Zero address", async () => {
         const zeroAddress = ethers.constants.AddressZero;
-        await expect(greenproof.updateClaimRevocationRegistry(zeroAddress))
-          .to.be.revertedWith("Revocation Registry: null address");
+        await expect(
+          greenproof.updateClaimRevocationRegistry(zeroAddress)
+        ).to.be.revertedWith("Revocation Registry: null address");
       });
 
       it("should revert when updating ClaimRevocationRegistry with same address", async () => {
-        await expect(greenproof.updateClaimRevocationRegistry(claimsRevocationRegistryMocked.address))
-          .to.be.revertedWith("Revocation Registry: Same address");
+        await expect(
+          greenproof.updateClaimRevocationRegistry(
+            claimsRevocationRegistryMocked.address
+          )
+        ).to.be.revertedWith("Revocation Registry: Same address");
       });
 
       it("should revert when non owner tries to update ClaimRevocationRegistry Address", async () => {
-        const newRevocationregistry = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
-        
+        const newRevocationregistry =
+          "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
+
         await expect(
-          greenproof.connect(nonOwner).updateClaimRevocationRegistry(newRevocationregistry)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+          greenproof
+            .connect(nonOwner)
+            .updateClaimRevocationRegistry(newRevocationregistry)
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update ClaimRevocationRegistry Address", async () => {
         const oldRevocationregistry = claimsRevocationRegistryMocked.address;
-        const newRevocationregistry = "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
-        
-        await expect(greenproof.updateClaimRevocationRegistry(newRevocationregistry))
-          .to.emit(greenproof, "ClaimsRevocationRegistryUpdated").withArgs(oldRevocationregistry, newRevocationregistry);
-      });
+        const newRevocationregistry =
+          "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
 
+        await expect(
+          greenproof.updateClaimRevocationRegistry(newRevocationregistry)
+        )
+          .to.emit(greenproof, "ClaimsRevocationRegistryUpdated")
+          .withArgs(oldRevocationregistry, newRevocationregistry);
+      });
     });
 
     describe("- ClaimerRole update tests", () => {
       it("should revert when updating claimerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(greenproof.updateClaimerVersion(sameRoleVersion))
-          .to.be.revertedWith("Same version");
+        await expect(
+          greenproof.updateClaimerVersion(sameRoleVersion)
+        ).to.be.revertedWith("Same version");
       });
 
       it("should revert when non owner tries to update claimerRole version", async () => {
         const newRoleVersion = 2;
-        
+
         await expect(
           greenproof.connect(nonOwner).updateClaimerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update claimerRole version", async () => {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
-        
-        await expect(greenproof.updateClaimerVersion(newRoleVersion))
-          .to.emit(greenproof, "ClaimerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
-      });
 
+        await expect(greenproof.updateClaimerVersion(newRoleVersion))
+          .to.emit(greenproof, "ClaimerVersionUpdated")
+          .withArgs(oldRoleVersion, newRoleVersion);
+      });
     });
 
     describe("- workerRole update tests", () => {
       it("should revert when updating workerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(greenproof.updateWorkerVersion(sameRoleVersion))
-          .to.be.revertedWith("Same version");
+        await expect(
+          greenproof.updateWorkerVersion(sameRoleVersion)
+        ).to.be.revertedWith("Same version");
       });
 
       it("should revert when non owner tries to update workerRole version", async () => {
         const newRoleVersion = 2;
-        
+
         await expect(
           greenproof.connect(nonOwner).updateWorkerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update workerRole version", async () => {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
-        
-        await expect(greenproof.updateWorkerVersion(newRoleVersion))
-          .to.emit(greenproof, "WorkerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
-      });
 
+        await expect(greenproof.updateWorkerVersion(newRoleVersion))
+          .to.emit(greenproof, "WorkerVersionUpdated")
+          .withArgs(oldRoleVersion, newRoleVersion);
+      });
     });
 
     describe("- RevokerRole update tests", () => {
       it("should revert when updating revokerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(greenproof.updateRevokerVersion(sameRoleVersion))
-          .to.be.revertedWith("Same version");
+        await expect(
+          greenproof.updateRevokerVersion(sameRoleVersion)
+        ).to.be.revertedWith("Same version");
       });
 
       it("should revert when non owner tries to update revokerRole version", async () => {
         const newRoleVersion = 2;
-        
+
         await expect(
           greenproof.connect(nonOwner).updateRevokerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update revokerRole version", async () => {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
-        
-        await expect(greenproof.updateRevokerVersion(newRoleVersion))
-          .to.emit(greenproof, "RevokerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
-      });
 
+        await expect(greenproof.updateRevokerVersion(newRoleVersion))
+          .to.emit(greenproof, "RevokerVersionUpdated")
+          .withArgs(oldRoleVersion, newRoleVersion);
+      });
     });
 
     describe("- IssuerRole update tests", () => {
       it("should revert when updating IssuerRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(greenproof.updateIssuerVersion(sameRoleVersion))
-          .to.be.revertedWith("Same version");
+        await expect(
+          greenproof.updateIssuerVersion(sameRoleVersion)
+        ).to.be.revertedWith("Same version");
       });
 
       it("should revert when non owner tries to update IssuerRole version", async () => {
         const newRoleVersion = 2;
-        
+
         await expect(
           greenproof.connect(nonOwner).updateIssuerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update IssuerRole version", async () => {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
-        
-        await expect(greenproof.updateIssuerVersion(newRoleVersion))
-          .to.emit(greenproof, "IssuerVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
-      });
 
+        await expect(greenproof.updateIssuerVersion(newRoleVersion))
+          .to.emit(greenproof, "IssuerVersionUpdated")
+          .withArgs(oldRoleVersion, newRoleVersion);
+      });
     });
-    
+
     describe("- ApproverRole update tests", () => {
       it("should revert when updating approverRole version with same version", async () => {
         const sameRoleVersion = 1;
-        await expect(greenproof.updateApproverVersion(sameRoleVersion))
-          .to.be.revertedWith("Same version");
+        await expect(
+          greenproof.updateApproverVersion(sameRoleVersion)
+        ).to.be.revertedWith("Same version");
       });
 
       it("should revert when non owner tries to update approverRole version", async () => {
         const newRoleVersion = 2;
-        
+
         await expect(
           greenproof.connect(nonOwner).updateApproverVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update approverRole version", async () => {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
-        
+
         await expect(greenproof.updateApproverVersion(newRoleVersion))
-          .to.emit(greenproof, "ApproverVersionUpdated").withArgs(oldRoleVersion, newRoleVersion);
+          .to.emit(greenproof, "ApproverVersionUpdated")
+          .withArgs(oldRoleVersion, newRoleVersion);
       });
-
     });
-  })
+  });
 
-  describe("\n****** Proxy setting tests ******", () => {
-
+  describe("\n****** Proxy Management tests ******", () => {
     it("should revert when non owner tries to pause contract", async () => {
-      await expect(
-        greenproof.connect(nonOwner).pause()
-      ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      await expect(greenproof.connect(nonOwner).pause()).to.be.revertedWith(
+        `NotAuthorized("Owner", "${nonOwner.address}")`
+      );
     });
 
     it("should correctly pause contract", async () => {
@@ -328,16 +349,15 @@ describe("GreenproofTest", async function () {
     });
 
     it("should revert when pausing an already paused contract", async () => {
-
-      await expect(
-        greenproof.pause()
-      ).to.be.revertedWith(`AlreadyPausedContract()`);
+      await expect(greenproof.pause()).to.be.revertedWith(
+        `AlreadyPausedContract()`
+      );
     });
 
     it("should revert when non owner tries to unpause contract", async () => {
-      await expect(
-        greenproof.connect(nonOwner).unPause()
-      ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      await expect(greenproof.connect(nonOwner).unPause()).to.be.revertedWith(
+        `NotAuthorized("Owner", "${nonOwner.address}")`
+      );
     });
 
     it("should correctly unpause contract", async () => {
@@ -347,28 +367,33 @@ describe("GreenproofTest", async function () {
       await expect(tx)
         .to.emit(greenproof, "ContractUnPaused")
         .withArgs(timestamp, owner.address);
-    })
+    });
 
     it("should revert when unpausing an already unpaused contract", async () => {
-      
-      await expect(
-        greenproof.unPause()
-      ).to.be.revertedWith(`AlreadyUnpausedContract()`);
+      await expect(greenproof.unPause()).to.be.revertedWith(
+        `AlreadyUnpausedContract()`
+      );
     });
 
     it("should revert if implementation logic address is not a contract", async () => {
-      const greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
+      const greenproof = await ethers.getContractAt(
+        "Greenproof",
+        greenproofAddress
+      );
 
       //setting fallback address to be a wallet
       await greenproof.setFallbackAddress(owner.address);
 
-      const dummyFallbackData = "0x463b9c9971d1a144507d2e905f4e98becd159139421a4bb8d3c9c2ed04eb401057dd0698d504fd6ca48829a3c8a7a98c1c961eae617096cb54264bbdd082e13d1c";
-     
+      const dummyFallbackData =
+        "0x463b9c9971d1a144507d2e905f4e98becd159139421a4bb8d3c9c2ed04eb401057dd0698d504fd6ca48829a3c8a7a98c1c961eae617096cb54264bbdd082e13d1c";
+
       const fallbackTx = owner.sendTransaction({
         to: greenproofAddress,
-        data: dummyFallbackData
-      })
-      await expect(fallbackTx).to.be.revertedWith(`ProxyError("implementation must be contract")`);
+        data: dummyFallbackData,
+      });
+      await expect(fallbackTx).to.be.revertedWith(
+        `ProxyError("implementation must be contract")`
+      );
     });
 
     it("should have four facets -- call to facetAddresses function", async () => {
@@ -389,7 +414,7 @@ describe("GreenproofTest", async function () {
 
     it("selectors should be associated to facets correctly -- multiple calls to facetAddress function", async () => {
       const requestProofIssuanceSelector = issuerFacet.interface.getSighash(
-        "requestProofIssuance(bytes32,address,bytes32,bytes32[],uint256,bytes32[],string)"
+        "requestProofIssuance((uint256,bytes32,bytes32,bytes32[],bytes32[],address,string))"
       );
       assert.equal(
         addresses[1],
@@ -476,7 +501,7 @@ describe("GreenproofTest", async function () {
       await expect(tx)
         .to.emit(greenproof, "ContractPaused")
         .withArgs(timestamp, owner.address);
-      
+
       // Upgrading the contract
       tx = await greenproof.diamondCut(
         [

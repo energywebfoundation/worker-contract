@@ -20,6 +20,14 @@ library LibProofManager {
     error TimeToRevokeElapsed(uint256 certificateID, uint256 issuanceDate, uint256 revocablePeriod);
 
     /**
+     * @notice revokeProof - Revokes a certificate
+     * @param certificateID ID of the certificate to revoke
+     */
+    function revokeProof(uint256 certificateID) internal {
+        LibIssuer.getStorage().certificates[certificateID].isRevoked = true;
+    }
+
+    /**
      * @notice Checks if a certificate exists
      * @dev A certificate exists if certificates ID > 0 && certificates <= latestCertificateId
      * @dev this function reverts if the certificate ID does not exist
@@ -68,12 +76,7 @@ library LibProofManager {
      * @param claimedVolume - volume of the certificate being claimed
      * @param ownedBalance - balance of the certificate owned by the claimer
      */
-    function checkClaimableProof(
-        uint256 certificateID,
-        address claimer,
-        uint256 claimedVolume,
-        uint256 ownedBalance
-    ) internal view {
+    function checkClaimableProof(uint256 certificateID, address claimer, uint256 claimedVolume, uint256 ownedBalance) internal view {
         if (LibIssuer.isCertificateRevoked(certificateID)) {
             revert ProofRevoked(certificateID);
         }
@@ -103,11 +106,7 @@ library LibProofManager {
      * @param leaf - leaf of the proof
      * @param proof - the proof being verified
      */
-    function checkProofValidity(
-        bytes32 rootHash,
-        bytes32 leaf,
-        bytes32[] memory proof
-    ) internal pure {
+    function checkProofValidity(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) internal pure {
         if (verifyProof(rootHash, leaf, proof) == false) {
             revert InvalidProof(rootHash, leaf, proof);
         }
@@ -121,11 +120,7 @@ library LibProofManager {
      * @param proof - the proof being verified
      * @return true if the proof is valid, false otherwise
      */
-    function verifyProof(
-        bytes32 rootHash,
-        bytes32 leaf,
-        bytes32[] memory proof
-    ) internal pure returns (bool) {
+    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) internal pure returns (bool) {
         return MerkleProof.verify(proof, rootHash, leaf);
     }
 }

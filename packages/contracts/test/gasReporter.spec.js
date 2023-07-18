@@ -1,7 +1,7 @@
 const chai = require('chai');
 const { expect } = require('chai');
 const { parseEther } = require('ethers').utils;
-const { deployGreenproof } = require('../scripts/deploy/deployContracts');
+const { deployGreenproof } = require('../deploy/deployContracts');
 const { ethers } = require('hardhat');
 const { solidity } = require('ethereum-waffle');
 const { roles } = require('./utils/roles.utils');
@@ -212,13 +212,15 @@ describe('Gas consumption report', function() {
     issuerContract
       .connect(minter)
       .requestProofIssuance(
-        inputHash,
-        receiver.address,
-        volumeRootHash,
-        matchResultProof,
-        volume,
-        volumeProof,
-        tokenURI,
+        {
+          voteID: inputHash,
+          generator: receiver.address,
+          dataHash: volumeRootHash,
+          dataProof: matchResultProof,
+          volume,
+          amountProof: volumeProof,
+          tokenUri: tokenURI,
+        }
       )
 
   const mintProof = async (id, proofData, receiver = wallets[ 1 ], minter = issuer) => {

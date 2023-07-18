@@ -3,9 +3,10 @@ pragma solidity 0.8.16;
 
 import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
+
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
 /**
@@ -17,10 +18,21 @@ import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC11
 
 library LibIssuer {
     /**
+     * @dev Structure storing the configuration of the contract's owner
+     */
+    struct BatchConfig {
+        uint256 batchIssuanceSize;
+        uint256 batchTransferSize;
+        uint256 batchClaimingSize;
+        uint256 batchRevocationSize;
+    }
+
+    /**
      * @notice Certificate registry tracking issued certificates
      * @dev The certificate registry is represented by this storage structure
      * @custom:field name - name of the certificate
      * @custom:field symbol - symbol of the certificate
+     * @custom:field batchQueueSize - size of the batch queue
      * @custom:field latestCertificateId - latest issued certificate ID
      * @custom:field revocablePeriod - revocable period for certificates
      * @custom:field dataToCertificateID - mapping of data hash to certificate ID
@@ -33,10 +45,14 @@ library LibIssuer {
     struct IssuerStorage {
         string name;
         string symbol;
-        uint256 latestCertificateId;
+        uint256 batchIssuanceSize;
+        uint256 batchTransferSize;
+        uint256 batchClaimingSize;
+        uint256 batchRevocationSize;
         uint256 revocablePeriod;
+        uint256 latestCertificateId;
         mapping(bytes32 => uint256) dataToCertificateID;
-        mapping(uint256 => IGreenProof.Certificate) certificates;
+        mapping(uint256 => IProofIssuer.Certificate) certificates;
         // Mapping from token ID to account balances, to track how much of certificate ID a wallet has claimed
         mapping(uint256 => mapping(address => uint256)) claimedBalances;
         mapping(bytes32 => mapping(string => string)) disclosedData;
@@ -45,6 +61,11 @@ library LibIssuer {
         // @notice saving the data needed for future features
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
+
+    /**
+     * @dev Tracking the storage position of the issuerStorage
+     */
+    bytes32 private constant _ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
     /**
      * @notice ProofMinted event emitted when a new green proof certificate is minted
@@ -114,17 +135,18 @@ library LibIssuer {
      */
     error NotOwnerOrApproved(address operator, address owner);
 
-    /**
-     * @dev Tracking the storage position of the issuerStorage
-     */
-    bytes32 private constant _ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
+    error BatchQueueSizeExceeded(uint256 batchQueueSize, uint256 batchQueueSizeLimit);
 
     /**
      * @dev Initialize the contract with a revocable period for certificates
      * @param revocablePeriod period in which the certificates can be revoked
      */
-    function init(uint256 revocablePeriod) internal {
+    function init(uint256 revocablePeriod, BatchConfig memory batchCfg) internal {
         getStorage().revocablePeriod = revocablePeriod;
+        getStorage().batchIssuanceSize = batchCfg.batchIssuanceSize;
+        getStorage().batchTransferSize = batchCfg.batchTransferSize;
+        getStorage().batchClaimingSize = batchCfg.batchClaimingSize;
+        getStorage().batchRevocationSize = batchCfg.batchRevocationSize;
     }
 
     /**
@@ -143,16 +165,10 @@ library LibIssuer {
      * @param certificateID ID of the certificate
      * @param voteID ID of the vote associated to the certificate
      */
-    function registerProof(
-        bytes32 dataHash,
-        address generatorAddress,
-        uint256 volumeInWei,
-        uint256 certificateID,
-        bytes32 voteID
-    ) internal {
+    function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
-        issuer.certificates[certificateID] = IGreenProof.Certificate({
+        issuer.certificates[certificateID] = IProofIssuer.Certificate({
             isRevoked: false,
             certificateID: certificateID,
             issuanceDate: block.timestamp, // solhint-disable-line not-rely-on-time
@@ -170,11 +186,7 @@ library LibIssuer {
      * @param user address of the user claiming the certificate
      * @param claimedAmount amount of the certificate being claimed
      */
-    function registerClaimedProof(
-        uint256 certificateID,
-        address user,
-        uint256 claimedAmount
-    ) internal {
+    function registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
         getStorage().claimedBalances[certificateID][user] += claimedAmount;
     }
 
@@ -184,11 +196,7 @@ library LibIssuer {
      * @param key key of the data being disclosed
      * @param value value of the data being disclosed
      */
-    function discloseData(
-        bytes32 dataHash,
-        string memory key,
-        string memory value
-    ) internal {
+    function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.disclosedData[dataHash][key] = value;
@@ -202,23 +210,11 @@ library LibIssuer {
      * @param shouldBeApproved status of the approval to set
      * @dev when the approval is being set to true, `msg.sender` cannot be the same as `operator`
      */
-    function setApprovalFor(
-        address certificateOwner,
-        address operator,
-        bool shouldBeApproved
-    ) internal {
+    function setApprovalFor(address certificateOwner, address operator, bool shouldBeApproved) internal {
         if (shouldBeApproved && msg.sender == operator) {
             revert ForbiddenSelfApproval(msg.sender, certificateOwner);
         }
         ERC1155BaseStorage.layout().operatorApprovals[certificateOwner][operator] = shouldBeApproved;
-    }
-
-    /**
-     * @notice revokeProof - Revokes a certificate
-     * @param certificateID ID of the certificate to revoke
-     */
-    function revokeProof(uint256 certificateID) internal {
-        getStorage().certificates[certificateID].isRevoked = true;
     }
 
     /**
@@ -268,11 +264,11 @@ library LibIssuer {
      * @param certificateID ID of the certificate
      * @param volumeInWei volume of the certificate in wei
      */
-    function getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IGreenProof.Certificate memory) {
+    function getCertificate(uint256 certificateID, uint256 volumeInWei) internal view returns (IProofIssuer.Certificate memory) {
         IssuerStorage storage issuer = getStorage();
 
         return
-            IGreenProof.Certificate({
+            IProofIssuer.Certificate({
                 isRevoked: issuer.certificates[certificateID].isRevoked,
                 certificateID: issuer.certificates[certificateID].certificateID,
                 issuanceDate: issuer.certificates[certificateID].issuanceDate,
@@ -280,15 +276,6 @@ library LibIssuer {
                 merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
                 generator: issuer.certificates[certificateID].generator
             });
-    }
-
-    /**
-     * @dev Get the hash representation of the volume key-value pair inside the data to certify
-     * @return volumeHash
-     */
-    function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
-        string memory volumeString = UintUtils.toString(volume);
-        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }
 
     /**
@@ -336,13 +323,50 @@ library LibIssuer {
     }
 
     /**
-     * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
-     * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
-     * @param receiver address of the receiver of the certificate
+     * @notice checkBatchIssuanceSize - Checks if the issuance batch queue size is not exceeded
+     * @dev reverts if the issuance batch queue size is exceeded
+     * @param queueSize size of the issuance batch queue to check
      */
-    function preventZeroAddressReceiver(address receiver) internal pure {
-        if (receiver == address(0)) {
-            revert ForbiddenZeroAddressReceiver();
+    function checkBatchIssuanceSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchIssuanceSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
+        }
+    }
+
+    /**
+     * checkBatchTransferSize - Checks if the transfer batch queue size is not exceeded
+     * @dev reverts if the transfer batch queue size is exceeded
+     * @param queueSize size of the batch queue to check
+     */
+    function checkBatchTransferSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchTransferSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
+        }
+    }
+
+    /**
+     * @notice checkBatchClaimSize - Checks if the claim batch queue size is not exceeded
+     * @dev reverts if the claim batch queue size is exceeded
+     * @param queueSize size of the batch queue to check
+     */
+    function checkBatchClaimSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchClaimingSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
+        }
+    }
+
+    /**
+     * @notice checkBatchRevocationSize - Checks if the revocation batch queue size is not exceeded
+     * @dev reverts if the revocation batch queue size is exceeded
+     * @param queueSize size of the batch queue to check
+     */
+    function checkBatchRevocationSize(uint256 queueSize) internal view {
+        uint256 allowedBatchSize = getStorage().batchRevocationSize;
+        if (queueSize > allowedBatchSize) {
+            revert BatchQueueSizeExceeded(queueSize, allowedBatchSize);
         }
     }
 
@@ -360,7 +384,7 @@ library LibIssuer {
      * @param certificateID - ID of the certificate to retrieve
      * @return proof - The greenproof certificate of id `certificateID`
      */
-    function getProof(uint256 certificateID) internal view returns (IGreenProof.Certificate memory proof) {
+    function getProof(uint256 certificateID) internal view returns (IProofIssuer.Certificate memory proof) {
         proof = getStorage().certificates[certificateID];
     }
 
@@ -406,17 +430,33 @@ library LibIssuer {
     }
 
     /**
+     * @dev Get the hash representation of the volume key-value pair inside the data to certify
+     * @return volumeHash
+     */
+    function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
+        string memory volumeString = UintUtils.toString(volume);
+        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+
+    /**
+     * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
+     * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
+     * @param receiver address of the receiver of the certificate
+     */
+    function preventZeroAddressReceiver(address receiver) internal pure {
+        if (receiver == address(0)) {
+            revert ForbiddenZeroAddressReceiver();
+        }
+    }
+
+    /**
      * @notice checkVolumeValidity - Checks if the volume of the certificate is in consensus
      * @dev This function reverts if provided volume is not part of the merkle root hash reprensenting certified data
      * @param volume volume of the certificate
      * @param dataHash hash of the data associated to the certificate
      * @param amountProof proof of the volume of the certificate
      */
-    function checkVolumeValidity(
-        uint256 volume,
-        bytes32 dataHash,
-        bytes32[] memory amountProof
-    ) internal pure {
+    function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
         bytes32 volumeHash = getAmountHash(volume);
 
         bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);

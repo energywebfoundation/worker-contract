@@ -15,9 +15,16 @@ export type InitContractOptions = {
     approverRole?: string;
   };
   contractOwner?: string;
+  batchConfig?: {
+    batchIssuanceSize: number;
+    batchTransferSize: number;
+    batchClaimingSize: number;
+    batchRevocationSize: number;
+  };
   revocablePeriod?: number;
   majorityPercentage?: number;
   rewardsEnabled?: boolean;
+  isMetaCertificateEnabled?: boolean;
   logger?: Logger;
 };
 

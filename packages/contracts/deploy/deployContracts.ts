@@ -37,9 +37,16 @@ export const deployGreenproof = async (options: InitContractOptions) => {
     claimManagerAddress = VOLTA_CLAIM_MANAGER,
     claimRevokerAddress = VOLTA_CLAIM_REVOKER,
     roles = {},
+    batchConfig = {
+      batchIssuanceSize: 20,
+      batchTransferSize: 20,
+      batchClaimingSize: 20,
+      batchRevocationSize: 20,
+    },
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
     rewardsEnabled = true,
+    isMetaCertificateEnabled = true,
     facets = Object.values(GreenproofFacet),
     logger = () => {},
   } = options;
@@ -63,25 +70,7 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
   const greeproofInit = await deploy("GreenproofInit");
   const greenproof = await deploy("Greenproof", (factory) => {
-    const args: Parameters<Greenproof__factory["deploy"]> = [
-      { contractOwner },
-      {
-        votingTimeLimit,
-        rewardAmount,
-        majorityPercentage,
-        revocablePeriod,
-        rewardsEnabled,
-      },
-      {
-        claimManagerAddress,
-        issuerRole,
-        revokerRole,
-        workerRole,
-        claimerRole,
-        approverRole,
-        claimsRevocationRegistry: claimRevokerAddress,
-      },
-    ];
+    const args: Parameters<Greenproof__factory["deploy"]> = [contractOwner];
     return factory.deploy(...args);
   });
 
@@ -101,14 +90,44 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   }
 
   logger("List of Cuts to execute", cuts);
-  const certificateInfos = ["SAF Certificate", "SAFC"];
-  const metaCertificateInfos = ["SER Certificate", "SERC"];
+
+  const certificateName = "SAF Certificate";
+  const certificateSymbol = "SAFC";
+  const metaCertificateName = "SER Certificate";
+  const metaCertificateSymbol = "SERC";
+
+  const votingConfig = {
+    votingTimeLimit,
+    rewardAmount,
+    majorityPercentage,
+    revocablePeriod,
+    rewardsEnabled,
+  };
+
+  const rolesConfig = {
+    claimManagerAddress,
+    issuerRole,
+    revokerRole,
+    workerRole,
+    claimerRole,
+    approverRole,
+    claimsRevocationRegistry: claimRevokerAddress,
+  };
+
+  const proxyConfig = {
+    isMetaCertificateEnabled,
+    certificateName,
+    certificateSymbol,
+    metaCertificateName,
+    metaCertificateSymbol,
+    votingConfig,
+    batchConfig,
+    rolesConfig,
+  };
 
   // call to init function
   const functionCall = greeproofInit.interface.encodeFunctionData("init", [
-    greenproof.address,
-    certificateInfos,
-    metaCertificateInfos,
+    proxyConfig,
   ]);
   const tx = await greenproof.diamondCut(
     cuts,

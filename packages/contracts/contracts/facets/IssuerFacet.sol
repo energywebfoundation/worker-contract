@@ -2,10 +2,10 @@
 pragma solidity 0.8.16;
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
-import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
 import {ERC1155Base} from "@solidstate/contracts/token/ERC1155/base/ERC1155Base.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
@@ -15,7 +15,7 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
  * @notice This facet handles certificates Issuance as Green proofs. Certificates consists of ERC-1155 tokens anchored to merkleRoot hashes of data.
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
-contract IssuerFacet is SolidStateERC1155, IGreenProof {
+contract IssuerFacet is SolidStateERC1155, IProofIssuer {
     /**
      * @notice modifier that restricts the execution of functions only to users enrolled as Issuers
      * @dev this modifer reverts the transaction if the msg.sender is not an enrolled issuer
@@ -33,35 +33,77 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
     /**
      * @notice `requestProofIssuance` - An authorized issuer requests proof issuance after a consensus is reached.
      * This runs the automatic data verification and the certificate minting process.
-     * @param voteID - The identifier of the vote
-     * @param generator - The address of the wallet which will receive the minted certificate tokens (i.e - generator's wallet)
-     * @param dataHash - The merkleRoot hash of the data we are certifying.
-     * @param dataProof - The proofs path to verify that data is part of the vote consensus merkleTree
-     * @param volume - The amount of generated green resource (electricity / organic gas /..) we want to certify
-     * @param amountProof - the proofs path to verify that the amount we want to certify is part of the `dataHash` merkleTree.
+     * @param issuanceRequest - An IssuanceRequest struct containing the data needed to issue a certificate.
+     */
+    function requestProofIssuance(IssuanceRequest memory issuanceRequest) external onlyIssuer {
+        _issueCertificate(
+            issuanceRequest.voteID,
+            issuanceRequest.generator,
+            issuanceRequest.dataHash,
+            issuanceRequest.dataProof,
+            issuanceRequest.volume,
+            issuanceRequest.amountProof,
+            issuanceRequest.tokenUri
+        );
+    }
+
+    /**
+     * @notice `requestBatchIssuance` - An authorized issuer requests issuance of a bacth of certificates.
+     * @param issuanceRequestsList - An array of IssuanceRequest struct containing the data needed to issue a certificate.
+     * @dev This function is used to issue a batch of certificates after a consensus is reached.
      * @dev The MerkleProof verification uses the `merkleProof` library provided by openzeppelin/contracts -> https://docs.openzeppelin.com/contracts/3.x/api/cryptography#MerkleProof.
      * @dev The generator address can not be the zero address
      */
-    function requestProofIssuance(
-        bytes32 voteID,
-        address generator,
-        bytes32 dataHash,
-        bytes32[] memory dataProof,
-        uint256 volume,
-        bytes32[] memory amountProof,
-        string memory tokenUri
-    ) external onlyIssuer {
-        LibIssuer.preventZeroAddressReceiver(generator);
-        LibIssuer.preventAlreadyCertified(dataHash);
-        LibVoting.checkVoteInConsensus(voteID, dataHash, dataProof);
-        LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
-        uint256 nextCertificateId = LibIssuer.incrementAndGetProofIndex();
-        uint256 volumeInWei = volume * 1 ether;
-        LibIssuer.registerProof(dataHash, generator, volumeInWei, nextCertificateId, voteID);
+    function requestBatchIssuance(IssuanceRequest[] memory issuanceRequestsList) external onlyIssuer {
+        uint256 listSize = issuanceRequestsList.length;
+        LibIssuer.checkBatchIssuanceSize(listSize);
+        for (uint256 i; i < listSize; i++) {
+            _issueCertificate(
+                issuanceRequestsList[i].voteID,
+                issuanceRequestsList[i].generator,
+                issuanceRequestsList[i].dataHash,
+                issuanceRequestsList[i].dataProof,
+                issuanceRequestsList[i].volume,
+                issuanceRequestsList[i].amountProof,
+                issuanceRequestsList[i].tokenUri
+            );
+        }
+    }
 
-        _safeMint(generator, nextCertificateId, volumeInWei, "");
-        _setTokenURI(nextCertificateId, tokenUri);
-        emit ProofMinted(nextCertificateId, volumeInWei, generator);
+    /**
+     * @notice `simpleBatchTransfer` - An authorized operator requests transfer of a bacth of certificates.
+     * @param transferRequestsList - An array of TransferRequest struct containing the data needed to transfer one certificate for each request.
+     */
+    function simpleBatchTransfer(TransferRequest[] memory transferRequestsList) external {
+        uint256 listSize = transferRequestsList.length;
+        LibIssuer.checkBatchTransferSize(listSize);
+        for (uint256 i; i < listSize; i++) {
+            safeTransferFrom(
+                transferRequestsList[i].sender,
+                transferRequestsList[i].recipient,
+                transferRequestsList[i].certificateID,
+                transferRequestsList[i].amount,
+                transferRequestsList[i].data
+            );
+        }
+    }
+
+    /**
+     * @notice `multipleBatchTransfer` - An authorized operator requests transfer of multiple batches of certificates.
+     * @param transferBatchRequests - An array of TransferBatchRequest struct containing the data needed to transfer multiple certificates for each request.
+     */
+    function multipleBatchTransfer(TransferBatchRequest[] memory transferBatchRequests) external {
+        uint256 listSize = transferBatchRequests.length;
+        LibIssuer.checkBatchTransferSize(listSize);
+        for (uint256 i; i < listSize; i++) {
+            safeBatchTransferFrom(
+                transferBatchRequests[i].sender,
+                transferBatchRequests[i].recipient,
+                transferBatchRequests[i].certificateIDs,
+                transferBatchRequests[i].amounts,
+                transferBatchRequests[i].data
+            );
+        }
     }
 
     /**
@@ -72,12 +114,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(
-        string memory key,
-        string memory value,
-        bytes32[] memory dataProof,
-        bytes32 dataHash
-    ) external override onlyIssuer {
+    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external override onlyIssuer {
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
 
         LibIssuer.checkNotDisclosed(dataHash, key);
@@ -145,13 +182,7 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
      * @param amount quantity of certificate to transfer
      * @param data data payload
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public override(ERC1155Base, IERC1155) {
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override(ERC1155Base, IERC1155) {
         LibIssuer.checkApprovedSender(from, msg.sender);
         LibIssuer.checkAllowedTransfer(id, to);
         _safeTransfer(msg.sender, from, to, id, amount, data);
@@ -178,5 +209,38 @@ contract IssuerFacet is SolidStateERC1155, IGreenProof {
             LibIssuer.checkAllowedTransfer(ids[i], to);
         }
         _safeTransferBatch(msg.sender, from, to, ids, amounts, data);
+    }
+
+    /**
+     * @notice _issueCertificate - Internal function to mint a new certificate
+     * @param voteID - The voteID of the certified data set
+     * @param generator - The address of the generator of the certified data set
+     * @param dataHash - The merkleRoot hash of the certified data set.
+     * @param dataProof - The proofs path to verify that dataHash is part of the consensus merkleTree
+     * @param volume - The volume of the certified data set
+     * @param amountProof - The proofs path to verify that volume is part of the consensus merkleTree
+     * @param tokenUri - The URI of the certificate metadata
+     * @dev The function will revert if the generator address is the zero address
+     */
+    function _issueCertificate(
+        bytes32 voteID,
+        address generator,
+        bytes32 dataHash,
+        bytes32[] memory dataProof,
+        uint256 volume,
+        bytes32[] memory amountProof,
+        string memory tokenUri
+    ) private {
+        LibIssuer.preventZeroAddressReceiver(generator);
+        LibIssuer.preventAlreadyCertified(dataHash);
+        LibVoting.checkVoteInConsensus(voteID, dataHash, dataProof);
+        LibIssuer.checkVolumeValidity(volume, dataHash, amountProof);
+        uint256 nextCertificateId = LibIssuer.incrementAndGetProofIndex();
+        uint256 volumeInWei = volume * 1 ether;
+        LibIssuer.registerProof(dataHash, generator, volumeInWei, nextCertificateId, voteID);
+
+        _safeMint(generator, nextCertificateId, volumeInWei, "");
+        _setTokenURI(nextCertificateId, tokenUri);
+        emit ProofMinted(nextCertificateId, volumeInWei, generator);
     }
 }

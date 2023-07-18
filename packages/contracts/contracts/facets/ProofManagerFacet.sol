@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import {LibIssuer} from "../libraries/LibIssuer.sol";
-import {IGreenProof} from "../interfaces/IGreenProof.sol";
+import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {LibMetaToken} from "../libraries/LibMetaToken.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
@@ -35,12 +35,16 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function claimProofFor(
-        uint256 certificateID,
-        address owner,
-        uint256 amount
-    ) external onlyClaimer {
+    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
         _claimProofFor(certificateID, owner, amount);
+    }
+
+    function claimBatchProofsFor(DelegetatedClaimRequest[] memory claimRequests) external onlyClaimer {
+        uint256 nbRequests = claimRequests.length;
+        LibIssuer.checkBatchClaimSize(nbRequests);
+        for (uint256 i; i < nbRequests; i++) {
+            _claimProofFor(claimRequests[i].certificateID, claimRequests[i].certificateOwner, claimRequests[i].amount);
+        }
     }
 
     /**
@@ -53,26 +57,50 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     /**
+     * @notice claimBatchProofs - Claims a batch of certificates
+     * @dev This function reverts if any claimedProof is already revoked
+     * @dev This function reverts if any claimed amount is superior than the claimer balance
+     * @param claimRequests - list of certificateIDs and amounts to claim
+     */
+    function claimBatchProofs(ClaimRequest[] memory claimRequests) external {
+        uint256 nbRequests = claimRequests.length;
+        LibIssuer.checkBatchClaimSize(nbRequests);
+        for (uint256 i; i < nbRequests; i++) {
+            _claimProofFor(claimRequests[i].certificateID, msg.sender, claimRequests[i].amount);
+        }
+    }
+
+    /**
      * @notice revokeProof - Revokes a certificate
      * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if the certificate is already revoked or if the msg.sender is not an enrolled revoker
      * @param certificateID ID of the certificate to revoke
      */
-    function revokeProof(uint256 certificateID) external onlyRevoker {
-        LibProofManager.checkProofRevocability(certificateID);
-        LibIssuer.revokeProof(certificateID);
-        emit ProofRevoked(certificateID);
+    function revokeProof(uint256 certificateID) external {
+        _revokeProof(certificateID);
+    }
 
-        if (LibMetaToken.totalSupply(certificateID) > 0) {
-            LibMetaToken.revokeMetaToken(certificateID);
+    /**
+     * @notice revokeBatchProofs - Revokes a batch of certificates
+     * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if any certificate is already revoked or if the msg.sender is not an enrolled revoker
+     * @param certificateIDs - IDs of the certificates to revoke
+     */
+    function revokeBatchProofs(uint256[] memory certificateIDs) external {
+        uint256 nbCertificates = certificateIDs.length;
+        LibIssuer.checkBatchRevocationSize(nbCertificates);
+
+        for (uint256 i; i < nbCertificates; i++) {
+            _revokeProof(certificateIDs[i]);
         }
     }
 
     /**
      * @notice getProof - Retrieves a certificate
      * @param certificateID - ID of the certificate to retrieve
-     * @return proof - IGreenProof.Certificate memory proof
+     * @return proof - IProofIssuer.Certificate memory proof
      */
-    function getProof(uint256 certificateID) external view returns (IGreenProof.Certificate memory proof) {
+    function getProof(uint256 certificateID) external view returns (IProofIssuer.Certificate memory proof) {
         LibProofManager.checkProofExistence(certificateID);
         proof = LibIssuer.getProof(certificateID);
     }
@@ -87,18 +115,32 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
     }
 
     /**
+     * @notice getProofIDsByDataHashes - Retrieves the IDs of a batch of green certificates by their data hashes
+     * @param dataHashes - Data hashes of the certificates
+     * @return dataToCertificateIds - The list of hashes-certificate IDs mappings
+     */
+    function getProofIDsByDataHashes(bytes32[] memory dataHashes) external view returns (CertifiedData[] memory dataToCertificateIds) {
+        uint256 nbDataHashes = dataHashes.length;
+        dataToCertificateIds = new CertifiedData[](nbDataHashes);
+
+        for (uint256 i; i < nbDataHashes; i++) {
+            dataToCertificateIds[i] = CertifiedData({dataHash: dataHashes[i], certificateID: LibIssuer.getProofIdByDataHash(dataHashes[i])});
+        }
+    }
+
+    /**
      * @notice getProofsOf - Retrieves all certificates of a user
      * @dev This function reverts if the user has no certificates
      * @param userAddress - Address of the user
      * @return The list of all certificates owned by the userAddress
      */
-    function getProofsOf(address userAddress) external view returns (IGreenProof.Certificate[] memory) {
+    function getProofsOf(address userAddress) external view returns (IProofIssuer.Certificate[] memory) {
         uint256[] memory userTokenList = _tokensByAccount(userAddress);
         uint256 numberOfCertificates = userTokenList.length;
 
         LibProofManager.checkOwnedCertificates(numberOfCertificates, userAddress);
 
-        IGreenProof.Certificate[] memory userProofs = new IGreenProof.Certificate[](numberOfCertificates);
+        IProofIssuer.Certificate[] memory userProofs = new IProofIssuer.Certificate[](numberOfCertificates);
         for (uint256 i; i < numberOfCertificates; i++) {
             uint256 currentTokenID = userTokenList[i];
             uint256 volume = _balanceOf(userAddress, currentTokenID);
@@ -126,11 +168,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param proof - the proof being verified
      * @return true if the proof is valid, false otherwise
      */
-    function verifyProof(
-        bytes32 rootHash,
-        bytes32 leaf,
-        bytes32[] memory proof
-    ) external pure returns (bool) {
+    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool) {
         return LibProofManager.verifyProof(rootHash, leaf, proof);
     }
 
@@ -143,11 +181,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function _claimProofFor(
-        uint256 certificateID,
-        address owner,
-        uint256 amount
-    ) private {
+    function _claimProofFor(uint256 certificateID, address owner, uint256 amount) private {
         uint256 ownedBalance = _balanceOf(owner, certificateID);
 
         LibProofManager.checkClaimableProof(certificateID, owner, amount, ownedBalance);
@@ -157,5 +191,22 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
 
         /* solhint-disable-next-line not-rely-on-time */
         emit ProofClaimed(certificateID, owner, block.timestamp, amount);
+    }
+
+    /**
+     * @notice _revokeProof - Revokes a certificate
+     * @dev This function emits the `ProofRevoked` event
+     * @dev This function reverts if the certificate is already revoked or if the msg.sender is not an enrolled revoker
+     * @param certificateID ID of the certificate to revoke
+     */
+    function _revokeProof(uint256 certificateID) private onlyRevoker {
+        LibProofManager.checkProofRevocability(certificateID);
+        LibProofManager.revokeProof(certificateID);
+        emit ProofRevoked(certificateID);
+        bool isMetacertificateEnabled = LibMetaToken.getStorage().isMetaCertificateEnabled;
+
+        if (isMetacertificateEnabled && LibMetaToken.totalSupply(certificateID) > 0) {
+            LibMetaToken.revokeMetaToken(certificateID);
+        }
     }
 }
