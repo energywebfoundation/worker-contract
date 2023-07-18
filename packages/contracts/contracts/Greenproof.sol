@@ -320,7 +320,7 @@ contract Greenproof is SolidStateDiamond {
         (bool success, ) = owner().call{value: sweptAmount}(""); // solhint-disable-line avoid-low-level-calls
         if (!success) {
             // If the transfer fails, revert with an error message
-            revert ProxyError("Sweep failed");
+            revert LibDiamond.ProxyError("Sweep failed");
         }
 
         // Emit an event to indicate that the funds have been swept
