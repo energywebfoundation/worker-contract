@@ -31,11 +31,7 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
         _;
     }
 
-    constructor(
-        address admin,
-        string memory _name,
-        string memory _symbol
-    ) {
+    constructor(address admin, string memory _name, string memory _symbol) {
         _admin = admin;
         name = _name;
         symbol = _symbol;
@@ -96,11 +92,7 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
      * @param amount - amount of meta tokens to be claimed
      * @param owner - address of the owner of the meta token
      */
-    function claimMetaTokenFor(
-        uint256 tokenID,
-        uint256 amount,
-        address owner
-    ) external onlyAdmin {
+    function claimMetaTokenFor(uint256 tokenID, uint256 amount, address owner) external onlyAdmin {
         _claimMetaTokenFor(tokenID, amount, owner);
     }
 
@@ -153,11 +145,7 @@ contract MetaToken is IMetaToken, SolidStateERC1155 {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
-    function _claimMetaTokenFor(
-        uint256 tokenID,
-        uint256 amount,
-        address owner
-    ) private {
+    function _claimMetaTokenFor(uint256 tokenID, uint256 amount, address owner) private {
         if (balanceOf(owner, tokenID) < amount) {
             revert InsufficientBalance(owner, tokenID, amount);
         }

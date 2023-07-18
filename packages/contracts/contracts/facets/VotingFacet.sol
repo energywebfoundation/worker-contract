@@ -314,11 +314,7 @@ contract VotingFacet is IVoting, IReward {
      * @param sessionID - The ID of voting session
      * @param numberOfRewardedWorkers - The number of workers who have been rewarded when session was completed
      */
-    function _emitSessionEvents(
-        bytes32 votingID,
-        bytes32 sessionID,
-        uint256 numberOfRewardedWorkers
-    ) private {
+    function _emitSessionEvents(bytes32 votingID, bytes32 sessionID, uint256 numberOfRewardedWorkers) private {
         LibVoting.VotingSession storage session = LibVoting.getSession(votingID, sessionID);
         if (session.isConsensusReached) {
             emit WinningMatch(votingID, session.matchResult, session.votesCount);
