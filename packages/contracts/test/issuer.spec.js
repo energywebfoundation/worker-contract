@@ -1,14 +1,14 @@
 const chai = require("chai");
 const { utils, BigNumber } = require("ethers");
 const { expect } = require("chai");
-const { deployGreenproof } = require("../scripts/deploy/deployContracts");
+const { deployGreenproof } = require("../deploy/deployContracts");
 const { solidity } = require("ethereum-waffle");
 const { roles } = require("./utils/roles.utils");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 const { generateProofData } = require("./utils/issuer.utils");
 const { timeTravel, getTimeStamp } = require("./utils/time.utils");
-const { loadFixture, setBalance } = require("@nomicfoundation/hardhat-network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const {
   createPreciseProof,
   createMerkleTree,
@@ -35,20 +35,23 @@ describe("IssuerFacet", function () {
   let grantRole;
   let revokeRole;
 
-  const initMetaTokenFixture = async () => {
+  const issuanceFixture = async () => {
     const {
+      owner,
       worker,
       issuer,
       claimer,
+      revoker,
+      wallets,
       receiver,
       votingContract,
       issuerContract,
       metatokenContract,
+      proofManagerContract
     } = await loadFixture(initFixture);
 
-    const safcParentID = 1;
+    const certificateID = 1;
     const tokenAmount = 42;
-    const metaTokenURI = "";
     const proofData = generateProofData({ volume: tokenAmount });  
 
     await reachConsensus(
@@ -58,18 +61,51 @@ describe("IssuerFacet", function () {
       worker
     );
 
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+    const mintTx = await mintProof(
+      issuerContract,
+      certificateID,
+      proofData,
+      receiver,
+      issuer
+    );
+
+    return {
+      owner,
+      worker,
+      mintTx,
+      issuer,
+      claimer,
+      wallets,
+      revoker,
+      receiver,
+      proofData,
+      tokenAmount,
+      certificateID,
+      votingContract,
+      issuerContract,
+      metatokenContract,
+      proofManagerContract,
+    }
+  }
+
+  const initMetaTokenFixture = async () => {
+
+    const {
+      issuer,
+      claimer,
+      receiver,
+      tokenAmount,
+      certificateID,
+      issuerContract,
+      metatokenContract,
+    } = await loadFixture(issuanceFixture);
+
+    const metaTokenURI = "";
 
       const tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
@@ -80,19 +116,19 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
     
     return {
       claimer,
       receiver,
+      certificateID,
       volume: parseEther(tokenAmount.toString()),
       metatokenContract,
-      certificateID: safcParentID,
       issuerContract
     }
   };
 
-    const initFixture = async () => {
+  const initFixture = async () => {
     [
       owner,
       issuer,
@@ -425,31 +461,7 @@ describe("IssuerFacet", function () {
     });
 
     it("Authorized issuers can send proof issuance requests", async () => {
-      const {
-        issuer,
-        worker,
-        proofData,
-        receiver,
-        issuerContract,
-        votingContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+     await loadFixture(issuanceFixture);
     });
 
     it("Authorized issuers can send simple proof issuance requests", async () => {
@@ -540,62 +552,27 @@ describe("IssuerFacet", function () {
 
     it("reverts when issuers send duplicate proof issuance requests", async () => {
       const {
-        worker,
         issuer,
         receiver,
         proofData,
-        votingContract,
         issuerContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const certificateID = 1;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
-      await expectAlreadyCertified(issuerContract, proofData, receiver, issuer);
+      await expect(
+        requestMinting(issuerContract, proofData, receiver, issuer)
+      ).to.be.revertedWith(`AlreadyCertifiedData("${proofData.volumeRootHash}")`);
     });
 
     it("checks that the certified generation volume is correct after minting", async () => {
       const {
-        worker,
-        issuer,
         receiver,
         proofData,
-        issuerContract,
-        votingContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        issuerContract,
+      } = await loadFixture(issuanceFixture);
 
       const amountMinted = parseInt(
-        formatEther(await issuerContract.balanceOf(receiver.address, 1))
+        formatEther(await issuerContract.balanceOf(receiver.address, certificateID))
       );
 
       expect(amountMinted).to.equal(proofData.volume);
@@ -604,32 +581,11 @@ describe("IssuerFacet", function () {
     it("should get the list of all certificate owners", async () => {
       const {
         owner,
-        worker,
-        issuer,
         receiver,
         issuerContract,
-        votingContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
+      } = await loadFixture(issuanceFixture);
 
       const transferVolume = parseEther("2");
-      const proofData = generateProofData({ volume: 5 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       await transfer(issuerContract, receiver, owner, transferVolume);
 
@@ -641,49 +597,32 @@ describe("IssuerFacet", function () {
     });
 
     it("should get details of a minted certificate", async () => {
-      const mintedVolume = 5;
 
       const {
-        worker,
+        mintTx,
         receiver,
-        issuer,
-        issuerContract,
-        proofManagerContract,
-        votingContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      const mintTx = await mintProof(
-        issuerContract,
-        certificateID,
         proofData,
-        receiver,
-        issuer
-      );
+        tokenAmount,
+        certificateID,
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
+
       const proof = await proofManagerContract.getProof(certificateID);
 
-      const { timestamp } = await ethers.provider.getBlock(mintTx.blockNumber);
+      const timestamp = await getTimeStamp(mintTx);
 
       expect(proof.issuanceDate).to.equal(timestamp);
       expect(proof.certificateID).to.equal(certificateID);
       expect(proof.generator).to.equal(receiver.address);
-      expect(parseInt(formatEther(proof.volume))).to.equal(mintedVolume);
+      expect(parseInt(formatEther(proof.volume))).to.equal(tokenAmount);
       expect(proof.merkleRootHash).to.be.deep.equal(proofData.volumeRootHash);
     });
 
     it("should revert when asking details for an invalid certificateID", async () => {
-      const { proofManagerContract, owner } = await loadFixture(initFixture);
+      const { owner, proofManagerContract } = await loadFixture(issuanceFixture);
 
       const invalidCertificateID = 42;
+
       await expect(
         proofManagerContract.connect(owner).getProof(invalidCertificateID)
       ).to.be.revertedWith("NonExistingCertificate");
@@ -740,7 +679,7 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when trying to fetch all certificates of non owner", async () => {
-      const { proofManagerContract } = await loadFixture(initFixture);
+      const { proofManagerContract } = await loadFixture(issuanceFixture);
 
       await expect(
         proofManagerContract.getProofsOf(wallets[0].address)
@@ -788,36 +727,15 @@ describe("IssuerFacet", function () {
             toTransferAmount,
             transferBytesData
           )
-      ).to.be.revertedWith("insufficient balance");
+      ).to.be.revertedWith("ERC1155Base__TransferExceedsBalance");
     });
 
     it("should revert when one tries to transfer Batch certificates containing token ID = 0", async () => {
       const {
         owner,
-        issuer,
-        worker,
-        receiver,
-        votingContract,
-        issuerContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        issuerContract,
+      } = await loadFixture(issuanceFixture);
 
       const nonExistingCertificateID = 0;
       const transferBytesData = ethers.utils.formatBytes32String("");
@@ -832,32 +750,17 @@ describe("IssuerFacet", function () {
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
-      ).to.be.revertedWith("ERC1155: insufficient balances for transfer");
+      ).to.be.revertedWith("ERC1155Base__TransferExceedsBalance");
     });
 
     it("should revert Batch certificates transfer when caller is not approved", async () => {
-      const { issuer, receiver, worker, issuerContract, votingContract } =
-        await loadFixture(initFixture);
-
-      const certificateID = 1;
-      const transferVolume = 2;
-
-      const proofData = generateProofData({ volume: 5 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
+      const {
         receiver,
-        issuer
-      );
+        certificateID,
+        issuerContract,
+      } = await loadFixture(issuanceFixture);
+
+      const transferVolume = 2;
 
       const transferBytesData = ethers.utils.formatBytes32String("");
       const expectedRevertMessage = `NotOwnerOrApproved("${receiver.address}", "${minter.address}")`;
@@ -876,35 +779,22 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow Batch certificates transfer when caller is approved", async () => {
-      const { issuer, worker, issuerContract, receiver, votingContract } =
-        await loadFixture(initFixture);
+      const {
+        issuer,
+        receiver,
+        certificateID,
+        issuerContract,
+      } = await loadFixture(issuanceFixture);
 
       const toTransferVolume = parseEther("2");
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: 5 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       const transferBytesData = ethers.utils.formatBytes32String("");
       await issuerContract
         .connect(receiver)
-        .setApprovalForAll(minter.address, true);
+        .setApprovalForAll(issuer.address, true);
       await expect(
         issuerContract
-          .connect(minter)
+          .connect(issuer)
           .safeBatchTransferFrom(
             receiver.address,
             owner.address,
@@ -916,28 +806,9 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when one tries to transfer Batch certificates containing token ID > lastTokenIndex", async () => {
-      const { issuer, worker, receiver, issuerContract, votingContract } =
-        await loadFixture(initFixture);
+      const { certificateID, issuerContract } = await loadFixture(issuanceFixture);
 
-      const certificateID = 1;
       const nonExistingCertificateID = 42;
-      const proofData = generateProofData({ volume: 5 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
-
       const transferBytesData = ethers.utils.formatBytes32String("");
 
       await expect(
@@ -950,29 +821,25 @@ describe("IssuerFacet", function () {
             [parseEther("2"), parseEther("2")],
             transferBytesData
           )
-      ).to.be.revertedWith("'ERC1155: insufficient balances for transfer");
+      ).to.be.revertedWith("'ERC1155Base__TransferExceedsBalance");
     });
 
     it("should revert Batch certificates transfers to a non generator wallet containing revoked certificate", async () => {
       const {
+        owner,
         issuer,
         worker,
         receiver,
+        certificateID,
         issuerContract,
         votingContract,
         proofManagerContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const mintedVolume1 = 21;
-      const mintedVolume2 = 42;
-      const certificateID1 = 1;
       const certificateID2 = 2;
+      const mintedVolume2 = 42;
+      const certificateID1 = certificateID;
       const transferVolume = parseEther("2");
-
-      const proofData1 = generateProofData({
-        id: certificateID1,
-        volume: mintedVolume1,
-      });
 
       const proofData2 = generateProofData({
         id: certificateID2,
@@ -980,25 +847,10 @@ describe("IssuerFacet", function () {
       });
 
       await reachConsensus(
-        proofData1.inputHash,
-        proofData1.matchResult,
-        votingContract,
-        worker
-      );
-
-      await reachConsensus(
         proofData2.inputHash,
         proofData2.matchResult,
         votingContract,
         worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID1,
-        proofData1,
-        receiver,
-        issuer
       );
 
       await mintProof(
@@ -1014,13 +866,13 @@ describe("IssuerFacet", function () {
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       const transferBytesData = ethers.utils.formatBytes32String("");
-      const expectedRevertMessage = `NotAllowedTransfer(2, "${minter.address}", "${owner.address}")`;
+      const expectedRevertMessage = `NotAllowedTransfer(2, "${issuer.address}", "${owner.address}")`;
 
       await expect(
         issuerContract
-          .connect(minter)
+          .connect(issuer)
           .safeBatchTransferFrom(
-            minter.address,
+            issuer.address,
             owner.address,
             [certificateID1, certificateID2],
             [transferVolume, transferVolume],
@@ -1129,39 +981,19 @@ describe("IssuerFacet", function () {
             parseEther("2"),
             transferBytesData
           )
-      ).to.be.revertedWith("insufficient balance");
+      ).to.be.revertedWith("ERC1155Base__TransferExceedsBalance");
     });
 
     it("should correctly transfer certificates", async () => {
       const {
         owner,
-        issuer,
-        worker,
         receiver,
-        issuerContract,
-        votingContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const transferVolume = parseEther("2");
-
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
+        tokenAmount,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        issuerContract,
+      } = await loadFixture(issuanceFixture);
+
+      const transferVolume = parseEther("2");
 
       await transfer(issuerContract, receiver, owner, transferVolume);
 
@@ -1176,7 +1008,7 @@ describe("IssuerFacet", function () {
       );
 
       expect(senderBalance).to.equal(
-        parseEther(mintedVolume.toString()).sub(transferVolume)
+        parseEther(tokenAmount.toString()).sub(transferVolume)
       );
       expect(ownerBalance).to.equal(transferVolume);
     });
@@ -1353,48 +1185,27 @@ describe("IssuerFacet", function () {
     });
 
     it("should allow approved parties to transfer certificates on behalf of certificate owner", async () => {
-      const { worker, issuer, issuerContract, votingContract } =
-        await loadFixture(initFixture);
+      const { owner, receiver, certificateID, issuerContract, tokenAmount } = await loadFixture(issuanceFixture);
 
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const receiver = wallets[1];
-      const generator = wallets[0];
       const approvedSender = wallets[6];
       const transferVolume = parseEther("2");
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        generator,
-        issuer
-      );
 
       // 1 - The authorized appover approves the new sender
       await expect(
         issuerContract
           .connect(approver)
-          .approveOperator(approvedSender.address, generator.address)
+          .approveOperator(approvedSender.address, receiver.address)
       )
         .to.emit(issuerContract, "OperatorApproved")
-        .withArgs(approvedSender.address, generator.address, approver.address);
+        .withArgs(approvedSender.address, receiver.address, approver.address);
 
       // 2 - The approved sender transfers the certificate to the receiver on behalf of the generator
       await expect(
         transferFor(
           issuerContract,
           approvedSender,
-          generator,
           receiver,
+          owner,
           certificateID,
           transferVolume
         )
@@ -1402,26 +1213,26 @@ describe("IssuerFacet", function () {
         .to.emit(issuerContract, "TransferSingle")
         .withArgs(
           approvedSender.address,
-          generator.address,
           receiver.address,
+          owner.address,
           certificateID,
           transferVolume
         );
 
       // 3 - We verify that the transfer has been correctly made
       const generatorBalance = await issuerContract.balanceOf(
-        generator.address,
+        receiver.address,
         certificateID
       );
-      const receiverBalance = await issuerContract.balanceOf(
-        receiver.address,
+      const ownerBalance = await issuerContract.balanceOf(
+        owner.address,
         certificateID
       );
 
       expect(generatorBalance).to.equal(
-        parseEther(mintedVolume.toString()).sub(transferVolume)
+        parseEther(tokenAmount.toString()).sub(transferVolume)
       );
-      expect(receiverBalance).to.equal(transferVolume);
+      expect(ownerBalance).to.equal(transferVolume);
     });
   });
 
@@ -1478,31 +1289,10 @@ describe("IssuerFacet", function () {
 
     it("should allow an authorized entity to revoke a non retired proof", async () => {
       const {
-        worker,
-        issuer,
-        receiver,
         revoker,
-        proofData,
-        issuerContract,
-        votingContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(certificateID)
@@ -1511,25 +1301,11 @@ describe("IssuerFacet", function () {
 
     it("should revert when transfering revoked proof", async () => {
       const {
-        issuer,
-        worker,
         revoker,
-        proofData,
-        votingContract,
+        certificateID,
         issuerContract,
         proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(issuerContract, certificateID, proofData, owner, issuer);
+      } = await loadFixture(issuanceFixture);
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(certificateID)
@@ -1551,34 +1327,14 @@ describe("IssuerFacet", function () {
     it("should allow transfer of revoked proof only to generator", async () => {
       const {
         owner,
-        issuer,
-        worker,
         receiver,
         revoker,
-        issuerContract,
-        votingContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const proofData = generateProofData({ volume: 42 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      const certificateID = 1;
-      const volumeToTransfer = parseEther("21");
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        issuerContract,
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
+
+      const volumeToTransfer = parseEther("21");
 
       //transfert the certificate to the owner
       await issuerContract
@@ -1622,31 +1378,10 @@ describe("IssuerFacet", function () {
 
     it("should prevent duplicate revocation", async () => {
       const {
-        worker,
-        issuer,
         revoker,
-        receiver,
-        proofData,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(certificateID)
@@ -1659,34 +1394,13 @@ describe("IssuerFacet", function () {
 
     it("should revert if claimer tries to retire a revoked proof", async () => {
       const {
-        worker,
-        issuer,
         claimer,
         revoker,
-        receiver,
-        proofData,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-      const amountToClaim = 42;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
+
+      const amountToClaim = 42;
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(certificateID)
@@ -1701,33 +1415,13 @@ describe("IssuerFacet", function () {
 
     it("should revert if non claimer tries to claim proof", async () => {
       const {
-        issuer,
-        worker,
         wallets,
-        proofData,
-        votingContract,
-        issuerContract,
+        certificateID,
         proofManagerContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const certificateID = 1;
       const amountToClaim = 42;
       const notClaimer = wallets[ 6 ];
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       await expect(
         proofManagerContract
@@ -1738,33 +1432,13 @@ describe("IssuerFacet", function () {
 
     it("should revert if owner tries to retire a revoked proof", async () => {
       const {
-        issuer,
-        worker,
         receiver,
-        proofData,
         revoker,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-      const claimedVolume = 1;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
+
+      const claimedVolume = 1;
 
       await expect(
         proofManagerContract.connect(revoker).revokeProof(certificateID)
@@ -1779,31 +1453,12 @@ describe("IssuerFacet", function () {
 
     it("should allow claiming proofs for others", async () => {
       const {
-        issuer,
-        worker,
         receiver,
-        issuerContract,
-        votingContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-      await mintProof(
-        issuerContract,
-        certificateID,
         proofData,
-        receiver,
-        issuer
-      );
+        tokenAmount,
+        certificateID,
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
 
       const claimedVolume = parseEther((proofData.volume - 2).toString());
 
@@ -1828,38 +1483,18 @@ describe("IssuerFacet", function () {
       );
 
       expect(remainingVolume[0].volume).to.equal(
-        parseEther(mintedVolume.toString()).sub(claimedVolume)
+        parseEther(tokenAmount.toString()).sub(claimedVolume)
       );
     });
 
     it("should allow claiming proofs", async () => {
       const {
-        worker,
-        issuer,
         receiver,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
         proofData,
-        receiver,
-        issuer
-      );
+        tokenAmount,
+        certificateID,
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
 
       const claimedVolume = parseEther((proofData.volume - 2).toString());
 
@@ -1884,39 +1519,17 @@ describe("IssuerFacet", function () {
       );
 
       expect(remainingVolume[0].volume).to.equal(
-        parseEther(`${mintedVolume}`).sub(claimedVolume)
+        parseEther(`${tokenAmount}`).sub(claimedVolume)
       );
     });
 
     it("should revert when retirement for others amount exceeds owned volume", async () => {
       const {
-        worker,
         issuer,
         claimer,
-        receiver,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
 
       const claimedVolume = parseEther("6");
 
@@ -1931,33 +1544,12 @@ describe("IssuerFacet", function () {
 
     it("should revert when retirement amount exceeds owned volume", async () => {
       const {
-        worker,
-        issuer,
         receiver,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const claimedVolume = parseEther("6");
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
+
+      const claimedVolume = parseEther("46");
 
       await expect(
         proofManagerContract
@@ -1970,33 +1562,11 @@ describe("IssuerFacet", function () {
 
     it("should allow authorized revoker to revoke a retired proof during the revocable Period", async () => {
       const {
-        issuer,
-        worker,
         revoker,
         receiver,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
 
       const claimedVolume = parseEther("5");
       await claimVolumeFor(proofManagerContract, receiver, claimedVolume);
@@ -2008,32 +1578,10 @@ describe("IssuerFacet", function () {
 
     it("should prevent authorized revoker from revoking a retired proof after the revocable Period", async () => {
       const {
-        issuer,
-        worker,
         revoker,
-        votingContract,
-        issuerContract,
-        proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const mintedVolume = 5;
-      const certificateID = 1;
-      const proofData = generateProofData({ volume: mintedVolume });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
         certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+        proofManagerContract,
+      } = await loadFixture(issuanceFixture);
 
       const claimedVolume = parseEther("5");
       const proof = await proofManagerContract.getProof(certificateID);
@@ -2057,34 +1605,18 @@ describe("IssuerFacet", function () {
     it("allows to reissue revoked certificate", async () => {
       const {
         issuer,
-        worker,
         revoker,
         receiver,
         proofData,
-        votingContract,
         issuerContract,
         proofManagerContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const certificateID1 = 1;
       const certificateID2 = 2;
 
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID1,
-        proofData,
-        receiver,
-        issuer
-      );
-
-      await expectAlreadyCertified(issuerContract, proofData, receiver, issuer);
+      await expect(
+        requestMinting(issuerContract, proofData, receiver, issuer)
+      ).to.be.revertedWith(`AlreadyCertifiedData("${proofData.volumeRootHash}")`);
 
       const certificateId = await proofManagerContract.getProofIdByDataHash(
         proofData.volumeRootHash
@@ -2103,31 +1635,9 @@ describe("IssuerFacet", function () {
 
     it("allows to get proof ID by data hash", async () => {
       const {
-        worker,
-        issuer,
-        receiver,
         proofData,
-        issuerContract,
-        votingContract,
         proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const certificateID = 1;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        certificateID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       const certificateId = await proofManagerContract.getProofIdByDataHash(
         proofData.volumeRootHash
@@ -2322,60 +1832,37 @@ describe("IssuerFacet", function () {
     });
 
     it("should revert when non admin tries to issue meta-certificate on token contract", async () => {
-      const { wallets, metatokenContract } = await loadFixture(initFixture);
+      const { wallets, receiver, certificateID, tokenAmount, metatokenContract } = await loadFixture(issuanceFixture);
 
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
       const nonAdmin = wallets[ 1 ];
-      const certificateID = 1;
-      const amountToIssue = 42;
 
       // Trying to direclty call the issuance function on the token contract without being admin
       await expect(
         metaToken
           .connect(nonAdmin)
-          .issueMetaToken(certificateID, amountToIssue, wallets[0].address, metaTokenURI)
+          .issueMetaToken(certificateID, tokenAmount, receiver.address, metaTokenURI)
       ).to.be.revertedWith(`NotAdmin("${nonAdmin.address}")`);
     });
 
     it("should revert when non Issuer tries to issue meta-certificate", async () => {
       const {
-        worker,
-        issuer,
         wallets,
         receiver,
-        proofData,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const safcParentID = 1;
-      const tokenAmount = 42;
       const unauthorizedOperator = wallets[0];
       await revokeRole(unauthorizedOperator, roles.issuerRole);
-
-      // issue SAFC
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       await expect(
         metatokenContract
           .connect(unauthorizedOperator)
           .issueMetaToken(
-            safcParentID,
+            certificateID,
             tokenAmount,
             receiver.address,
             metaTokenURI
@@ -2388,34 +1875,13 @@ describe("IssuerFacet", function () {
     it("should revert when one tries to issue meta-certificate to zeroAddress", async () => {
       const {
         issuer,
-        worker,
         wallets,
-        receiver,
-        proofData,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const safcParentID = 1;
-      const tokenAmount = 42;
       const zeroAddress = ethers.constants.AddressZero;
-
-      // issue SAFC
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       // impersonate greenproof contract signer
       const asGreenPoofContractSigner = await ethers.getImpersonatedSigner(
@@ -2435,172 +1901,106 @@ describe("IssuerFacet", function () {
       await expect(
         metaToken
           .connect(asGreenPoofContractSigner)
-          .issueMetaToken(safcParentID, tokenAmount, zeroAddress, metaTokenURI)
+          .issueMetaToken(tokenAmount, tokenAmount, zeroAddress, metaTokenURI)
       ).to.be.revertedWith(`invalidZeroAddress()`);
 
       await expect(
         metatokenContract
           .connect(issuer)
-          .issueMetaToken(safcParentID, tokenAmount, zeroAddress, metaTokenURI)
+          .issueMetaToken(certificateID, tokenAmount, zeroAddress, metaTokenURI)
       ).to.be.revertedWith(`ForbiddenZeroAddressReceiver()`);
     });
 
     it("Should revert when issuing meta-certitificate for not owned parent certificate", async () => {
-      const { issuer, metatokenContract, receiver } = await loadFixture(
-        initFixture
-      );
-      const safcParentID = 1;
+      const { issuer, metatokenContract, receiver } = await loadFixture(initFixture);
+      const certificateID = 1;
       const tokenAmount = 42;
 
       await expect(
         metatokenContract
           .connect(issuer)
           .issueMetaToken(
-            safcParentID,
+            certificateID,
             tokenAmount,
             receiver.address,
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, 0)`
+        `NotAllowedIssuance(${certificateID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, 0)`
       );
     });
 
     it("should revert when one tries to issue meta-certificate from revoked certificate", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        votingContract,
-        issuerContract,
+        certificateID,
         metatokenContract,
         proofManagerContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const safcParentID = 1;
       const tokenAmount = 21;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: 42 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       const availableVolume = ethers.utils.parseEther("42");
 
       // revoke certificate
       await expect(
-        proofManagerContract.connect(revoker).revokeProof(safcParentID)
+        proofManagerContract.connect(revoker).revokeProof(certificateID)
       ).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(
         metatokenContract
           .connect(issuer)
           .issueMetaToken(
-            safcParentID,
+            certificateID,
             tokenAmount,
             receiver.address,
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${availableVolume})`
+        `NotAllowedIssuance(${certificateID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${availableVolume})`
       );
     });
 
     it("Should revert when issuing more meta-certitificate than owned parent certificate volume", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: 21 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      const availableVolume = ethers.utils.parseEther("21");
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      const exceededAmount = tokenAmount + 1;
+      const availableVolume = ethers.utils.parseEther("42");
 
       await expect(
         metatokenContract
           .connect(issuer)
           .issueMetaToken(
-            safcParentID,
-            tokenAmount,
+            certificateID,
+            exceededAmount,
             receiver.address,
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${availableVolume})`
+        `NotAllowedIssuance(${certificateID}, "${receiver.address}", ${parseEther(exceededAmount.toString())}, ${availableVolume})`
       );
     });
 
     it("Should revert when issuing more meta-certitificate than allowed", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: 42 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       const tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount / 2,
           receiver.address,
           metaTokenURI
@@ -2612,7 +2012,7 @@ describe("IssuerFacet", function () {
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
         .withArgs(
-          safcParentID,
+          certificateID,
           receiver.address,
           timestamp,
           parseEther(tokenAmount.toString()).div(2)
@@ -2624,50 +2024,31 @@ describe("IssuerFacet", function () {
         metatokenContract
           .connect(issuer)
           .issueMetaToken(
-            safcParentID,
+            certificateID,
             tokenAmount,
             receiver.address,
             metaTokenURI
           )
       ).to.be.revertedWith(
-        `NotAllowedIssuance(${safcParentID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${remainingIssuableVolume})`
+        `NotAllowedIssuance(${certificateID}, "${receiver.address}", ${parseEther(tokenAmount.toString())}, ${remainingIssuableVolume})`
       );
     });
 
     it("should not issue meta-certificates when the feature is disabled", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        proofData,
-        votingContract,
-        issuerContract,
         metatokenContract,
       } = await loadFixture(initWithoutMetaTokenFixture);
 
-      const safcParentID = 1;
+      const certificateID = 1;
       const tokenAmount = 42;
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       await expect(
         metatokenContract
           .connect(issuer)
           .issueMetaToken(
-            safcParentID,
+            certificateID,
             tokenAmount,
             receiver.address,
             metaTokenURI
@@ -2677,39 +2058,17 @@ describe("IssuerFacet", function () {
 
     it("Authorized issuer should be able to issue meta-certificate", async () => {
       const {
-        worker,
         issuer,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData();
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       const tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
@@ -2720,42 +2079,20 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
     });
 
     it("should correctly retrieve the totalSupply of meta-certificates", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       // totalSupply of meta certificate should be null before issuance
-      let totalSupply = await metatokenContract.tokenSupply(safcParentID);
+      let totalSupply = await metatokenContract.tokenSupply(certificateID);
 
       expect(totalSupply).to.equals(0);
 
@@ -2764,12 +2101,12 @@ describe("IssuerFacet", function () {
         await metatokenContract.getMetaTokenAddress()
       );
 
-      expect(await metaToken.tokenSupply(safcParentID)).to.equals(0);
+      expect(await metaToken.tokenSupply(certificateID)).to.equals(0);
 
       const tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
@@ -2780,51 +2117,29 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // totalSupply of meta certificate should be updated to ${tokenAmount}
-      totalSupply = await metatokenContract.tokenSupply(safcParentID);
+      totalSupply = await metatokenContract.tokenSupply(certificateID);
 
       expect(totalSupply).to.equals(parseEther(tokenAmount.toString()));
-      expect(await metaToken.tokenSupply(safcParentID)).to.equals(parseEther(tokenAmount.toString()));
+      expect(await metaToken.tokenSupply(certificateID)).to.equals(parseEther(tokenAmount.toString()));
     });
 
     it("Authorized revoker should be able to revoke meta-certificate", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       // issue meta-certificate
       tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
@@ -2835,36 +2150,36 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // check that meta-certificate is not revoked
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
 
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
 
-      let isRevoked = await metaToken.isMetaTokenRevoked(safcParentID);
+      let isRevoked = await metaToken.isMetaTokenRevoked(certificateID);
       expect(isRevoked).to.be.false;
       expect(
-        await metatokenContract.isMetaTokenRevoked(safcParentID)
+        await metatokenContract.isMetaTokenRevoked(certificateID)
       ).to.be.equal(isRevoked);
 
       // revoke meta-certificate
       tx = await metatokenContract
         .connect(revoker)
-        .revokeMetaToken(safcParentID);
+        .revokeMetaToken(certificateID);
       timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenRevoked")
-        .withArgs(safcParentID, timestamp);
+        .withArgs(certificateID, timestamp);
 
       // check if meta-certificate is revoked
-      isRevoked = await metaToken.isMetaTokenRevoked(safcParentID);
-      const revocationDate = await metaToken.tokenRevocationDate(safcParentID);
+      isRevoked = await metaToken.isMetaTokenRevoked(certificateID);
+      const revocationDate = await metaToken.tokenRevocationDate(certificateID);
 
       expect(isRevoked).to.be.true;
 
       expect(
-        await metatokenContract.isMetaTokenRevoked(safcParentID)
+        await metatokenContract.isMetaTokenRevoked(certificateID)
       ).to.be.equal(isRevoked);
 
       expect(revocationDate).to.equals(timestamp);
@@ -2873,66 +2188,44 @@ describe("IssuerFacet", function () {
     it("should revert when transfering a revoked meta-certificate", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        issuerContract,
-        votingContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       // issue meta-certificate
       tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
         );
 
-      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      let timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // revoke meta-certificate
       tx = await metatokenContract
         .connect(revoker)
-        .revokeMetaToken(safcParentID);
+        .revokeMetaToken(certificateID);
       timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenRevoked")
-        .withArgs(safcParentID, timestamp);
+        .withArgs(certificateID, timestamp);
 
       // check if meta-certificate is revoked
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
 
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
 
-      let isRevoked = await metaToken.isMetaTokenRevoked(safcParentID);
-      const revocationDate = await metaToken.tokenRevocationDate(safcParentID);
+      let isRevoked = await metaToken.isMetaTokenRevoked(certificateID);
+      const revocationDate = await metaToken.tokenRevocationDate(certificateID);
       expect(isRevoked).to.be.true;
       expect(revocationDate).to.equals(timestamp);
 
@@ -2943,49 +2236,27 @@ describe("IssuerFacet", function () {
           .safeTransferFrom(
             receiver.address,
             wallets[2].address,
-            safcParentID,
+            certificateID,
             tokenAmount,
             ethers.utils.formatBytes32String("")
           )
-      ).to.be.revertedWith(`RevokedToken(${safcParentID}, ${revocationDate})`);
+      ).to.be.revertedWith(`RevokedToken(${certificateID}, ${revocationDate})`);
     });
 
     it("Should revert when revoker tries to revoke meta-certificate twice", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       // issue meta-certificate
-      tx = await metatokenContract
+      let tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
@@ -2996,74 +2267,53 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // check that meta-certificate is not revoked
       const tokenAddress = await metatokenContract.getMetaTokenAddress();
 
       const metaToken = await ethers.getContractAt("MetaToken", tokenAddress);
 
-      let isRevoked = await metaToken.isMetaTokenRevoked(safcParentID);
+      let isRevoked = await metaToken.isMetaTokenRevoked(certificateID);
       expect(isRevoked).to.be.false;
 
       // revoke meta-certificate
       tx = await metatokenContract
         .connect(revoker)
-        .revokeMetaToken(safcParentID);
+        .revokeMetaToken(certificateID);
 
       timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenRevoked")
-        .withArgs(safcParentID, timestamp);
+        .withArgs(certificateID, timestamp);
 
       // check if meta-certificate is revoked
-      isRevoked = await metaToken.isMetaTokenRevoked(safcParentID);
+      isRevoked = await metaToken.isMetaTokenRevoked(certificateID);
       expect(isRevoked).to.be.true;
 
       await expect(
-        metatokenContract.connect(revoker).revokeMetaToken(safcParentID)
-      ).to.be.revertedWith(`RevokedToken(${safcParentID}, ${timestamp})`);
+        metatokenContract.connect(revoker).revokeMetaToken(certificateID)
+      ).to.be.revertedWith(`RevokedToken(${certificateID}, ${timestamp})`);
     });
 
     it("should revert when non admin tries to direclty revoke meta-certificate", async () => {
       const {
         issuer,
-        worker,
         wallets,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const safcParentID = 1;
-      const tokenAmount = 42;
       const nonAdmin = wallets[2];
 
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
-
       // issue meta-certificate
-      tx = await metatokenContract
+      const tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
@@ -3073,7 +2323,7 @@ describe("IssuerFacet", function () {
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // direct revocation of meta-certificate on metaToken contract should revert
       const metaToken = await ethers.getContractAt(
@@ -3082,164 +2332,94 @@ describe("IssuerFacet", function () {
       );
 
       await expect(
-        metaToken.connect(nonAdmin).revokeMetaToken(safcParentID)
+        metaToken.connect(nonAdmin).revokeMetaToken(certificateID)
       ).to.be.revertedWith(`NotAdmin("${nonAdmin.address}")`);
     });
 
     it("should revert when non authorized revoker tries to revoke meta-certificate", async () => {
       const {
         issuer,
-        worker,
         receiver,
-        votingContract,
-        issuerContract,
+        tokenAmount,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       // issue meta-certificate
-      tx = await metatokenContract
+      const tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
         );
 
-      const timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      const timestamp = await getTimeStamp(tx);
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // revocation of meta-certificate should revert
       const nonRevoker = wallets[2];
       await expect(
-        metatokenContract.connect(nonRevoker).revokeMetaToken(safcParentID)
+        metatokenContract.connect(nonRevoker).revokeMetaToken(certificateID)
       ).to.be.revertedWith(`NotEnrolledRevoker("${nonRevoker.address}")`);
     });
 
     it("Meta-certificate should correctly be revoked when parent certificate is revoked", async () => {
       const {
         issuer,
-        worker,
-        votingContract,
-        issuerContract,
+        receiver,
+        tokenAmount,
+        certificateID,
         metatokenContract,
         proofManagerContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const tokenAmount = 42;
-      const receiver = wallets[1];
-      let tx;
-      let timestamp;
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       // issue meta-certificate
-      tx = await metatokenContract
+      let tx = await metatokenContract
         .connect(issuer)
         .issueMetaToken(
-          safcParentID,
+          certificateID,
           tokenAmount,
           receiver.address,
           metaTokenURI
         );
 
-      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      let timestamp = await getTimeStamp(tx);
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenIssued")
-        .withArgs(safcParentID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
+        .withArgs(certificateID, receiver.address, timestamp, parseEther(tokenAmount.toString()));
 
       // revoking parent certificate should revoke associated meta-certificate
       tx = await proofManagerContract
         .connect(revoker)
-        .revokeProof(safcParentID);
+        .revokeProof(certificateID);
 
-      timestamp = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
+      timestamp = await getTimeStamp(tx);
 
       await expect(tx).to.emit(proofManagerContract, "ProofRevoked");
 
       await expect(tx)
         .to.emit(metatokenContract, "MetaTokenRevoked")
-        .withArgs(safcParentID, timestamp);
+        .withArgs(certificateID, timestamp);
     });
 
     it("Should not revoke any meta-certificate when revoking a certificate with no derived certificates", async () => {
       const {
-        issuer,
-        worker,
-        votingContract,
-        issuerContract,
+        certificateID,
         metatokenContract,
         proofManagerContract,
-      } = await loadFixture(initFixture);
+      } = await loadFixture(issuanceFixture);
 
-      const safcParentID = 1;
-      const tokenAmount = 42;
-      const receiver = wallets[1];
-
-      // issue SAFC
-      const proofData = generateProofData({ volume: tokenAmount });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
 
       // revoking a certificate with no derived certificates should not revoke any meta-certificate
       const revokeTx = await proofManagerContract
         .connect(revoker)
-        .revokeProof(safcParentID);
+        .revokeProof(certificateID);
 
       await expect(revokeTx).to.emit(proofManagerContract, "ProofRevoked");
       await expect(revokeTx).to.not.emit(metatokenContract, "MetaTokenRevoked");
@@ -3247,36 +2427,14 @@ describe("IssuerFacet", function () {
 
     it("Should not revoke a non existing meta-certificate", async () => {
       const {
-        issuer,
-        worker,
-        receiver,
-        votingContract,
-        issuerContract,
+        certificateID,
         metatokenContract,
-      } = await loadFixture(initFixture);
-
-      const safcParentID = 1;
-      const proofData = generateProofData({ volume: 42 });
-
-      await reachConsensus(
-        proofData.inputHash,
-        proofData.matchResult,
-        votingContract,
-        worker
-      );
-
-      await mintProof(
-        issuerContract,
-        safcParentID,
-        proofData,
-        receiver,
-        issuer
-      );
+      } = await loadFixture(issuanceFixture);
 
       // revoking a non existing meta-certificate should revert
       await expect(
-        metatokenContract.connect(revoker).revokeMetaToken(safcParentID)
-      ).to.be.revertedWith(`MetaTokenNotFound(${safcParentID})`);
+        metatokenContract.connect(revoker).revokeMetaToken(certificateID)
+      ).to.be.revertedWith(`MetaTokenNotFound(${certificateID})`);
     });
   });
 
@@ -3287,6 +2445,12 @@ describe("IssuerFacet", function () {
       const beforeClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
       expect(beforeClaimBalance).to.equal(volume);
 
+      const initialClaimedAmount = await metatokenContract.balanceClaimed(
+        receiver.address,
+        certificateID
+      );
+      expect(initialClaimedAmount).to.equal(0);
+
       const claimTx = await metatokenContract.connect(receiver).claimMetaToken(certificateID, volume)
       const timestamp = await getTimeStamp(claimTx);
 
@@ -3295,6 +2459,13 @@ describe("IssuerFacet", function () {
 
       const afterClaimBalance = await metatokenContract.getBalanceOf(receiver.address, certificateID);
       expect(afterClaimBalance).to.equal(0);
+
+      const finalClaimedAmount = await metatokenContract.balanceClaimed(
+        receiver.address,
+        certificateID
+      );
+
+      expect(finalClaimedAmount).to.equal(volume);
     });
 
     it("should revert when trying to retire a meta-certificate when the feature is disabled", async () => {
@@ -4371,17 +3542,6 @@ describe("IssuerFacet", function () {
         receiver.address
       );
     return mintingTx;
-  };
-
-  const expectAlreadyCertified = async (
-    issuerContract,
-    proofData,
-    receiver,
-    signer
-  ) => {
-    await expect(
-      requestMinting(issuerContract, proofData, receiver, signer)
-    ).to.be.revertedWith(`AlreadyCertifiedData("${proofData.volumeRootHash}")`);
   };
 
   const transfer = async (

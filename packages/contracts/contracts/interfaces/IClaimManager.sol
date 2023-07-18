@@ -14,11 +14,7 @@ interface IClaimManager {
      * @param version The version of the role to check for.
      * @return true if the `_subject` is enrolled to the `_role` role and with the `_version` version, false otherwise
      */
-    function hasRole(
-        address subject,
-        bytes32 role,
-        uint256 version
-    ) external view returns (bool);
+    function hasRole(address subject, bytes32 role, uint256 version) external view returns (bool);
 
     /**
      * @dev Check if a certain role is revoked for a subject

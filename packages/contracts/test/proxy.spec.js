@@ -3,7 +3,7 @@ const {
   FacetCutAction,
   removeSelectors,
   findIndexOfAddressInFacets,
-} = require("../scripts/deploy");
+} = require("../deploy");
 const { solidity } = require("ethereum-waffle");
 const { ethers } = require("hardhat");
 const { assert, expect } = require("chai");
@@ -12,7 +12,7 @@ const chai = require("chai");
 const { roles } = require("./utils/roles.utils");
 const { getTimeStamp } = require("./utils/time.utils");
 
-const { deployGreenproof } = require("../scripts/deploy/deployContracts");
+const { deployGreenproof } = require("../deploy/deployContracts");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
 
@@ -147,7 +147,7 @@ describe("GreenproofTest", async function () {
           greenproof
             .connect(nonOwner)
             .updateClaimManager(newClaimManagerAddress)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update claimManager Address", async () => {
@@ -185,7 +185,7 @@ describe("GreenproofTest", async function () {
           greenproof
             .connect(nonOwner)
             .updateClaimRevocationRegistry(newRevocationregistry)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update ClaimRevocationRegistry Address", async () => {
@@ -214,7 +214,7 @@ describe("GreenproofTest", async function () {
 
         await expect(
           greenproof.connect(nonOwner).updateClaimerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update claimerRole version", async () => {
@@ -240,7 +240,7 @@ describe("GreenproofTest", async function () {
 
         await expect(
           greenproof.connect(nonOwner).updateWorkerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update workerRole version", async () => {
@@ -266,7 +266,7 @@ describe("GreenproofTest", async function () {
 
         await expect(
           greenproof.connect(nonOwner).updateRevokerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update revokerRole version", async () => {
@@ -292,7 +292,7 @@ describe("GreenproofTest", async function () {
 
         await expect(
           greenproof.connect(nonOwner).updateIssuerVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update IssuerRole version", async () => {
@@ -318,7 +318,7 @@ describe("GreenproofTest", async function () {
 
         await expect(
           greenproof.connect(nonOwner).updateApproverVersion(newRoleVersion)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should update approverRole version", async () => {
@@ -335,7 +335,7 @@ describe("GreenproofTest", async function () {
   describe("\n****** Proxy Management tests ******", () => {
     it("should revert when non owner tries to pause contract", async () => {
       await expect(greenproof.connect(nonOwner).pause()).to.be.revertedWith(
-        `NotAuthorized("Owner")`
+        `NotAuthorized("Owner", "${nonOwner.address}")`
       );
     });
 
@@ -356,7 +356,7 @@ describe("GreenproofTest", async function () {
 
     it("should revert when non owner tries to unpause contract", async () => {
       await expect(greenproof.connect(nonOwner).unPause()).to.be.revertedWith(
-        `NotAuthorized("Owner")`
+        `NotAuthorized("Owner", "${nonOwner.address}")`
       );
     });
 
