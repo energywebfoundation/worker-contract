@@ -121,7 +121,7 @@ library LibClaimManager {
      * @dev Error message for when an operator is not authorized.
      * @dev the missing authorization should be specified in the `requiredAuth` string
      */
-    error NotAuthorized(string requiredAuth);
+    error NotAuthorized(string requiredAuth, address operator);
 
     /**
      * @dev Modifier for allowing only the contract owner to call a function.
@@ -379,7 +379,7 @@ library LibClaimManager {
      */
     function checkOwnership() internal view {
         if (OwnableStorage.layout().owner != msg.sender) {
-            revert NotAuthorized("Owner");
+            revert NotAuthorized("Owner", msg.sender);
         }
     }
 
@@ -390,11 +390,7 @@ library LibClaimManager {
      * @param version The version of the role to check for.
      * @return true if the `subject` is enrolled to the `role` role and with the `version` version, false otherwise
      */
-    function hasRole(
-        address subject,
-        bytes32 role,
-        uint256 version
-    ) internal view returns (bool) {
+    function hasRole(address subject, bytes32 role, uint256 version) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation

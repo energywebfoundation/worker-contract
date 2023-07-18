@@ -2,7 +2,8 @@
 pragma solidity 0.8.16;
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
-import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {MetaToken} from "../dependencies/MetaToken.sol";
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
 
 library LibMetaToken {
     struct MetaTokenStorage {
@@ -12,7 +13,14 @@ library LibMetaToken {
         address metaTokenAddress;
         // Mapping from parent certificate ID to the amount of meta tokens issued
         mapping(address => mapping(uint256 => uint256)) metaTokenIssued;
+        // Mapping from token ID to account balances, to track how much of certificate ID a wallet has claimed
+        mapping(uint256 => mapping(address => uint256)) claimedBalances;
     }
+
+    /**
+     * @dev Tracking the storage position of the issuerStorage
+     */
+    bytes32 private constant _META_TOKEN_STORAGE_POSITION = keccak256("ewc.greenproof.metaToken.diamond.storage");
 
     /**
      * @notice event emitted when meta tokens are issued
@@ -40,44 +48,12 @@ library LibMetaToken {
     error NotAllowedIssuance(uint256 certificateID, address receiver, uint256 toIssueVolume, uint256 availableVolume);
 
     /**
-     * @dev Tracking the storage position of the issuerStorage
-     */
-    bytes32 private constant _META_TOKEN_STORAGE_POSITION = keccak256("ewc.greenproof.metaToken.diamond.storage");
-
-    /**
-     * @notice checkAllowedIssuance - checks if the receiver is allowed to issue this amount of meta tokens
-     * @param receiver address of the receiver of the meta tokens
-     * @param parentCertificateID ID of the parent certificate
-     * @param toIssueVolume volume of the meta tokens to be issued
-     * @dev Error: Issuance of the meta-certificate is not allowed
-     * @dev reverts if the receiver is not allowed to issue this amount of meta tokens
-     */
-    function checkAllowedIssuance(
-        address receiver,
-        uint256 parentCertificateID,
-        uint256 toIssueVolume
-    ) internal view {
-        uint256 availableParentVolume = IERC1155(address(this)).balanceOf(receiver, parentCertificateID);
-        uint256 alreadyIssuedVolume = getStorage().metaTokenIssued[receiver][parentCertificateID];
-        uint256 allowedIssuanceVolume = availableParentVolume - alreadyIssuedVolume;
-        bool isParentCertificateRevoked = LibIssuer.isCertificateRevoked(parentCertificateID);
-        if (availableParentVolume == 0 || allowedIssuanceVolume < toIssueVolume || isParentCertificateRevoked) {
-            revert NotAllowedIssuance(parentCertificateID, receiver, toIssueVolume, allowedIssuanceVolume);
-        }
-    }
-
-    /**
      * @notice issueMetaToken - Issues new token units of metaceritificate
      * @param parentCertificateID - ID of the parent certificate
      * @param amount - Amount of meta tokens to be issued
      * @param receiver - Address of the receiver of the issued tokens
      */
-    function issueMetaToken(
-        uint256 parentCertificateID,
-        uint256 amount,
-        address receiver,
-        string memory tokenUri
-    ) internal {
+    function issueMetaToken(uint256 parentCertificateID, uint256 amount, address receiver, string memory tokenUri) internal {
         LibIssuer.preventZeroAddressReceiver(receiver); //verify that the receiver is not a zero address
         checkAllowedIssuance(receiver, parentCertificateID, amount); // verify that the receiver is allowed to issue this amount meta tokens
         address metaTokenAddress = getMetaTokenAddress();
@@ -98,6 +74,54 @@ library LibMetaToken {
     }
 
     /**
+     * @notice claimMetaToken - Claims a meta token
+     * @param tokenID - ID of the meta token to be claimed
+     * @param amount - Amount of meta tokens to be claimed
+     */
+    function claimMetaTokenFor(uint256 tokenID, uint256 amount, address owner) internal {
+        MetaToken(getMetaTokenAddress()).claimMetaTokenFor(tokenID, amount, owner);
+    }
+
+    /**
+     * @notice registerClaimedMetaToken - Registers a claimed Meta Token
+     * @param certificateID ID of the claimed certificate
+     * @param owner address of the user claiming the certificate
+     * @param claimedAmount amount of the certificate being claimed
+     */
+    function registerClaimedMetaToken(uint256 certificateID, address owner, uint256 claimedAmount) internal {
+        getStorage().claimedBalances[certificateID][owner] += claimedAmount;
+    }
+
+    /**
+     * @notice checkAllowedIssuance - checks if the receiver is allowed to issue this amount of meta tokens
+     * @param receiver address of the receiver of the meta tokens
+     * @param parentCertificateID ID of the parent certificate
+     * @param toIssueVolume volume of the meta tokens to be issued
+     * @dev Error: Issuance of the meta-certificate is not allowed
+     * @dev reverts if the receiver is not allowed to issue this amount of meta tokens
+     */
+    function checkAllowedIssuance(address receiver, uint256 parentCertificateID, uint256 toIssueVolume) internal view {
+        uint256 availableParentVolume = IERC1155(address(this)).balanceOf(receiver, parentCertificateID);
+        uint256 alreadyIssuedVolume = getStorage().metaTokenIssued[receiver][parentCertificateID];
+        uint256 allowedIssuanceVolume = availableParentVolume - alreadyIssuedVolume;
+        bool isParentCertificateRevoked = LibIssuer.isCertificateRevoked(parentCertificateID);
+        if (availableParentVolume == 0 || allowedIssuanceVolume < toIssueVolume || isParentCertificateRevoked) {
+            revert NotAllowedIssuance(parentCertificateID, receiver, toIssueVolume, allowedIssuanceVolume);
+        }
+    }
+
+    /**
+     * @notice checkExistance - checks if a meta token exists
+     * @param tokenID - ID of the meta token
+     * @dev reverts if the meta token does not exist
+     */
+    function checkExistance(uint256 tokenID) internal view {
+        if (totalSupply(tokenID) == 0) {
+            revert IMetaToken.MetaTokenNotFound(tokenID);
+        }
+    }
+
+    /**
      * @notice getMetaTokenAddress - Gets the address of the deployed ERC1155 meta token contract
      * @return metaTokenManager - The address of the deployed ERC1155 meta token contract
      */
@@ -115,6 +139,16 @@ library LibMetaToken {
     }
 
     /**
+     * @notice getBalanceOf - Returns the balance of a meta token
+     * @param account - Address of the account
+     * @param tokenID - ID of the meta token
+     * @return uint256 - The balance of the meta token
+     */
+    function getBalanceOf(address account, uint256 tokenID) internal view returns (uint256) {
+        return MetaToken(getMetaTokenAddress()).balanceOf(account, tokenID);
+    }
+
+    /**
      * @notice isMetaTokenRevoked - Checks if a meta token is revoked
      * @param tokenID - ID of the meta token
      * @return bool - True if the meta token is revoked
@@ -129,6 +163,15 @@ library LibMetaToken {
      */
     function isEnabled() internal view returns (bool) {
         return getStorage().isMetaCertificateEnabled;
+    }
+
+    /**
+     *@notice claimedBalanceOf  - returns the amount volume of certifcates ID claimed by a owner
+     * @param user - The user for whom we check claimed balance for
+     * @param certificateID - ID of the greenproof certificate
+     */
+    function claimedBalanceOf(address user, uint256 certificateID) internal view returns (uint256) {
+        return getStorage().claimedBalances[certificateID][user];
     }
 
     /**

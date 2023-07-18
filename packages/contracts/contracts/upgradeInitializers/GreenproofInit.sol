@@ -8,7 +8,7 @@ import {IMetaToken} from "../interfaces/IMetaToken.sol";
 import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
 import {IClaimManager} from "../interfaces/IClaimManager.sol";
-import {ERC165Storage} from "@solidstate/contracts/introspection/ERC165.sol";
+import {ERC165BaseStorage} from "@solidstate/contracts/introspection/ERC165/base/ERC165BaseStorage.sol";
 import {LibReward} from "../libraries/LibReward.sol";
 import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibVoting} from "../libraries/LibVoting.sol";
@@ -29,7 +29,7 @@ contract GreenproofInit {
     /**
      * @dev Using the ERC165Storage library for the ERC165Storage.Layout struct
      */
-    using ERC165Storage for ERC165Storage.Layout;
+    using ERC165BaseStorage for ERC165BaseStorage.Layout;
 
     /**
      * @notice Initialization function for setting the supported interfaces and initializing state variables.
@@ -44,13 +44,13 @@ contract GreenproofInit {
         /**
          * @dev Setting the supported interfaces for the Greenproof contract.
          */
-        ERC165Storage.Layout storage erc165 = ERC165Storage.layout();
-        erc165.setSupportedInterface(type(IVoting).interfaceId, true);
-        erc165.setSupportedInterface(type(IReward).interfaceId, true);
-        erc165.setSupportedInterface(type(IMetaToken).interfaceId, true);
-        erc165.setSupportedInterface(type(IProofIssuer).interfaceId, true);
-        erc165.setSupportedInterface(type(IProofManager).interfaceId, true);
-        erc165.setSupportedInterface(type(IClaimManager).interfaceId, true);
+        ERC165BaseStorage.Layout storage erc165 = ERC165BaseStorage.layout();
+        erc165.supportedInterfaces[type(IVoting).interfaceId] = true;
+        erc165.supportedInterfaces[type(IReward).interfaceId] = true;
+        erc165.supportedInterfaces[type(IMetaToken).interfaceId] = true;
+        erc165.supportedInterfaces[type(IProofIssuer).interfaceId] = true;
+        erc165.supportedInterfaces[type(IProofManager).interfaceId] = true;
+        erc165.supportedInterfaces[type(IClaimManager).interfaceId] = true;
 
         // add your own state variables
         LibClaimManager.init(proxyConfig.rolesConfig);

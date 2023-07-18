@@ -32,12 +32,12 @@ module.exports.consensusTests = function () {
       });
 
       for (const notWinningWorker of notWinningWorkers) {
-        notWinningWorker.voteNotWinning(
+        await notWinningWorker.voteNotWinning(
           timeframes[0].input,
           timeframes[0].output
         );
       }
-      winningVoteWorker.voteWinning(timeframes[0].input, timeframes[0].output, {
+      await winningVoteWorker.voteWinning(timeframes[0].input, timeframes[0].output, {
         voteCount: expectWinAfterVotes,
       });
     }
