@@ -708,7 +708,7 @@ module.exports.resultsTests = function () {
 
         await expect(
           votingContract.connect(nonOwner).setRewardsEnabled(true)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should revert when tries to enable rewards twice", async () => {
@@ -729,7 +729,7 @@ module.exports.resultsTests = function () {
 
         await expect(
           votingContract.connect(nonOwner).setRewardsEnabled(true)
-        ).to.be.revertedWith(`NotAuthorized("Owner")`);
+        ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
       it("should pay the rewards after enabling rewards", async () => {
