@@ -5,7 +5,8 @@ import {LibClaimManager} from "./LibClaimManager.sol";
 import {LibProofManager} from "./LibProofManager.sol";
 import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {UintUtils} from "@solidstate/contracts/utils/UintUtils.sol";
-import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
+
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
 /**
@@ -60,6 +61,11 @@ library LibIssuer {
         // @notice saving the data needed for future features
         mapping(bytes32 => mapping(bytes32 => uint256)) voteToCertificates;
     }
+
+    /**
+     * @dev Tracking the storage position of the issuerStorage
+     */
+    bytes32 private constant _ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
 
     /**
      * @notice ProofMinted event emitted when a new green proof certificate is minted
@@ -132,11 +138,6 @@ library LibIssuer {
     error BatchQueueSizeExceeded(uint256 batchQueueSize, uint256 batchQueueSizeLimit);
 
     /**
-     * @dev Tracking the storage position of the issuerStorage
-     */
-    bytes32 private constant _ISSUER_STORAGE_POSITION = keccak256("ewc.greenproof.issuer.diamond.storage");
-
-    /**
      * @dev Initialize the contract with a revocable period for certificates
      * @param revocablePeriod period in which the certificates can be revoked
      */
@@ -164,13 +165,7 @@ library LibIssuer {
      * @param certificateID ID of the certificate
      * @param voteID ID of the vote associated to the certificate
      */
-    function registerProof(
-        bytes32 dataHash,
-        address generatorAddress,
-        uint256 volumeInWei,
-        uint256 certificateID,
-        bytes32 voteID
-    ) internal {
+    function registerProof(bytes32 dataHash, address generatorAddress, uint256 volumeInWei, uint256 certificateID, bytes32 voteID) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.certificates[certificateID] = IProofIssuer.Certificate({
@@ -191,11 +186,7 @@ library LibIssuer {
      * @param user address of the user claiming the certificate
      * @param claimedAmount amount of the certificate being claimed
      */
-    function registerClaimedProof(
-        uint256 certificateID,
-        address user,
-        uint256 claimedAmount
-    ) internal {
+    function registerClaimedProof(uint256 certificateID, address user, uint256 claimedAmount) internal {
         getStorage().claimedBalances[certificateID][user] += claimedAmount;
     }
 
@@ -205,11 +196,7 @@ library LibIssuer {
      * @param key key of the data being disclosed
      * @param value value of the data being disclosed
      */
-    function discloseData(
-        bytes32 dataHash,
-        string memory key,
-        string memory value
-    ) internal {
+    function discloseData(bytes32 dataHash, string memory key, string memory value) internal {
         LibIssuer.IssuerStorage storage issuer = getStorage();
 
         issuer.disclosedData[dataHash][key] = value;
@@ -223,11 +210,7 @@ library LibIssuer {
      * @param shouldBeApproved status of the approval to set
      * @dev when the approval is being set to true, `msg.sender` cannot be the same as `operator`
      */
-    function setApprovalFor(
-        address certificateOwner,
-        address operator,
-        bool shouldBeApproved
-    ) internal {
+    function setApprovalFor(address certificateOwner, address operator, bool shouldBeApproved) internal {
         if (shouldBeApproved && msg.sender == operator) {
             revert ForbiddenSelfApproval(msg.sender, certificateOwner);
         }
@@ -293,15 +276,6 @@ library LibIssuer {
                 merkleRootHash: issuer.certificates[certificateID].merkleRootHash,
                 generator: issuer.certificates[certificateID].generator
             });
-    }
-
-    /**
-     * @dev Get the hash representation of the volume key-value pair inside the data to certify
-     * @return volumeHash
-     */
-    function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
-        string memory volumeString = UintUtils.toString(volume);
-        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
     }
 
     /**
@@ -397,17 +371,6 @@ library LibIssuer {
     }
 
     /**
-     * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
-     * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
-     * @param receiver address of the receiver of the certificate
-     */
-    function preventZeroAddressReceiver(address receiver) internal pure {
-        if (receiver == address(0)) {
-            revert ForbiddenZeroAddressReceiver();
-        }
-    }
-
-    /**
      *@notice claimedBalanceOf  - returns the amount volume of certifcates ID claimed by a user
      * @param user - The user for whom we check claimed balance for
      * @param certificateID - ID of the greenproof certificate
@@ -467,17 +430,33 @@ library LibIssuer {
     }
 
     /**
+     * @dev Get the hash representation of the volume key-value pair inside the data to certify
+     * @return volumeHash
+     */
+    function getAmountHash(uint256 volume) internal pure returns (bytes32 volumeHash) {
+        string memory volumeString = UintUtils.toString(volume);
+        volumeHash = keccak256(abi.encodePacked("volume", volumeString));
+    }
+
+    /**
+     * @notice preventZeroAddressReceiver - Prevents the receiver address from being the zero address
+     * @dev tthis prevent certificates loss by reverting if the receiver address is the zero address
+     * @param receiver address of the receiver of the certificate
+     */
+    function preventZeroAddressReceiver(address receiver) internal pure {
+        if (receiver == address(0)) {
+            revert ForbiddenZeroAddressReceiver();
+        }
+    }
+
+    /**
      * @notice checkVolumeValidity - Checks if the volume of the certificate is in consensus
      * @dev This function reverts if provided volume is not part of the merkle root hash reprensenting certified data
      * @param volume volume of the certificate
      * @param dataHash hash of the data associated to the certificate
      * @param amountProof proof of the volume of the certificate
      */
-    function checkVolumeValidity(
-        uint256 volume,
-        bytes32 dataHash,
-        bytes32[] memory amountProof
-    ) internal pure {
+    function checkVolumeValidity(uint256 volume, bytes32 dataHash, bytes32[] memory amountProof) internal pure {
         bytes32 volumeHash = getAmountHash(volume);
 
         bool isVolumeInConsensus = LibProofManager.verifyProof(dataHash, volumeHash, amountProof);

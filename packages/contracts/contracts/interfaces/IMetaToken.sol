@@ -77,19 +77,7 @@ interface IMetaToken {
      * @param amount - amount of meta tokens to be issued
      * @param receiver - address of the receiver of the issued meta tokens
      */
-    function issueMetaToken(
-        uint256 tokenID,
-        uint256 amount,
-        address receiver,
-        string memory tokenUri
-    ) external;
-
-    /**
-     * @notice tokenSupply - Returns the total supply of a meta token
-     * @param id - ID of the meta token
-     * @return uint256 - The total supply of the meta token
-     */
-    function tokenSupply(uint256 id) external view returns (uint256);
+    function issueMetaToken(uint256 tokenID, uint256 amount, address receiver, string memory tokenUri) external;
 
     /**
      * @notice revokeMeToken - Revokes a meta token
@@ -117,13 +105,16 @@ interface IMetaToken {
      * @param amount - amount of meta tokens to be claimed
      * @param owner - address of the owner of the meta token
      */
-    function claimMetaTokenFor(
-        uint256 tokenID,
-        uint256 amount,
-        address owner
-    ) external;
+    function claimMetaTokenFor(uint256 tokenID, uint256 amount, address owner) external;
 
     function getBalanceOf(address account, uint256 tokenID) external view returns (uint256);
+
+    /**
+     * @notice tokenSupply - Returns the total supply of a meta token
+     * @param id - ID of the meta token
+     * @return uint256 - The total supply of the meta token
+     */
+    function tokenSupply(uint256 id) external view returns (uint256);
 
     /**
      * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked

@@ -17,16 +17,12 @@ contract MetaTokenFacet is IMetaToken {
      * @notice issueMetaToken - Issues new token units of metaceritificate
      * @dev This function reverts when the metatoken feature is not enabled
      * @param parentCertificateID - ID of the parent certificate
-     * @param amount - Amount of meta tokens to be issued
+     * @param volume - Amount of meta tokens to be issued
      * @param receiver - Address of the receiver of the issued tokens
      */
-    function issueMetaToken(
-        uint256 parentCertificateID,
-        uint256 amount,
-        address receiver,
-        string memory tokenUri
-    ) external onlyWhenEnabled {
+    function issueMetaToken(uint256 parentCertificateID, uint256 volume, address receiver, string memory tokenUri) external onlyWhenEnabled {
         LibClaimManager.checkEnrolledIssuer(msg.sender); //verify that the sender is an authorized issuer
+        uint256 amount = volume * 1 ether;
         LibMetaToken.issueMetaToken(parentCertificateID, amount, receiver, tokenUri);
         // solhint-disable-next-line not-rely-on-time
         emit MetaTokenIssued(parentCertificateID, receiver, block.timestamp, amount);
@@ -64,11 +60,7 @@ contract MetaTokenFacet is IMetaToken {
      * @param amount - amount of meta tokens to be claimed
      * @param owner - address of the owner of the meta token
      */
-    function claimMetaTokenFor(
-        uint256 certificateID,
-        uint256 amount,
-        address owner
-    ) external onlyWhenEnabled {
+    function claimMetaTokenFor(uint256 certificateID, uint256 amount, address owner) external onlyWhenEnabled {
         LibClaimManager.checkEnrolledClaimer(msg.sender);
         _claimMetaTokenFor(certificateID, amount, owner);
     }
@@ -101,6 +93,15 @@ contract MetaTokenFacet is IMetaToken {
     }
 
     /**
+     *@notice balanceClaimed  - returns the amount volume of certifcates ID claimed by a owner
+     * @param user - The user for whom we check claimed balance for
+     * @param certificateID - ID of the greenproof certificate
+     */
+    function balanceClaimed(address user, uint256 certificateID) external view returns (uint256) {
+        return LibMetaToken.claimedBalanceOf(user, certificateID);
+    }
+
+    /**
      * @notice isMetaTokenRevoked - Returns true if the metaToken is revoked
      * @param tokenID - ID of the meta token
      * @return bool - True if the meta token is revoked
@@ -117,12 +118,9 @@ contract MetaTokenFacet is IMetaToken {
      * @param amount - amount of meta tokens to be claimed
      * @param owner - address of the owner of the meta token
      */
-    function _claimMetaTokenFor(
-        uint256 certificateID,
-        uint256 amount,
-        address owner
-    ) private {
+    function _claimMetaTokenFor(uint256 certificateID, uint256 amount, address owner) private {
         LibMetaToken.claimMetaTokenFor(certificateID, amount, owner);
+        LibMetaToken.registerClaimedMetaToken(certificateID, owner, amount);
         // solhint-disable-next-line not-rely-on-time
         emit MetaTokenClaimed(certificateID, msg.sender, block.timestamp, amount);
     }
