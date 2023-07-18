@@ -11,11 +11,6 @@ import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorag
 library LibDiamond {
     using AddressUtils for address;
 
-    /**
-     * @dev Error: Thrown when an error occurs at proxy level
-     */
-    error ProxyError(string errorMsg);
-
     // Define a struct called DiamondConfig which stores some configuration parameters for a diamond contract
     struct DiamondConfig {
         bool isMetaCertificateEnabled; // A boolean flag indicating whether the MetaCertificate feature is enabled or not
@@ -27,6 +22,11 @@ library LibDiamond {
         LibIssuer.BatchConfig batchConfig; // Batching configuration
         LibClaimManager.RolesConfig rolesConfig; // DID-based roles configuration
     }
+
+    /**
+     * @dev Error: Thrown when an error occurs at proxy level
+     */
+    error ProxyError(string errorMsg);
 
     /**
      * @notice redirectFacet - redirects the call to the facet specified by the implementation address
@@ -59,6 +59,18 @@ library LibDiamond {
     }
 
     /**
+     * @notice checkIsContract - checks if the implementation address is a contract address
+     * @param implementation address of the implementation contract
+     * @dev reverts if the implementation address is not a contract address
+     */
+    function checkIsContract(address implementation) internal view {
+        // If the implementation is a contract, it will have code at its address
+        if (!implementation.isContract()) {
+            revert ProxyError("implementation must be contract");
+        }
+    }
+
+    /**
      * @notice checkConfig - checks the validity of the diamond configuration
      * @param proxyConfig DiamondConfig struct containing the configuration parameters
      * @dev reverts if the reward amount is 0
@@ -86,18 +98,6 @@ library LibDiamond {
 
         if (proxyConfig.votingConfig.majorityPercentage > 100) {
             revert ProxyError("init: Majority percentage must be between 0 and 100");
-        }
-    }
-
-    /**
-     * @notice checkIsContract - checks if the implementation address is a contract address
-     * @param implementation address of the implementation contract
-     * @dev reverts if the implementation address is not a contract address
-     */
-    function checkIsContract(address implementation) internal view {
-        // If the implementation is a contract, it will have code at its address
-        if (!implementation.isContract()) {
-            revert ProxyError("implementation must be contract");
         }
     }
 }

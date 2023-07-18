@@ -54,15 +54,15 @@ library LibVoting {
      * @notice Whenever you wish to update your app and add more variable to the storage, make sure to add them at the end of te struct
      */
     struct VotingStorage {
-        uint256 timeLimit; /* limit of duration of a voting session. The vote is considered expired after `startTimestamp` + `timeLimit` */
-        uint256 majorityPercentage; /* Percentage of workers that have to vote on the same result to reach the majority  */
-        address payable[] whitelistedWorkers; /* List of all whitelisted workers */
-        bytes32[] votingIDs; /* List of all voting identifiers */
-        mapping(bytes32 => Voting) votingIDToVoting; /* Quick access to a specific voting */
-        mapping(address => uint256) workerToIndex; /* Quick access to a specific worker's index inside the `workers` whitelist */
+        uint256 timeLimit /* limit of duration of a voting session. The vote is considered expired after `startTimestamp` + `timeLimit` */;
+        uint256 majorityPercentage /* Percentage of workers that have to vote on the same result to reach the majority  */;
+        address payable[] whitelistedWorkers /* List of all whitelisted workers */;
+        bytes32[] votingIDs /* List of all voting identifiers */;
+        mapping(bytes32 => Voting) votingIDToVoting /* Quick access to a specific voting */;
+        mapping(address => uint256) workerToIndex /* Quick access to a specific worker's index inside the `workers` whitelist */;
         // Next two fields are used to expose result of completed voting session
-        mapping(bytes32 => mapping(bytes32 => bytes32)) matches; /* Records the consensus of a specific votingID/sessionID */
-        mapping(bytes32 => mapping(bytes32 => address payable[])) winners; /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the right workers */
+        mapping(bytes32 => mapping(bytes32 => bytes32)) matches /* Records the consensus of a specific votingID/sessionID */;
+        mapping(bytes32 => mapping(bytes32 => address payable[])) winners /* Records the addresses of the workers who voted the winning consensus. This is needed to reward the right workers */;
     }
 
     /**
@@ -214,6 +214,32 @@ library LibVoting {
     }
 
     /**
+    /**
+     * @notice `rewardWinners` - Rewards the winning workers
+     * @dev If funds are not sufficient to reward workers, will add in the rewardQueue only the voters who could not be rewarded
+     * @param votingID - The voting ID
+     * @param sessionID - ID of the session
+     * @return numberOfPayments - The number of workers who have been rewarded
+     */
+    function rewardWinners(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfPayments) {
+        LibReward.RewardStorage storage rs = LibReward.getStorage();
+        address payable[] memory votingWinners = getStorage().winners[votingID][sessionID];
+
+        uint256 rewardAmount = rs.rewardAmount;
+        uint256 numberOfVotingWinners = votingWinners.length;
+
+        for (uint256 i; i < numberOfVotingWinners; i++) {
+            if (address(this).balance >= rewardAmount) {
+                /// @dev `transfer` is safe, because worker is EOA
+                votingWinners[i].transfer(rewardAmount);
+                numberOfPayments++;
+            } else {
+                rs.rewardQueue.push(votingWinners[i]);
+            }
+        }
+    }
+
+    /**
      * @notice isSessionExpired: Checks if a voting session has exceeded the `timeLimit`
      * @param sessionID - The voting session ID which validity we want to check
      * @param votingID - The voting ID
@@ -269,11 +295,7 @@ library LibVoting {
         @param dataHash: the hash of the data we want to verify
         @param dataProof: the merkle proof of the data
      */
-    function checkVoteInConsensus(
-        bytes32 voteID,
-        bytes32 dataHash,
-        bytes32[] memory dataProof
-    ) internal view {
+    function checkVoteInConsensus(bytes32 voteID, bytes32 dataHash, bytes32[] memory dataProof) internal view {
         bytes32[] memory matchResults = IVoting(address(this)).getWinningMatches(voteID);
         uint256 numberOfMatchResults = matchResults.length;
         bool isVoteInConsensus;
@@ -353,65 +375,6 @@ library LibVoting {
         return session.workerToVoted[operator];
     }
 
-    /** Data verification */
-    function getMinimum(uint256 maxTxAllowed, uint256 objectSize) internal pure returns (uint256 nbOfTxAllowed) {
-        if (maxTxAllowed > objectSize) {
-            nbOfTxAllowed = objectSize;
-        } else {
-            nbOfTxAllowed = maxTxAllowed;
-        }
-    }
-
-    /**
-     * @dev Get the voting storage
-     * @return votingStorage The voting storage
-     */
-    function getStorage() internal pure returns (VotingStorage storage votingStorage) {
-        bytes32 position = _VOTING_STORAGE_POSITION;
-
-        /* solhint-disable-next-line no-inline-assembly */
-        assembly {
-            votingStorage.slot := position
-        }
-    }
-
-    /**
-     * @notice getSessionID -  Calculates the session ID given a voteID and a matchResult
-     * @dev The sessionID is the resulting keccack256 of VotingID + matchResult
-     * @param votingID - ID of the voting
-     * @param matchResult - matchResult data
-     * @return sessionID - ID of the voting session
-     */
-    function getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(votingID, matchResult));
-    }
-
-    /**
-    /**
-     * @notice `rewardWinners` - Rewards the winning workers
-     * @dev If funds are not sufficient to reward workers, will add in the rewardQueue only the voters who could not be rewarded
-     * @param votingID - The voting ID
-     * @param sessionID - ID of the session
-     * @return numberOfPayments - The number of workers who have been rewarded
-     */
-    function rewardWinners(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfPayments) {
-        LibReward.RewardStorage storage rs = LibReward.getStorage();
-        address payable[] memory votingWinners = getStorage().winners[votingID][sessionID];
-
-        uint256 rewardAmount = rs.rewardAmount;
-        uint256 numberOfVotingWinners = votingWinners.length;
-
-        for (uint256 i; i < numberOfVotingWinners; i++) {
-            if (address(this).balance >= rewardAmount) {
-                /// @dev `transfer` is safe, because worker is EOA
-                votingWinners[i].transfer(rewardAmount);
-                numberOfPayments++;
-            } else {
-                rs.rewardQueue.push(votingWinners[i]);
-            }
-        }
-    }
-
     /**
      * @notice `hasMajority` - Checks if a session has reached the majority
      * @dev the majority is defined as the number of votes sufficient to determine match winner
@@ -443,5 +406,38 @@ library LibVoting {
         VotingStorage storage votingStorage = getStorage();
         uint256 workerIndex = votingStorage.workerToIndex[worker];
         return workerIndex < getNumberOfWorkers() && votingStorage.whitelistedWorkers[workerIndex] == worker;
+    }
+
+    /**
+     * @dev Get the voting storage
+     * @return votingStorage The voting storage
+     */
+    function getStorage() internal pure returns (VotingStorage storage votingStorage) {
+        bytes32 position = _VOTING_STORAGE_POSITION;
+
+        /* solhint-disable-next-line no-inline-assembly */
+        assembly {
+            votingStorage.slot := position
+        }
+    }
+
+    /** Data verification */
+    function getMinimum(uint256 maxTxAllowed, uint256 objectSize) internal pure returns (uint256 nbOfTxAllowed) {
+        if (maxTxAllowed > objectSize) {
+            nbOfTxAllowed = objectSize;
+        } else {
+            nbOfTxAllowed = maxTxAllowed;
+        }
+    }
+
+    /**
+     * @notice getSessionID -  Calculates the session ID given a voteID and a matchResult
+     * @dev The sessionID is the resulting keccack256 of VotingID + matchResult
+     * @param votingID - ID of the voting
+     * @param matchResult - matchResult data
+     * @return sessionID - ID of the voting session
+     */
+    function getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(votingID, matchResult));
     }
 }
