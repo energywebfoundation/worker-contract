@@ -24,12 +24,19 @@
     "lint": "npx hardhat check",
     "prettier:format": "prettier --write contracts/**/*.sol",
     "prettier:check": "prettier --list-different contracts/**/*.sol",
-    "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
-    "deploy:volta": "npx hardhat run scripts/deploy/deployContracts.js --network volta",
-    "deploy:ewc": "npx hardhat run scripts/deploy/deployContracts.js --network ewc",
+    "issuer:test": "npx hardhat clean && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
     "proxy:test": "yarn build && npx hardhat test test/proxy.spec.js",
-    "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js"
+    "gasreporter:test": "yarn build && npx hardhat test test/gasReporter.spec.js",
+    "upgrade:volta": "npx hardhat --network volta deploy --tags Greenproof",
+    "deploy:local": "npx hardhat --network hardhat deploy --tags Greenproof --reset",
+    "deploy:volta": "yarn upgrade:volta --reset",
+    "deploy:ewc": "npx hardhat --network ewc deploy --tags Greenproof --reset",
+    "deploy2:local": "npx hardhat run scripts/deploy/deployContracts.js",
+    "deploy2:volta": "npx hardhat run scripts/deploy/deployContracts.js --network volta",
+    "deploy2:ewc": "npx hardhat run scripts/deploy/deployContracts.js --network ewc",
+    "verify:volta": "npx hardhat --network volta sourcify",
+    "verify:ewc": "npx hardhat --network ewc sourcify"
   },
   "devDependencies": {
     "@energyweb/merkle-tree": "^3.0.0",
@@ -44,6 +51,9 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.1",
     "hardhat": "^2.4.1",
+    "hardhat-contract-sizer": "^2.9.0",
+    "hardhat-deploy": "^0.11.34",
+    "hardhat-deploy-ethers": "^0.4.1",
     "hardhat-gas-reporter": "^1.0.9",
     "mocha": "^10.0.0",
     "mocha-it-each": "1.0.2",
@@ -54,7 +64,7 @@
     "typechain": "8.1.0"
   },
   "dependencies": {
-    "@solidstate/contracts": "^0.0.40",
+    "@solidstate/contracts": "^0.0.57",
     "hardhat-diamond-abi": "^3.0.1",
     "iam-client-lib": "^7.1.0"
   },

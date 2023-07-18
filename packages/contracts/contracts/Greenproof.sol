@@ -6,11 +6,11 @@ import {Proxy} from "@solidstate/contracts/proxy/Proxy.sol";
 import {IProxy} from "@solidstate/contracts/proxy/IProxy.sol";
 
 import {AddressUtils} from "@solidstate/contracts/utils/AddressUtils.sol";
-import {OwnableStorage} from "@solidstate/contracts/access/ownable/Ownable.sol";
-import {LibReward} from "./libraries/LibReward.sol";
-import {LibVoting} from "./libraries/LibVoting.sol";
 import {LibIssuer} from "./libraries/LibIssuer.sol";
 import {LibClaimManager} from "./libraries/LibClaimManager.sol";
+
+import {LibDiamond} from "./libraries/LibDiamond.sol";
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
 
 /**
  * @title Greenproof - a certification system for issuing, revoking and managing green certificates
@@ -109,60 +109,14 @@ contract Greenproof is SolidStateDiamond {
     error AlreadyUnpausedContract();
 
     /**
-     * @dev Error: Thrown when an error occurs at proxy level
+     * @notice constructor
+     * @param contractOwner - address of the contract owner
      */
-    error ProxyError(string errorMsg);
-
-    /**
-     * @dev Constructor setting the contract's initial parameters
-     * @param batchCfg Configuration of the greenproof's batch sizes
-     * @param votingConfig Configuration of the greenproof's voting system
-     * @param rolesConfig Configuration of greenproof's roles credentials
-     */
-    constructor(
-        address contractOwner,
-        LibIssuer.BatchConfig memory batchCfg,
-        LibVoting.VotingConfig memory votingConfig,
-        LibClaimManager.RolesConfig memory rolesConfig
-    ) payable {
-        if (votingConfig.rewardAmount == 0) {
-            revert ProxyError("init: Null reward amount");
-        }
-
-        if (rolesConfig.claimManagerAddress == address(0)) {
-            revert ProxyError("init: Invalid claimManager");
-        }
-
-        if (rolesConfig.claimsRevocationRegistry == address(0)) {
-            revert ProxyError("init: Invalid claimsRevocationRegistry");
-        }
-
-        if (votingConfig.revocablePeriod == 0) {
-            revert ProxyError("init: Invalid revocable period");
-        }
-
+    constructor(address contractOwner) payable {
         if (contractOwner == address(0)) {
-            revert ProxyError("init: Invalid contract Owner");
+            revert LibDiamond.ProxyError("init: Invalid contract Owner");
         }
-
-        if (votingConfig.majorityPercentage > 100) {
-            revert ProxyError("init: Majority percentage must be between 0 and 100");
-        }
-
-        LibVoting.init(votingConfig.votingTimeLimit, votingConfig.majorityPercentage);
-        LibIssuer.init(votingConfig.revocablePeriod, batchCfg);
-        LibReward.initRewards(votingConfig.rewardAmount, votingConfig.rewardsEnabled);
         OwnableStorage.layout().owner = contractOwner;
-
-        LibClaimManager.init(
-            rolesConfig.claimManagerAddress,
-            rolesConfig.issuerRole,
-            rolesConfig.revokerRole,
-            rolesConfig.workerRole,
-            rolesConfig.claimerRole,
-            rolesConfig.approverRole,
-            rolesConfig.claimsRevocationRegistry
-        );
     }
 
     fallback() external payable override(IProxy, Proxy) {
@@ -171,27 +125,7 @@ contract Greenproof is SolidStateDiamond {
         }
         address implementation = _getImplementation();
 
-        if (!implementation.isContract()) {
-            revert ProxyError("implementation must be contract");
-        }
-        // The below assembly code executes external function from facet using delegatecall and return any value.
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // copy the data payload of the transaction, i.e the function selector and any arguments
-            calldatacopy(0, 0, calldatasize())
-            // delegateCall the copied data payload to execute the function and arguments on the implementation facet
-            let result := delegatecall(gas(), implementation, 0, calldatasize(), 0, 0)
-            // get any return value from the delegateCall and return it to the caller
-            returndatacopy(0, 0, returndatasize())
-            // return any return value or error back to the caller
-            switch result
-            case 0 {
-                revert(0, returndatasize())
-            }
-            default {
-                return(0, returndatasize())
-            }
-        }
+        LibDiamond.redirectToFacet(implementation);
     }
 
     /**

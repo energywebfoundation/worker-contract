@@ -137,12 +137,7 @@ interface IProofIssuer {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(
-        string memory key,
-        string memory value,
-        bytes32[] memory dataProof,
-        bytes32 dataHash
-    ) external;
+    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external;
 
     /**
      * @notice approveOperator -  Grants approval to an operator to transfer certificates of a specific certificate owner

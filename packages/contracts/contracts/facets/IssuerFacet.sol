@@ -5,7 +5,7 @@ import {LibVoting} from "../libraries/LibVoting.sol";
 import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {LibProofManager} from "../libraries/LibProofManager.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
-import {IERC1155} from "@solidstate/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
 import {ERC1155Base} from "@solidstate/contracts/token/ERC1155/base/ERC1155Base.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 
@@ -114,12 +114,7 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
      * @param dataProof - The proofs path to verify that key-value hashed data is part of dataHash merkleTree
      * @param dataHash - The merkleRoot hash of the certified data set.
      */
-    function discloseData(
-        string memory key,
-        string memory value,
-        bytes32[] memory dataProof,
-        bytes32 dataHash
-    ) external override onlyIssuer {
+    function discloseData(string memory key, string memory value, bytes32[] memory dataProof, bytes32 dataHash) external override onlyIssuer {
         bytes32 leaf = keccak256(abi.encodePacked(key, value));
 
         LibIssuer.checkNotDisclosed(dataHash, key);
@@ -187,13 +182,7 @@ contract IssuerFacet is SolidStateERC1155, IProofIssuer {
      * @param amount quantity of certificate to transfer
      * @param data data payload
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public override(ERC1155Base, IERC1155) {
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override(ERC1155Base, IERC1155) {
         LibIssuer.checkApprovedSender(from, msg.sender);
         LibIssuer.checkAllowedTransfer(id, to);
         _safeTransfer(msg.sender, from, to, id, amount, data);

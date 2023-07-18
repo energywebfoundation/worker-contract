@@ -121,7 +121,7 @@ library LibClaimManager {
      * @dev Error message for when an operator is not authorized.
      * @dev the missing authorization should be specified in the `requiredAuth` string
      */
-    error NotAuthorized(string requiredAuth);
+    error NotAuthorized(string requiredAuth, address operator);
 
     /**
      * @dev Modifier for allowing only the contract owner to call a function.
@@ -141,24 +141,16 @@ library LibClaimManager {
      * @custom:field approverRole Role name for the approvers.
      * @custom:field claimsRevocationRegistry Address of the claims revocation registry.
      */
-    function init(
-        address claimManagerAddress,
-        bytes32 issuerRole,
-        bytes32 revokerRole,
-        bytes32 workerRole,
-        bytes32 claimerRole,
-        bytes32 approverRole,
-        address claimsRevocationRegistry
-    ) internal {
+    function init(RolesConfig memory rolesConfig) internal {
         ClaimManagerStorage storage claimStore = getStorage();
 
-        claimStore.claimManagerAddress = claimManagerAddress;
-        claimStore.claimsRevocationRegistry = claimsRevocationRegistry;
-        claimStore.issuerRole = Role({name: issuerRole, version: 1});
-        claimStore.revokerRole = Role({name: revokerRole, version: 1});
-        claimStore.workerRole = Role({name: workerRole, version: 1});
-        claimStore.claimerRole = Role({name: claimerRole, version: 1});
-        claimStore.approverRole = Role({name: approverRole, version: 1});
+        claimStore.claimManagerAddress = rolesConfig.claimManagerAddress;
+        claimStore.claimsRevocationRegistry = rolesConfig.claimsRevocationRegistry;
+        claimStore.issuerRole = Role({name: rolesConfig.issuerRole, version: 1});
+        claimStore.revokerRole = Role({name: rolesConfig.revokerRole, version: 1});
+        claimStore.workerRole = Role({name: rolesConfig.workerRole, version: 1});
+        claimStore.claimerRole = Role({name: rolesConfig.claimerRole, version: 1});
+        claimStore.approverRole = Role({name: rolesConfig.approverRole, version: 1});
     }
 
     /**
@@ -387,7 +379,7 @@ library LibClaimManager {
      */
     function checkOwnership() internal view {
         if (OwnableStorage.layout().owner != msg.sender) {
-            revert NotAuthorized("Owner");
+            revert NotAuthorized("Owner", msg.sender);
         }
     }
 
@@ -398,11 +390,7 @@ library LibClaimManager {
      * @param version The version of the role to check for.
      * @return true if the `subject` is enrolled to the `role` role and with the `version` version, false otherwise
      */
-    function hasRole(
-        address subject,
-        bytes32 role,
-        uint256 version
-    ) internal view returns (bool) {
+    function hasRole(address subject, bytes32 role, uint256 version) internal view returns (bool) {
         ClaimManagerStorage storage claimStore = getStorage();
 
         // ExtCall : Contract deployed and managed by EnergyWeb Foundation

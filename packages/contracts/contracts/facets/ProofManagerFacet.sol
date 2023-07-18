@@ -35,11 +35,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function claimProofFor(
-        uint256 certificateID,
-        address owner,
-        uint256 amount
-    ) external onlyClaimer {
+    function claimProofFor(uint256 certificateID, address owner, uint256 amount) external onlyClaimer {
         _claimProofFor(certificateID, owner, amount);
     }
 
@@ -172,11 +168,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param proof - the proof being verified
      * @return true if the proof is valid, false otherwise
      */
-    function verifyProof(
-        bytes32 rootHash,
-        bytes32 leaf,
-        bytes32[] memory proof
-    ) external pure returns (bool) {
+    function verifyProof(bytes32 rootHash, bytes32 leaf, bytes32[] memory proof) external pure returns (bool) {
         return LibProofManager.verifyProof(rootHash, leaf, proof);
     }
 
@@ -189,11 +181,7 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      * @param owner Address of the certificate owner
      * @param amount Amount of energy to claim
      */
-    function _claimProofFor(
-        uint256 certificateID,
-        address owner,
-        uint256 amount
-    ) private {
+    function _claimProofFor(uint256 certificateID, address owner, uint256 amount) private {
         uint256 ownedBalance = _balanceOf(owner, certificateID);
 
         LibProofManager.checkClaimableProof(certificateID, owner, amount, ownedBalance);
@@ -213,10 +201,11 @@ contract ProofManagerFacet is IProofManager, ERC1155EnumerableInternal {
      */
     function _revokeProof(uint256 certificateID) private onlyRevoker {
         LibProofManager.checkProofRevocability(certificateID);
-        LibIssuer.revokeProof(certificateID);
+        LibProofManager.revokeProof(certificateID);
         emit ProofRevoked(certificateID);
+        bool isMetacertificateEnabled = LibMetaToken.getStorage().isMetaCertificateEnabled;
 
-        if (LibMetaToken.totalSupply(certificateID) > 0) {
+        if (isMetacertificateEnabled && LibMetaToken.totalSupply(certificateID) > 0) {
             LibMetaToken.revokeMetaToken(certificateID);
         }
     }
