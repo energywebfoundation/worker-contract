@@ -61,16 +61,155 @@ npm run issuer:test
 ```
 npm run voting:test
 ```
-- `greenproof.spec.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
+- `proxy.spec.js` runs tests on the [proxy management](https://eip2535diamonds.substack.com/i/38730553/diamond-upgrades) and the [diamond inspection](https://eip2535diamonds.substack.com/p/why-on-chain-loupe-functions-are)
 
 ```
-npm run greenproof:test
+npm run proxy:test
 
 ```
 To run `coverage` test :
  
 ```
 npm run coverage:test
+```
+
+## Diamond Proxy Deployment and Upgrade
+
+The `contracts/deploy` repository contains scripts used for deploying, upgrading and maintaining a greenproof project. 
+
+The key scripts included in the repository are:
+
+- `deployFacets.ts`: This script is used to deploy all facets of the diamond contract.
+- `deployProxy.ts`: This script is used to deploy the diamond proxy contract.
+- `upgradeProxy.ts`: This script is used to upgrade the diamond proxy contract.
+
+### 1. Deploying facets
+
+Since the diamond proxy pattern is designed to re-use already deployed facets in a proxy, this step is only necessary the first time you set a greenproof project or whenever you want to extand the available feature by providing new facets.
+
+If the necessary facets are already deployed, jump to the proxy deployment section to configure a new diamond proxy contract.
+
+1. Make sure you followed the setup and install steps above.
+
+2. Navigate to the `deploy` repository:
+
+```bash
+cd worker-contract/packages/contracts/deploy
+```
+
+3. Run the `deployFacets.ts` script to deploy the facets of the diamond contract on volta or energy web chain (ewc) :
+
+```bash
+npm run deployFacets:volta
+```
+or
+
+```bash
+npm run deployFacets:ewc
+```
+
+Make sure to keep the facets informations up to date. The `deploy/utils/types/deployedFacets.ts` file provides the `DeployedFacets` variable that allows you to track the facets names, the network IDs on which they have been deployed and the deployed addresses on each network.
+
+The DeployedFacets infos are structured as follows:
+
+```json
+ [
+  {
+    name: "IssuerFacet",
+    deployInfos: [
+      {
+        networkID: 73799,
+        address: "0xda83c0a8654460886c4b1Fe9114f0dA698EAc418",
+      },
+      {
+        networkID: 246,
+        address: "",
+      },
+    ],
+  },
+  {
+    name: "VotingFacet",
+    deployInfos: [
+      {
+        networkID: 73799,
+        address: "0xbf02aF5Ff9044804298a406b9818A8a28cc8cA30",
+      },
+      {
+        networkID: 246,
+        address: "",
+      },
+    ],
+  },
+  {
+    name: "MetaTokenFacet",
+    deployInfos: [
+      {
+        networkID: 73799,
+        address: "0xB1988065817F813D3171a45281BE499a224f104E",
+      },
+      {
+        networkID: 246,
+        address: "",
+      },
+    ],
+  },
+  {
+    name: "ProofManagerFacet",
+    deployInfos: [
+      {
+        networkID: 73799,
+        address: "0xD3F0Cf7bF504964DF2a80720Ca3C204a32E2CDA9",
+      },
+      {
+        networkID: 246,
+        address: "",
+      },
+    ],
+  },
+]
+```
+
+
+### 2. Deploying a new greenproof instance (Diamond Proxy)
+
+Before deploying a new greenproof instance, make sure you provided a `.env` file exposing the different variables needed to set the DID-based roles needed for your project:
+- ISSUER_ROLE
+- REVOKER_ROLE
+- WORKER_ROLE
+- CLAIMER_ROLE
+- APPROVER_ROLE
+
+In order to set each greenproof parameter, make sure to have them provided in the `.env` file (please refer to the provided [.env.example](https://github.com/energywebfoundation/worker-contract/blob/master/packages/contracts/.env.example)). Otherwise, default parameters defined into the [constant file](https://github.com/energywebfoundation/worker-contract/blob/master/packages/contracts/deploy/utils/constants.ts) will be used.
+
+The `deployProxy.ts` script provides the logic used to deploy the diamond proxy contract.
+
+Depending on the network you want to deploy your project on, run the following scripts command in your terminal :
+
+- Deploying on volta:
+
+```bash
+npm run deployProxy:volta
+```
+
+- Deploying on mainnet (Energy Web Chain)
+
+```bash
+npm run deployProxy:ewc
+```
+### 3. Upgrading the Diamond Proxy Contract
+
+The Diamond Pattern (EIP-2535) is a smart contract upgrade pattern that provides a more flexible and efficient way of managing functions within a smart contract. Unlike the proxy pattern, the diamond pattern allows for the upgrade of a small part of the contract without changing all of the code.
+
+The `upgradeProxy.ts` script is used to upgrade the diamond proxy contract.
+
+```bash
+npm run upgradeProxy:volta
+```
+
+or 
+
+```bash
+npm run upgradeProxy:ewc
 ```
 
 ## Questions and Support

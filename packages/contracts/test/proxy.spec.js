@@ -5,7 +5,7 @@ const {
   findIndexOfAddressInFacets,
 } = require("../deploy");
 const { solidity } = require("ethereum-waffle");
-const { ethers } = require("hardhat");
+const { setBalance } = require("@nomicfoundation/hardhat-network-helpers");
 const { assert, expect } = require("chai");
 const chai = require("chai");
 
@@ -15,6 +15,7 @@ const { getTimeStamp } = require("./utils/time.utils");
 const { deployGreenproof } = require("../deploy/deployContracts");
 const { initMockClaimManager } = require("./utils/claimManager.utils");
 const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
+const { ethers } = require("hardhat/internal/lib/hardhat-lib");
 
 chai.use(solidity);
 
@@ -375,6 +376,45 @@ describe("GreenproofTest", async function () {
       );
     });
 
+    it("should correctly update the owner", async () => {
+      const newOwner = await ethers.getSigner(1);
+
+      expect(
+        await greenproof.owner()
+      ).to.equal(owner.address);
+
+      tx = await greenproof.setOwner(newOwner.address);
+
+      const timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(greenproof, "OwnerChanged")
+        .withArgs(owner.address, newOwner.address, timestamp);
+      
+      expect(
+        await greenproof.owner()
+      ).to.equal(newOwner.address);
+    });
+
+    it("should revert when non owner tries to transfer ownership", async () => {
+      const oldOwner = owner;
+      const newOwner = await ethers.getSigner(1);
+
+      await expect(
+        greenproof.connect(oldOwner).setOwner(newOwner.address)
+      ).to.be.revertedWith(`NotAuthorized("Owner", "${oldOwner.address}")`);
+    });
+
+    it("should revert when setting the zero address as the new owner", async () => {
+      const newOwner = await ethers.getSigner(1);
+      const previousOwner = owner;
+
+      await expect(
+        greenproof.connect(newOwner).setOwner(ethers.constants.AddressZero)
+      ).to.be.revertedWith(`ForbiddenZeroAddressReceiver`);
+
+      await greenproof.connect(newOwner).setOwner(previousOwner.address);
+    });
+
     it("should revert if implementation logic address is not a contract", async () => {
       const greenproof = await ethers.getContractAt(
         "Greenproof",
@@ -715,5 +755,58 @@ describe("GreenproofTest", async function () {
         getSelectors(Test2Facet)
       );
     });
+  });
+
+  describe("\n****** Sweeping tests ******\n", () => {
+    it("should revert if not called by owner", async () => {
+      
+      await expect(
+        greenproof.connect(nonOwner).sweepFunds()
+      ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
+    });
+
+    it("should correctly sweep funds", async () => {
+      const amount = ethers.utils.parseEther("4");
+
+      let tx = await nonOwner.sendTransaction({
+        to: greenproofAddress,
+        value: amount,
+      });
+
+      await expect(tx).to.changeEtherBalance(nonOwner, amount.mul(-1));
+
+      const balanceBefore = await ethers.provider.getBalance(greenproofAddress);
+      expect(balanceBefore).to.equal(amount);
+
+      tx = await greenproof.connect(owner).sweepFunds();
+      const balanceAfter = await ethers.provider.getBalance(greenproofAddress);
+      expect(balanceAfter).to.equal(0);
+      const timestamp = await getTimeStamp(tx)
+      await expect(tx).to.emit(greenproof, "Swept").withArgs(timestamp, owner.address, amount);
+
+      await greenproof.connect(owner).sweepFunds();
+    });
+
+    it("should revert when sweeping funds to an address that reverts", async () => {
+      const RevertOnReceive = await ethers.getContractFactory("TestRevertOnReceive");
+      const revertOnReceive = await RevertOnReceive.deploy();
+      await revertOnReceive.deployed();
+    
+      await greenproof.connect(owner).setOwner(revertOnReceive.address);
+      
+      const asNewOwner = await ethers.getImpersonatedSigner(revertOnReceive.address);
+      
+      await setBalance(revertOnReceive.address, ethers.utils.parseEther("100"));
+
+      const amount = ethers.utils.parseEther("4");
+      await nonOwner.sendTransaction({
+          to: greenproof.address,
+          value: amount,
+      });
+
+      // Attempt to sweep funds
+      await expect(greenproof.connect(asNewOwner).sweepFunds()).to.be.revertedWith("Sweep failed");
+    });
+
   });
 });
