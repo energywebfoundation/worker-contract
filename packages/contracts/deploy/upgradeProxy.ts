@@ -118,8 +118,7 @@ export const defaultInit = async (
   const filteredFacets = getDeployedFacets(process.env.npm_config_facets);
 
   if (filteredFacets.length !== 0) {
-    console.log("ToFilterFacet --> ", filteredFacets);
-    console.log("greenProofAddress -->", greenproofAddress);
+    console.log("greenProof proxyAddress -->", greenproofAddress);
     for (const currentFacet of filteredFacets) {
       console.log(`\n\tFetching ${currentFacet.name} facet ...`);
 
@@ -135,8 +134,6 @@ export const defaultInit = async (
       });
     }
     console.log("Upgrade operations --> ", upgradeOperations, "\n");
-    console.log("InitializerCOntract --> ", initializerContract);
-    console.log("callbackData -->", callbackData);
     await upgradeProxy(
       greenproofAddress,
       upgradeOperations,
@@ -144,7 +141,8 @@ export const defaultInit = async (
       callbackData
     );
   } else {
-    console.log("New Facet(s) to deploy ....");
+    //TODO : When a facet is not recoreded, deploy it and update the diamond
+    console.log("Facet(s) not found ..");
     console.log(process.env.npm_config_facets);
   }
 };

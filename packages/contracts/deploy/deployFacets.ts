@@ -9,7 +9,12 @@ let deployedFacets: { facetName: string; facetAddress: string }[] = [];
 export const deployFacets = async (
   facetsNames: string[] = defaultFacetsList
 ) => {
-  for (const facetName of facetsNames) {
+  // Retrieve facets from the "--facets" CLI option
+  const CLIParams = process.env.npm_config_facets?.split(",") || [];
+  console.log("CLI PARAMS :: ", CLIParams);
+  const toDeployFacets = CLIParams?.length == 0 ? facetsNames : CLIParams;
+
+  for (const facetName of toDeployFacets) {
     console.log(`\n\tDeploying ${facetName} facet ...`);
     const Facet = await ethers.getContractFactory(facetName);
     const facet = await Facet.deploy();
@@ -26,7 +31,6 @@ if (IS_RUNNING_FROM_CLI) {
     `Deploying Greenproof facets on ${hardhatArguments.network?.toUpperCase()} network ...`
   );
 
-  // deployFacets(["VotingFacet", "IssuerFacet"])
   deployFacets()
     .then(() => {
       console.log("\nDeployed facets ==> ", deployedFacets);
