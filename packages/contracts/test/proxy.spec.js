@@ -401,7 +401,7 @@ describe("GreenproofTest", async function () {
 
       await expect(
         greenproof.connect(oldOwner).setOwner(newOwner.address)
-      ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      ).to.be.revertedWith(`NotAuthorized("Owner", "${oldOwner.address}")`);
     });
 
     it("should revert when setting the zero address as the new owner", async () => {
@@ -762,7 +762,7 @@ describe("GreenproofTest", async function () {
       
       await expect(
         greenproof.connect(nonOwner).sweepFunds()
-      ).to.be.revertedWith(`NotAuthorized("Owner")`);
+      ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
     });
 
     it("should correctly sweep funds", async () => {
