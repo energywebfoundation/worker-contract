@@ -33,6 +33,7 @@ export const upgradeProxy = async (
 };
 
 export const addFunctionsToFacet = async (
+  proxyAddress: string,
   facetName: string,
   listOfFunctions: string[],
   network: string | number = "volta"
@@ -46,11 +47,12 @@ export const addFunctionsToFacet = async (
       selectors: listOfFunctions,
     },
   ];
-  await upgradeProxy(facetAddress, upgradeOperations);
+  await upgradeProxy(proxyAddress, upgradeOperations);
   console.log(`Added ${listOfFunctions} to facet ${facetName}`);
 };
 
 export const replaceFunctionsInFacet = async (
+  proxyAddress: string,
   facetName: string,
   listOfFunctions: string[],
   network: string | number = "volta"
@@ -64,11 +66,12 @@ export const replaceFunctionsInFacet = async (
       selectors: listOfFunctions,
     },
   ];
-  await upgradeProxy(facetAddress, upgradeOperations);
+  await upgradeProxy(proxyAddress, upgradeOperations);
   console.log(`Replaced ${listOfFunctions} in facet ${facetName}`);
 };
 
 export const removeFunctionsFromFacet = async (
+  proxyAddress: string,
   facetName: string,
   listOfFunctions: string[],
   network: string | number = "volta"
@@ -82,14 +85,18 @@ export const removeFunctionsFromFacet = async (
       selectors: listOfFunctions,
     },
   ];
-  await upgradeProxy(facetAddress, upgradeOperations);
+  await upgradeProxy(proxyAddress, upgradeOperations);
   console.log(`Removed ${listOfFunctions} from facet ${facetName}`);
 };
 
-export const defaultInit = async (greenproofAddress: string) => {
-  const certificateInfos = ["SAF Certificate", "SAFC"];
-  const metaCertificateInfos = ["SER Certificate", "SERC"];
-  const initializerContract = process.env.GREENPROOF_INITIALIZER;
+export const defaultInit = async (
+  greenproofAddress: string,
+  proxyConfig?: any
+) => {
+  const initializerContract =
+    proxyConfig !== undefined
+      ? process.env.GREENPROOF_INITIALIZER
+      : defaultCallBackContract;
   if (!initializerContract) {
     throw Error(
       "Greenproof initializer contract not found .. Make sure you correctly set it in your .env file"
@@ -101,34 +108,45 @@ export const defaultInit = async (greenproofAddress: string) => {
     initializerContract
   );
 
-  const callbackData = greenProofInit.interface.encodeFunctionData("init", [
-    greenproofAddress,
-    certificateInfos,
-    metaCertificateInfos,
-  ]);
+  const callbackData =
+    proxyConfig !== undefined
+      ? greenProofInit.interface.encodeFunctionData("init", [proxyConfig])
+      : "0x";
 
   const upgradeOperations: FacetCut[] = [];
-  const deployedFacets = getDeployedFacets();
-  for (const currentFacet of deployedFacets) {
-    console.log(`\n\tFetching ${currentFacet.name} facet ...`);
-    const targetContract = await ethers.getContractAt(
-      currentFacet.name,
-      greenproofAddress
-    );
-    const target = getFacetAddress(currentFacet.name, "volta");
-    upgradeOperations.push({
-      target,
-      action: FacetCutAction.Add,
-      selectors: getSelectors(targetContract),
-    });
-  }
 
-  await upgradeProxy(
-    greenproofAddress,
-    upgradeOperations,
-    initializerContract,
-    callbackData
-  );
+  const filteredFacets = getDeployedFacets(process.env.npm_config_facets);
+
+  if (filteredFacets.length !== 0) {
+    console.log("ToFilterFacet --> ", filteredFacets);
+    console.log("greenProofAddress -->", greenproofAddress);
+    for (const currentFacet of filteredFacets) {
+      console.log(`\n\tFetching ${currentFacet.name} facet ...`);
+
+      const targetContract = await ethers.getContractAt(
+        currentFacet.name,
+        greenproofAddress
+      );
+      const target = getFacetAddress(currentFacet.name, "volta");
+      upgradeOperations.push({
+        target,
+        action: FacetCutAction.Add,
+        selectors: getSelectors(targetContract),
+      });
+    }
+    console.log("Upgrade operations --> ", upgradeOperations, "\n");
+    console.log("InitializerCOntract --> ", initializerContract);
+    console.log("callbackData -->", callbackData);
+    await upgradeProxy(
+      greenproofAddress,
+      upgradeOperations,
+      initializerContract,
+      callbackData
+    );
+  } else {
+    console.log("New Facet(s) to deploy ....");
+    console.log(process.env.npm_config_facets);
+  }
 };
 
 if (require.main === module) {

@@ -6,7 +6,7 @@ let DeployedFacets: Facet[] = [
     deployInfos: [
       {
         networkID: 73799,
-        address: "0xda83c0a8654460886c4b1Fe9114f0dA698EAc418",
+        address: "0x2f18C7695C149e16542bbAd1671E190AdbB37770",
       },
       {
         networkID: 246,
@@ -19,7 +19,7 @@ let DeployedFacets: Facet[] = [
     deployInfos: [
       {
         networkID: 73799,
-        address: "0xbf02aF5Ff9044804298a406b9818A8a28cc8cA30",
+        address: "0x0802b13b4164CA43A2201E7fE1556C0b07A30e2C",
       },
       {
         networkID: 246,
@@ -32,7 +32,7 @@ let DeployedFacets: Facet[] = [
     deployInfos: [
       {
         networkID: 73799,
-        address: "0xB1988065817F813D3171a45281BE499a224f104E",
+        address: "0xaAFe7294a2Bf85ba13028Da9867E958903F58118",
       },
       {
         networkID: 246,
@@ -45,7 +45,7 @@ let DeployedFacets: Facet[] = [
     deployInfos: [
       {
         networkID: 73799,
-        address: "0xD3F0Cf7bF504964DF2a80720Ca3C204a32E2CDA9",
+        address: "0xE03634eEaF190cF914d7Bc0049A7A741e0eDBfFE",
       },
       {
         networkID: 246,
@@ -63,7 +63,7 @@ const parseFacetAddress = (facet: Facet, networkID: number) => {
     throw new Error(`Facet ${facet.name} not deployed on network ${networkID}`);
   }
   console.log(
-    `\t\t${facet.name} facet is deployed at ${deployInfo.address} on network ${networkID}`
+    `\t\tReusing ${facet.name} deployed at ${deployInfo.address} on network ${networkID}`
   );
   return deployInfo.address;
 };
@@ -101,7 +101,20 @@ export const getFacetAddress = (
   return parseFacetAddress(facet, netID);
 };
 
-export const getDeployedFacets = () => DeployedFacets;
+export const getDeployedFacets = (facets?: string) => {
+  if (facets == "all" || facets === undefined) {
+    return DeployedFacets;
+  }
+
+  const listOfFacets = facets.split(",");
+
+  const filteredFacets = DeployedFacets.filter((currentFacet) =>
+    listOfFacets.includes(currentFacet.name)
+  );
+
+  console.log(filteredFacets);
+  return filteredFacets;
+};
 
 export const addDeployedFacet = (
   name: string,

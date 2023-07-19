@@ -3,7 +3,10 @@ import { config } from "dotenv";
 import { ethers, hardhatArguments } from "hardhat";
 import "@nomiclabs/hardhat-waffle";
 import { Greenproof__factory } from "../src";
-import { InitContractOptions } from "./utils/types/config.types";
+import {
+  GreenproofFacet,
+  InitContractOptions,
+} from "./utils/types/config.types";
 import { defaultInit } from "./upgradeProxy";
 
 import {
@@ -34,9 +37,17 @@ export const deployGreenproof = async (
     claimManagerAddress = VOLTA_CLAIM_MANAGER,
     claimRevokerAddress = VOLTA_CLAIM_REVOKER,
     roles = {},
+    batchConfig = {
+      batchIssuanceSize: 20,
+      batchTransferSize: 20,
+      batchClaimingSize: 20,
+      batchRevocationSize: 20,
+    },
     rewardAmount = DEFAULT_REWARD_AMOUNT,
     majorityPercentage = DEFAULT_MAJORITY_PERCENTAGE,
     rewardsEnabled = true,
+    isMetaCertificateEnabled = true,
+    facets = Object.values(GreenproofFacet),
   } = options;
 
   const {
@@ -50,16 +61,26 @@ export const deployGreenproof = async (
   } = roles;
 
   const GreenproofContract = await ethers.getContractFactory("Greenproof");
-  const args: Parameters<Greenproof__factory["deploy"]> = [
-    { contractOwner },
-    {
+  const args: Parameters<Greenproof__factory["deploy"]> = [contractOwner];
+  const greenproof = await GreenproofContract.deploy(...args);
+  await greenproof.deployed();
+  console.log(`\tGreenproof Diamond deployed to ${greenproof.address}`);
+
+  if (shouldInit) {
+    const certificateName = "SAF Certificate";
+    const certificateSymbol = "SAFC";
+    const metaCertificateName = "SER Certificate";
+    const metaCertificateSymbol = "SERC";
+
+    const votingConfig = {
       votingTimeLimit,
       rewardAmount,
       majorityPercentage,
       revocablePeriod,
       rewardsEnabled,
-    },
-    {
+    };
+
+    const rolesConfig = {
       claimManagerAddress,
       issuerRole,
       revokerRole,
@@ -67,14 +88,20 @@ export const deployGreenproof = async (
       claimerRole,
       approverRole,
       claimsRevocationRegistry: claimRevokerAddress,
-    },
-  ];
-  const greenproof = await GreenproofContract.deploy(...args);
-  await greenproof.deployed();
-  console.log(`\tGreenproof Diamond deployed to ${greenproof.address}`);
+    };
 
-  if (shouldInit) {
-    await defaultInit(greenproof.address);
+    const proxyConfig = {
+      isMetaCertificateEnabled,
+      certificateName,
+      certificateSymbol,
+      metaCertificateName,
+      metaCertificateSymbol,
+      votingConfig,
+      batchConfig,
+      rolesConfig,
+    };
+
+    await defaultInit(greenproof.address, proxyConfig);
   }
 
   return greenproof.address;
