@@ -18,7 +18,7 @@ import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateE
 contract IssuerFacet is SolidStateERC1155, IProofIssuer {
     /**
      * @notice modifier that restricts the execution of functions only to users enrolled as Issuers
-     * @dev this modifer reverts the transaction if the msg.sender is not an enrolled issuer
+     * @dev this modifier reverts the transaction if the msg.sender is not an enrolled issuer
      */
     modifier onlyIssuer() {
         LibClaimManager.checkEnrolledIssuer(msg.sender);

@@ -1,4 +1,5 @@
 import { BigNumber } from "ethers";
+import { FacetCut } from "libraries/greenproof";
 
 export type Logger = (...msg: any[]) => void;
 export type InitContractOptions = {
@@ -28,6 +29,19 @@ export type InitContractOptions = {
   logger?: Logger;
 };
 
+export type DeployInfos =
+  // a facet can be deployed on multiple networks
+  {
+    networkID: number; // network id
+    address: string; // address of the deployed facet
+    usedBy?: string[]; // diamonds or contracts that use this facet
+  };
+
+export type Facet = {
+  name: string; // name of the facet
+  deployInfos: DeployInfos[];
+};
+
 export enum GreenproofFacet {
   AdminFacet = "AdminFacet",
   IssuerFacet = "IssuerFacet",
@@ -35,3 +49,5 @@ export enum GreenproofFacet {
   MetaTokenFacet = "MetaTokenFacet",
   ProofManagerFacet = "ProofManagerFacet",
 }
+
+export type UpgradeOperations = FacetCut[];
