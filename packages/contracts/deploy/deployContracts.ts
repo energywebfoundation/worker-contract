@@ -12,6 +12,11 @@ import {
 } from "./utils/types/config.types";
 
 import {
+  ISSUER_ROLE,
+  WORKER_ROLE,
+  CLAIMER_ROLE,
+  REVOKER_ROLE,
+  APPROVER_ROLE,
   EWC_CLAIM_REVOKER,
   EWC_CLAIM_MANAGER,
   VOLTA_CLAIM_MANAGER,
@@ -26,6 +31,7 @@ config();
 
 const IS_RUNNING_FROM_CLI = require.main === module;
 let deployedFacets: { facetName: string; facetAddress: string }[] = [];
+let adminFunctions: string[] = [];
 
 export const deployGreenproof = async (options: InitContractOptions) => {
   const contractOwner =
@@ -56,27 +62,32 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   const deploy = createDeployer(logger, facetsList);
 
   const {
-    issuerRole = ethers.utils.namehash(process.env.ISSUER_ROLE ?? "issuer"),
-    revokerRole = ethers.utils.namehash(process.env.REVOKER_ROLE ?? "revoker"),
-    workerRole = ethers.utils.namehash(process.env.WORKER_ROLE ?? "worker"),
-    claimerRole = ethers.utils.namehash(process.env.CLAIMER_ROLE ?? "claimer"),
-    approverRole = ethers.utils.namehash(
-      process.env.APPROVER_ROLE ?? "approver"
-    ),
+    issuerRole = ethers.utils.namehash(ISSUER_ROLE),
+    revokerRole = ethers.utils.namehash(REVOKER_ROLE),
+    workerRole = ethers.utils.namehash(WORKER_ROLE),
+    claimerRole = ethers.utils.namehash(CLAIMER_ROLE),
+    approverRole = ethers.utils.namehash(APPROVER_ROLE),
   } = roles;
 
   // deploy GreenproofInit
   // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
   const greeproofInit = await deploy("GreenproofInit");
+  const baseAdminContract = await ethers.getContractAt("AdminFacet", "0x0");
+
+  // extracting function selectors from AdminFacet contract
+  adminFunctions = getSelectors(baseAdminContract).filter(
+    (input: { key: string }) =>
+      input.key !== "remove" && input.key !== "contract" && input.key !== "get"
+  );
+
   const greenproof = await deploy("Greenproof", (factory) => {
-    const args: Parameters<Greenproof__factory["deploy"]> = [contractOwner];
+    const args: Parameters<Greenproof__factory["deploy"]> = [
+      contractOwner,
+      adminFunctions,
+    ];
     return factory.deploy(...args);
   });
-
-  logger("Deploying facets...");
-  console.log("Deploying facets...");
-  console.log("All greenproof facets --> ", facets);
 
   const cuts = [];
   for (const facetName of facets) {
@@ -88,8 +99,6 @@ export const deployGreenproof = async (options: InitContractOptions) => {
       selectors: getSelectors(facet),
     });
   }
-
-  logger("List of Cuts to execute", cuts);
 
   const certificateName = "SAF Certificate";
   const certificateSymbol = "SAFC";

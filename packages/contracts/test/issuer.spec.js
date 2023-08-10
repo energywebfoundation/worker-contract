@@ -189,8 +189,8 @@ describe("IssuerFacet", function () {
       greenproofAddress
     );
 
-    const greenproofContract = await ethers.getContractAt(
-      "Greenproof",
+    const adminContract = await ethers.getContractAt(
+      "AdminFacet",
       greenproofAddress
     );
 
@@ -215,11 +215,11 @@ describe("IssuerFacet", function () {
       approver,
       wallets,
       proofData,
+      adminContract,
       issuerContract,
       votingContract,
       metatokenContract,
       proofManagerContract,
-      greenproofContract,
       greenproofAddress,
       claimManagerMocked,
       claimsRevocationRegistryMocked,
@@ -415,7 +415,7 @@ describe("IssuerFacet", function () {
     it("should revert proof issuance when contract is paused", async () => {
       const {
         worker,
-        greenproofContract,
+        adminContract,
         issuer,
         proofData,
         votingContract,
@@ -429,11 +429,11 @@ describe("IssuerFacet", function () {
         worker
       );
 
-      await greenproofContract.pause();
+      await adminContract.pause();
 
       await expect(
         requestMinting(issuerContract, proofData, wallets[1], issuer)
-      ).to.be.revertedWith("PausedContract()");
+      ).to.be.revertedWith(`ProxyError("Contract is paused")`);
     });
 
     it("should reject proof issuance requests by non issuers", async () => {
@@ -509,7 +509,7 @@ describe("IssuerFacet", function () {
         receiver,
         votingContract,
         issuerContract,
-        greenproofContract,
+        adminContract,
       } = await loadFixture(initFixture);
 
       const proofData = generateProofData();
@@ -521,23 +521,23 @@ describe("IssuerFacet", function () {
       );
 
       //Pausing contract
-      tx = await greenproofContract.pause();
+      tx = await adminContract.pause();
       let timestamp = await getTimeStamp(tx);
 
       await expect(tx)
-        .to.emit(greenproofContract, "ContractPaused")
+        .to.emit(adminContract, "ContractPaused")
         .withArgs(timestamp, owner.address);
 
       await expect(
         requestMinting(issuerContract, proofData, receiver, issuer)
-      ).to.be.revertedWith("PausedContract()");
+      ).to.be.revertedWith(`ProxyError("Contract is paused")`);
 
       //Unpausing contract
-      tx = await greenproofContract.unPause();
+      tx = await adminContract.unPause();
       timestamp = await getTimeStamp(tx);
 
       await expect(tx)
-        .to.emit(greenproofContract, "ContractUnPaused")
+        .to.emit(adminContract, "ContractUnPaused")
         .withArgs(timestamp, owner.address);
 
       const certificateID = 1;

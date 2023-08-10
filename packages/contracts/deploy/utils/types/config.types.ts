@@ -29,6 +29,7 @@ export type InitContractOptions = {
 };
 
 export enum GreenproofFacet {
+  AdminFacet = "AdminFacet",
   IssuerFacet = "IssuerFacet",
   VotingFacet = "VotingFacet",
   MetaTokenFacet = "MetaTokenFacet",
