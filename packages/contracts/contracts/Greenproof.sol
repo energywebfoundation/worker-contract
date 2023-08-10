@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {GreenproofManager} from "./dependencies/GreenproofManager.sol";
 import {SolidStateDiamond} from "@solidstate/contracts/proxy/diamond/SolidStateDiamond.sol";
 import {Proxy} from "@solidstate/contracts/proxy/Proxy.sol";
 import {IProxy} from "@solidstate/contracts/proxy/IProxy.sol";
 
-import {LibDiamond} from "./libraries/LibDiamond.sol";
+import {LibAdmin} from "./libraries/LibAdmin.sol";
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
 
 /**
@@ -15,24 +14,32 @@ import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorag
  * @dev This contract is the main proxy contract of the upgradable Greenproof core module.
  */
 
-contract Greenproof is SolidStateDiamond, GreenproofManager {
+contract Greenproof is SolidStateDiamond {
+    modifier onlyAdminIfPaused() {
+        // if contract is paused, only admin functions can be called
+        LibAdmin.checkAdminIfPaused();
+        _;
+    }
+
     /**
      * @notice constructor
      * @param contractOwner - address of the contract owner
+     * @param adminFunctions - array of administrative function signatures
      */
-    constructor(address contractOwner) payable {
+    constructor(address contractOwner, bytes4[] memory adminFunctions) payable {
         if (contractOwner == address(0)) {
-            revert LibDiamond.ProxyError("init: Invalid contract Owner");
+            revert LibAdmin.ProxyError("init: Invalid contract Owner");
         }
         OwnableStorage.layout().owner = contractOwner;
+        uint256 numberOfFunctions = adminFunctions.length;
+        for (uint256 i; i < numberOfFunctions; i++) {
+            LibAdmin.setAdminFunction(adminFunctions[i], true);
+        }
     }
 
-    fallback() external payable override(IProxy, Proxy) {
-        if (isContractPaused) {
-            revert PausedContract();
-        }
+    fallback() external payable override(IProxy, Proxy) onlyAdminIfPaused {
         address implementation = _getImplementation();
 
-        LibDiamond.redirectToFacet(implementation);
+        LibAdmin.redirectToFacet(implementation);
     }
 }

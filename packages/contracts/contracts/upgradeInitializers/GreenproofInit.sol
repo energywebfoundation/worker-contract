@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 import {IVoting} from "../interfaces/IVoting.sol";
 import {IReward} from "../interfaces/IReward.sol";
-import {LibDiamond} from "../libraries/LibDiamond.sol";
+import {LibAdmin} from "../libraries/LibAdmin.sol";
 import {IMetaToken} from "../interfaces/IMetaToken.sol";
 import {IProofIssuer} from "../interfaces/IProofIssuer.sol";
 import {IProofManager} from "../interfaces/IProofManager.sol";
@@ -37,9 +37,9 @@ contract GreenproofInit {
      * @dev You can add parameters to this function in order to pass in data to set your own state variables.
      * @param proxyConfig Diamond configuration parameters
      */
-    function init(LibDiamond.DiamondConfig memory proxyConfig) external {
+    function init(LibAdmin.DiamondConfig memory proxyConfig) external {
         // verify that the configuration parameters are valid
-        LibDiamond.checkConfig(proxyConfig);
+        LibAdmin.checkConfig(proxyConfig);
 
         /**
          * @dev Setting the supported interfaces for the Greenproof contract.

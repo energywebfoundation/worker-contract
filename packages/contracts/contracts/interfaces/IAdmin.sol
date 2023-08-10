@@ -1,13 +1,11 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {LibClaimManager} from "../libraries/LibClaimManager.sol";
-import {AddressUtils} from "@solidstate/contracts/utils/AddressUtils.sol";
+interface IAdmin {
+    /**********************************************************\
+                      Events and Structs                         
+    \**********************************************************/
 
-abstract contract GreenproofManager {
-    using AddressUtils for address;
-
-    bool public isContractPaused;
     /**
      * @notice IssuerVersionUpdated - logs issuer role version updates
      * @param oldVersion - The value of the previous issuer role credential
@@ -79,9 +77,36 @@ abstract contract GreenproofManager {
     event ContractUnPaused(uint256 timestamp, address operator);
 
     /**
-     * @dev Error: Thrown when a transaction occurs while contract is paused
+     * @notice AdminFunctionDeclared - emitted when a function is declared as an admin function
+     * @param functionSignature - the signature of the function that is declared as an admin function
+     * @param timestamp unix date and time recording when the function was declared as an admin function
      */
-    error PausedContract();
+    event AdminFunctionDeclared(bytes4 indexed functionSignature, uint256 indexed timestamp);
+
+    /**
+     * @notice AdminFunctionsDeclared - emitted when multiple functions are declared as admin functions
+     * @param functionSignatures - the signatures of the functions that are declared as admin functions
+     * @param timestamp unix date and time recording when the functions were declared as admin functions
+     */
+    event AdminFunctionsDeclared(bytes4[] indexed functionSignatures, uint256 indexed timestamp);
+
+    /**
+     * @notice AdminFunctionDiscarded - emitted when a function is discarded as an admin function
+     * @param functionSignature - the signature of the function that is discarded as an admin function
+     * @param timestamp unix date and time recording when the function was discarded as an admin function
+     */
+    event AdminFunctionDiscarded(bytes4 indexed functionSignature, uint256 indexed timestamp);
+
+    /**
+     * @notice AdminFunctionsDiscarded - emitted when multiple functions are discarded as admin functions
+     * @param functionSignatures - the signatures of the functions that are discarded as admin functions
+     * @param timestamp unix date and time recording when the functions were discarded as admin functions
+     */
+    event AdminFunctionsDiscarded(bytes4[] indexed functionSignatures, uint256 indexed timestamp);
+
+    /**********************************************************\
+                        Custom Errors                              
+    \**********************************************************/
 
     /**
      * @dev Error: Thrown when contract owner is trying to pause an already paused contract
@@ -93,23 +118,17 @@ abstract contract GreenproofManager {
      */
     error AlreadyUnpausedContract();
 
+    /**********************************************************\
+                      Updating Functions                    
+    \**********************************************************/
+
     /**
      * @notice updateClaimManager
      * @param newAddress The new address of the claim manager
      * @dev Allows only the contract owner to update the claim manager address.
      * @dev This restriction is set on the internal `setClaimManagerAddress` function
      */
-    function updateClaimManager(address newAddress) external {
-        /**
-         * @dev `setClaimManagerAddress` updates the claim manager address and retrieves the old address for logging purposes
-         */
-        address oldAddress = LibClaimManager.setClaimManagerAddress(newAddress);
-
-        /**
-         * @dev Emitting event for the updated claim manager address
-         */
-        emit ClaimManagerUpdated(oldAddress, newAddress);
-    }
+    function updateClaimManager(address newAddress) external;
 
     /**
      * @notice updateClaimRevocationRegistry
@@ -117,17 +136,7 @@ abstract contract GreenproofManager {
      * @dev Allows only the contract owner to update the claim revocation registry address
      * @dev This restriction is set on the internal `setClaimRevocationRegistry` function
      */
-    function updateClaimRevocationRegistry(address newAddress) external {
-        /**
-         * @dev `setClaimRevocationRegistry` updates the claim revocation registry address and retrieves the old address for logging purposes
-         */
-        address oldAddress = LibClaimManager.setClaimRevocationRegistry(newAddress);
-
-        /**
-         * @dev Emitting event for the updated claim revocation registry address
-         */
-        emit ClaimsRevocationRegistryUpdated(oldAddress, newAddress);
-    }
+    function updateClaimRevocationRegistry(address newAddress) external;
 
     /**
      * @notice updateIssuerVersion
@@ -135,17 +144,7 @@ abstract contract GreenproofManager {
      * @dev Allows only the contract owner to update the issuer version
      * @dev This restriction is set on the internal `setIssuerVersion` function
      */
-    function updateIssuerVersion(uint256 newVersion) external {
-        /**
-         * @dev `setIssuerVersion` updates the issuer role version and retrieves the previous version for logging purposes
-         */
-        uint256 oldVersion = LibClaimManager.setIssuerVersion(newVersion);
-
-        /**
-         * @dev Emitting event for the updated issuer role version
-         */
-        emit IssuerVersionUpdated(oldVersion, newVersion);
-    }
+    function updateIssuerVersion(uint256 newVersion) external;
 
     /**
      * @notice updateRevokerVersion
@@ -153,17 +152,7 @@ abstract contract GreenproofManager {
      * @dev Allows only the contract owner to update the revoker version
      * @dev This restriction is set on the internal `setRevokerVersion` function
      */
-    function updateRevokerVersion(uint256 newVersion) external {
-        /**
-         * @dev `setRevokerVersion` updates the revoker role version and retrieves the previous version for logging purposes
-         */
-        uint256 oldVersion = LibClaimManager.setRevokerVersion(newVersion);
-
-        /**
-         * @dev Emitting event for the updated revoker role version
-         */
-        emit RevokerVersionUpdated(oldVersion, newVersion);
-    }
+    function updateRevokerVersion(uint256 newVersion) external;
 
     /**
      * @notice updateWorkerVersion
@@ -171,17 +160,7 @@ abstract contract GreenproofManager {
      * @dev Allows only the contract owner to update the worker version
      * @dev This restriction is set on the internal `setWorkerVersion` function
      */
-    function updateWorkerVersion(uint256 newVersion) external {
-        /**
-         * @dev `setWorkerVersion` updates the worker role version and retrieves the previous version for logging purposes
-         */
-        uint256 oldVersion = LibClaimManager.setWorkerVersion(newVersion);
-
-        /**
-         * @dev Emitting event for the updated worker role version
-         */
-        emit WorkerVersionUpdated(oldVersion, newVersion);
-    }
+    function updateWorkerVersion(uint256 newVersion) external;
 
     /**
      * @notice updateClaimerVersion
@@ -189,17 +168,7 @@ abstract contract GreenproofManager {
      * @dev Allows only the contract owner to update the claimer version
      * @dev This restriction is set on the internal `setClaimerVersion` function
      */
-    function updateClaimerVersion(uint256 newVersion) external {
-        /**
-         * @dev `setClaimerVersion` updates the claimer role version and retrieves the previous version for logging purposes
-         */
-        uint256 oldVersion = LibClaimManager.setClaimerVersion(newVersion);
-
-        /**
-         * @dev Emitting event for the updated claimer role version
-         */
-        emit ClaimerVersionUpdated(oldVersion, newVersion);
-    }
+    function updateClaimerVersion(uint256 newVersion) external;
 
     /**
      * @notice updateApproverVersion
@@ -207,49 +176,58 @@ abstract contract GreenproofManager {
      * @dev Allows only the contract owner to update the claimer version
      * @dev This restriction is set on the internal `setApproverVersion` function
      */
-    function updateApproverVersion(uint256 newVersion) external {
-        /**
-         * @dev `setApproverVersion` updates the claimer role version and retrieves the previous version for logging purposes
-         */
-        uint256 oldVersion = LibClaimManager.setApproverVersion(newVersion);
+    function updateApproverVersion(uint256 newVersion) external;
 
-        /**
-         * @dev Emitting event for the updated claimer role version
-         */
-        emit ApproverVersionUpdated(oldVersion, newVersion);
-    }
+    /**********************************************************\
+                      Circuit Breaker Functions                    
+    \**********************************************************/
 
     /**
      * @notice pause - when called, this function prevents all calls of facet functions from being executed
      * @dev only the contract admistrator is allowed to execute this halting function
      * @dev if the system is already paused, a call to this function will revert with `AlreadyPausedContract` error
      */
-    function pause() external {
-        LibClaimManager.checkOwnership();
-
-        if (isContractPaused) {
-            revert AlreadyPausedContract();
-        }
-        isContractPaused = true;
-
-        // solhint-disable-next-line not-rely-on-time
-        emit ContractPaused(block.timestamp, msg.sender);
-    }
+    function pause() external;
 
     /**
      * @notice unPause - when called, this function reverts the pausing and unlocks facet function executions
      * @dev only the contract admistrator is allowed to execute this unlocking function
      * @dev if the system is already unpaused, a call to this function will revert with `AlreadyUnpausedContract` error
      */
-    function unPause() external {
-        LibClaimManager.checkOwnership();
+    function unPause() external;
 
-        if (!isContractPaused) {
-            revert AlreadyUnpausedContract();
-        }
-        isContractPaused = false;
+    /**
+     * @notice isContractPaused - returns the current state of the contract
+     * @dev if the system is paused, this function will return `true`
+     * @dev if the system is unpaused, this function will return `false`
+     */
+    function isContractPaused() external view returns (bool);
 
-        // solhint-disable-next-line not-rely-on-time
-        emit ContractUnPaused(block.timestamp, msg.sender);
-    }
+    /**********************************************************\
+                      Admin Functions Tracking
+    \**********************************************************/
+
+    /**
+     * @notice declareSingleAdminFunction - when called, this function allows the contract owner to declare one single function is an admin functions
+     * @dev only the contract owner is allowed to execute this function
+     */
+    function declareSingleAdminFunction(bytes4 functionSelector) external;
+
+    /**
+     * @notice declareBatchAdminFunctions - when called, this function allows the contract owner to declare which functions are admin functions
+     * @dev only the contract owner is allowed to execute this function
+     */
+    function declareBatchAdminFunctions(bytes4[] calldata functionSelectors) external;
+
+    /**
+     * @notice removeSingleAdminFunction - when called, this function allows the contract owner to remove one single function from the admin functions list
+     * @dev only the contract owner is allowed to execute this function
+     */
+    function removeSingleAdminFunction(bytes4 functionSelector) external;
+
+    /**
+     * @notice BatchAdminFunctions - when called, this function allows the contract owner to remove multiple admin functions
+     * @dev only the contract owner is allowed to execute this function
+     */
+    function removeBatchAdminFunctions(bytes4[] calldata functionSelectors) external;
 }
