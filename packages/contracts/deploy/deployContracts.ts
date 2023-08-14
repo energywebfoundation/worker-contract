@@ -82,6 +82,7 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   adminFunctions = await getSelectorsFromFacet("AdminFacet");
 
   const greenproof = await deploy("Greenproof", (factory) => {
+    // console.log("OWNER ...", contractOwner);
     const args: Parameters<Greenproof__factory["deploy"]> = [
       contractOwner,
       adminFunctions,
