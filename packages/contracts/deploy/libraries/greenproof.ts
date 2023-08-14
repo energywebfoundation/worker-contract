@@ -1,10 +1,11 @@
-import { BaseContract, ethers } from "ethers";
+import { ethers } from "hardhat";
+import { BaseContract } from "ethers";
 
 export const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 
 export type FacetCut = {
   target: string;
-  action: typeof FacetCutAction[keyof typeof FacetCutAction];
+  action: (typeof FacetCutAction)[keyof typeof FacetCutAction];
   selectors: any;
 };
 
@@ -75,3 +76,19 @@ export const findIndexOfAddressInFacets = (
   facetAddress: string,
   facets: FacetCut[]
 ) => facets.findIndex((cut) => cut.target === facetAddress);
+
+export const getSelectorsFromFacet = async (facetName: string) => {
+  const defaultAddress: string = "0x0";
+  const baseAdminContract = await ethers.getContractAt(
+    facetName,
+    defaultAddress
+  );
+
+  // extracting function selectors from AdminFacet contract
+  const extractedSelectors: string[] = getSelectors(baseAdminContract).filter(
+    (input: { key: string }) =>
+      input.key !== "remove" && input.key !== "contract" && input.key !== "get"
+  );
+
+  return extractedSelectors;
+};

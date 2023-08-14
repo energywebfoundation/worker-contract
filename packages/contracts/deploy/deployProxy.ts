@@ -20,6 +20,8 @@ import {
   DEFAULT_MAJORITY_PERCENTAGE,
 } from "./utils/constants";
 
+import { getSelectorsFromFacet } from "./libraries/greenproof";
+
 config();
 
 const IS_RUNNING_FROM_CLI = require.main === module;
@@ -60,8 +62,13 @@ export const deployGreenproof = async (
     ),
   } = roles;
 
+  const adminFunctions = await getSelectorsFromFacet("AdminFacet");
+
   const GreenproofContract = await ethers.getContractFactory("Greenproof");
-  const args: Parameters<Greenproof__factory["deploy"]> = [contractOwner];
+  const args: Parameters<Greenproof__factory["deploy"]> = [
+    contractOwner,
+    adminFunctions,
+  ];
   const greenproof = await GreenproofContract.deploy(...args);
   await greenproof.deployed();
   console.log(`\tGreenproof Diamond deployed to ${greenproof.address}`);

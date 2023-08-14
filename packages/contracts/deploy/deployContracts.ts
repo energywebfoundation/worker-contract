@@ -4,7 +4,11 @@ import { ethers, hardhatArguments } from "hardhat";
 import "@nomiclabs/hardhat-waffle";
 import { Greenproof__factory } from "../src";
 import { Contract, ContractFactory } from "ethers";
-import { FacetCutAction, getSelectors } from "./libraries/greenproof";
+import {
+  getSelectors,
+  FacetCutAction,
+  getSelectorsFromFacet,
+} from "./libraries/greenproof";
 import {
   InitContractOptions,
   GreenproofFacet,
@@ -73,13 +77,9 @@ export const deployGreenproof = async (options: InitContractOptions) => {
   // GreenproofInit provides a function that is called when the Greenproof is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
   const greeproofInit = await deploy("GreenproofInit");
-  const baseAdminContract = await ethers.getContractAt("AdminFacet", "0x0");
 
   // extracting function selectors from AdminFacet contract
-  adminFunctions = getSelectors(baseAdminContract).filter(
-    (input: { key: string }) =>
-      input.key !== "remove" && input.key !== "contract" && input.key !== "get"
-  );
+  adminFunctions = await getSelectorsFromFacet("AdminFacet");
 
   const greenproof = await deploy("Greenproof", (factory) => {
     const args: Parameters<Greenproof__factory["deploy"]> = [
