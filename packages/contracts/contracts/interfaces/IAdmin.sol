@@ -77,6 +77,22 @@ interface IAdmin {
     event ContractUnPaused(uint256 timestamp, address operator);
 
     /**
+     * @notice Swept - emitted when the contract's balance is swept to the owner's address
+     * @param timestamp - unix date and time recording when the contract's balance was swept
+     * @param operator - address of the operator who swept the contract's balance
+     * @param amount - amount of the contract's balance swept
+     */
+    event Swept(uint256 timestamp, address operator, uint256 amount);
+
+    /**
+     * @notice OwnerChanged - emitted when the contract's owner is changed
+     * @param previousOwner - address of the previous owner
+     * @param newOwner - address of the new owner
+     * @param timestamp - unix date and time recording when the contract's owner was changed
+     */
+    event OwnerChanged(address indexed previousOwner, address indexed newOwner, uint256 timestamp);
+
+    /**
      * @notice AdminFunctionDeclared - emitted when a function is declared as an admin function
      * @param functionSignature - the signature of the function that is declared as an admin function
      * @param timestamp unix date and time recording when the function was declared as an admin function
@@ -230,4 +246,18 @@ interface IAdmin {
      * @dev only the contract owner is allowed to execute this function
      */
     function removeBatchAdminFunctions(bytes4[] calldata functionSelectors) external;
+
+    /**
+     * @notice sweepFunds - when called, this function transfers all the funds from the contract to the contract owner
+     * @dev only the contract admistrator is allowed to execute this function
+     */
+
+    function sweepFunds() external;
+
+    /**
+     * @notice setOwner - when called, this function updates the owner of the contract
+     * @dev only the contract admistrator is allowed to execute this function
+     * @param newOwner the address of the new owner
+     */
+    function setOwner(address newOwner) external;
 }

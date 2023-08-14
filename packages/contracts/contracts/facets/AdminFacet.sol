@@ -3,8 +3,11 @@ pragma solidity 0.8.16;
 
 import {IAdmin} from "../interfaces/IAdmin.sol";
 import {LibAdmin} from "../libraries/LibAdmin.sol";
+import {LibIssuer} from "../libraries/LibIssuer.sol";
 import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {AddressUtils} from "@solidstate/contracts/utils/AddressUtils.sol";
+import {IOwnable} from "@solidstate/contracts/access/ownable/IOwnable.sol";
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
 
 contract AdminFacet is IAdmin {
     /* solhint-disable not-rely-on-time */
@@ -217,5 +220,45 @@ contract AdminFacet is IAdmin {
      */
     function isContractPaused() external view returns (bool) {
         return LibAdmin.isContractPaused();
+    }
+
+    /**
+     * @notice sweepFunds - when called, this function transfers all the funds from the contract to the contract owner
+     * @dev only the contract admistrator is allowed to execute this function
+     */
+
+    function sweepFunds() external {
+        // Check if the caller is the owner of the contract
+        LibClaimManager.checkOwnership();
+
+        // Get the address of the contract owner
+        address payable contractOwner = payable(IOwnable(address(this)).owner());
+
+        // Get the current balance of the contract
+        uint256 sweptAmount = address(this).balance;
+
+        // Send the entire balance of the contract to the owner's address using a low-level call
+        (bool success, ) = contractOwner.call{value: sweptAmount}(""); // solhint-disable-line avoid-low-level-calls
+        if (!success) {
+            // If the transfer fails, revert with an error message
+            revert LibAdmin.ProxyError("Sweep failed");
+        }
+
+        // Emit an event to indicate that the funds have been swept
+        emit Swept(block.timestamp, msg.sender, sweptAmount); // solhint-disable-line not-rely-on-time
+    }
+
+    /**
+     * @notice setOwner - when called, this function updates the owner of the contract
+     * @dev only the contract admistrator is allowed to execute this function
+     * @param newOwner the address of the new owner
+     */
+    function setOwner(address newOwner) external {
+        LibClaimManager.checkOwnership();
+        LibIssuer.preventZeroAddressReceiver(newOwner);
+
+        address currentOwner = IOwnable(address(this)).owner();
+        emit OwnerChanged(currentOwner, newOwner, block.timestamp); // solhint-disable-line not-rely-on-time
+        OwnableStorage.layout().owner = newOwner;
     }
 }
