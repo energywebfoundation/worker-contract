@@ -43,6 +43,7 @@ export type Facet = {
 };
 
 export enum GreenproofFacet {
+  AdminFacet = "AdminFacet",
   IssuerFacet = "IssuerFacet",
   VotingFacet = "VotingFacet",
   MetaTokenFacet = "MetaTokenFacet",

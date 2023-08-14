@@ -8,8 +8,16 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
 import {AddressUtils} from "@solidstate/contracts/utils/AddressUtils.sol";
 import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
 
-library LibDiamond {
+import {DiamondBaseStorage} from "@solidstate/contracts/proxy/diamond/base/DiamondBaseStorage.sol";
+import {IDiamondWritableInternal} from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritableInternal.sol";
+
+library LibAdmin {
     using AddressUtils for address;
+
+    struct AdminStorage {
+        bool isContractPaused;
+        mapping(bytes4 => bool) isAdminFunction;
+    }
 
     // Define a struct called DiamondConfig which stores some configuration parameters for a diamond contract
     struct DiamondConfig {
@@ -22,6 +30,11 @@ library LibDiamond {
         LibIssuer.BatchConfig batchConfig; // Batching configuration
         LibClaimManager.RolesConfig rolesConfig; // DID-based roles configuration
     }
+
+    /**
+     * @dev Tracking the storage position of the adminStorage
+     */
+    bytes32 private constant _ADMIN_STORAGE_POSITION = keccak256("ewc.greenproof.admin.diamond.storage");
 
     /**
      * @dev Error: Thrown when an error occurs at proxy level
@@ -59,6 +72,51 @@ library LibDiamond {
     }
 
     /**
+     * @notice - pauseContract - pauses the diamond smart contract system
+     * @dev - when the diamond system is paused, all the non admin functions of the diamond system will be reverted
+     * @dev - only the admin can pause the smart contract system
+     */
+    function pauseContract() internal {
+        LibClaimManager.checkOwnership();
+
+        getStorage().isContractPaused = true;
+    }
+
+    /**
+     * @notice - unpauseContract - unpauses the diamond contract
+     * @dev - when the diamond contract is unpaused, all functions of the diamond system will be executed
+     * @dev - only the admin can unpause the smart contract system
+     */
+    function unpauseContract() internal {
+        LibClaimManager.checkOwnership();
+
+        getStorage().isContractPaused = false;
+    }
+
+    /**
+     * @notice - setAdminFunction - sets the function selector as an admin function or not
+     * @param functionSelector signature of the function
+     * @param isAllowed boolean flag indicating whether the function selector is an admin function or not
+     * @dev - only the admin can set the function selector as an admin function or not
+     */
+    function setAdminFunction(bytes4 functionSelector, bool isAllowed) internal {
+        LibClaimManager.checkOwnership();
+        getStorage().isAdminFunction[functionSelector] = isAllowed;
+    }
+
+    /**
+     * @notice - checkAdminIfPaused - prevents the execution of non admin functions when the contract is paused
+     * @dev - reverts if the contract is paused and the function selector is not an admin function
+     **/
+    function checkAdminIfPaused() internal view {
+        if (isContractPaused()) {
+            if (!isAdminFunction(msg.sig)) {
+                revert ProxyError("Contract is paused");
+            }
+        }
+    }
+
+    /**
      * @notice checkIsContract - checks if the implementation address is a contract address
      * @param implementation address of the implementation contract
      * @dev reverts if the implementation address is not a contract address
@@ -68,6 +126,23 @@ library LibDiamond {
         if (!implementation.isContract()) {
             revert ProxyError("implementation must be contract");
         }
+    }
+
+    /**
+     * @notice isContractPaused - checks if the contract is paused or not
+     * @return true if the contract is paused, false otherwise
+     */
+    function isContractPaused() internal view returns (bool) {
+        return getStorage().isContractPaused;
+    }
+
+    /**
+     * @notice isAdminFunction - checks if the function selector is an admin function or not
+     * @param functionSelector signature of the function
+     * @return true if the function selector is an administrative function, false otherwise
+     */
+    function isAdminFunction(bytes4 functionSelector) internal view returns (bool) {
+        return getStorage().isAdminFunction[functionSelector];
     }
 
     /**
@@ -98,6 +173,19 @@ library LibDiamond {
 
         if (proxyConfig.votingConfig.majorityPercentage > 100) {
             revert ProxyError("init: Majority percentage must be between 0 and 100");
+        }
+    }
+
+    /**
+     * @dev Get the storage for the diamond admin library
+     * @return adminStorage - The pointer to the adminStorage slot position
+     */
+    function getStorage() internal pure returns (AdminStorage storage adminStorage) {
+        bytes32 position = _ADMIN_STORAGE_POSITION;
+
+        /* solhint-disable-next-line no-inline-assembly */
+        assembly {
+            adminStorage.slot := position
         }
     }
 }

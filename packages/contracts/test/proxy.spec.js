@@ -23,6 +23,7 @@ describe("GreenproofTest", async function () {
   let greenproofAddress;
   let greenproof;
   let issuerFacet;
+  let adminFacet;
   let tx;
   let receipt;
   let owner;
@@ -41,11 +42,12 @@ describe("GreenproofTest", async function () {
       claimManagerAddress: claimManagerMocked.address,
       claimRevokerAddress: claimsRevocationRegistryMocked.address,
       roles,
-      facets: ["IssuerFacet"],
+      facets: ["IssuerFacet", "AdminFacet"],
     }));
 
     greenproof = await ethers.getContractAt("Greenproof", greenproofAddress);
     issuerFacet = await ethers.getContractAt("IssuerFacet", greenproofAddress);
+    adminFacet = await ethers.getContractAt("AdminFacet", greenproofAddress);
   });
 
   describe("\n****** Deployement failure tests ******\n", () => {
@@ -128,15 +130,16 @@ describe("GreenproofTest", async function () {
   describe("Proxy roles updates tests", () => {
     describe("- ClaimManagerAddress update tests", () => {
       it("should revert when updating claimManager with Zero address", async () => {
+        console.log("AdminFacet Address: ", adminFacet.address);
         const zeroAddress = ethers.constants.AddressZero;
         await expect(
-          greenproof.updateClaimManager(zeroAddress)
+          adminFacet.updateClaimManager(zeroAddress)
         ).to.be.revertedWith("Cannot update to null address");
       });
 
       it("should revert when updating claimManager with same address", async () => {
         await expect(
-          greenproof.updateClaimManager(claimManagerMocked.address)
+          adminFacet.updateClaimManager(claimManagerMocked.address)
         ).to.be.revertedWith("Same address");
       });
 
@@ -145,7 +148,7 @@ describe("GreenproofTest", async function () {
           "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
 
         await expect(
-          greenproof
+          adminFacet
             .connect(nonOwner)
             .updateClaimManager(newClaimManagerAddress)
         ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
@@ -156,8 +159,8 @@ describe("GreenproofTest", async function () {
         const newClaimManagerAddress =
           "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
 
-        await expect(greenproof.updateClaimManager(newClaimManagerAddress))
-          .to.emit(greenproof, "ClaimManagerUpdated")
+        await expect(adminFacet.updateClaimManager(newClaimManagerAddress))
+          .to.emit(adminFacet, "ClaimManagerUpdated")
           .withArgs(oldClaimManagerAddress, newClaimManagerAddress);
       });
     });
@@ -166,13 +169,13 @@ describe("GreenproofTest", async function () {
       it("should revert when updating ClaimRevocationRegistry with Zero address", async () => {
         const zeroAddress = ethers.constants.AddressZero;
         await expect(
-          greenproof.updateClaimRevocationRegistry(zeroAddress)
+          adminFacet.updateClaimRevocationRegistry(zeroAddress)
         ).to.be.revertedWith("Revocation Registry: null address");
       });
 
       it("should revert when updating ClaimRevocationRegistry with same address", async () => {
         await expect(
-          greenproof.updateClaimRevocationRegistry(
+          adminFacet.updateClaimRevocationRegistry(
             claimsRevocationRegistryMocked.address
           )
         ).to.be.revertedWith("Revocation Registry: Same address");
@@ -183,7 +186,7 @@ describe("GreenproofTest", async function () {
           "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
 
         await expect(
-          greenproof
+          adminFacet
             .connect(nonOwner)
             .updateClaimRevocationRegistry(newRevocationregistry)
         ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
@@ -195,9 +198,9 @@ describe("GreenproofTest", async function () {
           "0x43a7aEeb21C0dFE55d967d7A58B2Dfe6AEA50d7f";
 
         await expect(
-          greenproof.updateClaimRevocationRegistry(newRevocationregistry)
+          adminFacet.updateClaimRevocationRegistry(newRevocationregistry)
         )
-          .to.emit(greenproof, "ClaimsRevocationRegistryUpdated")
+          .to.emit(adminFacet, "ClaimsRevocationRegistryUpdated")
           .withArgs(oldRevocationregistry, newRevocationregistry);
       });
     });
@@ -206,7 +209,7 @@ describe("GreenproofTest", async function () {
       it("should revert when updating claimerRole version with same version", async () => {
         const sameRoleVersion = 1;
         await expect(
-          greenproof.updateClaimerVersion(sameRoleVersion)
+          adminFacet.updateClaimerVersion(sameRoleVersion)
         ).to.be.revertedWith("Same version");
       });
 
@@ -214,7 +217,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
 
         await expect(
-          greenproof.connect(nonOwner).updateClaimerVersion(newRoleVersion)
+          adminFacet.connect(nonOwner).updateClaimerVersion(newRoleVersion)
         ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
@@ -222,8 +225,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
 
-        await expect(greenproof.updateClaimerVersion(newRoleVersion))
-          .to.emit(greenproof, "ClaimerVersionUpdated")
+        await expect(adminFacet.updateClaimerVersion(newRoleVersion))
+          .to.emit(adminFacet, "ClaimerVersionUpdated")
           .withArgs(oldRoleVersion, newRoleVersion);
       });
     });
@@ -232,7 +235,7 @@ describe("GreenproofTest", async function () {
       it("should revert when updating workerRole version with same version", async () => {
         const sameRoleVersion = 1;
         await expect(
-          greenproof.updateWorkerVersion(sameRoleVersion)
+          adminFacet.updateWorkerVersion(sameRoleVersion)
         ).to.be.revertedWith("Same version");
       });
 
@@ -240,7 +243,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
 
         await expect(
-          greenproof.connect(nonOwner).updateWorkerVersion(newRoleVersion)
+          adminFacet.connect(nonOwner).updateWorkerVersion(newRoleVersion)
         ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
@@ -248,8 +251,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
 
-        await expect(greenproof.updateWorkerVersion(newRoleVersion))
-          .to.emit(greenproof, "WorkerVersionUpdated")
+        await expect(adminFacet.updateWorkerVersion(newRoleVersion))
+          .to.emit(adminFacet, "WorkerVersionUpdated")
           .withArgs(oldRoleVersion, newRoleVersion);
       });
     });
@@ -258,7 +261,7 @@ describe("GreenproofTest", async function () {
       it("should revert when updating revokerRole version with same version", async () => {
         const sameRoleVersion = 1;
         await expect(
-          greenproof.updateRevokerVersion(sameRoleVersion)
+          adminFacet.updateRevokerVersion(sameRoleVersion)
         ).to.be.revertedWith("Same version");
       });
 
@@ -266,7 +269,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
 
         await expect(
-          greenproof.connect(nonOwner).updateRevokerVersion(newRoleVersion)
+          adminFacet.connect(nonOwner).updateRevokerVersion(newRoleVersion)
         ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
@@ -274,8 +277,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
 
-        await expect(greenproof.updateRevokerVersion(newRoleVersion))
-          .to.emit(greenproof, "RevokerVersionUpdated")
+        await expect(adminFacet.updateRevokerVersion(newRoleVersion))
+          .to.emit(adminFacet, "RevokerVersionUpdated")
           .withArgs(oldRoleVersion, newRoleVersion);
       });
     });
@@ -284,7 +287,7 @@ describe("GreenproofTest", async function () {
       it("should revert when updating IssuerRole version with same version", async () => {
         const sameRoleVersion = 1;
         await expect(
-          greenproof.updateIssuerVersion(sameRoleVersion)
+          adminFacet.updateIssuerVersion(sameRoleVersion)
         ).to.be.revertedWith("Same version");
       });
 
@@ -292,7 +295,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
 
         await expect(
-          greenproof.connect(nonOwner).updateIssuerVersion(newRoleVersion)
+          adminFacet.connect(nonOwner).updateIssuerVersion(newRoleVersion)
         ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
@@ -300,8 +303,8 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
 
-        await expect(greenproof.updateIssuerVersion(newRoleVersion))
-          .to.emit(greenproof, "IssuerVersionUpdated")
+        await expect(adminFacet.updateIssuerVersion(newRoleVersion))
+          .to.emit(adminFacet, "IssuerVersionUpdated")
           .withArgs(oldRoleVersion, newRoleVersion);
       });
     });
@@ -310,7 +313,7 @@ describe("GreenproofTest", async function () {
       it("should revert when updating approverRole version with same version", async () => {
         const sameRoleVersion = 1;
         await expect(
-          greenproof.updateApproverVersion(sameRoleVersion)
+          adminFacet.updateApproverVersion(sameRoleVersion)
         ).to.be.revertedWith("Same version");
       });
 
@@ -318,7 +321,7 @@ describe("GreenproofTest", async function () {
         const newRoleVersion = 2;
 
         await expect(
-          greenproof.connect(nonOwner).updateApproverVersion(newRoleVersion)
+          adminFacet.connect(nonOwner).updateApproverVersion(newRoleVersion)
         ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
       });
 
@@ -326,52 +329,110 @@ describe("GreenproofTest", async function () {
         const oldRoleVersion = 1;
         const newRoleVersion = 2;
 
-        await expect(greenproof.updateApproverVersion(newRoleVersion))
-          .to.emit(greenproof, "ApproverVersionUpdated")
+        await expect(adminFacet.updateApproverVersion(newRoleVersion))
+          .to.emit(adminFacet, "ApproverVersionUpdated")
           .withArgs(oldRoleVersion, newRoleVersion);
       });
     });
   });
 
+  describe("\n****** Sweeping tests ******\n", () => {
+    it("should revert if not called by owner", async () => {
+      
+      await expect(
+        adminFacet.connect(nonOwner).sweepFunds()
+      ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
+    });
+
+    it("should correctly sweep funds", async () => {
+      const amount = ethers.utils.parseEther("4");
+
+      let tx = await nonOwner.sendTransaction({
+        to: greenproofAddress,
+        value: amount,
+      });
+
+      await expect(tx).to.changeEtherBalance(nonOwner, amount.mul(-1));
+
+      const balanceBefore = await ethers.provider.getBalance(greenproofAddress);
+      expect(balanceBefore).to.equal(amount);
+
+      tx = await adminFacet.connect(owner).sweepFunds();
+      const balanceAfter = await ethers.provider.getBalance(greenproofAddress);
+      expect(balanceAfter).to.equal(0);
+      const timestamp = await getTimeStamp(tx)
+      await expect(tx).to.emit(adminFacet, "Swept").withArgs(timestamp, owner.address, amount);
+
+      await adminFacet.connect(owner).sweepFunds();
+    });
+
+    it("should revert when sweeping funds to an address that reverts", async () => {
+      const RevertOnReceive = await ethers.getContractFactory("TestRevertOnReceive");
+      const revertOnReceive = await RevertOnReceive.deploy();
+      await revertOnReceive.deployed();
+    
+      await adminFacet.connect(owner).setOwner(revertOnReceive.address);
+      
+      const asNewOwner = await ethers.getImpersonatedSigner(revertOnReceive.address);
+      
+      await setBalance(revertOnReceive.address, ethers.utils.parseEther("100"));
+
+      const amount = ethers.utils.parseEther("4");
+      await nonOwner.sendTransaction({
+          to: greenproof.address,
+          value: amount,
+      });
+
+      // Attempt to sweep funds
+      await expect(adminFacet.connect(asNewOwner).sweepFunds()).to.be.revertedWith("Sweep failed");
+
+      // Reset owner
+      await adminFacet.connect(asNewOwner).setOwner(owner.address);
+    });
+
+  });
+
   describe("\n****** Proxy Management tests ******", () => {
     it("should revert when non owner tries to pause contract", async () => {
-      await expect(greenproof.connect(nonOwner).pause()).to.be.revertedWith(
+      await expect(adminFacet.connect(nonOwner).pause()).to.be.revertedWith(
         `NotAuthorized("Owner", "${nonOwner.address}")`
       );
     });
 
     it("should correctly pause contract", async () => {
-      tx = await greenproof.pause();
+      console.log("Greenproof owner: ", await greenproof.owner());
+      console.log("Owner: ", owner.address);
+      tx = await adminFacet.pause();
 
       const timestamp = await getTimeStamp(tx);
       await expect(tx)
-        .to.emit(greenproof, "ContractPaused")
+        .to.emit(adminFacet, "ContractPaused")
         .withArgs(timestamp, owner.address);
     });
 
     it("should revert when pausing an already paused contract", async () => {
-      await expect(greenproof.pause()).to.be.revertedWith(
+      await expect(adminFacet.pause()).to.be.revertedWith(
         `AlreadyPausedContract()`
       );
     });
 
     it("should revert when non owner tries to unpause contract", async () => {
-      await expect(greenproof.connect(nonOwner).unPause()).to.be.revertedWith(
+      await expect(adminFacet.connect(nonOwner).unPause()).to.be.revertedWith(
         `NotAuthorized("Owner", "${nonOwner.address}")`
       );
     });
 
     it("should correctly unpause contract", async () => {
-      tx = await greenproof.unPause();
+      tx = await adminFacet.unPause();
 
       const timestamp = await getTimeStamp(tx);
       await expect(tx)
-        .to.emit(greenproof, "ContractUnPaused")
+        .to.emit(adminFacet, "ContractUnPaused")
         .withArgs(timestamp, owner.address);
     });
 
     it("should revert when unpausing an already unpaused contract", async () => {
-      await expect(greenproof.unPause()).to.be.revertedWith(
+      await expect(adminFacet.unPause()).to.be.revertedWith(
         `AlreadyUnpausedContract()`
       );
     });
@@ -379,17 +440,18 @@ describe("GreenproofTest", async function () {
     it("should correctly update the owner", async () => {
       const newOwner = await ethers.getSigner(1);
 
+      console.log("Before update");
       expect(
         await greenproof.owner()
       ).to.equal(owner.address);
 
-      tx = await greenproof.setOwner(newOwner.address);
+      tx = await adminFacet.setOwner(newOwner.address);
 
       const timestamp = await getTimeStamp(tx);
       await expect(tx)
-        .to.emit(greenproof, "OwnerChanged")
+        .to.emit(adminFacet, "OwnerChanged")
         .withArgs(owner.address, newOwner.address, timestamp);
-      
+      console.log("After update");
       expect(
         await greenproof.owner()
       ).to.equal(newOwner.address);
@@ -400,7 +462,7 @@ describe("GreenproofTest", async function () {
       const newOwner = await ethers.getSigner(1);
 
       await expect(
-        greenproof.connect(oldOwner).setOwner(newOwner.address)
+        adminFacet.connect(oldOwner).setOwner(newOwner.address)
       ).to.be.revertedWith(`NotAuthorized("Owner", "${oldOwner.address}")`);
     });
 
@@ -409,17 +471,17 @@ describe("GreenproofTest", async function () {
       const previousOwner = owner;
 
       await expect(
-        greenproof.connect(newOwner).setOwner(ethers.constants.AddressZero)
+        adminFacet.connect(newOwner).setOwner(ethers.constants.AddressZero)
       ).to.be.revertedWith(`ForbiddenZeroAddressReceiver`);
 
-      await greenproof.connect(newOwner).setOwner(previousOwner.address);
+      await adminFacet.connect(newOwner).setOwner(previousOwner.address);
     });
 
     it("should revert if implementation logic address is not a contract", async () => {
-      const greenproof = await ethers.getContractAt(
-        "Greenproof",
-        greenproofAddress
-      );
+      // const adminFacet = await ethers.getContractAt(
+      //   "Greenproof",
+      //   greenproofAddress
+      // );
 
       //setting fallback address to be a wallet
       await greenproof.setFallbackAddress(owner.address);
@@ -436,12 +498,12 @@ describe("GreenproofTest", async function () {
       );
     });
 
-    it("should have four facets -- call to facetAddresses function", async () => {
+    it("should have three facets -- call to facetAddresses function", async () => {
       for (const address of await greenproof.facetAddresses()) {
         addresses.push(address);
       }
 
-      assert.equal(addresses.length, 2); // SolidState https://github.com/solidstate-network/solidstate-solidity/blob/e9f741cb1476a066ce92d39600a82dc1c9e06b7d/contracts/proxy/diamond/SolidStategreenproof.sol#L72 and Issuer facets
+      assert.equal(addresses.length, 3); // SolidState https://github.com/solidstate-network/solidstate-solidity/blob/e9f741cb1476a066ce92d39600a82dc1c9e06b7d/contracts/proxy/diamond/SolidStategreenproof.sol#L72 and Issuer facets
     });
 
     it("facets should have the right function selectors -- call to facetFunctionSelectors function", async () => {
@@ -535,11 +597,11 @@ describe("GreenproofTest", async function () {
       const selectors = getSelectors(test2Facet);
 
       // Pausing the system
-      tx = await greenproof.pause();
+      tx = await adminFacet.pause();
 
       let timestamp = await getTimeStamp(tx);
       await expect(tx)
-        .to.emit(greenproof, "ContractPaused")
+        .to.emit(adminFacet, "ContractPaused")
         .withArgs(timestamp, owner.address);
 
       // Upgrading the contract
@@ -558,11 +620,11 @@ describe("GreenproofTest", async function () {
       receipt = await tx.wait();
 
       // Unpausing the system
-      tx = await greenproof.unPause();
+      tx = await adminFacet.unPause();
 
       timestamp = await getTimeStamp(tx);
       await expect(tx)
-        .to.emit(greenproof, "ContractUnPaused")
+        .to.emit(adminFacet, "ContractUnPaused")
         .withArgs(timestamp, owner.address);
       if (!receipt.status) {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
@@ -624,7 +686,7 @@ describe("GreenproofTest", async function () {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
       assert.sameMembers(
-        await greenproof.facetFunctionSelectors(addresses[3]),
+        await greenproof.facetFunctionSelectors(addresses[4]),
         getSelectors(test2Facet).get(functionsToKeep)
       );
     });
@@ -657,7 +719,7 @@ describe("GreenproofTest", async function () {
         throw Error(`Diamond upgrade failed: ${tx.hash}`);
       }
       assert.sameMembers(
-        await greenproof.facetFunctionSelectors(addresses[2]),
+        await greenproof.facetFunctionSelectors(addresses[3]),
         getSelectors(test1Facet).get(functionsToKeep)
       );
     });
@@ -702,6 +764,7 @@ describe("GreenproofTest", async function () {
       const IssuerFacet = await ethers.getContractFactory("IssuerFacet");
       const Test1Facet = await ethers.getContractFactory("Test1Facet");
       const Test2Facet = await ethers.getContractFactory("Test2Facet");
+      const AdminFacet = await ethers.getContractFactory("AdminFacet");
       // Any number of functions from any number of facets can be added/replaced/removed in a
       // single transaction
       const cut = [
@@ -720,6 +783,11 @@ describe("GreenproofTest", async function () {
           action: FacetCutAction.Add,
           selectors: getSelectors(Test2Facet),
         },
+        {
+          target: addresses[4],
+          action: FacetCutAction.Add,
+          selectors: getSelectors(AdminFacet),
+        },
       ];
       tx = await greenproof.diamondCut(
         cut,
@@ -735,13 +803,14 @@ describe("GreenproofTest", async function () {
       }
       const facets = await greenproof.facets();
       const facetAddresses = await greenproof.facetAddresses();
-      assert.equal(facetAddresses.length, 4);
-      assert.equal(facets.length, 4);
+      assert.equal(facetAddresses.length, 5);
+      assert.equal(facets.length, 5);
       assert.sameMembers(facetAddresses, addresses);
       assert.equal(facets[0][0], facetAddresses[0], "first facet");
       assert.equal(facets[1][0], facetAddresses[1], "second facet");
       assert.equal(facets[2][0], facetAddresses[2], "third facet");
       assert.equal(facets[3][0], facetAddresses[3], "fourth facet");
+      assert.equal(facets[4][0], facetAddresses[4], "fith facet");
       assert.sameMembers(
         facets[findIndexOfAddressInFacets(addresses[1], facets)][1],
         getSelectors(IssuerFacet)
@@ -754,59 +823,10 @@ describe("GreenproofTest", async function () {
         facets[findIndexOfAddressInFacets(addresses[3], facets)][1],
         getSelectors(Test2Facet)
       );
+      assert.sameMembers(
+        facets[findIndexOfAddressInFacets(addresses[4], facets)][1],
+        getSelectors(AdminFacet)
+      );
     });
-  });
-
-  describe("\n****** Sweeping tests ******\n", () => {
-    it("should revert if not called by owner", async () => {
-      
-      await expect(
-        greenproof.connect(nonOwner).sweepFunds()
-      ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
-    });
-
-    it("should correctly sweep funds", async () => {
-      const amount = ethers.utils.parseEther("4");
-
-      let tx = await nonOwner.sendTransaction({
-        to: greenproofAddress,
-        value: amount,
-      });
-
-      await expect(tx).to.changeEtherBalance(nonOwner, amount.mul(-1));
-
-      const balanceBefore = await ethers.provider.getBalance(greenproofAddress);
-      expect(balanceBefore).to.equal(amount);
-
-      tx = await greenproof.connect(owner).sweepFunds();
-      const balanceAfter = await ethers.provider.getBalance(greenproofAddress);
-      expect(balanceAfter).to.equal(0);
-      const timestamp = await getTimeStamp(tx)
-      await expect(tx).to.emit(greenproof, "Swept").withArgs(timestamp, owner.address, amount);
-
-      await greenproof.connect(owner).sweepFunds();
-    });
-
-    it("should revert when sweeping funds to an address that reverts", async () => {
-      const RevertOnReceive = await ethers.getContractFactory("TestRevertOnReceive");
-      const revertOnReceive = await RevertOnReceive.deploy();
-      await revertOnReceive.deployed();
-    
-      await greenproof.connect(owner).setOwner(revertOnReceive.address);
-      
-      const asNewOwner = await ethers.getImpersonatedSigner(revertOnReceive.address);
-      
-      await setBalance(revertOnReceive.address, ethers.utils.parseEther("100"));
-
-      const amount = ethers.utils.parseEther("4");
-      await nonOwner.sendTransaction({
-          to: greenproof.address,
-          value: amount,
-      });
-
-      // Attempt to sweep funds
-      await expect(greenproof.connect(asNewOwner).sweepFunds()).to.be.revertedWith("Sweep failed");
-    });
-
   });
 });
