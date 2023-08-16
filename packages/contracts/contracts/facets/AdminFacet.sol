@@ -184,7 +184,7 @@ contract AdminFacet is IAdmin {
      * @dev only the contract owner is allowed to execute this function
      */
     function declareBatchAdminFunctions(bytes4[] calldata functionSelectors) external {
-        uint256 length = functionSelectors.length;
+        uint256 length = LibAdmin.checkNumberOfSelectors(functionSelectors);
         for (uint256 i; i < length; i++) {
             LibAdmin.setAdminFunction(functionSelectors[i], true);
         }
@@ -205,7 +205,7 @@ contract AdminFacet is IAdmin {
      * @dev only the contract owner is allowed to execute this function
      */
     function removeBatchAdminFunctions(bytes4[] calldata functionSelectors) external {
-        uint256 length = functionSelectors.length;
+        uint256 length = LibAdmin.checkNumberOfSelectors(functionSelectors);
 
         for (uint256 i; i < length; i++) {
             LibAdmin.setAdminFunction(functionSelectors[i], false);

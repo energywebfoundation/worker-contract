@@ -129,6 +129,19 @@ library LibAdmin {
     }
 
     /**
+     * checkNumberOfSelectors - checks the size of the function selectors list
+     * @param functionSelectors list of function selectors
+     * @return sizeOfList size of the function selectors list
+     * @dev reverts if the function selectors list is empty
+     */
+    function checkNumberOfSelectors(bytes4[] memory functionSelectors) internal pure returns (uint256 sizeOfList) {
+        sizeOfList = functionSelectors.length;
+        if (sizeOfList == 0) {
+            revert ProxyError("Admin functions: Empty list");
+        }
+    }
+
+    /**
      * @notice isContractPaused - checks if the contract is paused or not
      * @return true if the contract is paused, false otherwise
      */
