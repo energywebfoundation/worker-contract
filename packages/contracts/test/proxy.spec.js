@@ -13,8 +13,8 @@ const { roles } = require("./utils/roles.utils");
 const { getTimeStamp } = require("./utils/time.utils");
 
 const { deployGreenproof } = require("../deploy/deployContracts");
-const { initMockClaimManager } = require("./utils/claimManager.utils");
-const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
+const { initMockClaimManager } = require("./utils/claimUtils/claimManager.utils");
+const { initMockClaimRevoker } = require("./utils/claimUtils/claimRevocation.utils");
 const { ethers } = require("hardhat/internal/lib/hardhat-lib");
 
 chai.use(solidity);

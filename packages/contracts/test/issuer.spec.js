@@ -3,9 +3,8 @@ const { utils, BigNumber } = require("ethers");
 const { expect } = require("chai");
 const { deployGreenproof } = require("../deploy/deployContracts");
 const { solidity } = require("ethereum-waffle");
-const { roles } = require("./utils/roles.utils");
-const { initMockClaimManager } = require("./utils/claimManager.utils");
-const { initMockClaimRevoker } = require("./utils/claimRevocation.utils");
+const { roles, resetRoles, setRole } = require("./utils/roles.utils");
+const { initClaimManager } = require("./utils/claimUtils");
 const { generateProofData } = require("./utils/issuer.utils");
 const { timeTravel, getTimeStamp } = require("./utils/time.utils");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
@@ -34,6 +33,9 @@ describe("IssuerFacet", function () {
 
   let grantRole;
   let revokeRole;
+  let greenproofAddress;
+  let claimManagerAddress;
+  let claimRevokerAddress;
 
   const issuanceFixture = async () => {
     const {
@@ -141,36 +143,31 @@ describe("IssuerFacet", function () {
       ...wallets
     ] = await ethers.getSigners();
 
-    const claimManagerMocked = await initMockClaimManager(owner);
-    const claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
+    const claimManagerConfig = await initClaimManager(owner);
+
+    claimManagerAddress = claimManagerConfig.claimManagerMocked.address;
+    claimRevokerAddress = claimManagerConfig.claimsRevocationRegistryMocked.address;
 
     grantRole = async (wallet, role) => {
-      await claimManagerMocked.grantRole(wallet.address, role);
-      await claimsRevocationRegistryMocked.isRevoked(
-        role,
-        wallet.address,
-        false
-      );
+      await setRole(claimManagerConfig, wallet.address, role, 'active');
     };
 
     revokeRole = async (wallet, role) => {
-      await claimManagerMocked.grantRole(wallet.address, role);
-      await claimsRevocationRegistryMocked.isRevoked(
-        role,
-        wallet.address,
-        true
-      );
+      await setRole(claimManagerConfig, wallet.address, role, 'revoked');
     };
 
-    ({ greenproofAddress } = await deployGreenproof({
-      claimManagerAddress: claimManagerMocked.address,
-      claimRevokerAddress: claimsRevocationRegistryMocked.address,
+    const contractParams = {
+      claimManagerAddress,
+      claimRevokerAddress,
       contractOwner: owner.address,
       roles,
       majorityPercentage: 0,
       revocablePeriod: revokablePeriod,
       isMetaCertificateEnabled: true,
-    }));
+    }
+
+    greenproofAddress = (await deployGreenproof(contractParams)).greenproofAddress;
+
 
     const issuerContract = await ethers.getContractAt(
       "IssuerFacet",
@@ -196,7 +193,7 @@ describe("IssuerFacet", function () {
 
     const proofData = generateProofData();
 
-    await resetRoles();
+    await resetRoles(claimManagerConfig);
     await grantRole(worker, roles.workerRole);
     await votingContract.addWorker(worker.address);
     await grantRole(issuer, roles.issuerRole);
@@ -221,8 +218,6 @@ describe("IssuerFacet", function () {
       metatokenContract,
       proofManagerContract,
       greenproofAddress,
-      claimManagerMocked,
-      claimsRevocationRegistryMocked,
     };
   };
 
@@ -239,36 +234,30 @@ describe("IssuerFacet", function () {
       ...wallets
     ] = await ethers.getSigners();
 
-    const claimManagerMocked = await initMockClaimManager(owner);
-    const claimsRevocationRegistryMocked = await initMockClaimRevoker(owner);
+    const claimManagerConfig = await initClaimManager(owner);
+
+    claimManagerAddress = claimManagerConfig.claimManagerMocked.address;
+    claimRevokerAddress = claimManagerConfig.claimsRevocationRegistryMocked.address;
 
     grantRole = async (wallet, role) => {
-      await claimManagerMocked.grantRole(wallet.address, role);
-      await claimsRevocationRegistryMocked.isRevoked(
-        role,
-        wallet.address,
-        false
-      );
+      await setRole(claimManagerConfig, wallet.address, role, 'active');
     };
 
     revokeRole = async (wallet, role) => {
-      await claimManagerMocked.grantRole(wallet.address, role);
-      await claimsRevocationRegistryMocked.isRevoked(
-        role,
-        wallet.address,
-        true
-      );
+      await setRole(claimManagerConfig, wallet.address, role, 'revoked');
     };
-
-    ({ greenproofAddress } = await deployGreenproof({
-      claimManagerAddress: claimManagerMocked.address,
-      claimRevokerAddress: claimsRevocationRegistryMocked.address,
+    
+    const contractParams = {
+      claimManagerAddress,
+      claimRevokerAddress,
       contractOwner: owner.address,
       roles,
       majorityPercentage: 0,
       revocablePeriod: revokablePeriod,
       isMetaCertificateEnabled: false,
-    }));
+    }
+
+    greenproofAddress = (await deployGreenproof(contractParams)).greenproofAddress;
 
     issuerContract = await ethers.getContractAt(
       "IssuerFacet",
@@ -286,7 +275,7 @@ describe("IssuerFacet", function () {
 
     const proofData = generateProofData();
 
-    await resetRoles();
+    await resetRoles(claimManagerConfig);
     await grantRole(worker, roles.workerRole);
     await votingContract.addWorker(worker.address);
     await grantRole(issuer, roles.issuerRole);
@@ -3590,17 +3579,6 @@ describe("IssuerFacet", function () {
         transferBytesData
       );
     return tx;
-  };
-
-  const resetRoles = async () => {
-    const wallets = await ethers.getSigners();
-    await Promise.all(
-      wallets.map(async (wallet) =>
-        Promise.all(
-          Object.values(roles).map(async (role) => revokeRole(wallet, role))
-        )
-      )
-    );
   };
 
   const prepareBatchIssuance = async (batchSize, votingContract, worker) => {
