@@ -101,6 +101,9 @@ library LibAdmin {
      */
     function setAdminFunction(bytes4 functionSelector, bool isAllowed) internal {
         LibClaimManager.checkOwnership();
+        if (getStorage().isAdminFunction[functionSelector] == isAllowed) {
+            revert ProxyError("Admin function already set");
+        }
         getStorage().isAdminFunction[functionSelector] = isAllowed;
     }
 
