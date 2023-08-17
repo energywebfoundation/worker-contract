@@ -24,6 +24,7 @@
     "lint": "npx hardhat check",
     "prettier:format": "prettier --write contracts/**/*.sol",
     "prettier:check": "prettier --list-different contracts/**/*.sol",
+    "admin:test": "yarn build && npx hardhat test test/admin.spec.js",
     "issuer:test": "yarn build && npx hardhat test test/issuer.spec.js",
     "voting:test": "yarn build && npx hardhat test test/voting/voting.spec.js",
     "proxy:test": "yarn build && npx hardhat test test/proxy.spec.js",
