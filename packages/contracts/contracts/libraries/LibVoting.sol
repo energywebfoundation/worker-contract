@@ -140,7 +140,6 @@ library LibVoting {
      * @param session - The voting session ID
      * @return numberOfRewardedWorkers -  The number of workers who were rewarded for their vote
      */
-    // function recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
     function recordVote(VotingSession storage session) internal returns (uint256 numberOfRewardedWorkers) {
         session.voters.push(payable(msg.sender));
         session.votesCount++;
@@ -182,7 +181,6 @@ library LibVoting {
      * @param session - The voting session ID
      * @return numberOfRewardedWorkers Count of rewarded workers
      */
-    // function completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
     function completeSession(VotingSession storage session) internal returns (uint256 numberOfRewardedWorkers) {
         bytes32 votingID = session.votingID;
         bytes32 sessionID = session.sessionID;
