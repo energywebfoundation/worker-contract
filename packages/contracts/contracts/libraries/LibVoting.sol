@@ -26,6 +26,8 @@ library LibVoting {
     struct VotingSession {
         uint256 votesCount;
         uint256 startTimestamp;
+        bytes32 votingID;
+        bytes32 sessionID;
         bytes32 matchResult;
         mapping(address => bool) workerToVoted;
         address payable[] voters;
@@ -135,20 +137,18 @@ library LibVoting {
      * @notice recordVote - Stores worker's vote
      * @dev This function stores a vote from a worker, and checks if the vote reached the consensus.
      * If the consensus is reached, the function completes the voting session and rewards the workers.
-     * @param votingID - The identifier of the voting session.
-     * @param sessionID - The identifier of the specific voting session.
+     * @param session - The voting session ID
      * @return numberOfRewardedWorkers -  The number of workers who were rewarded for their vote
      */
-    function recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
-        VotingSession storage session = getSession(votingID, sessionID);
-
+    // function recordVote(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
+    function recordVote(VotingSession storage session) internal returns (uint256 numberOfRewardedWorkers) {
         session.voters.push(payable(msg.sender));
         session.votesCount++;
         session.workerToVoted[msg.sender] = true;
 
         if (hasReachedConsensus(session)) {
             session.isConsensusReached = true;
-            numberOfRewardedWorkers = completeSession(votingID, sessionID);
+            numberOfRewardedWorkers = completeSession(session);
         }
     }
 
@@ -165,9 +165,10 @@ library LibVoting {
         }
 
         Voting storage voting = getStorage().votingIDToVoting[votingID];
-        bytes32 sessionID = getSessionID(votingID, matchResult);
+        bytes32 sessionID = computeSessionID(votingID, matchResult);
         VotingSession storage session = voting.sessionIDToSession[sessionID];
-
+        session.votingID = votingID;
+        session.sessionID = sessionID;
         session.matchResult = matchResult;
         session.startTimestamp = block.timestamp; // solhint-disable-line not-rely-on-time
         session.status = Status.Started;
@@ -178,12 +179,14 @@ library LibVoting {
      * @notice _completeSession - Marks a session as completed and if rewards are enabled, rewards the workers who voted for the winning match result
      * @dev After a session is completed, no further votes are accounted for this session.
      * @dev If consensus has been reached, the voting results are exposed. If rewards are enabled, then reward are paid to  the workers who voted for the winning match result
-     * @param votingID Voting identifier
-     * @param sessionID session identifier
+     * @param session - The voting session ID
      * @return numberOfRewardedWorkers Count of rewarded workers
      */
-    function completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
-        VotingSession storage session = getSession(votingID, sessionID);
+    // function completeSession(bytes32 votingID, bytes32 sessionID) internal returns (uint256 numberOfRewardedWorkers) {
+    function completeSession(VotingSession storage session) internal returns (uint256 numberOfRewardedWorkers) {
+        bytes32 votingID = session.votingID;
+        bytes32 sessionID = session.sessionID;
+
         session.status = Status.Completed;
 
         if (!session.isConsensusReached) {
@@ -241,14 +244,11 @@ library LibVoting {
 
     /**
      * @notice isSessionExpired: Checks if a voting session has exceeded the `timeLimit`
-     * @param sessionID - The voting session ID which validity we want to check
-     * @param votingID - The voting ID
+     * @param session - The voting session
      * @return isSessionExpired : boolean
      * @dev the timeLimit duration is set once during contract construction
      */
-    function isSessionExpired(bytes32 votingID, bytes32 sessionID) internal view returns (bool) {
-        VotingSession storage session = getSession(votingID, sessionID);
-
+    function isSessionExpired(VotingSession storage session) internal view returns (bool) {
         /* solhint-disable-next-line not-rely-on-time */
         if (session.status == Status.Started && (session.startTimestamp + getStorage().timeLimit < block.timestamp)) {
             return true;
@@ -288,6 +288,16 @@ library LibVoting {
         return getStorage().votingIDToVoting[votingID].sessionIDToSession[sessionID];
     }
 
+    /**
+     * @notice `getVotingSessionByIndex` - Gets the Voting session at a given index of a sessions array
+     * @param voting The voting
+     * @param sessionIndex The index of the session
+     */
+    function getVotingSessionByIndex(Voting storage voting, uint256 sessionIndex) internal view returns (VotingSession storage) {
+        bytes32 sessionID = voting.sessionIDs[sessionIndex];
+        return voting.sessionIDToSession[sessionID];
+    }
+
     /** Data verification */
 
     /** @notice checkVoteInConsensus - Checks that some data is part of a voting consensus
@@ -321,7 +331,7 @@ library LibVoting {
      * @return sessionID ID of the session
      */
     function checkNotClosedSession(bytes32 votingID, bytes32 matchResult) internal view returns (bytes32) {
-        bytes32 sessionID = getSessionID(votingID, matchResult);
+        bytes32 sessionID = computeSessionID(votingID, matchResult);
 
         LibVoting.VotingSession storage session = getSession(votingID, sessionID);
 
@@ -431,13 +441,13 @@ library LibVoting {
     }
 
     /**
-     * @notice getSessionID -  Calculates the session ID given a voteID and a matchResult
+     * @notice computeSessionID -  Calculates the session ID given a voteID and a matchResult
      * @dev The sessionID is the resulting keccack256 of VotingID + matchResult
      * @param votingID - ID of the voting
      * @param matchResult - matchResult data
      * @return sessionID - ID of the voting session
      */
-    function getSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
+    function computeSessionID(bytes32 votingID, bytes32 matchResult) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(votingID, matchResult));
     }
 }
