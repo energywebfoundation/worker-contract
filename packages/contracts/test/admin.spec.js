@@ -1,7 +1,4 @@
-const chai = require("chai");
 const { expect } = require("chai");
-const { utils, BigNumber } = require("ethers");
-const { solidity } = require("ethereum-waffle");
 const { roles, setRole, resetRoles } = require("./utils/roles.utils");
 const { getTimeStamp } = require("./utils/time.utils");
 const { generateProofData } = require("./utils/issuer.utils");
@@ -55,22 +52,11 @@ describe("Admin Functionalilties", () => {
       isMetaCertificateEnabled: true,
     }));
 
-    const issuerContract = await ethers.getContractAt(
-      "IssuerFacet",
-      greenproofAddress
-    );
-    const votingContract = await ethers.getContractAt(
-      "VotingFacet",
-      greenproofAddress
-    );
-    const proofManagerContract = await ethers.getContractAt(
-      "ProofManagerFacet",
-      greenproofAddress
-    );
-    const metatokenContract = await ethers.getContractAt(
-      "MetaTokenFacet",
-      greenproofAddress
-    );
+    const proxy = await ethers.getContractAt("Greenproof", greenproofAddress);
+    const issuerContract = await ethers.getContractAt("IssuerFacet", greenproofAddress);
+    const votingContract = await ethers.getContractAt("VotingFacet", greenproofAddress);
+    const metatokenContract = await ethers.getContractAt("MetaTokenFacet", greenproofAddress);
+    const proofManagerContract = await ethers.getContractAt("ProofManagerFacet", greenproofAddress);
 
     const adminContract = await ethers.getContractAt(
       "AdminFacet",
@@ -88,6 +74,7 @@ describe("Admin Functionalilties", () => {
     await grantRole(approver, roles.approverRole);
 
     return {
+      proxy,
       owner,
       issuer,
       worker,
@@ -286,5 +273,185 @@ describe("Admin Functionalilties", () => {
 
     await expect(declareTx).to.emit(adminContract, "AdminFunctionsDiscarded")
       // .withArgs(adminSelectors, await getTimeStamp(declareTx)); <-- a bug in the waffle lib prevents indexed dynamic arrays from being corrctly catched
+  });
+
+  describe("\n\t****** Pausing tests ******\n", () => {
+    it("should revert when non owner tries to pause contract", async () => {
+      const {
+        claimer,
+        adminContract,
+      } = await loadFixture(initFixture);
+
+      const nonOwner = claimer;
+
+      await expect(adminContract.connect(nonOwner).pause()).to.be.revertedWith(
+        `NotAuthorized("Owner", "${nonOwner.address}")`
+      );
+    });
+
+    it("should correctly pause contract", async () => {
+      const {
+        owner,
+        adminContract,
+      } = await loadFixture(initFixture);
+
+      // 1 - check that contract is not paused before pausing
+      expect(await adminContract.isContractPaused()).to.be.false;
+      
+      // 2 - pause contract
+      tx = await adminContract.pause();
+
+      const timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+      
+      // 3 - check that contract is paused after pausing
+      expect(await adminContract.isContractPaused()).to.be.true;
+    });
+
+    it("should revert when pausing an already paused contract", async () => {
+      const {
+        owner,
+        adminContract,
+      } = await loadFixture(initFixture);
+      
+      const tx = await adminContract.pause();
+
+      const timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+
+      // try to pause an already paused contract
+      await expect(adminContract.pause()).to.be.revertedWith(`AlreadyPausedContract()`);
+    });
+
+    it("should revert when non owner tries to unpause contract", async () => {
+       const {
+         owner,
+         claimer,
+        adminContract,
+      } = await loadFixture(initFixture);
+      
+      // 1 - pause contract
+      const tx = await adminContract.pause();
+
+      const timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+      
+      const nonOwner = claimer;
+      
+      await expect(adminContract.connect(nonOwner).unPause()).to.be.revertedWith(
+        `NotAuthorized("Owner", "${nonOwner.address}")`
+      );
+    });
+
+    it("should correctly unpause contract", async () => {
+      const {
+        owner,
+        adminContract,
+      } = await loadFixture(initFixture);
+
+      // 1 - pause contract
+      let tx = await adminContract.pause();
+
+      let timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+      
+      // 2 - unpause contract
+      tx = await adminContract.unPause();
+
+      timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "ContractUnPaused")
+        .withArgs(timestamp, owner.address);
+    });
+
+    it("should revert when unpausing an already unpaused contract", async () => {
+
+      const {
+        owner,
+        adminContract,
+      } = await loadFixture(initFixture);
+
+      // 1 - pause contract
+      let tx = await adminContract.pause();
+
+      let timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "ContractPaused")
+        .withArgs(timestamp, owner.address);
+      
+      // 2 - unpause contract
+      tx = await adminContract.unPause();
+
+      timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "ContractUnPaused")
+        .withArgs(timestamp, owner.address);
+      
+      // 3 - try to unpause an already unpaused contract
+      await expect(adminContract.unPause()).to.be.revertedWith(
+        `AlreadyUnpausedContract()`
+      );
+    });
+  });
+
+  describe("\n\t****** Ownership management tests ******\n", () => {
+    it("should correctly update the owner", async () => {
+      const {
+        proxy,
+        owner,
+        adminContract,
+      } = await loadFixture(initFixture);
+
+      const newOwner = await ethers.getSigner(1);
+      
+      // 1 - check that owner is the correct one before updating
+      expect(
+        await proxy.owner()
+      ).to.equal(owner.address);
+
+      // 2 - update owner
+      const tx = await adminContract.setOwner(newOwner.address);
+
+      const timestamp = await getTimeStamp(tx);
+      await expect(tx)
+        .to.emit(adminContract, "OwnerChanged")
+        .withArgs(owner.address, newOwner.address, timestamp);
+      
+      // 3 - check that owner is the correct one after updating
+      expect(
+        await proxy.owner()
+      ).to.equal(newOwner.address);
+    });
+
+    it("should revert when non owner tries to transfer ownership", async () => {
+      const {
+        claimer,
+        adminContract
+      } = await loadFixture(initFixture);
+
+      const nonOwner = claimer;
+
+      await expect(
+        adminContract.connect(nonOwner).setOwner(nonOwner.address)
+      ).to.be.revertedWith(`NotAuthorized("Owner", "${nonOwner.address}")`);
+    });
+
+    it("should revert when setting the zero address as the new owner", async () => {
+      const {
+        adminContract
+      } = await loadFixture(initFixture);
+
+      await expect(
+        adminContract.setOwner(ethers.constants.AddressZero)
+      ).to.be.revertedWith(`ForbiddenZeroAddressReceiver`);
+    });
   });
 });
