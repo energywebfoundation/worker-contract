@@ -204,4 +204,87 @@ describe("Admin Functionalilties", () => {
     await expect(declareTx).to.emit(adminContract, "AdminFunctionsDeclared")
       // .withArgs(adminSelectors, await getTimeStamp(declareTx)); <-- a bug in the waffle lib prevents indexed dynamic arrays from being corrctly catched
   });
+  
+  it("should revert when non admin tries to remove one single admin function", async () => {
+    const {
+      claimer,
+      adminContract,
+    } = await loadFixture(initFixture);
+
+    const adminSelectors = await getSelectorsFromFacet("AdminFacet");
+
+    await expect(
+      adminContract
+        .connect(claimer)
+        .removeSingleAdminFunction(adminSelectors[ 0 ]))
+        .to.be.revertedWith(`NotAuthorized("Owner", "${claimer.address}")`);
+  });
+
+  it("should revert when admin removes a not declared admin function", async () => {
+    const {
+      adminContract,
+    } = await loadFixture(initFixture);
+
+    const issuerSelectors = await getSelectorsFromFacet("IssuerFacet");
+
+    await expect(
+      adminContract
+        .removeSingleAdminFunction(issuerSelectors[ 0 ]))
+        .to.be.revertedWith(`ProxyError("Admin function already set")`);
+  });
+
+  it("should revert when non admin tries to remove several (Batch) admin functions", async () => {
+    const {
+      claimer,
+      adminContract,
+    } = await loadFixture(initFixture);
+
+    const IssuerSelectors = await getSelectorsFromFacet("IssuerFacet");
+
+    await expect(
+      adminContract
+        .connect(claimer)
+        .removeBatchAdminFunctions(IssuerSelectors))
+      .to.be.revertedWith(`NotAuthorized("Owner", "${claimer.address}")`);
+  });
+
+  it("should revert when admin tries to remove admin functions from an empty list", async () => {
+    const {
+      adminContract,
+    } = await loadFixture(initFixture);
+
+    const emptyListOfFunctions = [];
+
+    await expect(
+      adminContract
+        .removeBatchAdminFunctions(emptyListOfFunctions))
+      .to.be.revertedWith(`ProxyError("Admin functions: Empty list")`);
+  });
+
+  it("should correctly remove a single admin function", async () => {
+    const {
+      adminContract,
+    } = await loadFixture(initFixture);
+
+    const adminSelectors = await getSelectorsFromFacet("AdminFacet");
+
+    const declareTx = await adminContract.removeSingleAdminFunction(adminSelectors[ 0 ])
+
+    await expect(declareTx)
+      .to.emit(adminContract, "AdminFunctionDiscarded")
+      .withArgs(adminSelectors[ 0 ], await getTimeStamp(declareTx));
+  });
+  
+  it("should correctly remove a list (batch) of admin functions", async () => {
+    const {
+      adminContract,
+    } = await loadFixture(initFixture);
+
+    const adminSelectors = await getSelectorsFromFacet("AdminFacet");
+
+    const declareTx = await adminContract.removeBatchAdminFunctions(adminSelectors);
+
+    await expect(declareTx).to.emit(adminContract, "AdminFunctionsDiscarded")
+      // .withArgs(adminSelectors, await getTimeStamp(declareTx)); <-- a bug in the waffle lib prevents indexed dynamic arrays from being corrctly catched
+  });
 });
