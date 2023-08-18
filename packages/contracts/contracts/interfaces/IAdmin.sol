@@ -212,13 +212,6 @@ interface IAdmin {
      */
     function unPause() external;
 
-    /**
-     * @notice isContractPaused - returns the current state of the contract
-     * @dev if the system is paused, this function will return `true`
-     * @dev if the system is unpaused, this function will return `false`
-     */
-    function isContractPaused() external view returns (bool);
-
     /**********************************************************\
                       Admin Functions Tracking
     \**********************************************************/
@@ -260,4 +253,11 @@ interface IAdmin {
      * @param newOwner the address of the new owner
      */
     function setOwner(address newOwner) external;
+
+    /**
+     * @notice isContractPaused - returns the current state of the contract
+     * @dev if the system is paused, this function will return `true`
+     * @dev if the system is unpaused, this function will return `false`
+     */
+    function isContractPaused() external view returns (bool);
 }

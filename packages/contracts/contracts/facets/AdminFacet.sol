@@ -215,19 +215,9 @@ contract AdminFacet is IAdmin {
     }
 
     /**
-     * @notice isContractPaused - returns the current state of the contract
-     * @dev if the system is paused, this function will return `true`
-     * @dev if the system is unpaused, this function will return `false`
-     */
-    function isContractPaused() external view returns (bool) {
-        return LibAdmin.isContractPaused();
-    }
-
-    /**
      * @notice sweepFunds - when called, this function transfers all the funds from the contract to the contract owner
      * @dev only the contract admistrator is allowed to execute this function
      */
-
     function sweepFunds() external {
         // Check if the caller is the owner of the contract
         LibClaimManager.checkOwnership();
@@ -261,5 +251,14 @@ contract AdminFacet is IAdmin {
         address currentOwner = IOwnable(address(this)).owner();
         emit OwnerChanged(currentOwner, newOwner, block.timestamp); // solhint-disable-line not-rely-on-time
         OwnableStorage.layout().owner = newOwner;
+    }
+
+    /**
+     * @notice isContractPaused - returns the current state of the contract
+     * @dev if the system is paused, this function will return `true`
+     * @dev if the system is unpaused, this function will return `false`
+     */
+    function isContractPaused() external view returns (bool) {
+        return LibAdmin.isContractPaused();
     }
 }
