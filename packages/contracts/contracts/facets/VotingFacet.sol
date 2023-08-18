@@ -14,6 +14,7 @@ import {LibClaimManager} from "../libraries/LibClaimManager.sol";
  * @dev This contract is a facet of the EW-GreenProof-Core Diamond, a gas optimized implementation of EIP-2535 Diamond proxy standard : https://eips.ethereum.org/EIPS/eip-2535
  */
 contract VotingFacet is IVoting, IReward {
+    using LibVoting for LibVoting.VotingSession;
     /**
      * @notice onlyEnrolledWorkers - A modifier that restricts the execution of functions only to users enrolled as workers
      * @dev This reverts the transaction if the operator does not have the worker role
@@ -70,16 +71,16 @@ contract VotingFacet is IVoting, IReward {
      */
     function vote(bytes32 votingID, bytes32 matchResult) external onlyWhitelistedWorker {
         bytes32 sessionID = LibVoting.checkNotClosedSession(votingID, matchResult);
+        LibVoting.VotingSession storage session = LibVoting.getSession(votingID, sessionID);
+
         uint256 numberOfRewardedWorkers;
 
-        if (LibVoting.isSessionExpired(votingID, sessionID)) {
-            numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
+        if (session.isSessionExpired()) {
+            numberOfRewardedWorkers = session.completeSession();
             _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
             emit VotingSessionExpired(votingID, matchResult);
             return;
         }
-
-        LibVoting.VotingSession storage session = LibVoting.getSession(votingID, sessionID);
 
         if (session.status == LibVoting.Status.NotStarted) {
             LibVoting.startSession(votingID, matchResult);
@@ -87,7 +88,7 @@ contract VotingFacet is IVoting, IReward {
 
         LibVoting.checkNotVoted(msg.sender, session);
 
-        numberOfRewardedWorkers = LibVoting.recordVote(votingID, sessionID);
+        numberOfRewardedWorkers = session.recordVote();
         _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
     }
 
@@ -153,12 +154,14 @@ contract VotingFacet is IVoting, IReward {
             bytes32 votingID = votingStorage.votingIDs[i];
             LibVoting.Voting storage voting = votingStorage.votingIDToVoting[votingID];
             uint256 numberOfSessionsToCancel = LibVoting.getMinimum(numberOfSessionsLimit + startSessionIndex, voting.sessionIDs.length);
+
             for (uint256 j = startSessionIndex; j < numberOfSessionsToCancel; j++) {
-                bytes32 sessionID = voting.sessionIDs[j];
-                if (LibVoting.isSessionExpired(votingID, sessionID)) {
-                    uint256 numberOfRewardedWorkers = LibVoting.completeSession(votingID, sessionID);
-                    _emitSessionEvents(votingID, sessionID, numberOfRewardedWorkers);
-                    emit VotingSessionExpired(votingID, voting.sessionIDToSession[sessionID].matchResult);
+                LibVoting.VotingSession storage session = LibVoting.getVotingSessionByIndex(voting, j);
+
+                if (session.isSessionExpired()) {
+                    uint256 numberOfRewardedWorkers = session.completeSession();
+                    _emitSessionEvents(votingID, session.sessionID, numberOfRewardedWorkers);
+                    emit VotingSessionExpired(votingID, session.matchResult);
                 }
             }
         }
@@ -230,7 +233,8 @@ contract VotingFacet is IVoting, IReward {
         uint256 numberOfWinningMatches = winningMatches.length;
 
         for (uint256 i; i < numberOfWinningMatches; i++) {
-            LibVoting.VotingSession storage session = LibVoting.getSession(votingID, LibVoting.getSessionID(votingID, winningMatches[i]));
+            bytes32 sessionID = LibVoting.computeSessionID(votingID, winningMatches[i]);
+            LibVoting.VotingSession storage session = LibVoting.getSession(votingID, sessionID);
 
             if (LibVoting.hasAlreadyVoted(worker, session)) {
                 votesContainer[numberOfVotes] = winningMatches[i];
@@ -252,7 +256,7 @@ contract VotingFacet is IVoting, IReward {
      */
     function getWinners(bytes32 votingID, bytes32 matchResult) external view returns (address payable[] memory) {
         LibVoting.VotingStorage storage votingStorage = LibVoting.getStorage();
-        bytes32 sessionID = LibVoting.getSessionID(votingID, matchResult);
+        bytes32 sessionID = LibVoting.computeSessionID(votingID, matchResult);
 
         return votingStorage.winners[votingID][sessionID];
     }
@@ -296,8 +300,10 @@ contract VotingFacet is IVoting, IReward {
         bytes32[] memory winningSessionsIDs = new bytes32[](numberOfVotingSessionIds);
 
         for (uint256 i; i < numberOfVotingSessionIds; i++) {
-            if (LibVoting.getSession(votingID, voting.sessionIDs[i]).isConsensusReached) {
-                winningSessionsIDs[numberOfWinningSessions] = voting.sessionIDs[i];
+            LibVoting.VotingSession storage session = LibVoting.getSession(votingID, voting.sessionIDs[i]);
+
+            if (session.isConsensusReached) {
+                winningSessionsIDs[numberOfWinningSessions] = session.sessionID;
                 numberOfWinningSessions++;
             }
         }
@@ -316,6 +322,7 @@ contract VotingFacet is IVoting, IReward {
      */
     function _emitSessionEvents(bytes32 votingID, bytes32 sessionID, uint256 numberOfRewardedWorkers) private {
         LibVoting.VotingSession storage session = LibVoting.getSession(votingID, sessionID);
+
         if (session.isConsensusReached) {
             emit WinningMatch(votingID, session.matchResult, session.votesCount);
             emit ConsensusReached(session.matchResult, votingID);

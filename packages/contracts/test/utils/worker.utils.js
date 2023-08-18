@@ -29,7 +29,7 @@ class Worker {
     const voteTx = this.votingContract.vote(input, output);
     expect(voteTx)
       .to.emit(this.votingContract, "NoConsensusReached")
-      .withArgs(input);
+      .withArgs(input, output);
 
     return voteTx;
   }
